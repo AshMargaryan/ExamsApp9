@@ -1,0 +1,19 @@
+[33mcommit 1f8a3cb3b9084624123a9457c0af6e0f48572487[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: AshMargaryan <margaryanashot279@gmail.com>
+Date:   Mon Jun 22 04:16:04 2026 +0400
+
+    Revert "chore: initialize Django project skeleton"
+    
+    This reverts commit 27b8c7fa27d63515574fd64649bc95ec441776cb.
+
+[33mcommit 27b8c7fa27d63515574fd64649bc95ec441776cb[m
+Author: AshMargaryan <margaryanashot279@gmail.com>
+Date:   Mon Jun 22 04:14:53 2026 +0400
+
+    chore: initialize Django project skeleton
+
+[33mcommit 73b706f6fda9061b5c360b7f57afd115d5397f7d[m
+Author: AshMargaryan <margaryanashot279@gmail.com>
+Date:   Mon Jun 22 01:50:50 2026 +0400
+
+    chore: initialize Django project skeleton
