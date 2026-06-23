@@ -1,6 +1,6 @@
 *.pyc
 venv
-.env
+backend/.env
 backend/staticfiles/
 backend/db.sqlite3
 frontend/node_modules/
