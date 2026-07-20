@@ -1,0 +1,103 @@
+/*
+  Design tokens — the one file to edit to change the whole app's look.
+  Semantic names (not "blue-500") so swapping the palette never means
+  hunting through components.
+*/
+:root {
+  --color-bg: #f7f7fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f0f1f7;
+  --color-border: #e3e4ec;
+
+  --color-text: #1c1d2b;
+  --color-text-muted: #6b6d81;
+
+  --color-primary: #5b5bd6;
+  --color-primary-hover: #4949c2;
+  --color-primary-contrast: #ffffff;
+
+  --color-accent: #14b8a6;
+
+  --color-correct: #1a9e6d;
+  --color-correct-bg: #e4f7ef;
+  --color-incorrect: #d64545;
+  --color-incorrect-bg: #fbe8e8;
+
+  --color-easy: #1a9e6d;
+  --color-medium: #d69a1a;
+  --color-hard: #d64545;
+
+  --radius: 0.75rem;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #15151f;
+  --color-surface: #1d1e2b;
+  --color-surface-muted: #262838;
+  --color-border: #33354a;
+
+  --color-text: #eceefb;
+  --color-text-muted: #9799b3;
+
+  --color-primary: #8785f0;
+  --color-primary-hover: #a3a1f7;
+  --color-primary-contrast: #15151f;
+
+  --color-accent: #2dd4c4;
+
+  --color-correct: #4ade9a;
+  --color-correct-bg: #12301f;
+  --color-incorrect: #f2726e;
+  --color-incorrect-bg: #3a1717;
+
+  --color-easy: #4ade9a;
+  --color-medium: #f0be5a;
+  --color-hard: #f2726e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: #15151f;
+    --color-surface: #1d1e2b;
+    --color-surface-muted: #262838;
+    --color-border: #33354a;
+
+    --color-text: #eceefb;
+    --color-text-muted: #9799b3;
+
+    --color-primary: #8785f0;
+    --color-primary-hover: #a3a1f7;
+    --color-primary-contrast: #15151f;
+
+    --color-accent: #2dd4c4;
+
+    --color-correct: #4ade9a;
+    --color-correct-bg: #12301f;
+    --color-incorrect: #f2726e;
+    --color-incorrect-bg: #3a1717;
+
+    --color-easy: #4ade9a;
+    --color-medium: #f0be5a;
+    --color-hard: #f2726e;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-contrast: var(--color-primary-contrast);
+  --color-accent: var(--color-accent);
+  --color-correct: var(--color-correct);
+  --color-correct-bg: var(--color-correct-bg);
+  --color-incorrect: var(--color-incorrect);
+  --color-incorrect-bg: var(--color-incorrect-bg);
+  --color-easy: var(--color-easy);
+  --color-medium: var(--color-medium);
+  --color-hard: var(--color-hard);
+}
