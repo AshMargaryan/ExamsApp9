@@ -1,0 +1,161 @@
+from collections import defaultdict
+
+from django.utils import timezone
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import (
+    Subject, Subtopic, Question, Choice,
+    PracticeAttempt, AttemptAnswer,
+    QuestionType, Tier,
+)
+from .serializers import (
+    SubjectHierarchySerializer,
+    QuestionPracticeSerializer, QuestionRevealSerializer,
+    SubmitTierSerializer, PracticeAttemptSerializer,
+)
+
+
+def _completed_by_subtopic(user):
+    """{subtopic_id: [tier, ...]} for attempts the user finished without revealing."""
+    completed = defaultdict(list)
+    if not user or not user.is_authenticated:
+        return completed
+    qs = PracticeAttempt.objects.filter(
+        user=user, revealed_answers=False, completed_at__isnull=False
+    ).values_list("subtopic_id", "tier")
+    for subtopic_id, tier in qs:
+        completed[subtopic_id].append(tier)
+    return completed
+
+
+class HierarchyView(generics.ListAPIView):
+    """GET /api/practice/hierarchy/ — full Subject tree with progress rollups."""
+    serializer_class = SubjectHierarchySerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = (
+        Subject.objects
+        .prefetch_related("domains__topics__subtopics")
+        .all()
+    )
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["completed_by_subtopic"] = _completed_by_subtopic(self.request.user)
+        return ctx
+
+
+class TierQuestionsView(generics.ListAPIView):
+    """GET /api/practice/subtopics/<subtopic_id>/<tier>/questions/"""
+    serializer_class = QuestionPracticeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Question.objects.filter(
+            subtopic_id=self.kwargs["subtopic_id"], tier=self.kwargs["tier"]
+        ).prefetch_related("choices", "statements")
+
+
+class RevealTierView(APIView):
+    """
+    GET /api/practice/subtopics/<subtopic_id>/<tier>/reveal/
+    Returns correct answers + explanations, and marks the attempt revealed
+    (so it no longer counts toward completion/score).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, subtopic_id, tier):
+        questions = Question.objects.filter(
+            subtopic_id=subtopic_id, tier=tier
+        ).prefetch_related("choices", "statements")
+
+        attempt, _ = PracticeAttempt.objects.get_or_create(
+            user=request.user, subtopic_id=subtopic_id, tier=tier
+        )
+        attempt.revealed_answers = True
+        attempt.save(update_fields=["revealed_answers"])
+
+        return Response(QuestionRevealSerializer(questions, many=True).data)
+
+
+class SubmitTierView(APIView):
+    """
+    POST /api/practice/subtopics/<subtopic_id>/<tier>/submit/
+    Scores every answer, upserts the PracticeAttempt + AttemptAnswer rows.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, subtopic_id, tier):
+        serializer = SubmitTierSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        d = serializer.validated_data
+
+        subtopic = Subtopic.objects.get(pk=subtopic_id)
+        questions = {
+            q.id: q for q in Question.objects.filter(subtopic=subtopic, tier=tier)
+            .prefetch_related("choices", "statements")
+        }
+
+        attempt, _ = PracticeAttempt.objects.get_or_create(
+            user=request.user, subtopic=subtopic, tier=tier
+        )
+        if d["revealed"]:
+            attempt.revealed_answers = True
+
+        results = []
+        correct_count = 0
+        for a in d["answers"]:
+            question = questions.get(a["question_id"])
+            if question is None:
+                continue
+            is_correct, ua = self._score_answer(attempt, question, a)
+            if is_correct:
+                correct_count += 1
+            results.append(is_correct)
+
+        total = len(results)
+        attempt.score = round(100 * correct_count / total, 2) if total else 0
+        attempt.completed_at = timezone.now()
+        attempt.save()
+
+        return Response({
+            "attempt": PracticeAttemptSerializer(attempt).data,
+            "correct_count": correct_count,
+            "total": total,
+        }, status=status.HTTP_200_OK)
+
+    def _score_answer(self, attempt, question: Question, a: dict):
+        qtype = question.question_type
+
+        if qtype == QuestionType.MULTIPLE_CHOICE:
+            choice = None
+            is_correct = False
+            choice_id = a.get("selected_choice_id")
+            if choice_id:
+                choice = question.choices.filter(pk=choice_id).first()
+                is_correct = bool(choice and choice.is_correct)
+            defaults = dict(is_correct=is_correct, selected_choice=choice,
+                             answer_text="", selected_statement_ids=[])
+
+        elif qtype == QuestionType.SHORT_ANSWER:
+            user_text = a.get("answer_text", "").strip().lower()
+            correct = question.correct_answer_text.strip().lower()
+            is_correct = bool(user_text) and user_text == correct
+            defaults = dict(is_correct=is_correct, selected_choice=None,
+                             answer_text=a.get("answer_text", ""), selected_statement_ids=[])
+
+        elif qtype == QuestionType.TRUE_FALSE:
+            selected_ids = set(a.get("selected_statement_ids", []))
+            correct_ids = set(question.statements.filter(is_true=True).values_list("id", flat=True))
+            is_correct = selected_ids == correct_ids
+            defaults = dict(is_correct=is_correct, selected_choice=None,
+                             answer_text="", selected_statement_ids=list(selected_ids))
+
+        else:
+            raise ValueError(f"Unknown question type: {qtype}")
+
+        ua, _ = AttemptAnswer.objects.update_or_create(
+            attempt=attempt, question=question, defaults=defaults,
+        )
+        return defaults["is_correct"], ua
