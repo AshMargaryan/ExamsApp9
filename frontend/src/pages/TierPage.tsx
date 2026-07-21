@@ -11,6 +11,7 @@ import { ScoreModal } from "../components/ScoreModal";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
+import { ToolsDock } from "../components/ToolsDock";
 
 const TIER_ORDER: Tier[] = ["easy", "medium", "hard"];
 
@@ -246,6 +247,8 @@ export function TierPage() {
           onContinue={handleModalContinue}
         />
       )}
+
+      <ToolsDock />
     </div>
   );
 }
