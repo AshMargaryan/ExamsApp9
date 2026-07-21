@@ -17,17 +17,24 @@ from .serializers import (
 )
 
 
-def _completed_by_subtopic(user):
-    """{subtopic_id: [tier, ...]} for attempts the user finished without revealing."""
-    completed = defaultdict(list)
+def _progress_by_subtopic(user):
+    """{subtopic_id: {tier: score}} for attempts the user finished without revealing."""
+    progress = defaultdict(dict)
     if not user or not user.is_authenticated:
-        return completed
+        return progress
     qs = PracticeAttempt.objects.filter(
-        user=user, revealed_answers=False, completed_at__isnull=False
-    ).values_list("subtopic_id", "tier")
-    for subtopic_id, tier in qs:
-        completed[subtopic_id].append(tier)
-    return completed
+        user=user, revealed_answers=False, completed_at__isnull=False, score__isnull=False,
+    ).values_list("subtopic_id", "tier", "score")
+    for subtopic_id, tier, score in qs:
+        progress[subtopic_id][tier] = score
+    return progress
+
+
+def _subtopic_ids_with_questions():
+    """Subtopics with zero imported questions are left out of the hierarchy entirely."""
+    return set(
+        Question.objects.values_list("subtopic_id", flat=True).distinct()
+    )
 
 
 class HierarchyView(generics.ListAPIView):
@@ -42,7 +49,8 @@ class HierarchyView(generics.ListAPIView):
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
-        ctx["completed_by_subtopic"] = _completed_by_subtopic(self.request.user)
+        ctx["progress_by_subtopic"] = _progress_by_subtopic(self.request.user)
+        ctx["subtopic_ids_with_questions"] = _subtopic_ids_with_questions()
         return ctx
 
 

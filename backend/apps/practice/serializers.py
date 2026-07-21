@@ -15,67 +15,99 @@ TIERS = [t.value for t in Tier]
 # ---------------------------------------------------------------------------
 
 class SubtopicHierarchySerializer(serializers.ModelSerializer):
-    completed_tiers = serializers.SerializerMethodField()
+    tier_scores = serializers.SerializerMethodField()
 
     class Meta:
         model = Subtopic
-        fields = ["id", "name", "order", "completed_tiers"]
+        fields = ["id", "name", "order", "tier_scores"]
 
-    def get_completed_tiers(self, obj):
-        completed = self.context.get("completed_by_subtopic", {})
-        return sorted(completed.get(obj.id, []))
+    def get_tier_scores(self, obj):
+        progress = self.context.get("progress_by_subtopic", {})
+        scores = progress.get(obj.id, {})
+        return {tier: scores.get(tier) for tier in TIERS}
+
+
+def _non_empty_subtopics(subtopics, context):
+    with_questions = context.get("subtopic_ids_with_questions", set())
+    return [s for s in subtopics if s.id in with_questions]
 
 
 class TopicHierarchySerializer(serializers.ModelSerializer):
-    subtopics = SubtopicHierarchySerializer(many=True, read_only=True)
-    progress_percent = serializers.SerializerMethodField()
+    subtopics = serializers.SerializerMethodField()
+    progress = serializers.SerializerMethodField()
 
     class Meta:
         model = Topic
-        fields = ["id", "name", "order", "intro_text", "subtopics", "progress_percent"]
+        fields = ["id", "name", "order", "intro_text", "subtopics", "progress"]
 
-    def get_progress_percent(self, obj):
-        completed = self.context.get("completed_by_subtopic", {})
-        subtopic_ids = [s.id for s in obj.subtopics.all()]
-        return _rollup_percent(subtopic_ids, completed)
+    def get_subtopics(self, obj):
+        non_empty = _non_empty_subtopics(obj.subtopics.all(), self.context)
+        return SubtopicHierarchySerializer(non_empty, many=True, context=self.context).data
+
+    def get_progress(self, obj):
+        progress = self.context.get("progress_by_subtopic", {})
+        subtopic_ids = [s.id for s in _non_empty_subtopics(obj.subtopics.all(), self.context)]
+        return _rollup(subtopic_ids, progress)
 
 
 class DomainHierarchySerializer(serializers.ModelSerializer):
-    topics = TopicHierarchySerializer(many=True, read_only=True)
-    progress_percent = serializers.SerializerMethodField()
+    topics = serializers.SerializerMethodField()
+    progress = serializers.SerializerMethodField()
 
     class Meta:
         model = Domain
-        fields = ["id", "name", "order", "intro_text", "topics", "progress_percent"]
+        fields = ["id", "name", "order", "intro_text", "topics", "progress"]
 
-    def get_progress_percent(self, obj):
-        completed = self.context.get("completed_by_subtopic", {})
-        subtopic_ids = [s.id for t in obj.topics.all() for s in t.subtopics.all()]
-        return _rollup_percent(subtopic_ids, completed)
+    def get_topics(self, obj):
+        non_empty_topics = [
+            t for t in obj.topics.all() if _non_empty_subtopics(t.subtopics.all(), self.context)
+        ]
+        return TopicHierarchySerializer(non_empty_topics, many=True, context=self.context).data
+
+    def get_progress(self, obj):
+        progress = self.context.get("progress_by_subtopic", {})
+        subtopic_ids = [
+            s.id for t in obj.topics.all()
+            for s in _non_empty_subtopics(t.subtopics.all(), self.context)
+        ]
+        return _rollup(subtopic_ids, progress)
 
 
 class SubjectHierarchySerializer(serializers.ModelSerializer):
-    domains = DomainHierarchySerializer(many=True, read_only=True)
-    progress_percent = serializers.SerializerMethodField()
+    domains = serializers.SerializerMethodField()
+    progress = serializers.SerializerMethodField()
 
     class Meta:
         model = Subject
-        fields = ["id", "name", "order", "domains", "progress_percent"]
+        fields = ["id", "name", "order", "domains", "progress"]
 
-    def get_progress_percent(self, obj):
-        completed = self.context.get("completed_by_subtopic", {})
-        subtopic_ids = [
-            s.id for d in obj.domains.all() for t in d.topics.all() for s in t.subtopics.all()
+    def get_domains(self, obj):
+        non_empty_domains = [
+            d for d in obj.domains.all()
+            if any(_non_empty_subtopics(t.subtopics.all(), self.context) for t in d.topics.all())
         ]
-        return _rollup_percent(subtopic_ids, completed)
+        return DomainHierarchySerializer(non_empty_domains, many=True, context=self.context).data
+
+    def get_progress(self, obj):
+        progress = self.context.get("progress_by_subtopic", {})
+        subtopic_ids = [
+            s.id for d in obj.domains.all() for t in d.topics.all()
+            for s in _non_empty_subtopics(t.subtopics.all(), self.context)
+        ]
+        return _rollup(subtopic_ids, progress)
 
 
-def _rollup_percent(subtopic_ids, completed_by_subtopic):
-    if not subtopic_ids:
-        return 0.0
+def _rollup(subtopic_ids, progress_by_subtopic):
+    """{percent, avg_score}: percent = tiers done / total tiers possible;
+    avg_score = mean score across those done tiers (None if none done)."""
     total_tiers = len(subtopic_ids) * len(TIERS)
-    done_tiers = sum(len(completed_by_subtopic.get(sid, [])) for sid in subtopic_ids)
-    return round(100 * done_tiers / total_tiers, 1)
+    scores = []
+    for sid in subtopic_ids:
+        scores.extend(progress_by_subtopic.get(sid, {}).values())
+
+    percent = round(100 * len(scores) / total_tiers, 1) if total_tiers else 0.0
+    avg_score = round(sum(scores) / len(scores), 1) if scores else None
+    return {"percent": percent, "avg_score": avg_score}
 
 
 # ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ from apps.practice.models import (
     Question, Choice, Statement,
     QuestionType,
 )
+from apps.practice.topics_order import load_order_maps
 
 DEFAULT_GENERATED_DIR = (
     settings.BASE_DIR / "data_scripts" / "scripts" / "pipeline" / "output" / "generated"
@@ -36,11 +37,12 @@ class Command(BaseCommand):
             return
 
         subject, _ = Subject.objects.get_or_create(name=subject_name)
+        domain_order, topic_order, subtopic_order = load_order_maps()
 
         total_imported = 0
         total_skipped = 0
         for f in files:
-            imported, skipped = self._import_file(f, subject)
+            imported, skipped = self._import_file(f, subject, domain_order, topic_order, subtopic_order)
             total_imported += imported
             total_skipped += skipped
             self.stdout.write(f"{f.name}: imported {imported}, skipped {skipped} (unenriched)")
@@ -50,15 +52,24 @@ class Command(BaseCommand):
         ))
 
     @transaction.atomic
-    def _import_file(self, path: Path, subject: Subject):
+    def _import_file(self, path: Path, subject: Subject, domain_order: dict, topic_order: dict, subtopic_order: dict):
         data = json.loads(path.read_text(encoding="utf-8"))
         domain_name = data["domain"]
         topic_name = data["topic"]
         subtopic_name = data["subtopic"]
 
-        domain, _ = Domain.objects.get_or_create(subject=subject, name=domain_name)
-        topic, _ = Topic.objects.get_or_create(domain=domain, name=topic_name)
-        subtopic, _ = Subtopic.objects.get_or_create(topic=topic, name=subtopic_name)
+        domain, _ = Domain.objects.get_or_create(
+            subject=subject, name=domain_name,
+            defaults={"order": domain_order.get(domain_name, 0)},
+        )
+        topic, _ = Topic.objects.get_or_create(
+            domain=domain, name=topic_name,
+            defaults={"order": topic_order.get((domain_name, topic_name), 0)},
+        )
+        subtopic, _ = Subtopic.objects.get_or_create(
+            topic=topic, name=subtopic_name,
+            defaults={"order": subtopic_order.get((domain_name, topic_name, subtopic_name), 0)},
+        )
 
         questions = data["questions"]
         enriched = [q for q in questions if q.get("hint") and q.get("explanation")]
