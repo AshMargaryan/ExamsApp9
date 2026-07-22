@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
 
 export function ProtectedRoute() {
   const { user, isLoading } = useAuth();
@@ -14,5 +15,10 @@ export function ProtectedRoute() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <FloatingAssistantWidget />
+    </>
+  );
 }

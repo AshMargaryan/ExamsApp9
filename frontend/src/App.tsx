@@ -7,6 +7,7 @@ import { HomePage } from "./pages/HomePage";
 import { PracticePage } from "./pages/PracticePage";
 import { TierPage } from "./pages/TierPage";
 import { IntroPage } from "./pages/IntroPage";
+import { AssistantPage } from "./pages/AssistantPage";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/practice" element={<PracticePage />} />
+          <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/practice/subtopic/:subtopicId/:tier" element={<TierPage />} />
           <Route path="/practice/:kind/:id" element={<IntroPage />} />
         </Route>

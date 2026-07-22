@@ -177,4 +177,7 @@ OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
 OLLAMA_BASE_URL = env("OLLAMA_BASE_URL", default="http://localhost:11434")
+OLLAMA_MODEL = env("OLLAMA_MODEL", default="qwen3:8b")
+OLLAMA_TIMEOUT_SECONDS = env.int("OLLAMA_TIMEOUT_SECONDS", default=120)
+OLLAMA_THINK = env.bool("OLLAMA_THINK", default=False)
 

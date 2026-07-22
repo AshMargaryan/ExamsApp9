@@ -15,12 +15,20 @@ export function HomePage() {
 
       <h1 className="text-3xl font-semibold text-text">Բարի գալուստ</h1>
 
-      <Link
-        to="/practice"
-        className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-      >
-        Պարապել
-      </Link>
+      <div className="flex gap-4">
+        <Link
+          to="/practice"
+          className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+        >
+          Պարապել
+        </Link>
+        <Link
+          to="/assistant"
+          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+        >
+          🤖 AI Օգնական
+        </Link>
+      </div>
     </div>
   );
 }
