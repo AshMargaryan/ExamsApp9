@@ -2,6 +2,7 @@
 venv
 backend/.env
 backend/staticfiles/
+backend/media/
 backend/db.sqlite3
 backend/data_scripts/
 frontend/node_modules/

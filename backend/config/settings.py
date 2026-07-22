@@ -30,6 +30,7 @@ INSTALLED_APPS = [
 
     "apps.users",
     "apps.practice",
+    "apps.ai_assistant",
 ]
 
 MIDDLEWARE = [
@@ -116,6 +117,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (user uploads — currently just AI assistant attachments).
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -154,4 +159,22 @@ SPECTACULAR_SETTINGS = {
     ),
     "VERSION": "0.1.0",
 }
+
+# ---------------------------------------------------------------------------
+# AI Assistant
+# ---------------------------------------------------------------------------
+
+# Which provider AIService dispatches to: mock | ollama | openai | anthropic | gemini.
+AI_PROVIDER = env("AI_PROVIDER", default="mock")
+
+# How many recent messages PromptBuilder includes as conversation history.
+AI_ASSISTANT_HISTORY_WINDOW = env.int("AI_ASSISTANT_HISTORY_WINDOW", default=20)
+
+# Attachment upload limits.
+AI_ASSISTANT_MAX_ATTACHMENT_SIZE_MB = env.int("AI_ASSISTANT_MAX_ATTACHMENT_SIZE_MB", default=15)
+
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
+OLLAMA_BASE_URL = env("OLLAMA_BASE_URL", default="http://localhost:11434")
 
