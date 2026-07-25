@@ -129,6 +129,7 @@ class Statement(models.Model):
     label = models.CharField(max_length=10, help_text="e.g. 'I', 'II', ...")
     text = models.TextField()
     is_true = models.BooleanField()
+    hint = models.TextField(blank=True, default="")
     order = models.PositiveIntegerField(default=0)
 
     class Meta:

@@ -129,13 +129,13 @@ class ChoiceRevealSerializer(serializers.ModelSerializer):
 class StatementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Statement
-        fields = ["id", "label", "text", "order"]
+        fields = ["id", "label", "text", "order", "hint"]
 
 
 class StatementRevealSerializer(serializers.ModelSerializer):
     class Meta:
         model = Statement
-        fields = ["id", "label", "text", "order", "is_true"]
+        fields = ["id", "label", "text", "order", "is_true", "hint"]
 
 
 class QuestionPracticeSerializer(serializers.ModelSerializer):

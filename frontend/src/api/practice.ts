@@ -16,6 +16,7 @@ export interface Statement {
   text: string;
   order: number;
   is_true?: boolean;
+  hint?: string;
 }
 
 export interface Question {

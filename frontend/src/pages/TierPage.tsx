@@ -12,6 +12,7 @@ import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQu
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
 import { ToolsDock } from "../components/ToolsDock";
+import { NotepadProvider } from "../context/NotepadContext";
 
 const TIER_ORDER: Tier[] = ["easy", "medium", "hard"];
 
@@ -68,22 +69,15 @@ export function TierPage() {
     return result;
   }
 
-  async function handleFinish() {
+  async function handleCheck() {
     setBusy(true);
     try {
       await doSubmit();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleShowAnswers() {
-    setBusy(true);
-    try {
       const data = await revealTier(id, tier as Tier);
       const map: Record<number, Question> = {};
       for (const q of data) map[q.id] = q;
       setRevealedMap(map);
+      setShowScoreModal(true);
     } finally {
       setBusy(false);
     }
@@ -109,6 +103,7 @@ export function TierPage() {
   }
 
   return (
+    <NotepadProvider>
     <div className="mx-auto max-w-3xl px-4 py-8">
       <Link to="/practice" className="text-sm text-primary hover:underline">
         ← Վերադառնալ ցանկին
@@ -136,7 +131,7 @@ export function TierPage() {
           return (
             <div key={q.id} className="rounded-[var(--radius)] border border-border bg-surface p-6">
               <p className="mb-4 text-xl font-medium text-text">
-                {idx + 1}. <MathText text={q.text} />
+                {idx + 1}. <MathText text={q.text} allowInsert />
               </p>
 
               {q.question_type === "multiple_choice" && (
@@ -192,7 +187,7 @@ export function TierPage() {
 
               {revealed && showExplanations && revealedQ?.explanation && (
                 <div className="mt-3 rounded-md bg-surface-muted p-4 text-base leading-relaxed text-text-muted whitespace-pre-line">
-                  <MathText text={revealedQ.explanation} />
+                  <MathText text={revealedQ.explanation} allowInsert />
                 </div>
               )}
             </div>
@@ -203,20 +198,11 @@ export function TierPage() {
       <div className="mt-6 flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={handleFinish}
+          onClick={handleCheck}
           disabled={busy}
           className="rounded-md bg-primary px-5 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           Ստուգել
-        </button>
-
-        <button
-          type="button"
-          onClick={handleShowAnswers}
-          disabled={busy}
-          className="rounded-md border border-border px-5 py-2 font-medium text-text transition-colors hover:border-primary disabled:opacity-60"
-        >
-          Ցույց տալ պատասխանները
         </button>
 
         {revealed && (
@@ -245,10 +231,12 @@ export function TierPage() {
           total={submitResult.total}
           continueLabel={nextTier ? `Անցնել ${TIER_LABELS[nextTier]} մակարդակին` : "Վերադառնալ ցանկին"}
           onContinue={handleModalContinue}
+          onClose={() => setShowScoreModal(false)}
         />
       )}
 
       <ToolsDock />
     </div>
+    </NotepadProvider>
   );
 }

@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Calculator } from "./Calculator";
 import { Notepad } from "./Notepad";
+import { NotepadBrowser } from "./NotepadBrowser";
+import { useNotepad } from "../context/NotepadContext";
 
 type Panel = "calculator" | "notepad" | null;
 
@@ -8,15 +10,28 @@ const PANEL_TOP = 96;
 const PANEL_RIGHT = 16;
 
 export function ToolsDock() {
+  const { openSignal, pendingEquation, clearPendingEquation } = useNotepad();
   const [panel, setPanel] = useState<Panel>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragState = useRef<{ startX: number; startY: number; origin: { x: number; y: number } } | null>(null);
+
+  useEffect(() => {
+    if (openSignal === 0) return;
+    setPanel("notepad");
+    setFullscreen(true);
+    setOffset({ x: 0, y: 0 });
+    if (pendingEquation) setBrowserOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSignal]);
 
   function toggle(next: Exclude<Panel, null>) {
     setPanel((p) => (p === next ? null : next));
     setOffset({ x: 0, y: 0 });
     setFullscreen(false);
+    setBrowserOpen(false);
+    clearPendingEquation();
   }
 
   function handleHeaderPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -71,6 +86,17 @@ export function ToolsDock() {
               {panel === "notepad" && (
                 <button
                   type="button"
+                  onClick={() => setBrowserOpen((v) => !v)}
+                  className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
+                  aria-label="Իմ նշումները"
+                  title="Իմ նշումները"
+                >
+                  📁
+                </button>
+              )}
+              {panel === "notepad" && (
+                <button
+                  type="button"
                   onClick={() => setFullscreen((f) => !f)}
                   className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
                   aria-label="Toggle fullscreen"
@@ -84,6 +110,8 @@ export function ToolsDock() {
                 onClick={() => {
                   setPanel(null);
                   setFullscreen(false);
+                  setBrowserOpen(false);
+                  clearPendingEquation();
                 }}
                 className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
                 aria-label="Close"
@@ -96,8 +124,11 @@ export function ToolsDock() {
           {panel === "calculator" ? (
             <Calculator />
           ) : (
-            <div className="min-h-0 flex-1">
+            <div className="relative min-h-0 flex-1">
               <Notepad />
+              {browserOpen && (
+                <NotepadBrowser onClose={() => setBrowserOpen(false)} fullscreen={fullscreen} />
+              )}
             </div>
           )}
         </div>

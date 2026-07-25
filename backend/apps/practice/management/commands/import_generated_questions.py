@@ -88,12 +88,21 @@ class Command(BaseCommand):
                 tf_groups.setdefault(group_id, []).append(q)
 
         imported = 0
+        seen_dataset_ids = []
         for q in non_tf:
             self._import_single(subtopic, q)
+            seen_dataset_ids.append(q["dataset_id"])
             imported += 1
         for group_items in tf_groups.values():
             self._import_tf_group(subtopic, group_items)
+            seen_dataset_ids.append(group_items[0]["dataset_id"])
             imported += 1
+
+        stale = Question.objects.filter(subtopic=subtopic).exclude(dataset_id__in=seen_dataset_ids)
+        stale_count = stale.count()
+        stale.delete()
+        if stale_count:
+            self.stdout.write(f"  removed {stale_count} stale question(s) from {subtopic.name}")
 
         return imported, skipped
 
@@ -131,7 +140,7 @@ class Command(BaseCommand):
                 tier=first["_tier"],
                 question_type=QuestionType.TRUE_FALSE,
                 text=first["exercise_text"],
-                hint=first.get("hint", ""),
+                hint="",
                 explanation="\n\n".join(
                     f"{i + 1}. {it.get('explanation', '')}" for i, it in enumerate(items)
                 ),
@@ -147,5 +156,6 @@ class Command(BaseCommand):
                 label=labels[i] if i < len(labels) else str(i + 1),
                 text=it["question_text"],
                 is_true=bool(it["correct_answer"]),
+                hint=it.get("hint", ""),
                 order=i,
             )
