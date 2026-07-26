@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import * as authApi from "../api/auth";
 import { tokenStorage } from "../api/client";
-import type { User } from "../api/auth";
+import type { RegisterPayload, User } from "../api/auth";
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,9 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await authApi.fetchMe());
   }
 
-  async function register(username: string, email: string, password: string) {
-    await authApi.register(username, email, password);
-    await login(username, password);
+  async function register(payload: RegisterPayload) {
+    await authApi.register(payload);
+    await login(payload.username, payload.password);
+  }
+
+  async function refreshUser() {
+    setUser(await authApi.fetchMe());
   }
 
   function logout() {
@@ -45,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

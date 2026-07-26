@@ -2,28 +2,73 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { AxiosError } from "axios";
+import { SearchSelect } from "../components/SearchSelect";
+import { searchSchools, searchUniversities } from "../api/schools";
+import { MessageModal } from "../components/MessageModal";
+
+const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
+
+interface Option {
+  id: number;
+  label: string;
+  sublabel?: string;
+}
 
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  const [age, setAge] = useState("");
+  const [grade, setGrade] = useState("");
+  const [sex, setSex] = useState<"" | "male" | "female">("");
+  const [school, setSchool] = useState<Option | null>(null);
+  const [university, setUniversity] = useState<Option | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError("Գաղտնաբառը պետք է լինի առնվազն 8 նիշ և պարունակի տառեր ու թվեր։");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Գաղտնաբառերը չեն համընկնում։");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await register(username, email, password);
-      navigate("/");
+      await register({
+        username,
+        email,
+        password,
+        confirm_password: confirmPassword,
+        first_name: firstName,
+        last_name: lastName,
+        age: age ? Number(age) : undefined,
+        grade: grade ? Number(grade) : undefined,
+        sex: sex || undefined,
+        school: school?.id,
+        university: university?.id,
+      });
+      navigate("/verify-email");
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data as Record<string, string[]>;
+        const data = err.response.data as Record<string, string[] | string>;
         const firstError = Object.values(data).flat()[0];
-        setError(firstError ?? "Գրանցումը ձախողվեց։");
+        setError((firstError as string) ?? "Գրանցումը ձախողվեց։");
       } else {
         setError("Գրանցումը ձախողվեց։");
       }
@@ -32,43 +77,110 @@ export function RegisterPage() {
     }
   }
 
+  async function schoolSearch(q: string): Promise<Option[]> {
+    const results = await searchSchools(q);
+    return results.map((s) => ({ id: s.id, label: s.name, sublabel: s.marz }));
+  }
+
+  async function universitySearch(q: string): Promise<Option[]> {
+    const results = await searchUniversities(q);
+    return results.map((u) => ({ id: u.id, label: u.name }));
+  }
+
+  const inputClass =
+    "mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
+  const labelClass = "mb-1 block text-sm text-text-muted";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4">
+    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm"
       >
         <h1 className="mb-6 text-2xl font-semibold text-text">Գրանցում</h1>
 
-        <label className="mb-1 block text-sm text-text-muted">Օգտանուն</label>
-        <input
-          className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoFocus
-          required
-        />
+        <label className={labelClass}>Օգտանուն</label>
+        <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required />
 
-        <label className="mb-1 block text-sm text-text-muted">Էլ. փոստ</label>
-        <input
-          type="email"
-          className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        <label className={labelClass}>Անուն</label>
+        <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
 
-        <label className="mb-1 block text-sm text-text-muted">Գաղտնաբառ</label>
+        <label className={labelClass}>Ազգանուն</label>
+        <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+
+        <label className={labelClass}>Էլ. փոստ</label>
+        <input type="email" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} required />
+
+        <label className={labelClass}>Գաղտնաբառ</label>
         <input
           type="password"
           minLength={8}
-          className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+          className={inputClass}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+        <p className="-mt-3 mb-4 text-xs text-text-muted">
+          Առնվազն 8 նիշ, պետք է պարունակի տառեր և թվեր։
+        </p>
 
-        {error && <p className="mb-4 text-sm text-incorrect">{error}</p>}
+        <label className={labelClass}>Կրկնել գաղտնաբառը</label>
+        <input
+          type="password"
+          minLength={8}
+          className={inputClass}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+        />
+
+        <div className="mb-4 mt-2 border-t border-border pt-4 text-sm text-text-muted">
+          Հետևյալ դաշտերը <span className="font-medium text-text">ընտրովի են</span> և կօգտագործվեն միայն
+          վիճակագրության համար։
+        </div>
+
+        <label className={labelClass}>Տարիք</label>
+        <input
+          type="number"
+          min={1}
+          max={120}
+          className={inputClass}
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
+        />
+
+        <label className={labelClass}>Դասարան</label>
+        <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
+          <option value="">Չընտրված</option>
+          {GRADES.map((g) => (
+            <option key={g} value={g}>
+              {g}-րդ դասարան
+            </option>
+          ))}
+        </select>
+
+        <label className={labelClass}>Սեռ</label>
+        <select className={inputClass} value={sex} onChange={(e) => setSex(e.target.value as "" | "male" | "female")}>
+          <option value="">Չընտրված</option>
+          <option value="male">Արական</option>
+          <option value="female">Իգական</option>
+        </select>
+
+        <label className={labelClass}>Դպրոց</label>
+        <div className="mb-4">
+          <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+        </div>
+
+        <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
+        <div className="mb-4">
+          <SearchSelect
+            placeholder="Փնտրեք բուհ..."
+            value={university}
+            onChange={setUniversity}
+            search={universitySearch}
+          />
+        </div>
 
         <button
           type="submit"
@@ -85,6 +197,7 @@ export function RegisterPage() {
           </Link>
         </p>
       </form>
+      {error && <MessageModal message={error} onClose={() => setError(null)} />}
     </div>
   );
 }

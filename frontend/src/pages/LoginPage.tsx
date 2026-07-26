@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { MessageModal } from "../components/MessageModal";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -28,6 +29,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm"
       >
         <h1 className="mb-6 text-2xl font-semibold text-text">Մուտք</h1>
@@ -50,8 +52,6 @@ export function LoginPage() {
           required
         />
 
-        {error && <p className="mb-4 text-sm text-incorrect">{error}</p>}
-
         <button
           type="submit"
           disabled={submitting}
@@ -60,6 +60,12 @@ export function LoginPage() {
           {submitting ? "..." : "Մուտք գործել"}
         </button>
 
+        <p className="mt-3 text-center text-sm">
+          <Link to="/forgot-password" className="text-primary hover:underline">
+            Մոռացե՞լ եք գաղտնաբառը
+          </Link>
+        </p>
+
         <p className="mt-4 text-center text-sm text-text-muted">
           Դեռ հաշիվ չունե՞ք։{" "}
           <Link to="/register" className="text-primary hover:underline">
@@ -67,6 +73,7 @@ export function LoginPage() {
           </Link>
         </p>
       </form>
+      {error && <MessageModal message={error} onClose={() => setError(null)} />}
     </div>
   );
 }
