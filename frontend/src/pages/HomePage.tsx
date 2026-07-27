@@ -6,7 +6,7 @@ export function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
-      <div className="absolute top-4 right-4 flex items-center gap-3 text-sm text-text-muted">
+      <div className="absolute top-4 right-20 flex items-center gap-3 text-sm text-text-muted">
         <Link to="/profile" className="text-primary hover:underline">
           {user?.username}
         </Link>

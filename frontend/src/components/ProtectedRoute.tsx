@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
+import { NotificationBell } from "./notifications/NotificationBell";
 
 export function ProtectedRoute() {
   const { user, isLoading } = useAuth();
@@ -18,6 +19,7 @@ export function ProtectedRoute() {
   return (
     <>
       <Outlet />
+      <NotificationBell />
       <FloatingAssistantWidget />
     </>
   );

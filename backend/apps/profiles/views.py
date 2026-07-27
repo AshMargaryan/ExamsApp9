@@ -35,3 +35,25 @@ class MyAchievementsListView(generics.ListAPIView):
 
     def get_queryset(self):
         return UserAchievement.objects.filter(user=self.request.user).select_related("achievement")
+
+
+class UserProfileDetailView(generics.RetrieveAPIView):
+    """GET /api/profile/<user_id>/ — read-only view of another user's profile (e.g. a friend's)."""
+
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        profile, _ = Profile.objects.get_or_create(user_id=self.kwargs["user_id"])
+        return profile
+
+
+class UserAchievementsListView(generics.ListAPIView):
+    """GET /api/profile/<user_id>/achievements/ — achievements a given user has unlocked."""
+
+    serializer_class = UserAchievementSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return UserAchievement.objects.filter(user_id=self.kwargs["user_id"]).select_related("achievement")

@@ -91,3 +91,13 @@ export async function fetchMyAchievements(): Promise<UserAchievement[]> {
   const { data } = await apiClient.get("/profile/achievements/mine/");
   return data;
 }
+
+export async function fetchUserProfile(userId: number): Promise<Profile> {
+  const { data } = await apiClient.get(`/profile/${userId}/`);
+  return data;
+}
+
+export async function fetchUserAchievements(userId: number): Promise<UserAchievement[]> {
+  const { data } = await apiClient.get(`/profile/${userId}/achievements/`);
+  return data;
+}

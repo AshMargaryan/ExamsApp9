@@ -10,6 +10,7 @@ urlpatterns = [
     path("api/assistant/", include("apps.ai_assistant.urls")),
     path("api/profile/", include("apps.profiles.urls")),
     path("api/streaks/", include("apps.streaks.urls")),
+    path("api/friends/", include("apps.friends.urls")),
 ]
 
 if settings.DEBUG:

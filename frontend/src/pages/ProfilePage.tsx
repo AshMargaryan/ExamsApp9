@@ -2,30 +2,19 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { AxiosError } from "axios";
 import * as profileApi from "../api/profile";
-import type { Achievement, AchievementRarity, Profile, UserAchievement } from "../api/profile";
+import type { Achievement, Profile, UserAchievement } from "../api/profile";
 import * as streaksApi from "../api/streaks";
 import type { LearningStreak } from "../api/streaks";
+import * as friendsApi from "../api/friends";
 import { getHierarchy } from "../api/practice";
 import { searchSchools, searchUniversities } from "../api/schools";
 import { SearchSelect } from "../components/SearchSelect";
 import { MessageModal } from "../components/MessageModal";
+import { FriendsModal } from "../components/friends/FriendsModal";
+import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
 import { useAuth } from "../auth/AuthContext";
 
 const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
-
-const RARITY_LABELS: Record<AchievementRarity, string> = {
-  common: "Սովորական",
-  rare: "Հազվագյուտ",
-  epic: "Էպիկական",
-  legendary: "Լեգենդար",
-};
-
-const RARITY_COLORS: Record<AchievementRarity, string> = {
-  common: "var(--color-text-muted)",
-  rare: "var(--color-primary)",
-  epic: "var(--color-accent)",
-  legendary: "var(--color-medium)",
-};
 
 interface Option {
   id: number;
@@ -82,6 +71,8 @@ export function ProfilePage() {
   const [myAchievements, setMyAchievements] = useState<UserAchievement[] | null>(null);
   const [streak, setStreak] = useState<LearningStreak | null>(null);
   const [practicePercent, setPracticePercent] = useState<number | null>(null);
+  const [friendCount, setFriendCount] = useState<number | null>(null);
+  const [friendsOpen, setFriendsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -118,12 +109,18 @@ export function ProfilePage() {
     profileApi.fetchAchievements().then(setAchievements);
     profileApi.fetchMyAchievements().then(setMyAchievements);
     streaksApi.fetchStreak().then(setStreak);
+    friendsApi.fetchFriends().then((f) => setFriendCount(f.length));
     getHierarchy().then((subjects) => {
       if (subjects.length === 0) return setPracticePercent(0);
       const avg = subjects.reduce((sum, s) => sum + s.progress.percent, 0) / subjects.length;
       setPracticePercent(Math.round(avg));
     });
   }, []);
+
+  function handleFriendsClose() {
+    setFriendsOpen(false);
+    friendsApi.fetchFriends().then((f) => setFriendCount(f.length));
+  }
 
   function handleAvatarClick() {
     if (editing) fileInputRef.current?.click();
@@ -431,9 +428,25 @@ export function ProfilePage() {
         </section>
 
         <section className="mt-8">
+          <h2 className="mb-3 text-lg font-semibold text-text">Ընկերներ</h2>
+          <button
+            type="button"
+            onClick={() => setFriendsOpen(true)}
+            className="flex w-full items-center justify-between rounded-[var(--radius)] border border-border bg-surface p-5 text-left transition-colors hover:border-primary"
+          >
+            <span className="flex items-center gap-2 text-text">
+              <span className="text-2xl">👥</span>
+              <span className="font-medium">
+                Ընկերներ {friendCount !== null ? `(${friendCount})` : ""}
+              </span>
+            </span>
+            <span className="text-sm text-primary">Բացել →</span>
+          </button>
+        </section>
+
+        <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-text">Առաջիկայում</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <ComingSoonCard icon="👥" title="Ընկերներ" />
             <ComingSoonCard icon="🏁" title="Մրցարշավային վարկանիշ" />
             <ComingSoonCard icon="🎮" title="Խաղային վիճակագրություն" />
           </div>
@@ -441,6 +454,7 @@ export function ProfilePage() {
       </div>
 
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {friendsOpen && <FriendsModal onClose={handleFriendsClose} />}
     </div>
   );
 }
