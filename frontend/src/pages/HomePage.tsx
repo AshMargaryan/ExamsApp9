@@ -36,6 +36,12 @@ export function HomePage() {
         >
           👤 Իմ պրոֆիլը
         </Link>
+        <Link
+          to="/games"
+          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+        >
+          🏆 Խաղասենյակներ
+        </Link>
       </div>
     </div>
   );

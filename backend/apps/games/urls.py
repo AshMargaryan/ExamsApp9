@@ -1,0 +1,45 @@
+from django.urls import path
+
+from .views import (
+    CancelGameRoomView,
+    CancelMatchmakingView,
+    CurrentQuestionView,
+    FinishGameRoomView,
+    FindGameView,
+    GameResultsView,
+    GameRoomDetailView,
+    GameRoomListCreateView,
+    JoinGameRoomView,
+    KickParticipantView,
+    LeaveGameRoomView,
+    MatchmakingQueueListView,
+    MatchmakingStatusView,
+    MyGameRoomsView,
+    MyGameStatsView,
+    StartGameRoomView,
+    SubmitAnswerView,
+)
+
+urlpatterns = [
+    path("rooms/", GameRoomListCreateView.as_view(), name="game_room_list_create"),
+    path("rooms/mine/", MyGameRoomsView.as_view(), name="game_room_mine"),
+    path("rooms/<str:room_code>/", GameRoomDetailView.as_view(), name="game_room_detail"),
+    path("rooms/<str:room_code>/join/", JoinGameRoomView.as_view(), name="game_room_join"),
+    path("rooms/<str:room_code>/leave/", LeaveGameRoomView.as_view(), name="game_room_leave"),
+    path("rooms/<str:room_code>/start/", StartGameRoomView.as_view(), name="game_room_start"),
+    path("rooms/<str:room_code>/finish/", FinishGameRoomView.as_view(), name="game_room_finish"),
+    path("rooms/<str:room_code>/cancel/", CancelGameRoomView.as_view(), name="game_room_cancel"),
+    path(
+        "rooms/<str:room_code>/participants/<int:user_id>/",
+        KickParticipantView.as_view(),
+        name="game_room_kick",
+    ),
+    path("rooms/<str:room_code>/results/", GameResultsView.as_view(), name="game_room_results"),
+    path("rooms/<str:room_code>/play/current/", CurrentQuestionView.as_view(), name="game_play_current"),
+    path("rooms/<str:room_code>/play/answer/", SubmitAnswerView.as_view(), name="game_play_answer"),
+    path("stats/me/", MyGameStatsView.as_view(), name="game_stats_me"),
+    path("matchmaking/queues/", MatchmakingQueueListView.as_view(), name="matchmaking_queue_list"),
+    path("matchmaking/find/", FindGameView.as_view(), name="matchmaking_find"),
+    path("matchmaking/status/", MatchmakingStatusView.as_view(), name="matchmaking_status"),
+    path("matchmaking/cancel/", CancelMatchmakingView.as_view(), name="matchmaking_cancel"),
+]

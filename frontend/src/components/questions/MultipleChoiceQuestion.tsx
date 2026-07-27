@@ -6,11 +6,20 @@ interface Props {
   selectedChoiceId: number | undefined;
   onSelect: (choiceId: number) => void;
   revealed: boolean;
+  size?: "normal" | "large";
 }
 
-export function MultipleChoiceQuestion({ choices, selectedChoiceId, onSelect, revealed }: Props) {
+export function MultipleChoiceQuestion({
+  choices,
+  selectedChoiceId,
+  onSelect,
+  revealed,
+  size = "normal",
+}: Props) {
+  const sizeClasses = size === "large" ? "px-6 py-5 text-2xl" : "px-4 py-2 text-lg";
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col ${size === "large" ? "gap-3" : "gap-2"}`}>
       {choices.map((choice) => {
         const isSelected = choice.id === selectedChoiceId;
         let classes = "border-border hover:border-primary";
@@ -29,7 +38,7 @@ export function MultipleChoiceQuestion({ choices, selectedChoiceId, onSelect, re
             key={choice.id}
             type="button"
             onClick={() => onSelect(choice.id)}
-            className={`rounded-md border px-4 py-2 text-left text-lg transition-colors ${classes}`}
+            className={`rounded-md border text-left transition-colors ${sizeClasses} ${classes}`}
           >
             <MathText text={choice.text} />
           </button>

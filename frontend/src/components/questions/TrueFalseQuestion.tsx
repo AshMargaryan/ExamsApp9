@@ -7,11 +7,22 @@ interface Props {
   selectedIds: Set<number>;
   onToggle: (statementId: number) => void;
   revealed: boolean;
+  size?: "normal" | "large";
+  showHint?: boolean;
 }
 
-export function TrueFalseQuestion({ statements, selectedIds, onToggle, revealed }: Props) {
+export function TrueFalseQuestion({
+  statements,
+  selectedIds,
+  onToggle,
+  revealed,
+  size = "normal",
+  showHint = true,
+}: Props) {
+  const sizeClasses = size === "large" ? "px-6 py-5 text-2xl" : "px-4 py-2 text-lg";
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col ${size === "large" ? "gap-3" : "gap-2"}`}>
       {statements.map((s) => {
         const markedTrue = selectedIds.has(s.id);
         let classes = markedTrue
@@ -28,7 +39,7 @@ export function TrueFalseQuestion({ statements, selectedIds, onToggle, revealed 
         return (
           <div
             key={s.id}
-            className={`flex items-center gap-3 rounded-md border px-4 py-2 text-lg transition-colors ${classes}`}
+            className={`flex items-center gap-3 rounded-md border transition-colors ${sizeClasses} ${classes}`}
           >
             <button
               type="button"
@@ -48,7 +59,7 @@ export function TrueFalseQuestion({ statements, selectedIds, onToggle, revealed 
                     : "Սխալ"}
               </span>
             </button>
-            {!revealed && <HintButton hint={s.hint ?? ""} />}
+            {!revealed && showHint && <HintButton hint={s.hint ?? ""} />}
           </div>
         );
       })}

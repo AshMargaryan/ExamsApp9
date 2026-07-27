@@ -16,6 +16,8 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # must be first — gives `runserver` ASGI/WebSocket support in dev
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -27,6 +29,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     "drf_spectacular",
+    "channels",
 
     "apps.users",
     "apps.practice",
@@ -34,6 +37,7 @@ INSTALLED_APPS = [
     "apps.profiles",
     "apps.streaks",
     "apps.friends",
+    "apps.games",
 ]
 
 MIDDLEWARE = [
@@ -66,6 +70,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+# In-memory channel layer: correct and simple for a single-process deployment
+# (which is what this app runs today). If this ever scales to multiple
+# worker processes/machines, swap this for channels_redis's RedisChannelLayer
+# so group broadcasts reach every process, not just the one that sent them.
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 
 # Database

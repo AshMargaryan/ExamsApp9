@@ -5,11 +5,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import (
-    Subject, Subtopic, Question, Choice,
-    PracticeAttempt, AttemptAnswer,
-    QuestionType, Tier,
-)
+from .models import Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer
+from .scoring import score_answer
 from .serializers import (
     SubjectHierarchySerializer,
     QuestionPracticeSerializer, QuestionRevealSerializer,
@@ -140,35 +137,7 @@ class SubmitTierView(APIView):
         }, status=status.HTTP_200_OK)
 
     def _score_answer(self, attempt, question: Question, a: dict):
-        qtype = question.question_type
-
-        if qtype == QuestionType.MULTIPLE_CHOICE:
-            choice = None
-            is_correct = False
-            choice_id = a.get("selected_choice_id")
-            if choice_id:
-                choice = question.choices.filter(pk=choice_id).first()
-                is_correct = bool(choice and choice.is_correct)
-            defaults = dict(is_correct=is_correct, selected_choice=choice,
-                             answer_text="", selected_statement_ids=[])
-
-        elif qtype == QuestionType.SHORT_ANSWER:
-            user_text = a.get("answer_text", "").strip().lower()
-            correct = question.correct_answer_text.strip().lower()
-            is_correct = bool(user_text) and user_text == correct
-            defaults = dict(is_correct=is_correct, selected_choice=None,
-                             answer_text=a.get("answer_text", ""), selected_statement_ids=[])
-
-        elif qtype == QuestionType.TRUE_FALSE:
-            selected_ids = set(a.get("selected_statement_ids", []))
-            correct_ids = set(question.statements.filter(is_true=True).values_list("id", flat=True))
-            is_correct = selected_ids == correct_ids
-            defaults = dict(is_correct=is_correct, selected_choice=None,
-                             answer_text="", selected_statement_ids=list(selected_ids))
-
-        else:
-            raise ValueError(f"Unknown question type: {qtype}")
-
+        defaults = score_answer(question, a)
         ua, _ = AttemptAnswer.objects.update_or_create(
             attempt=attempt, question=question, defaults=defaults,
         )

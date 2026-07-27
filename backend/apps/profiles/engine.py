@@ -38,10 +38,26 @@ def _longest_streak(user) -> int:
     return streak.longest_streak if streak else 0
 
 
+def _games_played(user) -> int:
+    from apps.games.models import GameStats  # local import: avoids a load-order dependency on apps.games
+
+    stats = GameStats.objects.filter(user=user).first()
+    return stats.games_played if stats else 0
+
+
+def _games_won(user) -> int:
+    from apps.games.models import GameStats
+
+    stats = GameStats.objects.filter(user=user).first()
+    return stats.wins if stats else 0
+
+
 REQUIREMENT_EVALUATORS = {
     RequirementType.QUESTIONS_SOLVED: _questions_solved,
     RequirementType.PERFECT_SCORE: _best_score,
     RequirementType.STREAK_DAYS: _longest_streak,
+    RequirementType.GAMES_PLAYED: _games_played,
+    RequirementType.GAMES_WON: _games_won,
 }
 
 

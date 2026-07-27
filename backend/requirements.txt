@@ -11,3 +11,5 @@ pillow==10.2.0
 requests==2.34.2
 gunicorn==22.0.0
 whitenoise==6.6.0
+channels==4.3.2
+daphne==4.2.3

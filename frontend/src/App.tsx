@@ -12,6 +12,11 @@ import { TierPage } from "./pages/TierPage";
 import { IntroPage } from "./pages/IntroPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { GamesPage } from "./pages/GamesPage";
+import { GameRoomPage } from "./pages/GameRoomPage";
+import { MatchmakingPage } from "./pages/MatchmakingPage";
+import { GameplayPage } from "./pages/GameplayPage";
+import { ResultsPage } from "./pages/ResultsPage";
 
 export default function App() {
   return (
@@ -28,6 +33,11 @@ export default function App() {
           <Route path="/practice" element={<PracticePage />} />
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/games/find" element={<MatchmakingPage />} />
+          <Route path="/games/:roomCode" element={<GameRoomPage />} />
+          <Route path="/games/:roomCode/play" element={<GameplayPage />} />
+          <Route path="/games/:roomCode/results" element={<ResultsPage />} />
           <Route path="/practice/subtopic/:subtopicId/:tier" element={<TierPage />} />
           <Route path="/practice/:kind/:id" element={<IntroPage />} />
         </Route>

@@ -49,3 +49,47 @@ body {
   border: 1px solid var(--color-border);
   padding: 0.3em 0.6em;
 }
+
+/* Gameplay timer/feedback animations — kept subtle and short-lived. */
+@keyframes urgent-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+/* Results-page podium/celebration animations — short, one-shot, not looping
+   (except confetti/fireworks, which run for a few seconds then unmount). */
+@keyframes podium-rise {
+  0% { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+@keyframes medal-pop {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60% { transform: scale(1.35) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes trophy-bounce {
+  0% { transform: scale(0) translateY(20px); opacity: 0; }
+  50% { transform: scale(1.3) translateY(-12px); opacity: 1; }
+  70% { transform: scale(0.92) translateY(0); }
+  100% { transform: scale(1) translateY(0); }
+}
+@keyframes confetti-fall {
+  0% { transform: translate(0, -10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx, 0), 105vh) rotate(var(--rot, 360deg)); opacity: 0.9; }
+}
+@keyframes firework-particle {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.2); opacity: 0; }
+}

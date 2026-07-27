@@ -48,6 +48,8 @@ class RequirementType(models.TextChoices):
     QUESTIONS_SOLVED = "questions_solved", "Questions solved (lifetime correct answers)"
     PERFECT_SCORE = "perfect_score", "Best practice-tier score reached (0-100)"
     STREAK_DAYS = "streak_days", "Longest learning streak (days)"
+    GAMES_PLAYED = "games_played", "Multiplayer games played (lifetime)"
+    GAMES_WON = "games_won", "Multiplayer games won (lifetime)"
 
 
 class Achievement(models.Model):

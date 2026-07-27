@@ -5,9 +5,16 @@ interface Props {
   onChange: (value: string) => void;
   revealed: boolean;
   correctAnswerText?: string;
+  size?: "normal" | "large";
 }
 
-export function ShortAnswerQuestion({ value, onChange, revealed, correctAnswerText }: Props) {
+export function ShortAnswerQuestion({
+  value,
+  onChange,
+  revealed,
+  correctAnswerText,
+  size = "normal",
+}: Props) {
   const isCorrect =
     revealed && value.trim().toLowerCase() === (correctAnswerText ?? "").trim().toLowerCase();
 
@@ -15,6 +22,7 @@ export function ShortAnswerQuestion({ value, onChange, revealed, correctAnswerTe
   if (revealed) {
     borderClass = isCorrect ? "border-correct" : "border-incorrect";
   }
+  const sizeClasses = size === "large" ? "px-6 py-5 text-2xl" : "px-4 py-2 text-lg";
 
   return (
     <div>
@@ -24,7 +32,7 @@ export function ShortAnswerQuestion({ value, onChange, revealed, correctAnswerTe
         onChange={(e) => onChange(e.target.value)}
         disabled={revealed}
         placeholder="Ձեր պատասխանը..."
-        className={`w-full rounded-md border bg-surface px-4 py-2 text-lg text-text outline-none ${borderClass}`}
+        className={`w-full rounded-md border bg-surface text-text outline-none ${sizeClasses} ${borderClass}`}
       />
       {revealed && (
         <p className={`mt-1 text-base ${isCorrect ? "text-correct" : "text-incorrect"}`}>
