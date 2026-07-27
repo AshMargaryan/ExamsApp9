@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.practice",
     "apps.ai_assistant",
     "apps.profiles",
+    "apps.streaks",
 ]
 
 MIDDLEWARE = [

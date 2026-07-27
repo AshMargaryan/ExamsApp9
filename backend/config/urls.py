@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/practice/", include("apps.practice.urls")),
     path("api/assistant/", include("apps.ai_assistant.urls")),
     path("api/profile/", include("apps.profiles.urls")),
+    path("api/streaks/", include("apps.streaks.urls")),
 ]
 
 if settings.DEBUG:

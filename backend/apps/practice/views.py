@@ -15,6 +15,7 @@ from .serializers import (
     QuestionPracticeSerializer, QuestionRevealSerializer,
     SubmitTierSerializer, PracticeAttemptSerializer,
 )
+from apps.streaks.services import record_activity
 
 
 def _progress_by_subtopic(user):
@@ -126,6 +127,9 @@ class SubmitTierView(APIView):
         attempt.score = round(100 * correct_count / total, 2) if total else 0
         attempt.completed_at = timezone.now()
         attempt.save()
+
+        if not attempt.revealed_answers:
+            record_activity(request.user)
 
         return Response({
             "attempt": PracticeAttemptSerializer(attempt).data,

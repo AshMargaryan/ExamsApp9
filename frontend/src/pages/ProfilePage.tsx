@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { AxiosError } from "axios";
 import * as profileApi from "../api/profile";
 import type { Achievement, Profile, UserAchievement } from "../api/profile";
+import * as streaksApi from "../api/streaks";
+import type { LearningStreak } from "../api/streaks";
 import { getHierarchy } from "../api/practice";
 import { searchSchools, searchUniversities } from "../api/schools";
 import { SearchSelect } from "../components/SearchSelect";
@@ -27,6 +29,27 @@ function StatCard({ label, value, hint }: { label: string; value: string; hint?:
   );
 }
 
+function StreakCard({ streak }: { streak: LearningStreak | null }) {
+  if (!streak) {
+    return (
+      <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
+        Բեռնվում է...
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between rounded-[var(--radius)] border border-border bg-surface p-5">
+      <div>
+        <p className="text-2xl font-semibold text-text">
+          🔥 {streak.current_streak}-օրյա շարք
+        </p>
+        <p className="mt-1 text-sm text-text-muted">Լավագույն շարք՝ {streak.longest_streak} օր</p>
+      </div>
+    </div>
+  );
+}
+
 function ComingSoonCard({ icon, title }: { icon: string; title: string }) {
   return (
     <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-center opacity-60">
@@ -43,6 +66,7 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[] | null>(null);
   const [myAchievements, setMyAchievements] = useState<UserAchievement[] | null>(null);
+  const [streak, setStreak] = useState<LearningStreak | null>(null);
   const [practicePercent, setPracticePercent] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +103,7 @@ export function ProfilePage() {
     });
     profileApi.fetchAchievements().then(setAchievements);
     profileApi.fetchMyAchievements().then(setMyAchievements);
+    streaksApi.fetchStreak().then(setStreak);
     getHierarchy().then((subjects) => {
       if (subjects.length === 0) return setPracticePercent(0);
       const avg = subjects.reduce((sum, s) => sum + s.progress.percent, 0) / subjects.length;
@@ -332,6 +357,10 @@ export function ProfilePage() {
             </div>
           </div>
         </form>
+
+        <section className="mt-8">
+          <StreakCard streak={streak} />
+        </section>
 
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-text">Վիճակագրություն</h2>
