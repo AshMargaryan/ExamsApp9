@@ -11,6 +11,7 @@ import { PracticePage } from "./pages/PracticePage";
 import { TierPage } from "./pages/TierPage";
 import { IntroPage } from "./pages/IntroPage";
 import { AssistantPage } from "./pages/AssistantPage";
+import { ProfilePage } from "./pages/ProfilePage";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/practice" element={<PracticePage />} />
           <Route path="/assistant" element={<AssistantPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/practice/subtopic/:subtopicId/:tier" element={<TierPage />} />
           <Route path="/practice/:kind/:id" element={<IntroPage />} />
         </Route>

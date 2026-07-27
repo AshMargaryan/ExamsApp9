@@ -40,6 +40,7 @@ class User(AbstractUser):
     age = models.PositiveSmallIntegerField(null=True, blank=True)
     grade = models.PositiveSmallIntegerField(null=True, blank=True)
     sex = models.CharField(max_length=10, choices=Sex.choices, blank=True, default="")
+    marz = models.CharField(max_length=255, blank=True, default="")
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")
     university = models.ForeignKey(
         University, on_delete=models.SET_NULL, null=True, blank=True, related_name="applicants"

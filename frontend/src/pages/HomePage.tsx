@@ -7,7 +7,9 @@ export function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
       <div className="absolute top-4 right-4 flex items-center gap-3 text-sm text-text-muted">
-        <span>{user?.username}</span>
+        <Link to="/profile" className="text-primary hover:underline">
+          {user?.username}
+        </Link>
         <button onClick={logout} className="text-primary hover:underline">
           Ելք
         </button>
@@ -27,6 +29,12 @@ export function HomePage() {
           className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
         >
           🤖 AI Օգնական
+        </Link>
+        <Link
+          to="/profile"
+          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+        >
+          👤 Իմ պրոֆիլը
         </Link>
       </div>
     </div>
