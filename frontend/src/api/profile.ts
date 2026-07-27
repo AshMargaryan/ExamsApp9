@@ -29,12 +29,17 @@ export interface Profile {
   updated_at: string;
 }
 
+export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
+
 export interface Achievement {
   id: number;
   key: string;
   name: string;
   description: string;
   icon: string;
+  rarity: AchievementRarity;
+  requirement_type: string;
+  requirement_value: number;
   xp_reward: number;
 }
 

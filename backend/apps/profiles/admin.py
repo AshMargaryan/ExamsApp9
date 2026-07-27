@@ -11,7 +11,8 @@ class ProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Achievement)
 class AchievementAdmin(admin.ModelAdmin):
-    list_display = ["key", "name", "xp_reward"]
+    list_display = ["key", "name", "rarity", "requirement_type", "requirement_value", "xp_reward"]
+    list_filter = ["rarity", "requirement_type"]
     search_fields = ["key", "name"]
 
 

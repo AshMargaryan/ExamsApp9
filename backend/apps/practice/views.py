@@ -15,6 +15,7 @@ from .serializers import (
     QuestionPracticeSerializer, QuestionRevealSerializer,
     SubmitTierSerializer, PracticeAttemptSerializer,
 )
+from apps.profiles.engine import evaluate_achievements
 from apps.streaks.services import record_activity
 
 
@@ -130,6 +131,7 @@ class SubmitTierView(APIView):
 
         if not attempt.revealed_answers:
             record_activity(request.user)
+            evaluate_achievements(request.user)
 
         return Response({
             "attempt": PracticeAttemptSerializer(attempt).data,

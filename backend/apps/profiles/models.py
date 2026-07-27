@@ -31,6 +31,25 @@ class Profile(models.Model):
         return level_for_xp(self.total_xp)
 
 
+class Rarity(models.TextChoices):
+    COMMON = "common", "Common"
+    RARE = "rare", "Rare"
+    EPIC = "epic", "Epic"
+    LEGENDARY = "legendary", "Legendary"
+
+
+class RequirementType(models.TextChoices):
+    """
+    What an achievement's progress is measured against. Adding a new kind of
+    achievement means adding a choice here plus a matching evaluator in
+    engine.REQUIREMENT_EVALUATORS — no schema change needed.
+    """
+
+    QUESTIONS_SOLVED = "questions_solved", "Questions solved (lifetime correct answers)"
+    PERFECT_SCORE = "perfect_score", "Best practice-tier score reached (0-100)"
+    STREAK_DAYS = "streak_days", "Longest learning streak (days)"
+
+
 class Achievement(models.Model):
     """Catalog of unlockable trophies/achievements."""
 
@@ -38,6 +57,13 @@ class Achievement(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
     icon = models.CharField(max_length=100, blank=True, default="")
+    rarity = models.CharField(max_length=20, choices=Rarity.choices, default=Rarity.COMMON)
+    requirement_type = models.CharField(
+        max_length=40, choices=RequirementType.choices, default=RequirementType.QUESTIONS_SOLVED
+    )
+    requirement_value = models.PositiveIntegerField(
+        default=0, help_text="Threshold the requirement_type's metric must reach/exceed."
+    )
     xp_reward = models.PositiveIntegerField(default=0)
 
     class Meta:

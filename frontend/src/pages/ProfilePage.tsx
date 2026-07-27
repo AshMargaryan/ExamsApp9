@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { AxiosError } from "axios";
 import * as profileApi from "../api/profile";
-import type { Achievement, Profile, UserAchievement } from "../api/profile";
+import type { Achievement, AchievementRarity, Profile, UserAchievement } from "../api/profile";
 import * as streaksApi from "../api/streaks";
 import type { LearningStreak } from "../api/streaks";
 import { getHierarchy } from "../api/practice";
@@ -12,6 +12,20 @@ import { MessageModal } from "../components/MessageModal";
 import { useAuth } from "../auth/AuthContext";
 
 const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
+
+const RARITY_LABELS: Record<AchievementRarity, string> = {
+  common: "Սովորական",
+  rare: "Հազվագյուտ",
+  epic: "Էպիկական",
+  legendary: "Լեգենդար",
+};
+
+const RARITY_COLORS: Record<AchievementRarity, string> = {
+  common: "var(--color-text-muted)",
+  rare: "var(--color-primary)",
+  epic: "var(--color-accent)",
+  legendary: "var(--color-medium)",
+};
 
 interface Option {
   id: number;
@@ -404,6 +418,9 @@ export function ProfilePage() {
                 >
                   <p className="text-2xl">{unlocked ? a.icon || "🏆" : "🔒"}</p>
                   <p className="mt-1 text-sm font-medium text-text">{a.name}</p>
+                  <p className="mt-1 text-xs font-medium" style={{ color: RARITY_COLORS[a.rarity] }}>
+                    {RARITY_LABELS[a.rarity]}
+                  </p>
                 </div>
               );
             })}

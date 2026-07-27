@@ -16,7 +16,10 @@ User = get_user_model()
 class AchievementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Achievement
-        fields = ["id", "key", "name", "description", "icon", "xp_reward"]
+        fields = [
+            "id", "key", "name", "description", "icon", "rarity",
+            "requirement_type", "requirement_value", "xp_reward",
+        ]
 
 
 class UserAchievementSerializer(serializers.ModelSerializer):
