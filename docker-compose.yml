@@ -1,0 +1,92 @@
+services:
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Host port 5433, not 5432: this machine already runs a native
+      # postgresql.service bound to 127.0.0.1:5432 (your pre-Docker local
+      # dev setup). The container's Postgres still listens on 5432
+      # *inside* the Docker network — this mapping only changes how you'd
+      # reach it from the host (e.g. `psql -h localhost -p 5433`).
+      # backend -> db communication is unaffected either way, since that
+      # happens over the internal network at db:5432, never through this
+      # published port.
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - examsapp-network
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    env_file:
+      - backend/.env
+    environment:
+      # Overrides DB_HOST=localhost from the .env file: inside the Docker
+      # network, Postgres isn't reachable at "localhost" (that would mean
+      # "this container itself"), it's reachable at the service name "db".
+      # Compose's `environment:` takes precedence over `env_file:`, so this
+      # one key wins without editing the shared .env file.
+      DB_HOST: db
+    volumes:
+      # Bind mount: the container sees your live source tree. Editing a .py
+      # file on the host is visible inside the container immediately — no
+      # rebuild needed. This is what makes `docker compose up --build` a
+      # one-time cost instead of a per-change cost.
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - examsapp-network
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+      args:
+        # Baked into the JS bundle at build time. Points at the *host*
+        # address, not a Docker service name — this URL is fetched by code
+        # running in the developer's browser, which is outside the Docker
+        # network entirely and only knows about the port Compose published
+        # to the host (8000:8000 above).
+        VITE_API_URL: http://localhost:8000/api
+    volumes:
+      - ./frontend:/app
+      # Anonymous mount over node_modules: without this, the bind mount
+      # above would shadow the node_modules the image installed at build
+      # time with whatever (possibly absent, possibly wrong-architecture)
+      # node_modules exists on the host. This named volume wins for that
+      # one subdirectory while the rest of /app still reflects host files.
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - examsapp-network
+
+volumes:
+  # Named volume for Postgres data directory — survives `docker compose down`
+  # (only `down -v` removes it). This is what makes your data durable across
+  # container recreations, matching requirement #6.
+  postgres_data:
+  # Persists installed npm packages between container restarts so a plain
+  # `docker compose up` (no --build) doesn't need to reinstall everything.
+  frontend_node_modules:
+
+networks:
+  examsapp-network:
+    driver: bridge

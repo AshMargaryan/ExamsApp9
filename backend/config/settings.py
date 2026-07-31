@@ -42,6 +42,11 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves static files directly from the Daphne process. Needed because,
+    # unlike `manage.py runserver`, Daphne does not auto-serve static files
+    # in DEBUG mode — without this middleware nothing under STATIC_URL would
+    # be reachable at all, in dev or prod.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
@@ -135,6 +140,28 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Where `collectstatic` writes the deployable, hashed static bundle. Distinct
+# from STATICFILES_DIRS above (your source static/ folder) on purpose — one
+# is input, the other is generated output, and generated output should never
+# be committed to git or edited by hand.
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# In dev (DEBUG=True), Whitenoise serves files directly from STATICFILES_DIRS
+# via Django's normal static-file finders — no collectstatic needed, and
+# edits to files under static/ are picked up on the next request. In prod
+# (DEBUG=False) this is False, so Whitenoise instead serves the collected,
+# hashed, gzip-compressed bundle from STATIC_ROOT — see STORAGES below.
+WHITENOISE_USE_FINDERS = DEBUG
+
+# CompressedManifestStaticFilesStorage appends a content hash to each
+# filename (e.g. app-3f2a1c.css) and pre-gzips them at collectstatic time.
+# This is only exercised in prod, once `collectstatic` actually runs — see
+# DJANGO_COLLECTSTATIC in docker/entrypoint.sh.
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Media files (user uploads — currently just AI assistant attachments).
 MEDIA_URL = "media/"

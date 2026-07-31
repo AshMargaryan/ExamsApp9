@@ -1,0 +1,42 @@
+# Version control
+.git
+.gitignore
+
+# Python bytecode / caches
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache
+.pytest_cache
+
+# Local virtualenv — never belongs in the image, we install into the
+# container's own site-packages instead.
+venv
+.venv
+
+# Secrets — real values are injected via docker-compose `env_file`/`environment`,
+# never baked into the image layer history.
+.env
+.env.*
+!.env.example
+
+# Local SQLite (dev-only fallback, real DB is the Postgres container)
+db.sqlite3
+
+# Generated at runtime / build time inside the container, not source
+staticfiles/
+media/
+
+# Editor / OS cruft
+.idea
+.vscode
+.DS_Store
+
+# Large, unrelated offline data-prep tooling (~135MB) — not part of the
+# running application, would bloat the build context and every image layer.
+data_scripts/
+
+# Docker itself
+Dockerfile
+.dockerignore
