@@ -34,6 +34,10 @@ if [ "${DJANGO_SEED_CONTENT:-true}" = "true" ]; then
   python manage.py seed_content_if_empty
 fi
 
+if [ "${DJANGO_SEED_MOCK_EXAMS:-true}" = "true" ]; then
+  python manage.py seed_mock_exams_if_empty
+fi
+
 if [ "${DJANGO_COLLECTSTATIC:-false}" = "true" ]; then
   echo "Collecting static files..."
   python manage.py collectstatic --noinput

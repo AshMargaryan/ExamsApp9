@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.streaks",
     "apps.friends",
     "apps.games",
+    "apps.mock_exams",
 ]
 
 MIDDLEWARE = [
