@@ -49,6 +49,13 @@ body {
   border: 1px solid var(--color-border);
   padding: 0.3em 0.6em;
 }
+/* Inline KaTeX (esp. \dfrac) is taller than normal text — without this,
+   its numerator/denominator overlap the line above/below it. */
+.prose-chat p:has(.katex),
+.prose-chat li:has(.katex),
+.prose-chat td:has(.katex) {
+  line-height: 2.2;
+}
 
 /* Gameplay timer/feedback animations — kept subtle and short-lived. */
 @keyframes urgent-pulse {

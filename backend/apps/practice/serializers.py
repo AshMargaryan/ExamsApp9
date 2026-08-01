@@ -16,15 +16,19 @@ TIERS = [t.value for t in Tier]
 
 class SubtopicHierarchySerializer(serializers.ModelSerializer):
     tier_scores = serializers.SerializerMethodField()
+    has_learning_material = serializers.SerializerMethodField()
 
     class Meta:
         model = Subtopic
-        fields = ["id", "name", "order", "tier_scores"]
+        fields = ["id", "name", "order", "tier_scores", "has_learning_material"]
 
     def get_tier_scores(self, obj):
         progress = self.context.get("progress_by_subtopic", {})
         scores = progress.get(obj.id, {})
         return {tier: scores.get(tier) for tier in TIERS}
+
+    def get_has_learning_material(self, obj):
+        return bool(obj.learning_material)
 
 
 def _non_empty_subtopics(subtopics, context):
@@ -108,6 +112,12 @@ def _rollup(subtopic_ids, progress_by_subtopic):
     percent = round(100 * len(scores) / total_tiers, 1) if total_tiers else 0.0
     avg_score = round(sum(scores) / len(scores), 1) if scores else None
     return {"percent": percent, "avg_score": avg_score}
+
+
+class SubtopicMaterialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subtopic
+        fields = ["id", "name", "learning_material"]
 
 
 # ---------------------------------------------------------------------------

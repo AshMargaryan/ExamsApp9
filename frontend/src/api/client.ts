@@ -2,6 +2,10 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
+// Backend origin (no /api suffix) — used to resolve relative URLs like
+// /static/... referenced from markdown content (learning material images).
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+
 const ACCESS_KEY = "exams_access_token";
 const REFRESH_KEY = "exams_refresh_token";
 

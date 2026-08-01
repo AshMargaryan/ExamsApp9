@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from .models import Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer
 from .scoring import score_answer
 from .serializers import (
-    SubjectHierarchySerializer,
+    SubjectHierarchySerializer, SubtopicMaterialSerializer,
     QuestionPracticeSerializer, QuestionRevealSerializer,
     SubmitTierSerializer, PracticeAttemptSerializer,
 )
@@ -51,6 +51,14 @@ class HierarchyView(generics.ListAPIView):
         ctx["progress_by_subtopic"] = _progress_by_subtopic(self.request.user)
         ctx["subtopic_ids_with_questions"] = _subtopic_ids_with_questions()
         return ctx
+
+
+class SubtopicMaterialView(generics.RetrieveAPIView):
+    """GET /api/practice/subtopics/<subtopic_id>/material/"""
+    serializer_class = SubtopicMaterialSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Subtopic.objects.all()
+    lookup_url_kwarg = "subtopic_id"
 
 
 class TierQuestionsView(generics.ListAPIView):
