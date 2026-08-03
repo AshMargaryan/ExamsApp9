@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.friends",
     "apps.games",
     "apps.mock_exams",
+    "apps.activity",
 ]
 
 MIDDLEWARE = [

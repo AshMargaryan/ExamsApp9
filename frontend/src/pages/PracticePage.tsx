@@ -7,6 +7,7 @@ import {
 } from "../api/practice";
 import { Battery } from "../components/Battery";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
+import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 
 const TIERS: Tier[] = ["easy", "medium", "hard"];
 
@@ -87,6 +88,8 @@ function SubtopicPanel({ subtopic }: { subtopic: SubtopicNode }) {
 }
 
 export function PracticePage() {
+  useStudyActivityTracker();
+
   const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
   const [selected, setSelected] = useState<Selected | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
