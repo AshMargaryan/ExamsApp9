@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getResults, DIFFICULTY_LABELS, type AttemptResults, type MockExamQuestion } from "../api/mockExams";
 import { MathText } from "../components/MathText";
+import { QuestionFigure } from "../components/QuestionFigure";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
+import { MatchingQuestion } from "../components/questions/MatchingQuestion";
 
 export function MockExamResultsPage() {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -96,6 +98,8 @@ function RevealedQuestionCard({
         {index + 1}. <MathText text={question.text} />
       </p>
 
+      <QuestionFigure svg={question.figure_svg} />
+
       {question.question_type === "single_choice" && (
         <MultipleChoiceQuestion
           choices={question.choices}
@@ -121,6 +125,16 @@ function RevealedQuestionCard({
           revealed
           showHint={false}
           onToggle={() => {}}
+        />
+      )}
+
+      {question.question_type === "matching" && (
+        <MatchingQuestion
+          leftItems={question.statements}
+          rightItems={question.choices}
+          value={answer?.match_pairs ?? {}}
+          revealed
+          onChange={() => {}}
         />
       )}
 

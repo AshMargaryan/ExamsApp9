@@ -7,14 +7,24 @@ from django.db import models
 # a flat list of 65 questions, independent of apps.practice's hierarchy.
 # ---------------------------------------------------------------------------
 
+class MockExamSubject(models.TextChoices):
+    MATH = "math", "Mathematics"
+    PHYSICS = "physics", "Physics"
+    BIOLOGY = "biology", "Biology"
+
+
 class MockExam(models.Model):
     exam_id = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=300)
     question_count = models.PositiveIntegerField()
     order = models.PositiveIntegerField(default=0)
+    subject = models.CharField(
+        max_length=20, choices=MockExamSubject.choices, default=MockExamSubject.MATH,
+        db_index=True,
+    )
 
     class Meta:
-        ordering = ["order", "exam_id"]
+        ordering = ["subject", "order", "exam_id"]
 
     def __str__(self):
         return self.title
@@ -24,6 +34,7 @@ class MockExamQuestionType(models.TextChoices):
     SINGLE_CHOICE = "single_choice", "Single Choice"
     FREE_RESPONSE = "free_response", "Free Response"
     MULTI_STATEMENT = "multi_statement", "Multi Statement"
+    MATCHING = "matching", "Matching"
 
 
 class MockExamDifficulty(models.TextChoices):
@@ -46,6 +57,10 @@ class MockExamQuestion(models.Model):
 
     hint = models.TextField(blank=True, default="")
     solution_steps = models.JSONField(default=list, blank=True)
+
+    # Optional inline SVG figure (e.g. physics diagrams). Trusted content from
+    # the imported dataset; rendered as-is by the frontend.
+    figure_svg = models.TextField(blank=True, default="")
 
     # free_response only
     correct_answer_text = models.TextField(blank=True, default="")
@@ -75,12 +90,16 @@ class MockExamChoice(models.Model):
 
 
 class MockExamStatement(models.Model):
-    """One statement within a multi_statement Question's group."""
+    """A statement within a multi_statement question, OR a LEFT-column item of a
+    matching question (label = 'A','B',...; match_target = the correct right-column
+    number). For matching items is_true is unused (stored False)."""
     question = models.ForeignKey(MockExamQuestion, on_delete=models.CASCADE, related_name="statements")
     label = models.CharField(max_length=10, help_text="Armenian letter, e.g. 'Ա', 'Բ', ...")
     text = models.TextField()
     is_true = models.BooleanField()
     order = models.PositiveIntegerField(default=0)
+    # matching only: the 1-based number of the correct right-column item.
+    match_target = models.PositiveSmallIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ["order", "id"]
@@ -154,6 +173,8 @@ class MockExamAnswer(models.Model):
     )
     answer_text = models.TextField(blank=True, default="")
     selected_statement_ids = models.JSONField(default=list, blank=True)
+    # matching only: {statement_id (str): choice_id (int)} — the student's connections.
+    match_pairs = models.JSONField(default=dict, blank=True)
 
     answered_at = models.DateTimeField(auto_now_add=True)
 

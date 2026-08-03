@@ -7,9 +7,11 @@ import {
 import { HintButton } from "../components/HintButton";
 import { MathText } from "../components/MathText";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { QuestionFigure } from "../components/QuestionFigure";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
+import { MatchingQuestion } from "../components/questions/MatchingQuestion";
 import { ToolsDock } from "../components/ToolsDock";
 import { NotepadProvider } from "../context/NotepadContext";
 
@@ -19,6 +21,7 @@ interface AnswerState {
   selected_choice_id?: number;
   answer_text?: string;
   selected_statement_ids?: number[];
+  match_pairs?: Record<number, number>;
 }
 
 export function MockExamAttemptPage() {
@@ -50,6 +53,7 @@ export function MockExamAttemptPage() {
             selected_choice_id: saved.selected_choice_id ?? undefined,
             answer_text: saved.answer_text,
             selected_statement_ids: saved.selected_statement_ids,
+            match_pairs: saved.match_pairs,
           };
         }
       }
@@ -85,6 +89,19 @@ export function MockExamAttemptPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, detail]);
+
+  // Exit to the main menu, saving the current answers as a resumable draft.
+  const handleExit = useCallback(async () => {
+    setBusy(true);
+    try {
+      await doSaveDraft(true);
+    } catch {
+      // Ignore save errors — the periodic autosave has most likely persisted
+      // the latest answers; still let the user leave.
+    } finally {
+      navigate("/");
+    }
+  }, [doSaveDraft, navigate]);
 
   // Countdown ticker (timed exams only).
   useEffect(() => {
@@ -133,6 +150,15 @@ export function MockExamAttemptPage() {
       <div className="mx-auto max-w-3xl px-4 py-8">
         <div className="sticky top-0 z-20 -mx-4 mb-6 flex items-center justify-between border-b border-border bg-surface px-4 py-3">
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleExit}
+              disabled={busy}
+              title="Պահպանել և վերադառնալ գլխավոր էջ"
+              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:border-primary disabled:opacity-60"
+            >
+              ← Գլխավոր
+            </button>
             <button
               type="button"
               onClick={() => doSaveDraft(false)}
@@ -207,8 +233,10 @@ function QuestionCard({
         {question.topic && <span>· {question.topic}</span>}
       </div>
       <p className="mb-4 text-xl font-medium text-text">
-        {index + 1}. <MathText text={question.text} allowInsert />
+        {index + 1}. <MathText text={question.text} />
       </p>
+
+      <QuestionFigure svg={question.figure_svg} />
 
       {question.question_type === "single_choice" && (
         <MultipleChoiceQuestion
@@ -239,6 +267,16 @@ function QuestionCard({
             else current.add(statementId);
             onChange({ selected_statement_ids: Array.from(current) });
           }}
+        />
+      )}
+
+      {question.question_type === "matching" && (
+        <MatchingQuestion
+          leftItems={question.statements}
+          rightItems={question.choices}
+          value={answer.match_pairs ?? {}}
+          revealed={false}
+          onChange={(pairs) => onChange({ match_pairs: pairs })}
         />
       )}
 

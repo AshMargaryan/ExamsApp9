@@ -32,7 +32,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         exams_dir = Path(options["dir"]) if options["dir"] else DEFAULT_EXAMS_DIR
-        files = sorted(exams_dir.glob("*.json"))
+        # Recurse into per-subject subfolders (data/exams/math/, /physics/, ...),
+        # while still supporting flat *.json files directly in the exams dir.
+        files = sorted(exams_dir.rglob("*.json"))
         if not files:
             self.stdout.write(self.style.WARNING(f"No files found in {exams_dir}"))
             return
@@ -58,6 +60,7 @@ class Command(BaseCommand):
                 title=data["title"],
                 question_count=data["question_count"],
                 order=order,
+                subject=data.get("subject", "math"),
             ),
         )
 
@@ -88,6 +91,7 @@ class Command(BaseCommand):
                 text=q["question"],
                 difficulty=DIFFICULTY_MAP[q["difficulty"]],
                 hint=q.get("hint") or "",
+                figure_svg=q.get("figure_svg") or "",
                 solution_steps=q.get("solution_steps") or [],
                 correct_answer_text=q.get("answer") or "" if qtype == MockExamQuestionType.FREE_RESPONSE else "",
             ),
@@ -109,6 +113,19 @@ class Command(BaseCommand):
                 MockExamStatement.objects.create(
                     question=question, label=label, text=text, order=i,
                     is_true=label in correct_labels,
+                )
+
+        elif qtype == MockExamQuestionType.MATCHING:
+            # right column -> choices (order i => displayed number i+1)
+            for i, right in enumerate(q["right"]):
+                MockExamChoice.objects.create(
+                    question=question, text=right["text"], order=i, is_correct=False,
+                )
+            # left column -> statements (label + correct target number)
+            for i, left in enumerate(q["left"]):
+                MockExamStatement.objects.create(
+                    question=question, label=left["label"], text=left["text"], order=i,
+                    is_true=False, match_target=left["target"],
                 )
 
     @staticmethod

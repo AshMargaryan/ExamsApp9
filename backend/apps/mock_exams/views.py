@@ -26,6 +26,13 @@ class ListMockExamsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = MockExam.objects.all()
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        subject = self.request.query_params.get("subject")
+        if subject:
+            qs = qs.filter(subject=subject)
+        return qs
+
     def list(self, request, *args, **kwargs):
         exams = list(self.get_queryset())
         base = {e.id: self.get_serializer(e).data for e in exams}
@@ -136,6 +143,7 @@ class AttemptDetailView(APIView):
                 "selected_choice_id": a.selected_choice_id,
                 "answer_text": a.answer_text,
                 "selected_statement_ids": a.selected_statement_ids,
+                "match_pairs": a.match_pairs,
             }
             for a in attempt.answers.all()
         }
@@ -172,6 +180,7 @@ class SaveDraftView(APIView):
                     selected_choice_id=a.get("selected_choice_id"),
                     answer_text=a.get("answer_text", ""),
                     selected_statement_ids=a.get("selected_statement_ids", []),
+                    match_pairs=a.get("match_pairs", {}),
                 ),
             )
 
@@ -207,7 +216,8 @@ class FinishAttemptView(APIView):
             question = questions.get(a["question_id"])
             if question is None:
                 continue
-            if a.get("selected_choice_id") or a.get("answer_text") or a.get("selected_statement_ids"):
+            if (a.get("selected_choice_id") or a.get("answer_text")
+                    or a.get("selected_statement_ids") or a.get("match_pairs")):
                 answered_count += 1
 
             defaults = score_answer(question, a)
@@ -252,6 +262,7 @@ class AttemptResultsView(APIView):
                 "selected_choice_id": a.selected_choice_id,
                 "answer_text": a.answer_text,
                 "selected_statement_ids": a.selected_statement_ids,
+                "match_pairs": a.match_pairs,
                 "is_correct": a.is_correct,
             }
             for a in attempt.answers.all()

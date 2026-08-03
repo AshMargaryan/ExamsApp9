@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { listMockExams, startAttempt, type MockExamSummary } from "../api/mockExams";
+import { listMockExams, startAttempt, type MockExamSummary, type MockExamSubject } from "../api/mockExams";
 import { MockExamStartPanel } from "../components/MockExamStartPanel";
+
+const SUBJECTS: { key: MockExamSubject; label: string }[] = [
+  { key: "math", label: "Մաթեմատիկա" },
+  { key: "physics", label: "Ֆիզիկա" },
+  { key: "biology", label: "Կենսաբանություն" },
+];
 
 export function MockExamsPage() {
   const navigate = useNavigate();
+  const [subject, setSubject] = useState<MockExamSubject>("math");
   const [exams, setExams] = useState<MockExamSummary[] | null>(null);
   const [startingExam, setStartingExam] = useState<MockExamSummary | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    listMockExams().then(setExams);
-  }, []);
+    setExams(null);
+    listMockExams(subject).then(setExams);
+  }, [subject]);
 
   async function handleStart(durationMinutes: number | null, hintsEnabled: boolean) {
     if (!startingExam) return;
@@ -32,10 +40,6 @@ export function MockExamsPage() {
     }
   }
 
-  if (!exams) {
-    return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
-  }
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <Link to="/" className="mb-4 inline-block text-sm text-primary hover:underline">
@@ -43,6 +47,30 @@ export function MockExamsPage() {
       </Link>
       <h1 className="mb-6 text-3xl font-semibold text-text">Ամբողջական թեստեր</h1>
 
+      <div className="mb-6 flex gap-2">
+        {SUBJECTS.map((s) => (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => setSubject(s.key)}
+            className={`rounded-md border px-5 py-2 text-sm font-medium transition-colors ${
+              subject === s.key
+                ? "border-primary bg-primary text-primary-contrast"
+                : "border-border text-text hover:border-primary"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {!exams ? (
+        <div className="text-lg text-text-muted">Բեռնվում է...</div>
+      ) : exams.length === 0 ? (
+        <div className="rounded-[var(--radius)] border border-border bg-surface p-8 text-center text-text-muted">
+          Այս առարկայի թեստերը շուտով կավելացվեն։
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {exams.map((exam) => (
           <div
@@ -79,6 +107,7 @@ export function MockExamsPage() {
           </div>
         ))}
       </div>
+      )}
 
       {startingExam && (
         <MockExamStartPanel

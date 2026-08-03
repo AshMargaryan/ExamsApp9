@@ -42,6 +42,24 @@ def score_answer(question: MockExamQuestion, answer_data: dict) -> dict:
             answer_text="", selected_statement_ids=list(selected_ids),
         )
 
+    if qtype == MockExamQuestionType.MATCHING:
+        # pairs: {statement_id (str): choice_id (int)}. Correct iff EVERY left
+        # item is connected to the right item whose number (order+1) == match_target.
+        pairs = answer_data.get("match_pairs") or {}
+        pairs = {str(k): v for k, v in pairs.items()}
+        choice_number = {c.id: c.order + 1 for c in question.choices.all()}
+        statements = list(question.statements.all())
+        is_correct = bool(statements)
+        for st in statements:
+            cid = pairs.get(str(st.id))
+            if cid is None or choice_number.get(cid) != st.match_target:
+                is_correct = False
+                break
+        return dict(
+            is_correct=is_correct, selected_choice=None,
+            answer_text="", selected_statement_ids=[], match_pairs=pairs,
+        )
+
     raise ValueError(f"Unknown question type: {qtype}")
 
 

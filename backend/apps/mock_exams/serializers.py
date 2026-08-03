@@ -16,7 +16,7 @@ class MockExamListSerializer(serializers.ModelSerializer):
     views.ListMockExamsView."""
     class Meta:
         model = MockExam
-        fields = ["id", "exam_id", "title", "question_count"]
+        fields = ["id", "exam_id", "title", "question_count", "subject"]
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ class MockExamStatementSerializer(serializers.ModelSerializer):
 class MockExamStatementRevealSerializer(serializers.ModelSerializer):
     class Meta:
         model = MockExamStatement
-        fields = ["id", "label", "text", "order", "is_true"]
+        fields = ["id", "label", "text", "order", "is_true", "match_target"]
 
 
 class MockExamQuestionSafeSerializer(serializers.ModelSerializer):
@@ -57,7 +57,7 @@ class MockExamQuestionSafeSerializer(serializers.ModelSerializer):
         model = MockExamQuestion
         fields = [
             "id", "number", "topic", "group", "question_type", "text",
-            "difficulty", "hint", "choices", "statements",
+            "difficulty", "hint", "figure_svg", "choices", "statements",
         ]
 
 
@@ -69,7 +69,7 @@ class MockExamQuestionRevealSerializer(serializers.ModelSerializer):
         model = MockExamQuestion
         fields = [
             "id", "number", "topic", "group", "question_type", "text",
-            "difficulty", "hint", "solution_steps", "correct_answer_text",
+            "difficulty", "hint", "figure_svg", "solution_steps", "correct_answer_text",
             "choices", "statements",
         ]
 
@@ -84,6 +84,10 @@ class AnswerInputSerializer(serializers.Serializer):
     answer_text = serializers.CharField(required=False, allow_blank=True)
     selected_statement_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False, default=list
+    )
+    # matching: {statement_id (str): choice_id (int)}
+    match_pairs = serializers.DictField(
+        child=serializers.IntegerField(), required=False, default=dict
     )
 
 
@@ -124,5 +128,6 @@ class MockExamAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = MockExamAnswer
         fields = [
-            "question", "is_correct", "selected_choice", "answer_text", "selected_statement_ids",
+            "question", "is_correct", "selected_choice", "answer_text",
+            "selected_statement_ids", "match_pairs",
         ]

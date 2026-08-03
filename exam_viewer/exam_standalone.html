@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Միասնական քննություն — Մաթեմատիկա</title>
+<link rel="stylesheet" href="katex_assets/katex.min.css">
+<script src="katex_assets/katex.min.js"></script>
+<script src="katex_assets/auto-render.min.js"></script>
+<style>
+  @font-face {
+    font-family: 'Noto Serif Armenian';
+    src: local('Noto Serif Armenian');
+  }
+
+  :root {
+    --paper: #FAF8F3;
+    --paper-inset: #F1EDE3;
+    --ink: #1C1B19;
+    --ink-soft: #4A4540;
+    --stamp-red: #A23B2E;
+    --slate: #5B6B73;
+    --hairline: #D9D4C7;
+    --correct-bg: #E8F0E3;
+    --correct-border: #6B8F5A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Serif Armenian', 'Source Serif 4', Georgia, serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--paper);
+    border-bottom: 1px solid var(--hairline);
+    padding: 14px 24px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .topbar .title {
+    font-family: 'Noto Serif Armenian', Georgia, serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .topbar .meta {
+    font-size: 0.78rem;
+    color: var(--slate);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 24px 120px;
+  }
+
+  .group-condition {
+    background: var(--paper-inset);
+    border-left: 3px solid var(--stamp-red);
+    padding: 16px 20px;
+    margin: 36px 0 18px;
+    font-size: 0.96rem;
+    color: var(--ink-soft);
+    border-radius: 2px;
+  }
+
+  .group-condition .group-label {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--stamp-red);
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .question-card {
+    margin: 0 0 28px;
+    padding-left: 56px;
+    position: relative;
+  }
+
+  .qnum {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 38px;
+    height: 30px;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .qtext {
+    font-size: 1.05rem;
+    margin-bottom: 14px;
+  }
+
+  .qtext .statement-line {
+    display: block;
+    margin: 6px 0;
+    padding-left: 4px;
+  }
+
+  .options {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0;
+  }
+
+  .option {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.92rem;
+    padding: 9px 14px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    display: flex;
+    gap: 10px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .option:hover { border-color: var(--ink-soft); }
+  .option.selected { border-color: var(--ink); background: var(--paper-inset); }
+  .option.correct { border-color: var(--correct-border); background: var(--correct-bg); }
+  .option.incorrect { border-color: var(--stamp-red); background: #F5E6E3; }
+
+  .option .label {
+    font-weight: 700;
+    color: var(--slate);
+    min-width: 18px;
+  }
+
+  .reveal-btn, .toggle-btn {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.8rem;
+    color: var(--slate);
+    background: none;
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    margin-top: 6px;
+    margin-right: 8px;
+  }
+  .reveal-btn:hover, .toggle-btn:hover { border-color: var(--ink-soft); color: var(--ink); }
+
+  .answer-box {
+    display: none;
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: var(--paper-inset);
+    border-radius: 6px;
+    font-size: 0.94rem;
+  }
+  .answer-box.shown { display: block; }
+
+  .answer-box .ans-label {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--stamp-red);
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .hint-box {
+    display: none;
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px dashed var(--hairline);
+    border-radius: 6px;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .hint-box.shown { display: block; }
+
+  .steps-list {
+    margin: 8px 0 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .steps-list li {
+    padding: 4px 0 4px 18px;
+    border-left: 2px solid var(--hairline);
+    margin-bottom: 2px;
+    font-size: 0.92rem;
+    list-style: none;
+  }
+  .steps-list li.blank { border-left: 2px solid transparent; padding: 6px 0; height: 4px; }
+  .steps-list { padding-left: 0; }
+  .steps-list li:first-letter { }
+  .step-marker { color: var(--stamp-red); font-weight: 700; margin-right: 2px; }
+
+  .difficulty-tag {
+    display: inline-block;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .difficulty-easy { background: #E8F0E3; color: #4A6B3A; }
+  .difficulty-medium { background: #F3EBD8; color: #8A6A1F; }
+  .difficulty-hard { background: #F5E6E3; color: var(--stamp-red); }
+
+  .katex { font-size: 1.05em; }
+
+  /* ---- App shell: exam pane + AI side panel (70/30 split when open) ---- */
+  .app-shell {
+    display: flex;
+    min-height: calc(100vh - 60px);
+  }
+  .exam-pane {
+    flex: 1 1 100%;
+    min-width: 0;
+    transition: flex-basis 0.25s ease;
+  }
+  .app-shell.ai-open .exam-pane {
+    flex: 0 0 70%;
+  }
+  .ai-pane {
+    display: none;
+    flex: 0 0 30%;
+    border-left: 1px solid var(--hairline);
+    background: #fff;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    position: sticky;
+    top: 60px;
+  }
+  .app-shell.ai-open .ai-pane {
+    display: flex;
+  }
+  .ai-pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--hairline);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .ai-pane-title { font-weight: 600; font-size: 0.92rem; }
+  .ai-panel-close {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: var(--slate);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .ai-pane-body {
+    flex: 1;
+    padding: 20px 16px;
+    overflow-y: auto;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+  }
+  .ai-placeholder-msg p { margin: 0 0 8px; }
+  .ai-placeholder-note { font-size: 0.78rem; color: var(--slate); font-style: italic; }
+  .ai-pane-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--hairline);
+  }
+  .ai-input {
+    flex: 1;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.88rem;
+    padding: 8px 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--paper-inset);
+    color: var(--slate);
+  }
+  .ai-send-btn {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--hairline);
+    background: var(--paper-inset);
+    color: var(--slate);
+    cursor: not-allowed;
+  }
+
+  .ai-toggle-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .ai-toggle-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.22); }
+
+  /* ---- Per-question feedback after Check Answers ---- */
+  .q-feedback {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.86rem;
+    margin-top: 8px;
+    min-height: 0;
+  }
+  .fb-correct { color: var(--correct-border); font-weight: 600; }
+  .fb-incorrect { color: var(--stamp-red); font-weight: 600; }
+  .fb-unanswered { color: var(--slate); font-weight: 600; }
+
+  /* ---- Check Answers bar ---- */
+  .check-bar {
+    max-width: 760px;
+    margin: 20px auto 0;
+    padding: 0 24px 60px;
+    text-align: center;
+  }
+  .check-answers-btn {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+  }
+  .check-answers-btn:disabled { background: var(--slate); cursor: default; }
+  .check-summary {
+    display: none;
+    margin-top: 18px;
+    padding: 18px 20px;
+    background: var(--paper-inset);
+    border-radius: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .check-summary.shown { display: block; }
+  .summary-line { font-size: 1.1rem; }
+  .summary-sub { font-size: 0.85rem; color: var(--slate); margin-top: 4px; }
+
+  @media (max-width: 900px) {
+    .app-shell.ai-open .exam-pane { display: none; }
+    .app-shell.ai-open .ai-pane { flex: 1 1 100%; }
+    .ai-toggle-btn span { display: none; }
+    .ai-toggle-btn { padding: 12px; border-radius: 50%; }
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 24px 14px 100px; }
+    .question-card { padding-left: 46px; }
+    .qnum { width: 32px; height: 26px; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="title">Միասնական քննություն · Մաթեմատիկա</span>
+  <span class="meta">65 հարց</span>
+</div>
+
+<div class="app-shell" id="app-shell">
+  <div class="exam-pane">
+    <div class="container" id="exam-root"></div>
+  </div>
+
+  <div class="ai-pane" id="ai-panel">
+    <div class="ai-pane-header">
+      <span class="ai-pane-title">AI Օգնական</span>
+      <button class="ai-panel-close" id="ai-panel-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="ai-pane-body">
+      <div class="ai-placeholder-msg">
+        <p>Այստեղ կարող եք հարցեր տալ AI օգնականին այս թեստի վերաբերյալ։</p>
+        <p class="ai-placeholder-note">(Այս հատվածը դեռ ակտիվ չէ — շուտով կգործարկվի)</p>
+      </div>
+    </div>
+    <div class="ai-pane-input-row">
+      <input type="text" class="ai-input" placeholder="Հարցրեք ինչ-որ բան…" disabled>
+      <button class="ai-send-btn" disabled>Ուղարկել</button>
+    </div>
+  </div>
+</div>
+
+<button class="ai-toggle-btn" id="ai-toggle-btn">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  <span>AI Օգնական</span>
+</button>
+
+<script>
+const EXAM_DATA = {"test_title": "Միասնական քննություն - Մաթեմատիկա - Թեստ 1 (բնօրինակի կլոն)", "language": "hy", "total_questions": 65, "questions": [{"id": 1, "difficulty": "easy", "topic": "թվաբանություն", "group": "1-4", "question": "Գտնել 45-ի և 60-ի ամենամեծ ընդհանուր բաժանարարը։", "hint": "Վերլուծեք երկու թվերը պարզ արտադրիչների և վերցրեք ընդհանուր արտադրիչների արտադրյալը նվազագույն աստիճանով։", "solution_steps": ["45 = 3² · 5", "60 = 2² · 3 · 5", "Ընդհանուր արտադրիչներ՝ 3 և 5", "ԱԸԲ = 3 · 5 = 15"], "options": ["10", "15", "5", "180"], "correct_option": 2, "answer": "15"}, {"id": 2, "difficulty": "easy", "topic": "թվաբանություն", "group": "1-4", "question": "Գտնել 9-ի այն եռանիշ բազմապատիկի վերջին թվանշանը, որի առաջին երկու թվանշանների գումարը հավասար է 13-ի։", "hint": "Հիշեք, որ 9-ի բազմապատիկի համար բոլոր թվանշանների գումարը պետք է բաժանվի 9-ի։", "solution_steps": ["Թվանշանների գումարը պետք է բաժանվի 9-ի", "13 + վերջին թվանշան ≡ 0 (mod 9)", "13 + 5 = 18, որը բաժանվում է 9-ի", "Վերջին թվանշանը՝ 5"], "options": ["4", "5", "6", "9"], "correct_option": 2, "answer": "5"}, {"id": 3, "difficulty": "easy", "topic": "թվաբանություն", "group": "1-4", "question": "Քանի՞ թվանշան ունի ամենափոքր յոթնիշ թվի քառակուսին։", "hint": "Ամենափոքր յոթնիշ թիվը 1 000 000 է. քառակուսելուց հետո հաշվեք ստացված թվի թվանշանների քանակը։", "solution_steps": ["Ամենափոքր յոթնիշ թիվը՝ 1 000 000 = 10⁶", "(10⁶)² = 10¹²", "10¹² թիվն ունի 13 թվանշան"], "options": ["12", "13", "14", "11"], "correct_option": 2, "answer": "13"}, {"id": 4, "difficulty": "easy", "topic": "կոտորակներ", "group": "1-4", "question": "Գտնել 11 հայտարարով այն ամենամեծ սովորական կոտորակը, որը մեծ է 1/4-ից, բայց փոքր է 3/4-ից։", "hint": "Փորձարկեք 11 հայտարարով կոտորակները հաջորդաբար՝ համարիչը մեծացնելով, մինչև հասնեք թույլատրված միջակայքի վերին սահմանին։", "solution_steps": ["1/4 = 2,75/11, 3/4 = 8,25/11", "11 հայտարարով կոտորակները այս միջակայքում՝ 3/11, 4/11, ..., 8/11", "Ամենամեծը՝ 8/11"], "options": ["7/11", "6/11", "9/11", "8/11"], "correct_option": 4, "answer": "8/11"}, {"id": 5, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "5-8", "question": "Գտնել արտահայտության արժեքը՝ (a² - 3a)/(3 - a) + (a² - 4)/(a - 2)", "hint": "Յուրաքանչյուր կոտորակում առանձնացրեք ընդհանուր արտադրիչը համարիչում և հայտարարում, ապա կրճատեք։", "solution_steps": ["(a² - 3a)/(3 - a) = -a(3-a)/(3-a) = -a", "(a² - 4)/(a - 2) = (a-2)(a+2)/(a-2) = a + 2", "Գումարը՝ -a + (a + 2) = 2"], "options": ["a - 3", "-1", "2", "a"], "correct_option": 3, "answer": "2"}, {"id": 6, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "5-8", "question": "Գտնել արտահայտության արժեքը՝ (√5 + 1) · √(6 - 2√5)", "hint": "Փորձեք 6 - 2√5 արտահայտությունը գրել որպես լրիվ քառակուսի՝ (√5 - 1)² տեսքով։", "solution_steps": ["6 - 2√5 = 5 - 2√5 + 1 = (√5 - 1)²", "√(6-2√5) = √5 - 1 (քանի որ √5 > 1)", "(√5+1)(√5-1) = 5 - 1 = 4"], "options": ["√5", "2", "4", "5 + √5"], "correct_option": 3, "answer": "4"}, {"id": 7, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "5-8", "question": "Գտնել արտահայտության արժեքը՝ 2(cos²10° - sin²10°) / sin70°", "hint": "Հիշեք կրկնակի անկյունի բանաձևը՝ cos²x - sin²x = cos2x, և sin70° = cos20° առնչությունը։", "solution_steps": ["cos²10° - sin²10° = cos20°", "sin70° = cos20°", "Արտահայտությունը՝ 2cos20°/cos20° = 2"], "options": ["0,5", "1", "-4", "2"], "correct_option": 4, "answer": "2"}, {"id": 8, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "5-8", "question": "Գտնել log_a(c)-ն, եթե log_a(b) = -2/3, log_b(c) = 6։", "hint": "Օգտագործեք լոգարիթմի հիմքի փոփոխման բանաձևը՝ log_a(c) = log_a(b) · log_b(c)։", "solution_steps": ["log_a(c) = log_a(b) · log_b(c)", "log_a(c) = (-2/3) · 6", "log_a(c) = -4"], "options": ["-8", "-2", "-1/8", "-4"], "correct_option": 4, "answer": "-4"}, {"id": 9, "difficulty": "medium", "topic": "գծային_հավասարումներ", "group": "9-12", "question": "Գտնել x² - 22x = 5 հավասարման արմատների միջին թվաբանականը։", "hint": "Հիշեք, որ քառակուսային հավասարման արմատների գումարը հավասար է -b/a-ի. միջին թվաբանականը այդ գումարի կեսն է։", "solution_steps": ["x² - 22x - 5 = 0", "Արմատների գումարը = 22 (Վիետի թեորեմով)", "Միջին թվաբանականը = 22/2 = 11"], "options": ["-22", "22", "11", "-11"], "correct_option": 3, "answer": "11"}, {"id": 10, "difficulty": "medium", "topic": "գծային_հավասարումներ", "group": "9-12", "question": "Գտնել |4x - 9| = |x + 6| հավասարման արմատների արտադրյալը։", "hint": "Բացարձակ արժեքով հավասարումը լուծելու համար դիտարկեք երկու դեպք՝ 4x-9=x+6 և 4x-9=-(x+6)։", "solution_steps": ["Դեպք 1՝ 4x - 9 = x + 6 → 3x = 15 → x = 5", "Դեպք 2՝ 4x - 9 = -(x + 6) → 5x = 3 → x = 3/5", "Արտադրյալը՝ 5 · (3/5) = 3"], "options": ["6", "4", "3", "2"], "correct_option": 3, "answer": "3"}, {"id": 11, "difficulty": "hard", "topic": "գծային_հավասարումներ", "group": "9-12", "question": "Գտնել sin6x = 1 հավասարման արմատների քանակը [0; π] միջակայքում։", "hint": "Գրեք ընդհանուր լուծումը՝ 6x = π/2 + 2πk, ապա գտեք k-ի այն ամբողջ արժեքները, որոնց համար x ընկնում է միջակայքում։", "solution_steps": ["sin6x = 1 → 6x = π/2 + 2πk → x = π/12 + πk/3", "k=0: x=π/12, k=1: x=5π/12, k=2: x=3π/4 — բոլորը [0;π]-ում", "k=3: x=13π/12 > π, չի մտնում", "Արմատների քանակը՝ 3"], "options": ["4", "3", "2", "5"], "correct_option": 2, "answer": "3"}, {"id": 12, "difficulty": "medium", "topic": "գծային_հավասարումներ", "group": "9-12", "question": "Լուծել log_√3(3ˣ - 6) = log₃9 հավասարումը։", "hint": "Նախ հաշվեք աջ կողմի արժեքը (log₃9 = 2), ապա արտահայտեք ձախ կողմը 3ˣ-6-ի միջոցով։", "solution_steps": ["log₃9 = 2", "log_√3(3ˣ-6) = 2 → 3ˣ - 6 = (√3)² = 3", "3ˣ = 9 → x = 2"], "options": ["4", "2", "1", "0"], "correct_option": 2, "answer": "2"}, {"id": 13, "difficulty": "medium", "topic": "գծային_հավասարումներ", "group": "13-16", "question": "Լուծել անհավասարումը՝ (x² - 6x)/2 ≥ -4,5", "hint": "Տեղափոխեք -4,5-ը ձախ կողմ և փորձեք ստացված եռանդամը գրել որպես լրիվ քառակուսի։", "solution_steps": ["(x² - 6x)/2 + 4,5 ≥ 0", "x² - 6x + 9 ≥ 0 (բազմապատկելով 2-ով)", "(x - 3)² ≥ 0 — ճշմարիտ է ցանկացած x-ի համար", "Լուծումը՝ (-∞; +∞)"], "options": ["2", "(-∞; 3]", "∅", "(-∞; +∞)"], "correct_option": 4, "answer": "(-∞; +∞)"}, {"id": 14, "difficulty": "hard", "topic": "գծային_հավասարումներ", "group": "13-16", "question": "Լուծել անհավասարումը՝ (3 - log₂7)^(3-x) < 1", "hint": "Հաշվեք հենքի մոտավոր արժեքը (3 - log₂7 ≈ 0,193, որը գտնվում է 0 և 1 միջև), ապա հիշեք՝ եթե հենքը (0;1) միջակայքում է, ա^t<1 պայմանը նշանակում է t>0։", "solution_steps": ["Հենքը՝ 3 - log₂7 ≈ 0,193, որը գտնվում է (0;1)-ում", "Քանի որ 0 < հենք < 1, ա^t < 1 ⟺ t > 0", "3 - x > 0 → x < 3", "Լուծումը՝ (-∞; 3)"], "options": ["(-2; +∞)", "(2; +∞)", "(-∞; 3)", "(-∞; -2)"], "correct_option": 3, "answer": "(-∞; 3)"}, {"id": 15, "difficulty": "medium", "topic": "գծային_հավասարումներ", "group": "13-16", "question": "Լուծել անհավասարումը՝ sin(9π/8) · (√(5-x) + 2) < 0", "hint": "Որոշեք sin(9π/8) արժեքի նշանը, ապա հաշվի առեք, որ √(5-x)+2 գումարը միշտ դրական է իր սահմանման տիրույթում։", "solution_steps": ["sin(9π/8) < 0, քանի որ 9π/8 գտնվում է երրորդ քառորդում", "√(5-x) + 2 ≥ 2 > 0 միշտ, երբ արտահայտությունը սահմանված է (x ≤ 5)", "Բացասական · դրական = բացասական, ուրեմն անհավասարումը ճշմարիտ է ամբողջ սահմանման տիրույթում", "Սահմանման տիրույթը՝ x ≤ 5, ուրեմն լուծումը՝ (-∞; 5]"], "options": ["(-∞; 3]", "∅", "(2; +∞)", "(-∞; 5]"], "correct_option": 4, "answer": "(-∞; 5]"}, {"id": 16, "difficulty": "medium", "topic": "գծային_հավասարումներ", "group": "13-16", "question": "Լուծել անհավասարումը՝ 2^|x-5| ≤ 4", "hint": "Գրեք 4-ը 2-ի աստիճանով, ապա անցեք ցուցիչների անհավասարությանը՝ |x-5| ≤ 2։", "solution_steps": ["2^|x-5| ≤ 2²", "|x-5| ≤ 2", "-2 ≤ x-5 ≤ 2", "3 ≤ x ≤ 7 → [3;7]"], "options": ["[3; 7]", "(-∞; +∞)", "∅", "(-∞; 3] ∪ [7; +∞)"], "correct_option": 1, "answer": "[3; 7]"}, {"id": 17, "difficulty": "easy", "topic": "տեքստային_խնդիրներ", "group": "17-20", "question": "Միաժամանակ շարժում սկսելուց հետո հայտնի դարձավ, որ այն ժամանակահատվածում, երբ հեծանվորդն անցնում է 12 կմ, մոտոցիկլավարն անցնում է 30 կմ։ Քանի՞ տոկոսով է մոտոցիկլավարի արագությունը մեծ հեծանվորդի արագությունից։", "hint": "Գտեք երկու արագությունների հարաբերությունը, ապա հանեք 100%-ը՝ տոկոսային աճը որոշելու համար։", "solution_steps": ["Արագությունների հարաբերությունը՝ 30/12 = 2,5", "Մոտոցիկլավարի արագությունը 2,5 անգամ է հեծանվորդից", "Տոկոսային աճը՝ (2,5 - 1) · 100% = 150%"], "options": ["150", "160", "140", "250"], "correct_option": 1, "answer": "150"}, {"id": 18, "difficulty": "easy", "topic": "տեքստային_խնդիրներ", "group": "17-20", "question": "Քանի՞ կիլոմետր էր անցել հեծանվորդն այն պահին, երբ մոտոցիկլավարն անցել էր 25 կմ։", "hint": "Օգտագործեք հեծանվորդի և մոտոցիկլավարի արագությունների հաստատուն հարաբերությունը (12:30 = 2:5)։", "solution_steps": ["Արագությունների հարաբերությունը՝ հեծանվորդ:մոտո = 12:30 = 2:5", "Հեծանվորդի ճանապարհը = 25 · (2/5) = 10 կմ"], "options": ["10", "12", "8", "15"], "correct_option": 1, "answer": "10"}, {"id": 19, "difficulty": "easy", "topic": "տեքստային_խնդիրներ", "group": "17-20", "question": "Քանի՞ ժամում մոտոցիկլավարը կանցնի այն ճանապարհը, որը հեծանվորդն անցնում է 5 ժամում։", "hint": "Որոշեք հեծանվորդի անցած ճանապարհը 5 ժամում, ապա հաշվեք, թե մոտոցիկլավարին որքան ժամանակ կպահանջվեր նույն ճանապարհի համար։", "solution_steps": ["Մոտոցիկլավարի արագությունը 5/2 անգամ մեծ է հեծանվորդից", "Նույն ճանապարհի համար ժամանակը 5/2 անգամ փոքր է", "Ժամանակը = 5 · (2/5) = 2 ժամ"], "options": ["3", "2", "4", "1"], "correct_option": 2, "answer": "2"}, {"id": 20, "difficulty": "easy", "topic": "տեքստային_խնդիրներ", "group": "17-20", "question": "Քանի՞ կիլոմետր էր անցել մոտոցիկլավարն այն պահին, երբ նա 54 կմ ավելի էր անցել հեծանվորդից։", "hint": "Նշանակեք ընդհանուր ժամանակային միավորը t-ով, որի ընթացքում հեծանվորդը անցնում է 12t, մոտոցիկլավարը՝ 30t, և տարբերությունը՝ 18t։", "solution_steps": ["Տարբերությունը մեկ միավոր ժամանակում՝ 30 - 12 = 18 կմ", "18t = 54 → t = 3", "Մոտոցիկլավարի ճանապարհը = 30 · 3 = 90 կմ"], "options": ["75", "90", "60", "108"], "correct_option": 2, "answer": "90"}, {"id": 21, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "21-24", "question": "Գտնել -23,4; -20,1; ⋯ թվաբանական պրոգրեսիայի տարբերությունը։", "hint": "Տարբերությունը հաշվելու համար հանեք առաջին անդամը երկրորդ անդամից։", "solution_steps": ["d = -20,1 - (-23,4)", "d = 3,3"], "options": ["-1,5", "3,3", "2,5", "-3,3"], "correct_option": 2, "answer": "3,3"}, {"id": 22, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "21-24", "question": "Գտնել -23,4; -20,1; ⋯ թվաբանական պրոգրեսիայի բացասական անդամների քանակը։", "hint": "Գրեք ընդհանուր անդամի բանաձևը և գտեք, թե մինչև որ n-ի համար անդամը դեռևս բացասական է։", "solution_steps": ["aₙ = -23,4 + 3,3(n-1)", "aₙ < 0 → 3,3(n-1) < 23,4 → n-1 < 7,09 → n ≤ 8", "a₈ = -23,4 + 3,3·7 = -0,3 (բացասական), a₉ = 3,0 (դրական)", "Բացասական անդամների քանակը՝ 8"], "options": ["7", "8", "9", "10"], "correct_option": 2, "answer": "8"}, {"id": 23, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "21-24", "question": "Գտնել x-ը, եթե x; -18; -12 թվերը կազմում են երկրաչափական պրոգրեսիա։", "hint": "Երկրաչափական պրոգրեսիայում միջին անդամի քառակուսին հավասար է հարևան անդամների արտադրյալին։", "solution_steps": ["(-18)² = x · (-12)", "324 = -12x", "x = -27"], "options": ["25", "39", "-27", "-39"], "correct_option": 3, "answer": "-27"}, {"id": 24, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "21-24", "question": "(bₙ)-ը երկրաչափական պրոգրեսիա է։ Գտնել n-ը, եթե q = 1/4, bₙ = 2, b₁ = 512։", "hint": "Օգտագործեք երկրաչափական պրոգրեսիայի ընդհանուր անդամի բանաձևը՝ bₙ = b₁ · qⁿ⁻¹։", "solution_steps": ["2 = 512 · (1/4)ⁿ⁻¹", "(1/4)ⁿ⁻¹ = 2/512 = 1/256", "(1/4)ⁿ⁻¹ = (1/4)⁴", "n - 1 = 4 → n = 5"], "options": ["4", "5", "6", "7"], "correct_option": 2, "answer": "5"}, {"id": 25, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "25-28", "question": "Գտնել f(x) = 6x/(x²+9) ֆունկցիայի ածանցյալը։", "hint": "Օգտագործեք քանորդի ածանցման կանոնը՝ (u/v)' = (u'v - uv')/v²։", "solution_steps": ["u = 6x, v = x²+9", "u' = 6, v' = 2x", "f'(x) = [6(x²+9) - 6x·2x] / (x²+9)²", "f'(x) = [6x²+54-12x²]/(x²+9)² = 6(9-x²)/(x²+9)²"], "options": ["6/x", "6", "6(9-x²)/(x²+9)²", "(18x²+54)/(x²+9)²"], "correct_option": 3, "answer": "6(9-x²)/(x²+9)²"}, {"id": 26, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "25-28", "question": "Գտնել f(x) = 6x/(x²+9) ֆունկցիայի կրիտիկական կետերի քանակը։", "hint": "Կրիտիկական կետերը գտնվում են f'(x)=0 հավասարման լուծումից։", "solution_steps": ["f'(x) = 6(9-x²)/(x²+9)² = 0", "9 - x² = 0 → x = ±3", "Կրիտիկական կետերի քանակը՝ 2"], "options": ["1", "2", "3", "4"], "correct_option": 2, "answer": "2"}, {"id": 27, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "25-28", "question": "Գտնել f(x) = 6x/(x²+9) ֆունկցիայի աճման միջակայքը։", "hint": "Որոշեք, թե ինտերվալում f'(x) ունի ինչ նշան՝ 9-x² արտահայտության նշանի հիման վրա։", "solution_steps": ["f'(x) > 0 ⟺ 9 - x² > 0 ⟺ -3 < x < 3", "Աճման միջակայքը՝ (-3; 3)"], "options": ["(-3; 3)", "(-∞; -3) և (3; +∞)", "[-3; +∞)", "(-∞; 3)"], "correct_option": 1, "answer": "(-3; 3)"}, {"id": 28, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "25-28", "question": "Գտնել f(x) = 6x/(x²+9) ֆունկցիայի մեծագույն արժեքը։", "hint": "Մեծագույն արժեքը հասնում է աճման միջակայքից նվազման միջակայք անցման կետում։", "solution_steps": ["Մեծագույն արժեքը հասնում է x = 3 կրիտիկական կետում", "f(3) = 6·3/(9+9) = 18/18 = 1"], "options": ["-1", "1", "3", "2"], "correct_option": 2, "answer": "1"}, {"id": 29, "difficulty": "medium", "topic": "երկրաչափության_հիմունքներ", "group": "29-32", "question": "Շեղանկյան անկյունագծերի երկարությունները հարաբերում են ինչպես 3:4, իսկ ներգծած շրջանագծի շառավիղը 12 սմ է։ Գտնել շեղանկյան բարձրության երկարությունը։", "hint": "Շեղանկյան մակերեսը կարող եք հաշվել երկու եղանակով՝ անկյունագծերի միջոցով, և կողմ×բարձրություն բանաձևով, ապա հավասարեցրեք։", "solution_steps": ["Նշանակենք անկյունագծերը 3k և 4k", "Կողմը = (k/2)√(3²+4²) = 2,5k", "Մակերեսը = (1/2)·3k·4k = 6k²", "Մակերեսը նաև = 2·r·կողմ = 2·12·2,5k = 60k", "6k² = 60k → k = 10", "Կողմը = 25 սմ, Մակերեսը = 600 սմ²", "Բարձրությունը = 600/25 = 24 սմ"], "options": ["14 սմ", "10 սմ", "15 սմ", "24 սմ"], "correct_option": 4, "answer": "24 սմ"}, {"id": 30, "difficulty": "medium", "topic": "երկրաչափության_հիմունքներ", "group": "29-32", "question": "Շեղանկյան անկյունագծերի երկարությունները հարաբերում են ինչպես 3:4, իսկ ներգծած շրջանագծի շառավիղը 12 սմ է։ Գտնել շեղանկյան պարագիծը։", "hint": "Պարագիծը հավասար է կողմի երկարության քառապատիկին։", "solution_steps": ["k = 10 (հաշվարկված նախորդ քայլում)", "Կողմը = 2,5 · 10 = 25 սմ", "Պարագիծը = 4 · 25 = 100 սմ"], "options": ["40 սմ", "50 սմ", "60 սմ", "100 սմ"], "correct_option": 4, "answer": "100 սմ"}, {"id": 31, "difficulty": "medium", "topic": "երկրաչափության_հիմունքներ", "group": "29-32", "question": "Շեղանկյան անկյունագծերի երկարությունները հարաբերում են ինչպես 3:4, իսկ ներգծած շրջանագծի շառավիղը 12 սմ է։ Գտնել շեղանկյան մեծ անկյունագծի երկարությունը։", "hint": "Մեծ անկյունագիծը համապատասխանում է 4k արտահայտությանը։", "solution_steps": ["k = 10", "Մեծ անկյունագիծը = 4 · 10 = 40 սմ"], "options": ["20 սմ", "30 սմ", "15 սմ", "40 սմ"], "correct_option": 4, "answer": "40 սմ"}, {"id": 32, "difficulty": "medium", "topic": "երկրաչափության_հիմունքներ", "group": "29-32", "question": "Շեղանկյան անկյունագծերի երկարությունները հարաբերում են ինչպես 3:4, իսկ ներգծած շրջանագծի շառավիղը 12 սմ է։ Գտնել շեղանկյան մակերեսը։", "hint": "Մակերեսը հաշվեք անկյունագծերի կիսաարտադրյալով։", "solution_steps": ["Անկյունագծերը՝ 30 սմ և 40 սմ", "Մակերեսը = (1/2) · 30 · 40 = 600 սմ²"], "options": ["300 սմ²", "450 սմ²", "600 սմ²", "900 սմ²"], "correct_option": 3, "answer": "600 սմ²"}, {"id": 33, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "33-36", "question": "Տրված են AC{-7; 4} և BC{3; -5} վեկտորները։ Գտնել 2AC + 2BC վեկտորի կոորդինատները։", "hint": "Բազմապատկեք յուրաքանչյուր վեկտորի կոորդինատները 2-ով, ապա գումարեք համապատասխան կոորդինատները։", "solution_steps": ["2AC = {-14; 8}", "2BC = {6; -10}", "2AC + 2BC = {-14+6; 8-10} = {-8; -2}"], "options": ["{2; 3}", "{-8; -2}", "{4; 6}", "{-2; 2}"], "correct_option": 2, "answer": "{-8; -2}"}, {"id": 34, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "33-36", "question": "Տրված են AC{-7; 4} և BC{3; -5} վեկտորները։ Նշվածներից որ վեկտորն է համուղղված AC վեկտորին։", "hint": "Համուղղված վեկտորը AC-ի դրական սկալյար արտադրյալ է, այսինքն՝ նրա կոորդինատները AC-ի կոորդինատների դրական բազմապատիկն են։", "solution_steps": ["AC = {-7; 4}", "Համուղղված վեկտորը AC-ի դրական բազմապատիկն է", "{-14; 8} = 2 · {-7; 4} — դրական բազմապատիկ, ուրեմն համուղղված է"], "options": ["{-14; 8}", "{14; -8}", "{4; -7}", "{-4; 7}"], "correct_option": 1, "answer": "{-14; 8}"}, {"id": 35, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "33-36", "question": "Տրված են AC{-7; 4} և BC{3; -5} վեկտորները։ Գտնել AC և CB վեկտորների սկալյար արտադրյալը։", "hint": "CB = -BC, ուրեմն հաշվեք AC · (-BC) արտադրյալը՝ կոորդինատներով։", "solution_steps": ["CB = -BC = {-3; 5}", "AC · CB = (-7)(-3) + 4·5 = 21 + 20 = 41"], "options": ["-41", "41", "-26", "26"], "correct_option": 2, "answer": "41"}, {"id": 36, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "33-36", "question": "Տրված են AC{-7; 4} և BC{3; -5} վեկտորները։ Գտնել AC + CB վեկտորի երկարությունը։", "hint": "Նախ գտեք AC + CB վեկտորի կոորդինատները, ապա հաշվեք նրա մոդուլը։", "solution_steps": ["CB = {-3; 5}", "AC + CB = {-7-3; 4+5} = {-10; 9}", "|AC+CB| = √(100+81) = √181"], "options": ["√181", "181", "2", "√2"], "correct_option": 1, "answer": "√181"}, {"id": 37, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "37-40", "question": "ABCDA₁B₁C₁D₁ կանոնավոր քառանկյուն պրիզմայի հիմքի կողմը 4√2 է, իսկ բարձրությունը՝ 6։ Գտնել պրիզմայի անկյունագծի երկարության քառակուսին։", "hint": "Տարածական անկյունագիծը հաշվեք ուղղանկյունանիստի անկյունագծի բանաձևով՝ d² = a² + a² + h² (քառակուսի հիմքի համար)։", "answer": "100", "solution_steps": ["a² = 32 (քանի որ a = 4√2)", "d² = a² + a² + h² = 32 + 32 + 36 = 100"]}, {"id": 38, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "37-40", "question": "Նույն պրիզմայի համար (հիմքի կողմը 4√2, բարձրությունը 6) գտնել պրիզմայի ծավալը։", "hint": "Ծավալը հաշվեք հիմքի մակերեսը բարձրությամբ բազմապատկելով՝ V = a² · h։", "answer": "192", "solution_steps": ["Հիմքի մակերեսը = a² = (4√2)² = 32", "V = 32 · 6 = 192"]}, {"id": 39, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "37-40", "question": "Նույն պրիզմայի համար գտնել այն անկյունը, որը AC₁ տարածական անկյունագիծը կազմում է հիմքի հարթության հետ (արտահայտված tg-ով)։", "hint": "Անկյունագծի և հարթության կազմած անկյունի տանգենսը հաշվեք որպես բարձրության հարաբերությունը հիմքի անկյունագծին։", "answer": "arctg(3/4) (≈ 36,87°)", "solution_steps": ["Հիմքի անկյունագիծը AC = a√2 = 4√2·√2 = 8", "tg(անկյուն) = h/AC = 6/8 = 3/4", "Անկյունը = arctg(3/4)"]}, {"id": 40, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "37-40", "question": "Նույն պրիզմայում AD կողմի վրա վերցված է E կետը այնպես, որ ED = 4։ Հաշվել C, C₁, E կետերով անցնող հարթությամբ պրիզմայի հատույթի մակերեսը։", "hint": "Ապացույց ենք բերում, որ հատույթը ուղղանկյուն է՝ կողմերով CE և պրիզմայի բարձրությունը. հաշվեք CE-ի երկարությունը կոորդինատային մեթոդով։", "answer": "24√3", "solution_steps": ["Տեղադրենք A=(0,0,0), D=(0,4√2,0), C=(4√2,4√2,0)", "E կետը AD-ի վրա, ED=4 → E=(0, 4√2-4, 0)", "CE = √[(4√2)² + (4√2-(4√2-4))²] = √[32 + 16] = √48 = 4√3", "Հատույթը ուղղանկյուն է CE և բարձրության կողմերով", "Մակերեսը = CE · h = 4√3 · 6 = 24√3"]}, {"id": 41, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "41-44", "question": "y = -x - 4 ուղիղը շոշափում է f(x) = x² - 5x ֆունկցիայի գրաֆիկը։ Գտնել շոշափման կետի աբսցիսը։", "hint": "Շոշափման կետում ֆունկցիայի ածանցյալը հավասար է ուղղի անկյունային գործակցին։", "answer": "2", "solution_steps": ["f'(x) = 2x - 5", "Շոշափողի անկյունային գործակիցը = -1", "2x - 5 = -1 → x = 2"]}, {"id": 42, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "41-44", "question": "Գտնել f(x) = eˣ - x + 5 ֆունկցիայի փոքրագույն արժեքը։", "hint": "Գտեք կրիտիկական կետը ածանցյալը զրոյի հավասարելով, ապա հաշվեք ֆունկցիայի արժեքը այդ կետում։", "answer": "6", "solution_steps": ["f'(x) = eˣ - 1", "f'(x) = 0 → eˣ = 1 → x = 0", "f(0) = e⁰ - 0 + 5 = 1 + 5 = 6"]}, {"id": 43, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "41-44", "question": "Գտնել f(x) = 3x² - 6x + 14 ֆունկցիայի փոքրագույն արժեքը [-4; 0] միջակայքում։", "hint": "Որոշեք, թե ֆունկցիայի գագաթը (կրիտիկական կետը) գտնվում է տրված միջակայքում, թե դրանից դուրս, ապա համեմատեք եզրային արժեքները։", "answer": "14", "solution_steps": ["f'(x) = 6x - 6 = 0 → x = 1, որը գտնվում է [-4;0] միջակայքից դուրս", "Ֆունկցիան նվազող է ողջ [-4;0] միջակայքում (քանի որ գագաթը աջ կողմում է)", "f(-4) = 48+24+14 = 86", "f(0) = 14", "Փոքրագույն արժեքը = min(86,14) = 14"]}, {"id": 44, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "41-44", "question": "Գտնել a-ի ամենափոքր արժեքը, որի դեպքում f(x) = x³/3 - 5x² + ax + 2 ֆունկցիան աճող է ամբողջ թվային ուղղի վրա։", "hint": "Ֆունկցիան աճող է բոլոր x-երի համար, եթե f'(x) ≥ 0 միշտ. դա պահանջում է, որ քառակուսային եռանդամի դիսկրիմինանտը լինի ոչ դրական։", "answer": "25", "solution_steps": ["f'(x) = x² - 10x + a", "Անհրաժեշտ է x² - 10x + a ≥ 0 բոլոր x-երի համար", "Դիսկրիմինանտ ≤ 0 → 100 - 4a ≤ 0", "a ≥ 25", "Ամենափոքր արժեքը՝ a = 25"]}, {"id": 45, "difficulty": "hard", "topic": "գծային_հավասարումներ", "group": "45", "question": "Տրված է b պարամետրով √(100 - x²) ≤ x - b անհավասարումը։ Ո՞ր պնդումն է/պնդումներն են ճշմարիտ.\n1) b = 0 արժեքի դեպքում անհավասարման լուծումների բազմությունը [5√2; 10] միջակայքն է։\n2) b = 12 արժեքի դեպքում անհավասարումը լուծում չունի։\n3) b = -15 արժեքի դեպքում անհավասարման լուծումների բազմությունը [-10; 10] միջակայքն է։\n4) b = -10 արժեքի դեպքում տրված անհավասարմանը բավարարում է ճիշտ 12 ամբողջ թիվ։\n5) Ցանկացած b > 10 դեպքում անհավասարումը լուծում չունի։\n6) Անհավասարումը լուծում ունի այն և միայն այն դեպքում, երբ b ≤ 10։", "hint": "Հաշվի առեք, որ √(100-x²) արտահայտության սահմանման տիրույթը [-10;10] է, և անհավասարման աջ կողմը պետք է լինի ոչ բացասական։ Քառակուսելուց առաջ ստուգեք x ≥ b պայմանը։", "answer": "Բոլոր վեց պնդումները ճշմարիտ են (1, 2, 3, 4, 5, 6)", "solution_steps": ["Նախ որոշենք սահմանման տիրույթը. √(100-x²) արտահայտությունն իմաստ ունի, երբ 100-x²≥0, այսինքն՝ -10≤x≤10", "Անհավասարման ձախ կողմը (արմատը) միշտ ոչ բացասական է, ուրեմն աջ կողմը՝ x-b, նույնպես պետք է լինի ոչ բացասական, այսինքն՝ x≥b", "Քանի որ երկու կողմերն էլ ոչ բացասական են, կարող ենք քառակուսել. 100-x² ≤ (x-b)²", "Բացենք փակագիծը՝ 100-x² ≤ x²-2bx+b² → 2x²-2bx+(b²-100) ≥ 0", "", "★ b=0 դեպքում. անհավասարումը դառնում է x²≥50, և քանի որ պետք է x≥b=0, ստանում ենք x≥√50=5√2", "Համատեղենք տիրույթի սահմանափակումով (x≤10)՝ ստացվում է [5√2; 10] ✓ (պնդում 1)", "", "★ b=12 դեպքում. x≥b=12 պայմանը պահանջում է x≥12, սակայն տիրույթը [-10;10] է, ուրեմն նման x գոյություն չունի → լուծում չկա ✓ (պնդում 2)", "", "★ b=-15 դեպքում. հաշվենք 2x²-2(-15)x+((-15)²-100)=2x²+30x+125 եռանդամի դիսկրիմինանտը՝ D=30²-4·2·125=900-1000=-100<0", "Բացասական դիսկրիմինանտ և դրական գործակից x²-ի դիմաց նշանակում է, որ արտահայտությունը դրական է ցանկացած x-ի համար, ուրեմն անհավասարումը ճշմարիտ է ողջ տիրույթում → [-10;10] ✓ (պնդում 3)", "", "★ b=-10 դեպքում. անհավասարումը դառնում է 2x²+20x≥0, այսինքն՝ 2x(x+10)≥0", "Այս արտադրյալը ոչ բացասական է, երբ x≤-10 կամ x≥0", "Համատեղենք տիրույթով [-10;10]՝ ստացվում է {-10} ∪ [0;10]", "Այս բազմության մեջ ամբողջ թվերն են՝ -10, 0, 1, 2, ..., 10 — ընդամենը 1+11=12 թիվ ✓ (պնդում 4)", "", "★ Ընդհանրացում. ցանկացած b>10 դեպքում x≥b>10 պայմանը նորից անհամատեղելի է [-10;10] տիրույթի հետ → լուծում չկա ✓ (պնդում 5)", "Հակառակը՝ b≤10 դեպքում միշտ կարելի է գտնել գոնե մեկ վավեր x (օրինակ՝ եթե b≤-10, ապա x=10 աշխատում է, քանի որ 10≥b ինքնաբերաբար), ուրեմն լուծում ունի ⟺ b≤10 ✓ (պնդում 6)"]}, {"id": 46, "difficulty": "medium", "topic": "տեքստային_խնդիրներ", "group": "46-49", "question": "Եթե առկա սպիրտի լուծույթին ավելացնեն 15գ մաքուր սպիրտ, կստացվի 50%-անոց լուծույթ, իսկ եթե ավելացնեն 45գ թորած ջուր, կստացվի 20%-անոց լուծույթ։ Քանի՞ գրամ է կազմում սկզբնական լուծույթը։", "hint": "Նշանակեք սկզբնական լուծույթի զանգվածը M-ով և սպիրտի զանգվածը A-ով, ապա կազմեք երկու հավասարում տրված պայմաններից։", "answer": "55 գ", "solution_steps": ["(A+15)/(M+15) = 0,5", "A/(M+45) = 0,2", "Լուծելով համակարգը՝ M = 55, A = 20"]}, {"id": 47, "difficulty": "medium", "topic": "տեքստային_խնդիրներ", "group": "46-49", "question": "Եթե առկա սպիրտի լուծույթին ավելացնեն 15գ մաքուր սպիրտ, կստացվի 50%-անոց լուծույթ, իսկ եթե ավելացնեն 45գ թորած ջուր, կստացվի 20%-անոց լուծույթ։ Քանի՞ գրամ սպիրտ կա սկզբնական լուծույթում։", "hint": "Օգտագործեք նախորդ հաշվարկից ստացված A արժեքը։", "answer": "20 գ", "solution_steps": ["Համակարգի լուծումից՝ A = 20 գ"]}, {"id": 48, "difficulty": "medium", "topic": "տեքստային_խնդիրներ", "group": "46-49", "question": "Քանի՞ գրամ սպիրտ պետք է ավելացնել սկզբնական լուծույթին, որպեսզի նրանում ջուրը և սպիրտը հավասար լինեն։", "hint": "Հաշվեք ջրի զանգվածը (M-A), ապա գտեք, թե որքան սպիրտ պետք է ավելացնել, որպեսզի սպիրտի զանգվածը հավասարվի ջրին։", "answer": "15 գ", "solution_steps": ["Ջուրը = 55 - 20 = 35 գ", "Անհրաժեշտ է՝ 20 + x = 35", "x = 15 գ"]}, {"id": 49, "difficulty": "medium", "topic": "տեքստային_խնդիրներ", "group": "46-49", "question": "Քանի՞ գրամ ջուր պետք է ավելացնել սկզբնական լուծույթին, որպեսզի ստացվի 16%-անոց սպիրտի լուծույթ։", "hint": "Կազմեք հավասարում, որտեղ սպիրտի անփոփոխ քանակը բաժանված է նոր ընդհանուր զանգվածի վրա հավասար է 0,16-ի։", "answer": "70 գ", "solution_steps": ["A/(M+x) = 0,16, որտեղ A=20, M=55", "20/(55+x) = 0,16", "20 = 8,8 + 0,16x", "0,16x = 11,2", "x = 70 գ"]}, {"id": 50, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "50-53", "question": "AC=9 և BC=12 էջերով ուղղանկյուն եռանկյանն արտագծված է շրջանագիծ։ E-ն և F-ը համապատասխանաբար AC և CB փոքր աղեղների միջնակետեր են, իսկ G-ն՝ C կետը չպարունակող AB աղեղի միջնակետը։ Գտնել ABC եռանկյանը ներգծված շրջանագծի շառավիղի երկարությունը։", "hint": "Ուղղանկյուն եռանկյունու համար ներգծած շրջանագծի շառավիղը հաշվվում է r = (a+b-c)/2 բանաձևով, որտեղ c-ն հիպոտենուզն է։", "answer": "3", "solution_steps": ["AB = √(9²+12²) = √225 = 15", "r = (AC+BC-AB)/2 = (9+12-15)/2 = 3"]}, {"id": 51, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "50-53", "question": "AC=9 և BC=12 էջերով ուղղանկյուն եռանկյանն արտագծված է շրջանագիծ։ E-ն և F-ը համապատասխանաբար AC և CB փոքր աղեղների միջնակետեր են, իսկ G-ն՝ C կետը չպարունակող AB աղեղի միջնակետը։ Գտնել ECF անկյան աստիճանային չափը։", "hint": "Տեղադրեք եռանկյունին կոորդինատային համակարգում (C-ն կետագլխում), գտեք շրջանագծի կենտրոնը և E, F կետերի կոորդինատները, ապա հաշվեք անկյունը վեկտորների սկալյար արտադրյալով։", "answer": "135°", "solution_steps": ["C=(0,0), A=(9,0), B=(0,12), շրջանագծի կենտրոնը O=(4,5;6), շառավիղը R=7,5", "E (աղեղ AC-ի միջնակետ) = (4,5; -1,5)", "F (աղեղ CB-ի միջնակետ) = (-3; 6)", "CE={4,5;-1,5}, CF={-3;6}", "cos(ECF) = (CE·CF)/(|CE||CF|) = -√2/2", "ECF = 135°"]}, {"id": 52, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "50-53", "question": "AC=9 և BC=12 էջերով ուղղանկյուն եռանկյանն արտագծված է շրջանագիծ։ E-ն և F-ը համապատասխանաբար AC և CB փոքր աղեղների միջնակետեր են, իսկ G-ն՝ C կետը չպարունակող AB աղեղի միջնակետը։ Գտնել √2·EF արտահայտության արժեքը։", "hint": "Հաշվեք E և F կետերի միջև հեռավորությունը կոորդինատներով, ապա բազմապատկեք √2-ով։", "answer": "15", "solution_steps": ["E=(4,5;-1,5), F=(-3;6)", "EF = √[(4,5+3)² + (-1,5-6)²] = √[56,25+56,25] = √112,5 = (15√2)/2", "√2 · EF = √2 · (15√2)/2 = 15"]}, {"id": 53, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "50-53", "question": "AC=9 և BC=12 էջերով ուղղանկյուն եռանկյանն արտագծված է շրջանագիծ։ E-ն և F-ը համապատասխանաբար AC և CB փոքր աղեղների միջնակետեր են, իսկ G-ն՝ C կետը չպարունակող AB աղեղի միջնակետը։ Գտնել EGF եռանկյան մակերեսը։", "hint": "Գտեք G կետի կոորդինատները (աղեղ AB-ի միջնակետ, որը չպարունակում է C), ապա հաշվեք եռանկյան մակերեսը՝ օգտագործելով կոորդինատային մեթոդը (շոլեյի բանաձև)։", "answer": "67,5", "solution_steps": ["G (աղեղ AB-ի միջնակետ, առանց C) = (10,5; 10,5)", "Օգտագործելով շոլեյի բանաձևը E, G, F կոորդինատներով՝ մակերեսը = 67,5"]}, {"id": 54, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "54-57", "question": "Տրված է 4^|x| - 10·2^|x| + a = 0 հավասարումը (a-ն պարամետր է)։ Գտնել a-ի այն արժեքը, որի դեպքում log₂3 թիվը հավասարման արմատ է։", "hint": "Տեղադրեք x=log₂3 հավասարման մեջ՝ նկատելով, որ 2^|x| = 2^(log₂3) = 3, ապա լուծեք a-ի նկատմամբ։", "answer": "21", "solution_steps": ["x = log₂3 → |x| = log₂3 (դրական է)", "2^|x| = 2^(log₂3) = 3", "4^|x| = 3² = 9", "9 - 10·3 + a = 0", "9 - 30 + a = 0 → a = 21"]}, {"id": 55, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "54-57", "question": "Տրված է 4^|x| - 10·2^|x| + a = 0 հավասարումը (a-ն պարամետր է)։ Գտնել a-ի այն բնական արժեքների քանակը, որոնց դեպքում հավասարումը ունի ճիշտ երկու արմատ։", "hint": "Կատարեք t=2^|x| փոխարինումը (t≥1) և վերլուծեք t²-10t+a=0 հավասարման արմատների տեղադրությունը t≥1 տիրույթում. յուրաքանչյուր t=1 արմատ տալիս է մեկ x-արմատ, իսկ t>1 արմատը՝ երկու x-արմատ։", "answer": "9", "solution_steps": ["t²-10t+a=0, որտեղ t=2^|x|≥1", "t = 5±√(25-a)", "Ճիշտ երկու x-արմատ ստացվում է, երբ կա ճիշտ մեկ վավեր t>1 արմատ", "Սա տեղի ունի a=1,2,...,8 համար (մեկ արմատ t>1, մյուսը t<1)՝ 8 արժեք", "Նաև a=25 դեպքում (կրկնակի արմատ t=5>1, որը տալիս է երկու x-արմատ)՝ ևս 1 արժեք", "Ընդամենը՝ 8+1 = 9 բնական արժեք"]}, {"id": 56, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "54-57", "question": "Տրված է 4^|x| - 10·2^|x| + a = 0 հավասարումը (a-ն պարամետր է)։ Գտնել a-ի այն արժեքը, որի դեպքում հավասարումը ունի ճիշտ երեք արմատ։", "hint": "Ճիշտ երեք x-արմատ ստացվում է միայն հատուկ դեպքում, երբ մեկ t-արմատ ուղիղ հավասար է 1-ի (տալիս է x=0, մեկ արմատ), իսկ մյուսը՝ 1-ից մեծ (տալիս է երկու արմատ)։", "answer": "9", "solution_steps": ["t=1 պետք է լինի հավասարման արմատ՝ 1-10+a=0 → a=9", "Մյուս արմատը t=9 (1-ից մեծ, վավեր)", "t=1 տալիս է x=0 (մեկ արմատ), t=9 տալիս է x=±log₂9 (երկու արմատ)", "Ընդամենը՝ 3 արմատ, a=9 դեպքում"]}, {"id": 57, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "54-57", "question": "Տրված է 4^|x| - 10·2^|x| + a = 0 հավասարումը (a-ն պարամետր է)։ Գտնել a-ի այն բնական արժեքների քանակը, որոնց դեպքում հավասարումը ունի ճիշտ չորս արմատ։", "hint": "Ճիշտ չորս x-արմատ ստացվում է, երբ երկու t-արմատներն էլ խստորեն մեծ են 1-ից։", "answer": "15", "solution_steps": ["Անհրաժեշտ է երկու տարբեր արմատներ t₁,t₂>1", "Սա տեղի ունի a=10,11,...,24 համար", "Բնական արժեքների քանակը՝ 24-10+1 = 15"]}, {"id": 58, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "58-61", "question": "Գտնել |a+b|-ն, եթե a²+b²=40 և ab=12։", "hint": "Օգտագործեք նույնությունը՝ (a+b)² = a²+b²+2ab։", "answer": "8", "solution_steps": ["(a+b)² = a²+b²+2ab = 40+24 = 64", "|a+b| = √64 = 8"]}, {"id": 59, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "58-61", "question": "Գտնել արտահայտության արժեքը՝ 8/(1+√9) + 8/(√9+√17) + 8/(√17+√25)", "hint": "Յուրաքանչյուր անդամում բազմապատկեք համարիչն ու հայտարարը քառակուսի արմատների տարբերությունով՝ կոնյուգատի մեթոդով, որպեսզի ստացվի հեռացող գումար։", "answer": "4", "solution_steps": ["√9=3, √25=5", "Յուրաքանչյուր անդամ k/(√n+√(n+8)) = √(n+8)-√n (քանի որ (n+8)-n=8)", "Գումարը հեռացող է՝ (3-1)+(√17-3)+(5-√17) = 5-1 = 4"]}, {"id": 60, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "58-61", "question": "Գտնել արտահայտության արժեքը՝ tg15° · cos60° + cos30°", "hint": "Հիշեք, որ tg(a)·cos(90°-2a) + cos(2a) = 1 նույնությունն ուղիղ կիրառվում է, երբ a=15°։", "answer": "1", "solution_steps": ["a=15° դեպքում 90°-2a=60° և 2a=30°, որոնք համընկնում են արտահայտության հետ", "tg(a)·cos(90°-2a)+cos(2a) = 1 ցանկացած a-ի համար", "Արժեքը՝ 1"]}, {"id": 61, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "58-61", "question": "Գտնել արտահայտության արժեքը՝ log₄²2 + (log₄2 + 2)·log₄8", "hint": "Նշանակեք u=log₄2, արտահայտեք log₄8-ը u-ի միջոցով (8=2·4), ապա պարզեցրեք։", "answer": "4", "solution_steps": ["u = log₄2 = 1/2", "log₄8 = log₄2 + log₄4 = u + 1 = 3/2", "Արտահայտությունը՝ u² + (u+2)(u+1) = 1/4 + (5/2)(3/2) = 1/4 + 15/4 = 16/4 = 4"]}, {"id": 62, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "62-63", "question": "6-ից ավելի տարր պարունակող որևէ բազմության 4-ական կարգավորությունների քանակը քանի՞ անգամ է մեծ նրա 4-ական զուգորդությունների քանակից։", "hint": "Հիշեք, որ կարգավորությունների և զուգորդությունների հարաբերությունը միշտ հավասար է ընտրված տարրերի քանակի ֆակտորիալին։", "answer": "24 անգամ", "solution_steps": ["P(n,4)/C(n,4) = 4! (անկախ n-ից, քանի դեռ n≥4)", "4! = 24"]}, {"id": 63, "difficulty": "medium", "topic": "հանրահաշվական_արտահայտություններ", "group": "62-63", "question": "Գտնել այն քառանիշ թվերի քանակը, որոնցից յուրաքանչյուրի գրառման մեջ կա առնվազն մեկ 7 թվանշան։", "hint": "Հաշվեք բոլոր քառանիշ թվերի քանակը և հանեք այն թվերի քանակը, որոնք ընդհանրապես չեն պարունակում 7 թվանշանը։", "answer": "3168", "solution_steps": ["Բոլոր քառանիշ թվերի քանակը՝ 9000 (1000-ից 9999)", "Թվեր առանց 7 թվանշանի՝ առաջին թվանշան՝ 8 տարբերակ (1-9, առանց 7), մյուս երեքը՝ 9 տարբերակ յուրաքանչյուրը", "8·9·9·9 = 5832", "Առնվազն մեկ 7 ունեցող թվեր՝ 9000 - 5832 = 3168"]}, {"id": 64, "difficulty": "hard", "topic": "հանրահաշվական_արտահայտություններ", "group": "64", "question": "Տրված է f(x) = cos²x - |cosx| ֆունկցիան։ Ո՞ր պնդումն է/պնդումներն են ճշմարիտ.\n1) [0; π/4] միջակայքում f ֆունկցիան նվազող է։\n2) Ցանկացած n թիվ, որտեղ n∈Z, π·n թիվը f ֆունկցիայի պարբերություն է։\n3) f ֆունկցիայի գրաֆիկն աբսցիսների առանցքի [0; 2π] հատվածը հատում է ճիշտ հինգ կետում։\n4) f ֆունկցիայի փոքրագույն արժեքը -1/4-ն է։\n5) f ֆունկցիան դրական արժեք չի ընդունում։\n6) f ֆունկցիան [3π/4; 5π/4] միջակայքում ունի էքստրեմումի ճիշտ մեկ կետ։", "hint": "Կատարեք u=|cosx| փոխարինումը (u∈[0;1]) և դիտարկեք g(u)=u²-u ֆունկցիան՝ նրա նվազագույն արժեքն ու վերլուծեք |cosx|-ի պարբերականությունը։", "answer": "Բոլոր վեց պնդումները ճշմարիտ են (1, 2, 3, 4, 5, 6)", "solution_steps": ["Կատարենք u=|cosx| փոխարինումը, որտեղ u∈[0;1]. Ֆունկցիան դառնում է g(u)=u²-u", "", "★ Պնդում 4 (նվազագույն արժեքը -1/4). g(u)=u²-u-ի ածանցյալը՝ g'(u)=2u-1, որը հավասարվում է զրոյի u=1/2-ում", "g(1/2) = (1/2)² - 1/2 = 1/4 - 1/2 = -1/4 — սա g-ի նվազագույն արժեքն է, ուրեմն նաև f-ի նվազագույն արժեքը ✓", "", "★ Պնդում 5 (երբեք դրական). g(u)=u(u-1). Քանի որ u∈[0;1], ունենք u≥0 և u-1≤0, ուրեմն արտադրյալը u(u-1)≤0 միշտ", "Հետևաբար f(x)=g(|cosx|)≤0 ցանկացած x-ի համար, երբեք չի ընդունում դրական արժեք ✓", "", "★ Պնդում 2 (պարբերականություն). |cosx| ֆունկցիան ունի π պարբերություն, քանի որ |cos(x+π)|=|-cosx|=|cosx|", "Քանի որ f կառուցված է |cosx|-ից, f(x+π)=f(x) նույնպես, ուրեմն ցանկացած πn (n∈Z, n≠0) պարբերություն է ✓", "", "★ Պնդում 1 (նվազող [0;π/4]-ում). Այս միջակայքում cosx>0, ուրեմն |cosx|=cosx և f(x)=cos²x-cosx", "f'(x) = -2cosx·sinx + sinx = sinx(1-2cosx)", "[0;π/4]-ում sinx≥0, իսկ cosx>cos(π/4)=√2/2≈0,707>1/2, ուրեմն (1-2cosx)<0", "Արտադրյալը sinx(1-2cosx)≤0, ուրեմն f նվազող է ✓", "", "★ Պնդում 3 (5 հատման կետ [0;2π]-ում). f(x)=0 ⟺ g(|cosx|)=0 ⟺ |cosx|=0 կամ |cosx|=1", "|cosx|=0-ից՝ x=π/2 կամ x=3π/2", "|cosx|=1-ից՝ cosx=1 (x=0,2π) կամ cosx=-1 (x=π)", "Ընդամենը 5 տարբեր կետ՝ x=0, π/2, π, 3π/2, 2π ✓", "", "★ Պնդում 6 (ուղղված տարբերակ՝ ճիշտ մեկ էքստրեմում). [3π/4;5π/4]-ում cosx<0 ողջ միջակայքում (բացի կետային սահմաններից), ուրեմն |cosx|=-cosx", "f(x) = cos²x + cosx, f'(x) = -2cosx·sinx - sinx = -sinx(2cosx+1)", "f'(x)=0, երբ sinx=0 (x=π, որը մտնում է միջակայքում) կամ cosx=-1/2 (x=2π/3 կամ 4π/3, որոնք ԴՈՒՐՍ են այս միջակայքից)", "Հետևաբար միջակայքում միակ կրիտիկական կետը x=π է, որտեղ f(π)=1-1=0 (առավելագույն արժեք)", "Ստուգում՝ f(3π/4)=f(5π/4)=1/2-√2/2≈-0,207, ինչը պակաս է f(π)=0-ից, հաստատելով, որ x=π-ն ներքին առավելագույնն է", "Հետևաբար միջակայքում կա ճիշտ մեկ էքստրեմումի կետ ✓"]}, {"id": 65, "difficulty": "hard", "topic": "երկրաչափության_հիմունքներ", "group": "65", "question": "EABC բուրգի EA և EB կողմնային կողերը հավասար են (EA=EB=2) և կազմում են 60° անկյուն։ EC կողմնային կողը ուղղահայաց է EA և EB կողերին և հավասար է EA կողի կեսին (EC=1)։ Ո՞ր պնդումն է/պնդումներն են ճշմարիտ.\n1) CE և AB ուղիղները փոխուղղահայաց են։\n2) EB կողի և բուրգի ABC հիմքի հարթության կազմած անկյունը փոքր է 30°-ից։\n3) AE, EB կողերի միջնակետերով և C գագաթով տարված հարթությամբ բուրգի հատույթը հավասարասրուն եռանկյուն է։\n4) AB և CE ուղիղների հեռավորությունը հավասար է ABE եռանկյան E գագաթից տարված բարձրությանը։\n5) Բուրգին արտագծած գնդային մակերևույթի կենտրոնը գտնվում է բուրգի արտաքին մասում (ոչ բուրգի ներսում)։", "hint": "Տեղադրեք E կետագլուխը կոորդինատային համակարգում, ուղղորդեք EA, EB հարթության մեջ 60° անկյունով, իսկ EC-ն՝ ուղղահայաց այդ հարթությանը, ապա հաշվեք յուրաքանչյուր պնդումը կոորդինատներով։", "answer": "Բոլոր հինգ պնդումները ճշմարիտ են (1, 2, 3, 4, 5)", "solution_steps": ["Տեղադրենք E կետագլուխը կոորդինատների սկզբում։ Քանի որ EA=EB=2 և անկյունը նրանց միջև 60° է, դրենք.", "E=(0,0,0), A=(2,0,0), B=(1,√3,0) — այսպես EA=2, EB=√(1+3)=2, և անկյունը AEB ստուգելի է 60° լինելու", "EC⊥EA և EC⊥EB, ուրեմն EC ուղղված է z-առանցքով. EC=1 ⟹ C=(0,0,1)", "", "★ Պնդում 1 (CE⊥AB). CE=E-C=(0,0,-1), AB=B-A=(-1,√3,0)", "Սկալյար արտադրյալ՝ CE·AB = 0·(-1) + 0·√3 + (-1)·0 = 0", "Զրո սկալյար արտադրյալը հաստատում է, որ ուղիղները փոխուղղահայաց են ✓", "", "★ Պնդում 2 (անկյունը EB-ի և հիմքի հարթության միջև). հիմքի ABC հարթության նորմալը հաշվենք՝ n = AB×AC", "AB=(-1,√3,0), AC=C-A=(-2,0,1)", "n = AB×AC = (√3·1-0·0, 0·(-2)-(-1)·1, (-1)·0-√3·(-2)) = (√3, 1, 2√3)", "sin(անկյուն) = |EB·n| / (|EB|·|n|), որտեղ EB=B-E=(1,√3,0)", "EB·n = 1·√3 + √3·1 + 0 = 2√3", "|EB|=2, |n|=√(3+1+12)=4", "sin(անկյուն) = 2√3/(2·4) = √3/4 ≈ 0,433", "անկյունը ≈ 25,66°, որը փոքր է 30°-ից ✓", "", "★ Պնդում 3 (հատույթի տեսակը). M₁=միջնակետ(EA)=(1,0,0), M₂=միջնակետ(EB)=(0,5;√3/2;0)", "M₁M₂ = √[(1-0,5)²+(0-√3/2)²] = √(0,25+0,75) = 1", "M₁C = √[(1-0)²+0²+(0-1)²] = √2", "M₂C = √[(0,5)²+(√3/2)²+1²] = √(0,25+0,75+1) = √2", "Կողմերը՝ 1, √2, √2 — երկու կողմ հավասար են, ուրեմն եռանկյունը հավասարասրուն է ✓", "", "★ Պնդում 4 (հեռավորություն vs բարձրություն). AB և CE ուղիղների միջև հեռավորությունը հաշվենք որպես խաչաձև ուղիղների բանաձևով", "Ուղղություններ՝ AB=(-1,√3,0), CE=(0,0,-1). Նրանց վեկտորական արտադրյալը՝ (-√3,-1,0), մոդուլով 2", "Հեռավորությունը = |(C-A)·(AB×CE)| / |AB×CE| = √3", "Հաշվենք ABE եռանկյան մակերեսը՝ (1/2)|AB×AE| = (1/2)·|(-1,√3,0)×(2,0,0)| = (1/2)·|(0,0,-2√3)| = √3", "Բարձրությունը E-ից AB-ին = 2·մակերես/AB = 2√3/2 = √3", "Երկու արժեքները հավասար են (√3=√3) ✓", "", "★ Պնդում 5 (արտագծած գնդի կենտրոնի դիրքը). լուծելով |OE|=|OA|=|OB|=|OC| համակարգը՝ O=(1; √3/3; 1/2)", "Արտահայտենք O-ն որպես E+a(A-E)+b(B-E)+c(C-E) և գտնենք a,b,c գործակիցները", "Ստացվում է a=1/3, b=1/3, c=1/2, որոնց գումարը 1/3+1/3+1/2=7/6", "Քանի որ գումարը մեծ է 1-ից (թեև բոլոր գործակիցները դրական են), կենտրոնը գտնվում է բուրգի սահմանված տետրաեդրից դուրս ✓"]}]};
+</script>
+<script>
+// ---- Math notation converter: explicit, targeted rules (no blind global regex) ----
+
+const SUP_MAP = {'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','ⁿ':'n','ˣ':'x','⁺':'+','⁻':'-'};
+const SUB_MAP = {'₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9','ₙ':'n','ₓ':'x'};
+
+function escapeLiteralBraces(s) {
+  // Escape any literal { or } that appear in the raw source text (used for vector/set notation
+  // like AC{-7;4} or {x|...}), so KaTeX displays them as visible characters rather than
+  // treating them as silent LaTeX grouping syntax. Must run BEFORE convertSupSub/convertMathSymbols
+  // generate their own ^{...}, _{...}, \sqrt{...} constructs (which must stay unescaped).
+  return s.replace(/\{/g, '\\{').replace(/\}/g, '\\}');
+}
+
+function fixLogSubSupPattern(s) {
+  // Specific fix for "log" + subscript-base + superscript-power + argument, e.g. "log₄²2" meaning (log₄2)²
+  // NOTE: superscript ² and ³ are NOT in the same Unicode block as ⁰ ⁴-⁹ (they're Latin-1 legacy
+  // codepoints U+00B2/U+00B3), so a simple range [⁰-⁹] silently misses them. Use explicit class instead.
+  const supClass = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  const subClass = '₀₁₂₃₄₅₆₇₈₉';
+  const re = new RegExp(`log([${subClass}]+)([${supClass}]+)(\\d+)`, 'g');
+  return s.replace(re, (m, sub, sup, arg) => {
+    const subDigits = sub.split('').map(c => SUB_MAP[c] || '').join('');
+    const supDigits = sup.split('').map(c => SUP_MAP[c] || '').join('');
+    return `(\\log_{${subDigits}}${arg})^{${supDigits}}`;
+  });
+}
+
+function unescapeGeneratedBraces(s) {
+  // After we've generated our own LaTeX commands (^{...}, _{...}, \sqrt{...}, \log_{...}),
+  // their braces were created fresh by our code (not escaped), so no unescaping needed here.
+  // This function is a no-op placeholder kept for clarity of pipeline intent.
+  return s;
+}
+
+function convertSupSub(s) {
+  // Convert runs of unicode superscript chars immediately following a base char into ^{...}
+  s = s.replace(/([A-Za-zԱ-Ֆա-ֆ0-9\)\]])([⁰¹²³⁴⁵⁶⁷⁸⁹ⁿˣ⁺⁻]+)/g, (m, base, sup) => {
+    const digits = sup.split('').map(c => SUP_MAP[c] || '').join('');
+    return `${base}^{${digits}}`;
+  });
+  // Convert runs of unicode subscript chars into _{...}
+  s = s.replace(/([A-Za-zԱ-Ֆա-ֆ])([₀₁₂₃₄₅₆₇₈₉ₙₓ]+)/g, (m, base, sub) => {
+    const digits = sub.split('').map(c => SUB_MAP[c] || '').join('');
+    return `${base}_{${digits}}`;
+  });
+  return s;
+}
+
+function convertMathSymbols(s) {
+  // Trig and other named functions: convert bare "cosx", "cos x", "sinx" etc. into proper
+  // upright LaTeX commands with correct spacing, e.g. "cos x" not italic-glued "cosx".
+  s = s.replace(/\btg(?=[\d\(A-Za-zα-ωπ\^])/g, '\\tan ');
+  s = s.replace(/\bctg(?=[\d\(A-Za-zα-ωπ\^])/g, '\\cot ');
+  s = s.replace(/\barctg\b/g, '\\operatorname{arctg}');
+  s = s.replace(/\bcos(?=[\d\(A-Za-zα-ωπ\^])/g, '\\cos ');
+  s = s.replace(/\bsin(?=[\d\(A-Za-zα-ωπ\^])/g, '\\sin ');
+
+  // log_a(b) or log_√3(...) or log_{a}(...) [already-braced from convertSupSub] -> \log_{a}(b)
+  s = s.replace(/log_√(\d+)/g, '\\log_{\\sqrt{$1}}');
+  // Convert "log_{x}" or "log_x" into "\log_{x}", but never re-match if already preceded by backslash
+  s = s.replace(/(?<!\\)log_\{([A-Za-z0-9]+)\}/g, '\\log_{$1}');
+  s = s.replace(/(?<!\\)log_([A-Za-z0-9]+)/g, '\\log_{$1}');
+  s = s.replace(/\blog(?=[\d\(])/g, '\\log ');
+
+  // sqrt: √(...) -> \sqrt{...}; bare √digit / √letter -> \sqrt{...}
+  s = s.replace(/√\(([^)]+)\)/g, '\\sqrt{$1}');
+  s = s.replace(/√(\d+(?:[.,]\d+)?)/g, '\\sqrt{$1}');
+  s = s.replace(/√([A-Za-zԱ-Ֆա-ֆ])/g, '\\sqrt{$1}');
+
+  // caret exponents: ^|x| -> ^{|x|}; ^(...) -> ^{...}; ^singlechar -> ^{singlechar}
+  s = s.replace(/\^\|([^|]+)\|/g, '^{|$1|}');
+  s = s.replace(/\^\(([^)]+)\)/g, '^{$1}');
+  s = s.replace(/\^([0-9A-Za-z])(?![0-9A-Za-z{])/g, '^{$1}');
+
+  // greek / symbols
+  s = s.replace(/π/g, '\\pi ');
+  s = s.replace(/∞/g, '\\infty ');
+  s = s.replace(/·/g, '\\cdot ');
+  s = s.replace(/∪/g, '\\cup ');
+  s = s.replace(/∈/g, '\\in ');
+  s = s.replace(/≤/g, '\\le ');
+  s = s.replace(/≥/g, '\\ge ');
+  s = s.replace(/≠/g, '\\ne ');
+  s = s.replace(/×/g, '\\times ');
+
+  // escape literal % so KaTeX/LaTeX doesn't treat it as a comment marker
+  s = s.replace(/%/g, '\\%');
+
+  // degree symbol must become a proper superscript circle command for KaTeX, not the raw glyph
+  s = s.replace(/°/g, '^{\\circ}');
+
+  // Convert ALL division expressions into proper stacked \frac{}{} (textbook style).
+  // Order matters: most specific (both sides parenthesized) first, down to simplest (digit/digit) last,
+  // so a more specific pattern isn't pre-empted by a looser one matching part of it first.
+  s = s.replace(/\(([^()]+)\)\s*\/\s*(\\[a-z]+\s*[0-9A-Za-z^{}°\\]*)/g, '\\frac{$1}{$2}'); // (expr)/\func arg
+  s = s.replace(/\(([^()]+)\)\/\(([^()]+)\)/g, '\\frac{$1}{$2}');           // (expr)/(expr)
+  s = s.replace(/([A-Za-z0-9^{}\\]+)\/\(([^()]+)\)/g, '\\frac{$1}{$2}');     // token/(expr) [\\ included for \sqrt{}, \pi etc]
+  s = s.replace(/\(([^()]+)\)\/([A-Za-z0-9^{}\\]+)/g, '\\frac{$1}{$2}');     // (expr)/token
+  s = s.replace(/(-?(?:\\[a-z]+\s+)?[A-Za-z0-9^{}\\]*)\s*\/\s*([A-Za-z0-9^{}\\]+)/g, '\\frac{$1}{$2}'); // token/token, handles "\pi /2", "\pi k/3", "b/a", "h/AC"
+  s = s.replace(/(-?\d+)\/(\d+)/g, '\\frac{$1}{$2}');                        // plain digit/digit
+
+  return s;
+}
+
+// ---- App state ----
+const APP_STATE = {
+  selections: {},      // {questionId: selectedOptionIndex (1-indexed)}
+  checked: false,      // becomes true once "Check Answers" is pressed
+};
+
+function processText(raw) {
+  // Step 1: escape any literal braces already in the raw source (vector/set notation etc.)
+  // This MUST run first, before any of our own conversions generate fresh LaTeX braces.
+  let s = escapeLiteralBraces(raw);
+  // Step 2: fix the rare ambiguous log-subscript-superscript pattern
+  s = fixLogSubSupPattern(s);
+  // Step 3: generate fresh (unescaped) LaTeX command braces from sup/sub/sqrt/log/exponent patterns
+  s = convertSupSub(s);
+  s = convertMathSymbols(s);
+
+  // Wrap explicit, well-defined math patterns in $...$.
+  // A run must not end immediately before an Armenian letter with no space (that's a unit
+  // abbreviation or suffix glued to a number, e.g. "15գ" or "50%-անոց" → leave the Armenian part plain).
+  const runRe = /[0-9A-Za-z+\-*/=<>≤≥≠,.;:()\[\]{}|^_\\%°]+(?:\s+[0-9A-Za-z+\-*/=<>≤≥≠,.;:()\[\]{}|^_\\%°]+)*/g;
+
+  s = s.replace(runRe, (m, offset) => {
+    let trimmed = m.trim();
+    if (trimmed.length === 0) return m;
+
+    // Peel off a leading list marker like "1)" or "6)" at the very start of a statement line —
+    // this is numbering, not math, and should render as plain text.
+    const leadingMarker = trimmed.match(/^(\d+\))\s*(.*)$/);
+    if (leadingMarker) {
+      const marker = leadingMarker[1];
+      const rest = leadingMarker[2];
+      if (rest.length === 0) return marker;
+      if (/[0-9=+\-<>≤≥≠^_\\√]/.test(rest)) {
+        return marker + ' $' + rest + '$';
+      }
+      return marker + ' ' + rest;
+    }
+
+    const followedByArmenian = /[\u0531-\u0556\u0561-\u0586]/.test(s[offset + m.length] || '');
+    if (followedByArmenian) {
+      // Case: run is a word/abbreviation immediately followed by "-armenian_suffix" (e.g. "tg-ով").
+      // If the run ends in a bare hyphen with no digits/operators before it forming real math, leave plain.
+      const wordHyphenMatch = trimmed.match(/^([A-Za-z]+)-$/);
+      if (wordHyphenMatch) {
+        return trimmed; // e.g. "tg-" stays plain, Armenian suffix follows naturally
+      }
+      // Note: % has already been escaped to \% by this point, so the trailing-fragment
+      // pattern must match the two-character sequence \% as well as bare digits/hyphens.
+      const peelMatch = trimmed.match(/^(.*?)((?:\\%|[0-9\-])+)$/);
+      if (peelMatch && peelMatch[2].length < trimmed.length) {
+        const head = peelMatch[1];
+        const tail = peelMatch[2];
+        if (/[0-9=+\-<>≤≥≠^_\\√]/.test(head)) {
+          return '$' + head + '$' + tail;
+        }
+      } else {
+        if (/^(?:\\%|[0-9\-])+$/.test(trimmed)) return trimmed;
+      }
+    }
+    if (!/[0-9=+\-<>≤≥≠^_\\√]/.test(trimmed) && trimmed.length <= 2) return m;
+    return '$' + trimmed + '$';
+  });
+
+  return s;
+}
+
+// ---- Rendering ----
+
+function diffLabel(d) {
+  if (d === 'easy') return 'հեշտ';
+  if (d === 'medium') return 'միջին';
+  if (d === 'hard') return 'դժվար';
+  return d;
+}
+
+function renderQuestion(q, container, strippedQuestionText) {
+  const card = document.createElement('div');
+  card.className = 'question-card';
+  card.id = 'q' + q.id;
+
+  const num = document.createElement('div');
+  num.className = 'qnum';
+  num.textContent = q.id;
+  card.appendChild(num);
+
+  const diffTag = document.createElement('span');
+  diffTag.className = 'difficulty-tag difficulty-' + q.difficulty;
+  diffTag.textContent = diffLabel(q.difficulty);
+  card.appendChild(diffTag);
+
+  const qtext = document.createElement('div');
+  qtext.className = 'qtext';
+  const questionText = strippedQuestionText !== undefined ? strippedQuestionText : q.question;
+  const lines = questionText.split('\n');
+  qtext.innerHTML = lines.map(line => `<span class="statement-line">${processText(line)}</span>`).join('');
+  card.appendChild(qtext);
+
+  if (q.options) {
+    const optWrap = document.createElement('div');
+    optWrap.className = 'options';
+    optWrap.id = 'opts-' + q.id;
+    const labels = ['Ա', 'Բ', 'Գ', 'Դ'];
+    q.options.forEach((opt, idx) => {
+      const optDiv = document.createElement('div');
+      optDiv.className = 'option';
+      optDiv.dataset.idx = idx + 1;
+      optDiv.innerHTML = `<span class="label">${labels[idx]}</span><span class="opt-text">${processText(opt)}</span>`;
+      optDiv.onclick = () => {
+        if (APP_STATE.checked) return; // lock selection once answers have been checked
+        optWrap.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+        optDiv.classList.add('selected');
+        APP_STATE.selections[q.id] = idx + 1;
+      };
+      optWrap.appendChild(optDiv);
+    });
+    card.appendChild(optWrap);
+
+    const fb = document.createElement('div');
+    fb.className = 'q-feedback';
+    fb.id = 'fb-' + q.id;
+    card.appendChild(fb);
+  }
+
+  const btnRow = document.createElement('div');
+  btnRow.className = 'btn-row';
+
+  const hintBtn = document.createElement('button');
+  hintBtn.className = 'toggle-btn';
+  hintBtn.textContent = 'Հուշում';
+  const hintBox = document.createElement('div');
+  hintBox.className = 'hint-box';
+  hintBox.innerHTML = processText(q.hint);
+  hintBtn.onclick = () => {
+    hintBox.classList.toggle('shown');
+    renderMathIn(hintBox);
+  };
+  btnRow.appendChild(hintBtn);
+
+  const solBtn = document.createElement('button');
+  solBtn.className = 'reveal-btn';
+  solBtn.textContent = 'Լուծման ընթացք';
+  const ansBox = document.createElement('div');
+  ansBox.className = 'answer-box';
+  const stepsHtml = q.solution_steps.map(step => {
+    if (step.trim() === '') {
+      return `<li class="blank" aria-hidden="true"></li>`;
+    }
+    let display = step;
+    if (display.trim().startsWith('★')) {
+      display = display.trim().slice(1).trim();
+      return `<li><span class="step-marker">★</span>${processText(display)}</li>`;
+    }
+    return `<li>${processText(step)}</li>`;
+  }).join('');
+  ansBox.innerHTML = `<ul class="steps-list">${stepsHtml}</ul>`;
+  solBtn.onclick = () => {
+    ansBox.classList.toggle('shown');
+    renderMathIn(ansBox);
+  };
+  btnRow.appendChild(solBtn);
+
+  card.appendChild(btnRow);
+  card.appendChild(hintBox);
+  card.appendChild(ansBox);
+
+  container.appendChild(card);
+  renderMathIn(card);
+}
+
+function renderMathIn(el) {
+  if (window.renderMathInElement) {
+    renderMathInElement(el, {
+      delimiters: [{left: '$', right: '$', display: false}],
+      throwOnError: false
+    });
+  }
+}
+
+function buildExam() {
+  const root = document.getElementById('exam-root');
+  const groupsShown = new Set();
+
+  const byGroup = {};
+  EXAM_DATA.questions.forEach(q => {
+    byGroup[q.group] = byGroup[q.group] || [];
+    byGroup[q.group].push(q);
+  });
+
+  EXAM_DATA.questions.forEach((q) => {
+    const group = q.group;
+    const groupQs = byGroup[group];
+    let strippedText = q.question;
+
+    if (groupQs.length > 1) {
+      const texts = groupQs.map(x => x.question);
+      let common = sharedPrefix(texts);
+      const lastDot = Math.max(common.lastIndexOf('։'), common.lastIndexOf('.'));
+      if (lastDot > 10) {
+        common = common.slice(0, lastDot + 1);
+        // Strip the shared condition from THIS question's own displayed text, since it's
+        // already shown once in the group-condition box right above the group's first question.
+        if (q.question.startsWith(common)) {
+          strippedText = q.question.slice(common.length).trim();
+        }
+        if (!groupsShown.has(group)) {
+          groupsShown.add(group);
+          const cond = document.createElement('div');
+          cond.className = 'group-condition';
+          cond.innerHTML = `<span class="group-label">Հանրագիր ${group}</span>${processText(common)}`;
+          root.appendChild(cond);
+          renderMathIn(cond);
+        }
+      }
+    }
+
+    renderQuestion(q, root, strippedText);
+  });
+
+  buildCheckAnswersBar(root);
+}
+
+function buildCheckAnswersBar(root) {
+  const bar = document.createElement('div');
+  bar.className = 'check-bar';
+  bar.innerHTML = `
+    <button class="check-answers-btn" id="check-answers-btn">Ստուգել պատասխանները</button>
+    <div class="check-summary" id="check-summary"></div>
+  `;
+  root.appendChild(bar);
+
+  document.getElementById('check-answers-btn').onclick = () => {
+    APP_STATE.checked = true;
+    let correctCount = 0;
+    let answeredCount = 0;
+    const mcqQuestions = EXAM_DATA.questions.filter(q => q.options);
+
+    mcqQuestions.forEach(q => {
+      const selected = APP_STATE.selections[q.id];
+      const optWrap = document.getElementById('opts-' + q.id);
+      const fb = document.getElementById('fb-' + q.id);
+      if (!optWrap) return;
+
+      if (selected) answeredCount++;
+      const isCorrect = selected === q.correct_option;
+      if (isCorrect) correctCount++;
+
+      optWrap.querySelectorAll('.option').forEach(o => {
+        const idx = parseInt(o.dataset.idx, 10);
+        o.classList.remove('selected');
+        if (idx === q.correct_option) o.classList.add('correct');
+        else if (idx === selected) o.classList.add('incorrect');
+      });
+
+      if (fb) {
+        if (!selected) {
+          fb.innerHTML = `<span class="fb-unanswered">Չպատասխանված</span> — ճիշտ պատասխանն է՝ ${processText(String(q.answer))}`;
+        } else if (isCorrect) {
+          fb.innerHTML = `<span class="fb-correct">✓ Ճիշտ պատասխան</span>`;
+        } else {
+          fb.innerHTML = `<span class="fb-incorrect">✗ Սխալ պատասխան</span> — ճիշտ պատասխանն է՝ ${processText(String(q.answer))}`;
+        }
+        renderMathIn(fb);
+      }
+    });
+
+    const summary = document.getElementById('check-summary');
+    const pct = mcqQuestions.length ? Math.round((correctCount / mcqQuestions.length) * 100) : 0;
+    summary.innerHTML = `
+      <div class="summary-line"><strong>${correctCount}</strong> ճիշտ <strong>${mcqQuestions.length}</strong>-ից (${pct}%)</div>
+      <div class="summary-line summary-sub">Պատասխանված է ${answeredCount} հարց ${mcqQuestions.length}-ից</div>
+    `;
+    summary.classList.add('shown');
+
+    document.getElementById('check-answers-btn').textContent = 'Թեստն ստուգված է';
+    document.getElementById('check-answers-btn').disabled = true;
+
+    summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+}
+
+function sharedPrefix(strings) {
+  if (!strings.length) return '';
+  let prefix = strings[0];
+  for (const s of strings.slice(1)) {
+    let i = 0;
+    while (i < prefix.length && i < s.length && prefix[i] === s[i]) i++;
+    prefix = prefix.slice(0, i);
+  }
+  return prefix;
+}
+
+// ---- AI panel shell (placeholder UI, no live AI wired up yet) ----
+
+function setupAIPanel() {
+  const toggleBtn = document.getElementById('ai-toggle-btn');
+  const panel = document.getElementById('ai-panel');
+  const closeBtn = document.getElementById('ai-panel-close');
+  const appShell = document.getElementById('app-shell');
+  if (!toggleBtn || !panel) return;
+
+  toggleBtn.onclick = () => {
+    appShell.classList.toggle('ai-open');
+  };
+  if (closeBtn) {
+    closeBtn.onclick = () => appShell.classList.remove('ai-open');
+  }
+}
+
+setupAIPanel();
+
+
+buildExam();
+
+</script>
+</body>
+</html>

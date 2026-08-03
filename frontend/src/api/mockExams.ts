@@ -1,8 +1,9 @@
 import { apiClient } from "./client";
 
-export type MockExamQuestionType = "single_choice" | "free_response" | "multi_statement";
+export type MockExamQuestionType = "single_choice" | "free_response" | "multi_statement" | "matching";
 export type MockExamDifficulty = "easy" | "medium" | "hard";
 export type MockExamAttemptStatus = "in_progress" | "completed";
+export type MockExamSubject = "math" | "physics" | "biology";
 
 export interface MockExamChoice {
   id: number;
@@ -17,6 +18,7 @@ export interface MockExamStatement {
   text: string;
   order: number;
   is_true?: boolean;
+  match_target?: number | null; // matching (reveal only): correct right-column number
 }
 
 export interface MockExamQuestion {
@@ -28,6 +30,7 @@ export interface MockExamQuestion {
   text: string;
   difficulty: MockExamDifficulty;
   hint?: string;
+  figure_svg?: string;
   solution_steps?: string[];
   correct_answer_text?: string;
   choices: MockExamChoice[];
@@ -39,6 +42,7 @@ export interface MockExamSummary {
   exam_id: string;
   title: string;
   question_count: number;
+  subject: MockExamSubject;
   has_draft: boolean;
   draft_attempt_id: number | null;
   completed_attempts_count: number;
@@ -70,12 +74,14 @@ export interface AnswerInput {
   selected_choice_id?: number;
   answer_text?: string;
   selected_statement_ids?: number[];
+  match_pairs?: Record<number, number>; // matching: statementId -> choiceId
 }
 
 export interface SavedAnswer {
   selected_choice_id?: number | null;
   answer_text?: string;
   selected_statement_ids?: number[];
+  match_pairs?: Record<number, number>;
   is_correct?: boolean | null;
 }
 
@@ -92,8 +98,10 @@ export interface AttemptResults {
   answers: Record<number, SavedAnswer>;
 }
 
-export async function listMockExams(): Promise<MockExamSummary[]> {
-  const { data } = await apiClient.get("/mock-exams/exams/");
+export async function listMockExams(subject?: MockExamSubject): Promise<MockExamSummary[]> {
+  const { data } = await apiClient.get("/mock-exams/exams/", {
+    params: subject ? { subject } : undefined,
+  });
   return data.results;
 }
 
