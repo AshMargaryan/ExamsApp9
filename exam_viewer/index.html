@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Միասնական քննություն — Մաթեմատիկա</title>
+<link rel="stylesheet" href="katex_assets/katex.min.css">
+<script src="katex_assets/katex.min.js"></script>
+<script src="katex_assets/auto-render.min.js"></script>
+<style>
+  @font-face {
+    font-family: 'Noto Serif Armenian';
+    src: local('Noto Serif Armenian');
+  }
+
+  :root {
+    --paper: #FAF8F3;
+    --paper-inset: #F1EDE3;
+    --ink: #1C1B19;
+    --ink-soft: #4A4540;
+    --stamp-red: #A23B2E;
+    --slate: #5B6B73;
+    --hairline: #D9D4C7;
+    --correct-bg: #E8F0E3;
+    --correct-border: #6B8F5A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Serif Armenian', 'Source Serif 4', Georgia, serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--paper);
+    border-bottom: 1px solid var(--hairline);
+    padding: 14px 24px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .topbar .title {
+    font-family: 'Noto Serif Armenian', Georgia, serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .topbar .meta {
+    font-size: 0.78rem;
+    color: var(--slate);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 24px 120px;
+  }
+
+  .group-condition {
+    background: var(--paper-inset);
+    border-left: 3px solid var(--stamp-red);
+    padding: 16px 20px;
+    margin: 36px 0 18px;
+    font-size: 0.96rem;
+    color: var(--ink-soft);
+    border-radius: 2px;
+  }
+
+  .group-condition .group-label {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--stamp-red);
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .question-card {
+    margin: 0 0 28px;
+    padding-left: 56px;
+    position: relative;
+  }
+
+  .qnum {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 38px;
+    height: 30px;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .qtext {
+    font-size: 1.05rem;
+    margin-bottom: 14px;
+  }
+
+  .qtext .statement-line {
+    display: block;
+    margin: 6px 0;
+    padding-left: 4px;
+  }
+
+  .options {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0;
+  }
+
+  .option {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.92rem;
+    padding: 9px 14px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    display: flex;
+    gap: 10px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .option:hover { border-color: var(--ink-soft); }
+  .option.selected { border-color: var(--ink); background: var(--paper-inset); }
+  .option.correct { border-color: var(--correct-border); background: var(--correct-bg); }
+  .option.incorrect { border-color: var(--stamp-red); background: #F5E6E3; }
+
+  .option .label {
+    font-weight: 700;
+    color: var(--slate);
+    min-width: 18px;
+  }
+
+  .reveal-btn, .toggle-btn {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.8rem;
+    color: var(--slate);
+    background: none;
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    margin-top: 6px;
+    margin-right: 8px;
+  }
+  .reveal-btn:hover, .toggle-btn:hover { border-color: var(--ink-soft); color: var(--ink); }
+
+  .answer-box {
+    display: none;
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: var(--paper-inset);
+    border-radius: 6px;
+    font-size: 0.94rem;
+  }
+  .answer-box.shown { display: block; }
+
+  .answer-box .ans-label {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--stamp-red);
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .hint-box {
+    display: none;
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px dashed var(--hairline);
+    border-radius: 6px;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .hint-box.shown { display: block; }
+
+  .steps-list {
+    margin: 8px 0 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .steps-list li {
+    padding: 4px 0 4px 18px;
+    border-left: 2px solid var(--hairline);
+    margin-bottom: 2px;
+    font-size: 0.92rem;
+    list-style: none;
+  }
+  .steps-list li.blank { border-left: 2px solid transparent; padding: 6px 0; height: 4px; }
+  .steps-list { padding-left: 0; }
+  .steps-list li:first-letter { }
+  .step-marker { color: var(--stamp-red); font-weight: 700; margin-right: 2px; }
+
+  .difficulty-tag {
+    display: inline-block;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .difficulty-easy { background: #E8F0E3; color: #4A6B3A; }
+  .difficulty-medium { background: #F3EBD8; color: #8A6A1F; }
+  .difficulty-hard { background: #F5E6E3; color: var(--stamp-red); }
+
+  .katex { font-size: 1.05em; }
+
+  /* ---- App shell: exam pane + AI side panel (70/30 split when open) ---- */
+  .app-shell {
+    display: flex;
+    min-height: calc(100vh - 60px);
+  }
+  .exam-pane {
+    flex: 1 1 100%;
+    min-width: 0;
+    transition: flex-basis 0.25s ease;
+  }
+  .app-shell.ai-open .exam-pane {
+    flex: 0 0 70%;
+  }
+  .ai-pane {
+    display: none;
+    flex: 0 0 30%;
+    border-left: 1px solid var(--hairline);
+    background: #fff;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    position: sticky;
+    top: 60px;
+  }
+  .app-shell.ai-open .ai-pane {
+    display: flex;
+  }
+  .ai-pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--hairline);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .ai-pane-title { font-weight: 600; font-size: 0.92rem; }
+  .ai-panel-close {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: var(--slate);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .ai-pane-body {
+    flex: 1;
+    padding: 20px 16px;
+    overflow-y: auto;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+  }
+  .ai-placeholder-msg p { margin: 0 0 8px; }
+  .ai-placeholder-note { font-size: 0.78rem; color: var(--slate); font-style: italic; }
+  .ai-pane-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--hairline);
+  }
+  .ai-input {
+    flex: 1;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.88rem;
+    padding: 8px 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--paper-inset);
+    color: var(--slate);
+  }
+  .ai-send-btn {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--hairline);
+    background: var(--paper-inset);
+    color: var(--slate);
+    cursor: not-allowed;
+  }
+
+  .ai-toggle-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .ai-toggle-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.22); }
+
+  /* ---- Per-question feedback after Check Answers ---- */
+  .q-feedback {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.86rem;
+    margin-top: 8px;
+    min-height: 0;
+  }
+  .fb-correct { color: var(--correct-border); font-weight: 600; }
+  .fb-incorrect { color: var(--stamp-red); font-weight: 600; }
+  .fb-unanswered { color: var(--slate); font-weight: 600; }
+
+  /* ---- Check Answers bar ---- */
+  .check-bar {
+    max-width: 760px;
+    margin: 20px auto 0;
+    padding: 0 24px 60px;
+    text-align: center;
+  }
+  .check-answers-btn {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+  }
+  .check-answers-btn:disabled { background: var(--slate); cursor: default; }
+  .check-summary {
+    display: none;
+    margin-top: 18px;
+    padding: 18px 20px;
+    background: var(--paper-inset);
+    border-radius: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .check-summary.shown { display: block; }
+  .summary-line { font-size: 1.1rem; }
+  .summary-sub { font-size: 0.85rem; color: var(--slate); margin-top: 4px; }
+
+  @media (max-width: 900px) {
+    .app-shell.ai-open .exam-pane { display: none; }
+    .app-shell.ai-open .ai-pane { flex: 1 1 100%; }
+    .ai-toggle-btn span { display: none; }
+    .ai-toggle-btn { padding: 12px; border-radius: 50%; }
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 24px 14px 100px; }
+    .question-card { padding-left: 46px; }
+    .qnum { width: 32px; height: 26px; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="title">Միասնական քննություն · Մաթեմատիկա</span>
+  <span class="meta">65 հարց</span>
+</div>
+
+<div class="app-shell" id="app-shell">
+  <div class="exam-pane">
+    <div class="container" id="exam-root"></div>
+  </div>
+
+  <div class="ai-pane" id="ai-panel">
+    <div class="ai-pane-header">
+      <span class="ai-pane-title">AI Օգնական</span>
+      <button class="ai-panel-close" id="ai-panel-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="ai-pane-body">
+      <div class="ai-placeholder-msg">
+        <p>Այստեղ կարող եք հարցեր տալ AI օգնականին այս թեստի վերաբերյալ։</p>
+        <p class="ai-placeholder-note">(Այս հատվածը դեռ ակտիվ չէ — շուտով կգործարկվի)</p>
+      </div>
+    </div>
+    <div class="ai-pane-input-row">
+      <input type="text" class="ai-input" placeholder="Հարցրեք ինչ-որ բան…" disabled>
+      <button class="ai-send-btn" disabled>Ուղարկել</button>
+    </div>
+  </div>
+</div>
+
+<button class="ai-toggle-btn" id="ai-toggle-btn">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  <span>AI Օգնական</span>
+</button>
+
+<script>
+// Load exam data from the external data.json file.
+// To use your own questions: replace data.json (keep the same structure).
+let EXAM_DATA = null;
+
+fetch('data.json')
+  .then(r => {
+    if (!r.ok) throw new Error('data.json not found (HTTP ' + r.status + ')');
+    return r.json();
+  })
+  .then(json => {
+    EXAM_DATA = json;
+    const s = document.createElement('script');
+    s.src = 'render.js';
+    document.body.appendChild(s);
+  })
+  .catch(err => {
+    document.getElementById('exam-root').innerHTML =
+      '<div style="padding:40px;font-family:sans-serif;color:#A23B2E">' +
+      '<h3>Չհաջողվեց բեռնել data.json</h3>' +
+      '<p style="color:#4A4540">' + err.message + '</p>' +
+      '<p style="color:#4A4540;font-size:0.9em">Եթե ֆայլը բացում եք ուղղակի (file://), ապա անհրաժեշտ է լոկալ սերվեր։ Տես README.txt</p>' +
+      '</div>';
+  });
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ urlpatterns = [
     path("api/streaks/", include("apps.streaks.urls")),
     path("api/friends/", include("apps.friends.urls")),
     path("api/games/", include("apps.games.urls")),
+    path("api/mock-exams/", include("apps.mock_exams.urls")),
 ]
 
 if settings.DEBUG:

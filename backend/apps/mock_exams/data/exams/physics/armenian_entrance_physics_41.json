@@ -1,0 +1,1190 @@
+{
+  "exam_id": "AEE-PHYS-041",
+  "title": "Միասնական քննություն — Ֆիզիկա (թեստ 41)",
+  "question_count": 70,
+  "subject": "physics",
+  "questions": [
+    {
+      "number": 1,
+      "topic": "Շփման ուժ",
+      "group": null,
+      "type": "single_choice",
+      "question": "Նկարում պատկերված է շփման $F_{\\text{շփ}}$ ուժի կախումը հենման $N$ ուժից։ Ինչի՞ է հավասար շփման գործակիցը։",
+      "difficulty": "միջին",
+      "hint": "$\\mu=\\dfrac{F_{\\text{շփ}}}{N}$՝ գրաֆիկի թեքությունը։",
+      "solution_steps": [
+        "$N=35$ Ն, $F_{\\text{շփ}}=14$ Ն",
+        "$\\mu=\\dfrac{14}{35}=0,4$"
+      ],
+      "figure_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 320 180\" width=\"320\" height=\"180\" font-family=\"sans-serif\" font-size=\"13\"><defs><marker id=\"a\" markerWidth=\"9\" markerHeight=\"9\" refX=\"6\" refY=\"3\" orient=\"auto\"><path d=\"M0,0 L7,3 L0,6 Z\" fill=\"#333\"/></marker></defs><line x1=\"58\" y1=\"158\" x2=\"267\" y2=\"158\" stroke=\"#333\" stroke-width=\"1.6\" marker-end=\"url(#a)\"/><line x1=\"58\" y1=\"158\" x2=\"58\" y2=\"18\" stroke=\"#333\" stroke-width=\"1.6\" marker-end=\"url(#a)\"/><line x1=\"243.0\" y1=\"158\" x2=\"243.0\" y2=\"46.0\" stroke=\"#aaa\" stroke-dasharray=\"4\"/><line x1=\"58\" y1=\"46.0\" x2=\"243.0\" y2=\"46.0\" stroke=\"#aaa\" stroke-dasharray=\"4\"/><line x1=\"58\" y1=\"158\" x2=\"243.0\" y2=\"46.0\" stroke=\"#c0392b\" stroke-width=\"2.6\"/><text x=\"273\" y=\"163\" font-style=\"italic\">N, Ն</text><text x=\"12\" y=\"22\" font-style=\"italic\">F, Ն</text><text x=\"42\" y=\"175\">0</text><text x=\"243\" y=\"176\" text-anchor=\"middle\">35</text><text x=\"48\" y=\"51\" text-anchor=\"end\">14</text></svg>",
+      "options": [
+        "0,5",
+        "0,4",
+        "0,3",
+        "0,2"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 2,
+      "topic": "Ուժերի համազոր",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմնի վրա ազդում են իրար փոխուղղահայաց $15$ Ն և $20$ Ն ուժեր։ Որքա՞ն է դրանց համազորը։",
+      "difficulty": "միջին",
+      "hint": "$F=\\sqrt{F_1^2+F_2^2}$։",
+      "solution_steps": [
+        "$F=\\sqrt{15^2+20^2}=\\sqrt{625}=25$ Ն"
+      ],
+      "options": [
+        "35 Ն",
+        "26 Ն",
+        "25 Ն",
+        "5 Ն"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 3,
+      "topic": "Կինեմատիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Երկու մարմիններ նետված են հորիզոնի նկատմամբ միևնույն անկյան տակ՝ $50$ մ/վ և $250$ մ/վ արագություններով։ Ինչի՞ է հավասար նրանց թռիչքի հեռահասությունների $S_2/S_1$ հարաբերությունը։",
+      "difficulty": "միջին",
+      "hint": "$S\\propto v_0^2$։",
+      "solution_steps": [
+        "$\\dfrac{S_2}{S_1}=\\left(\\dfrac{250}{50}\\right)^2=5^2=25$"
+      ],
+      "options": [
+        "5",
+        "125",
+        "10",
+        "25"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 4,
+      "topic": "Թեք հարթություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "$14$ կգ մարմինը $30^\\circ$ թեքությամբ հարթության վրա է (տես նկարը)։ Որքա՞ն է ծանրության ուժի՝ հարթության երկայնքով բաղադրիչը։ $g=10$ մ/վ²։",
+      "difficulty": "միջին",
+      "hint": "$mg\\sin\\alpha$։",
+      "solution_steps": [
+        "$mg\\sin30^\\circ=14\\cdot 10\\cdot 0{,}5$"
+      ],
+      "figure_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 300 180\" width=\"300\" height=\"180\" font-family=\"sans-serif\" font-size=\"13\"><polygon points=\"45,162 245,162 245,47\" fill=\"#eef2f4\" stroke=\"#333\" stroke-width=\"1.6\"/><g transform=\"translate(141.5,89.0) rotate(-30)\"><rect x=\"-19\" y=\"-14\" width=\"38\" height=\"28\" rx=\"2\" fill=\"#5dade2\" stroke=\"#1b4f72\" stroke-width=\"1.5\"/></g><text x=\"141.5\" y=\"94.0\" text-anchor=\"middle\" fill=\"#fff\" font-style=\"italic\" font-weight=\"bold\">m</text><path d=\"M 89 162 A 44 44 0 0 0 83.1 140.0\" fill=\"none\" stroke=\"#333\" stroke-width=\"1.3\"/><text x=\"97\" y=\"153\" font-style=\"italic\">α</text></svg>",
+      "options": [
+        "70 Ն",
+        "140 Ն",
+        "$70\\sqrt3$ Ն",
+        "$70\\sqrt2$ Ն"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 5,
+      "topic": "Խտություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմնի զանգվածը $144$ կգ է, ծավալը՝ $9$ մ³։ Որքա՞ն է խտությունը։",
+      "difficulty": "հեշտ",
+      "hint": "$\\rho=\\dfrac{m}{V}$։",
+      "solution_steps": [
+        "$\\rho=\\dfrac{144}{9}=16$ կգ/մ³"
+      ],
+      "options": [
+        "1296 կգ/մ³",
+        "16 կգ/մ³",
+        "17 կգ/մ³",
+        "153 կգ/մ³"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 6,
+      "topic": "Ճնշում",
+      "group": null,
+      "type": "single_choice",
+      "question": "$231$ Ն ուժը ուղղահայաց ազդում է $7$ մ² մակերևույթի վրա։ Որքա՞ն է ճնշումը։",
+      "difficulty": "միջին",
+      "hint": "$P=\\dfrac{F}{A}$։",
+      "solution_steps": [
+        "$P=\\dfrac{231}{7}=33$ Պա"
+      ],
+      "options": [
+        "1617 Պա",
+        "40 Պա",
+        "33 Պա",
+        "231 Պա"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 7,
+      "topic": "Իմպուլս",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմնի վրա $9$ վ-ի ընթացքում ազդում է $50$ Ն հաստատուն ուժ։ Որքա՞ն է ուժի իմպուլսը։",
+      "difficulty": "միջին",
+      "hint": "$J=F\\Delta t$։",
+      "solution_steps": [
+        "$J=50\\cdot 9=450$ Ն·վ"
+      ],
+      "options": [
+        "59 Ն·վ",
+        "500 Ն·վ",
+        "50 Ն·վ",
+        "450 Ն·վ"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 8,
+      "topic": "Առաձգականություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "$1100$ Ն/մ կոշտության զսպանակը ձգված է $0{,}3$ մ-ով։ Որքա՞ն է դեֆորմացիայի պոտենցիալ էներգիան։",
+      "difficulty": "միջին",
+      "hint": "$E_p=\\dfrac{kx^2}{2}$։",
+      "solution_steps": [
+        "$E_p=\\dfrac{1100\\cdot 0{,}3^2}{2}=49,5$ Ջ"
+      ],
+      "options": [
+        "49,5 Ջ",
+        "330 Ջ",
+        "99 Ջ",
+        "50,5 Ջ"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 9,
+      "topic": "Կինեմատիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմինը $25$ մ ճանապարհն անցավ $5$ վ-ում, ապա $271$ մ-ը՝ $3$ վ-ում։ Որքա՞ն է միջին արագությունը։",
+      "difficulty": "միջին",
+      "hint": "$v_{\\text{միջ}}=\\dfrac{s_1+s_2}{t_1+t_2}$։",
+      "solution_steps": [
+        "$v=\\dfrac{25+271}{5+3}=37$ մ/վ"
+      ],
+      "options": [
+        "38 մ/վ",
+        "37 մ/վ",
+        "148 մ/վ",
+        "39 մ/վ"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 10,
+      "topic": "Դինամիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "$10$ կգ զանգվածով մարմինը շարժվում է $6$ մ/վ² արագացումով։ Որքա՞ն է համազոր ուժը։",
+      "difficulty": "հեշտ",
+      "hint": "$F=ma$։",
+      "solution_steps": [
+        "$F=10\\cdot 6=60$ Ն"
+      ],
+      "options": [
+        "16 Ն",
+        "70 Ն",
+        "60 Ն",
+        "66 Ն"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 11,
+      "topic": "Կինեմատիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմինը $10$ մ/վ սկզբնական արագությամբ շարժվում է $9$ մ/վ² հաստատուն արագացումով։ Որքա՞ն կլինի արագությունը $5$ վ հետո։",
+      "difficulty": "միջին",
+      "hint": "$v=v_0+at$։",
+      "solution_steps": [
+        "$v=10+9\\cdot 5=55$ մ/վ"
+      ],
+      "options": [
+        "45 մ/վ",
+        "50 մ/վ",
+        "64 մ/վ",
+        "55 մ/վ"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 12,
+      "topic": "Կինեմատիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմնի արագությունը $5$ վ-ում $10$ մ/վ-ից դարձավ $20$ մ/վ։ Որքա՞ն է արագացումը։",
+      "difficulty": "միջին",
+      "hint": "$a=\\dfrac{v-v_0}{t}$։",
+      "solution_steps": [
+        "$a=\\dfrac{20-10}{5}=2$ մ/վ²"
+      ],
+      "options": [
+        "2 մ/վ²",
+        "3 մ/վ²",
+        "4 մ/վ²",
+        "1 մ/վ²"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 13,
+      "topic": "Ազատ անկում",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմինը ընկնում է $7$ մ/վ ուղղաձիգ ներքև արագությամբ։ Ի՞նչ ճանապարհ կանցնի $4$ վ-ում։ $g=10$ մ/վ²։",
+      "difficulty": "միջին",
+      "hint": "$h=v_0t+\\dfrac{gt^2}{2}$։",
+      "solution_steps": [
+        "$h=7\\cdot 4+\\dfrac{10\\cdot 4^2}{2}=108$ մ"
+      ],
+      "options": [
+        "68 մ",
+        "108 մ",
+        "80 մ",
+        "112 մ"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 14,
+      "topic": "Ազատ անկում",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմինը ընկնում է $9$ մ/վ ուղղաձիգ ներքև արագությամբ։ Որքա՞ն կլինի արագությունը $6$ վ հետո։ $g=10$ մ/վ²։",
+      "difficulty": "հեշտ",
+      "hint": "$v=v_0+gt$։",
+      "solution_steps": [
+        "$v=9+10\\cdot 6=69$ մ/վ"
+      ],
+      "options": [
+        "39 մ/վ",
+        "79 մ/վ",
+        "69 մ/վ",
+        "60 մ/վ"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 15,
+      "topic": "Կինետիկ էներգիա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է $4$ կգ զանգվածով, $13$ մ/վ արագությամբ մարմնի կինետիկ էներգիան։",
+      "difficulty": "միջին",
+      "hint": "$E_k=\\dfrac{mv^2}{2}$։",
+      "solution_steps": [
+        "$E_k=\\dfrac{4\\cdot 13^2}{2}=338$ Ջ"
+      ],
+      "options": [
+        "52 Ջ",
+        "676 Ջ",
+        "342 Ջ",
+        "338 Ջ"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 16,
+      "topic": "Պոտենցիալ էներգիա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է $11$ կգ մարմնի պոտենցիալ էներգիան $11$ մ բարձրության վրա։ $g=10$ մ/վ²։",
+      "difficulty": "հեշտ",
+      "hint": "$E_p=mgh$։",
+      "solution_steps": [
+        "$E_p=11\\cdot 10\\cdot 11=1210$ Ջ"
+      ],
+      "options": [
+        "1210 Ջ",
+        "121 Ջ",
+        "110 Ջ",
+        "1220 Ջ"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 17,
+      "topic": "Հզորություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մարմնի վրա ազդում է $66$ Ն ուժ, և այն շարժվում է ուժի ուղղությամբ $4$ մ/վ արագությամբ։ Որքա՞ն է հզորությունը։",
+      "difficulty": "միջին",
+      "hint": "$P=Fv$։",
+      "solution_steps": [
+        "$P=66\\cdot 4=264$ Վտ"
+      ],
+      "options": [
+        "70 Վտ",
+        "264 Վտ",
+        "330 Վտ",
+        "66 Վտ"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 18,
+      "topic": "Հզորություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Մեքենան $8$ վ-ում կատարում է $784$ Ջ աշխատանք։ Որքա՞ն է նրա հզորությունը։",
+      "difficulty": "միջին",
+      "hint": "$P=\\dfrac{W}{t}$։",
+      "solution_steps": [
+        "$P=\\dfrac{784}{8}=98$ Վտ"
+      ],
+      "options": [
+        "6272 Վտ",
+        "106 Վտ",
+        "98 Վտ",
+        "784 Վտ"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 19,
+      "topic": "Առաձգականություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "$120$ Ն/մ կոշտության զսպանակը ձգվել է $0{,}02$ մ-ով։ Որքա՞ն է առաձգականության ուժը։",
+      "difficulty": "միջին",
+      "hint": "$F=kx$։",
+      "solution_steps": [
+        "$F=120\\cdot 0{,}02=2,4$ Ն"
+      ],
+      "options": [
+        "120 Ն",
+        "24 Ն",
+        "1,2 Ն",
+        "2,4 Ն"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 20,
+      "topic": "Իմպուլս",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է $5$ կգ զանգվածով, $8$ մ/վ արագությամբ մարմնի իմպուլսը։",
+      "difficulty": "հեշտ",
+      "hint": "$p=mv$։",
+      "solution_steps": [
+        "$p=5\\cdot 8=40$ կգ·մ/վ"
+      ],
+      "options": [
+        "40 կգ·մ/վ",
+        "13 կգ·մ/վ",
+        "45 կգ·մ/վ",
+        "32 կգ·մ/վ"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 21,
+      "topic": "Ջերմադինամիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Կառնոյի իդեալական ջերմային մեքենայի տաքացուցիչի ջերմաստիճանը $800$ Կ է, սառնարանինը՝ $650$ Կ։ Որքա՞ն է ՕԳԳ-ն։",
+      "difficulty": "բարձր",
+      "hint": "$\\eta=1-\\dfrac{T_2}{T_1}$։",
+      "solution_steps": [
+        "$\\eta=1-\\dfrac{650}{800}=18,75\\%$"
+      ],
+      "options": [
+        "81,25%",
+        "18,75%",
+        "28,75%",
+        "100%"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 22,
+      "topic": "Ֆազային անցումներ",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն ջերմաքանակ է պետք հալման ջերմաստիճանում գտնվող $0{,}4$ կգ ցինկի հալման համար։ Հալման տեսակարար ջերմությունը $1{,}1\\cdot10^{5}$ Ջ/կգ է։",
+      "difficulty": "միջին",
+      "hint": "$Q=\\lambda m$։",
+      "solution_steps": [
+        "$Q=1{,}1\\cdot10^{5}\\cdot 0{,}4=0{,}44\\cdot10^{5}$ Ջ"
+      ],
+      "options": [
+        "$1{,}1\\cdot10^{5}$ Ջ",
+        "$0{,}88\\cdot10^{5}$ Ջ",
+        "$0{,}44\\cdot10^{5}$ Ջ",
+        "$0{,}22\\cdot10^{5}$ Ջ"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 23,
+      "topic": "Իզոթերմ պրոցես",
+      "group": null,
+      "type": "single_choice",
+      "question": "Իզոթերմ պրոցեսում գազի ճնշումը $3$ ՄՊա էր $4$ լ ծավալի դեպքում։ Որքա՞ն կդառնա ճնշումը, երբ ծավալը դառնա $3$ լ։",
+      "difficulty": "միջին",
+      "hint": "$P_1V_1=P_2V_2$։",
+      "solution_steps": [
+        "$P_2=\\dfrac{3\\cdot 4}{3}=4$ ՄՊա"
+      ],
+      "options": [
+        "3 ՄՊա",
+        "5 ՄՊա",
+        "6 ՄՊա",
+        "4 ՄՊա"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 24,
+      "topic": "Իզոխոր պրոցես",
+      "group": null,
+      "type": "single_choice",
+      "question": "Հաստատուն ծավալում գազի ճնշումը $5$ ՄՊա էր $500$ Կ ջերմաստիճանում։ Որքա՞ն կդառնա ճնշումը $300$ Կ-ում։",
+      "difficulty": "միջին",
+      "hint": "$\\dfrac{P_1}{T_1}=\\dfrac{P_2}{T_2}$։",
+      "solution_steps": [
+        "$P_2=\\dfrac{5\\cdot 300}{500}=3$ ՄՊա"
+      ],
+      "options": [
+        "3 ՄՊա",
+        "5 ՄՊա",
+        "4 ՄՊա",
+        "6 ՄՊա"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 25,
+      "topic": "Ջերմաքանակ",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն ջերմաքանակ է պետք $6$ կգ ջրի ջերմաստիճանը $45^\\circ$C-ով բարձրացնելու համար։ $c=4200$ Ջ/(կգ·Կ)։",
+      "difficulty": "միջին",
+      "hint": "$Q=cm\\Delta T$։",
+      "solution_steps": [
+        "$Q=4200\\cdot 6\\cdot 45=1134000$ Ջ"
+      ],
+      "options": [
+        "25200 Ջ",
+        "1134000 Ջ",
+        "189000 Ջ",
+        "1138200 Ջ"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 26,
+      "topic": "Դիմադրություններ",
+      "group": null,
+      "type": "single_choice",
+      "question": "$12$ Օմ և $60$ Օմ դիմադրությունները միացված են զուգահեռ։ Որքա՞ն է ընդհանուր դիմադրությունը։",
+      "difficulty": "միջին",
+      "hint": "$\\dfrac{1}{R}=\\dfrac{1}{R_1}+\\dfrac{1}{R_2}$։",
+      "solution_steps": [
+        "$R=\\dfrac{12\\cdot 60}{72}=10$ Օմ"
+      ],
+      "options": [
+        "72 Օմ",
+        "11 Օմ",
+        "10 Օմ",
+        "48 Օմ"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 27,
+      "topic": "Դիմադրություններ",
+      "group": null,
+      "type": "single_choice",
+      "question": "$10$ Օմ և $17$ Օմ դիմադրությունները միացված են հաջորդաբար։ Որքա՞ն է ընդհանուր դիմադրությունը։",
+      "difficulty": "հեշտ",
+      "hint": "$R=R_1+R_2$։",
+      "solution_steps": [
+        "$R=10+17=27$ Օմ"
+      ],
+      "options": [
+        "7 Օմ",
+        "170 Օմ",
+        "28 Օմ",
+        "27 Օմ"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 28,
+      "topic": "Էլեկտրաստատիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է $q=4\\cdot10^{-9}$ Կլ լիցքից $0{,}6$ մ հեռավորության վրա դաշտի լարվածությունը։ $k=9\\cdot10^{9}$ Ն·մ²/Կլ²։",
+      "difficulty": "միջին",
+      "hint": "$E=\\dfrac{kq}{r^2}$։",
+      "solution_steps": [
+        "$E=\\dfrac{9\\cdot10^{9}\\cdot 4\\cdot10^{-9}}{0{,}36}=100$ Ն/Կլ"
+      ],
+      "options": [
+        "100 Ն/Կլ",
+        "200 Ն/Կլ",
+        "50 Ն/Կլ",
+        "104 Ն/Կլ"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 29,
+      "topic": "Կոնդենսատոր",
+      "group": null,
+      "type": "single_choice",
+      "question": "Կոնդենսատորի $Q=8\\cdot10^{-6}$ Կլ լիցքի դեպքում լարումը $8$ Վ է։ Որքա՞ն է ունակությունը։",
+      "difficulty": "միջին",
+      "hint": "$C=\\dfrac{Q}{U}$։",
+      "solution_steps": [
+        "$C=\\dfrac{8\\cdot10^{-6}}{8}=1\\cdot10^{-6}$ Ֆ"
+      ],
+      "options": [
+        "$64\\cdot10^{-6}$ Ֆ",
+        "$1\\cdot10^{-6}$ Ֆ",
+        "$2\\cdot10^{-6}$ Ֆ",
+        "$8\\cdot10^{-6}$ Ֆ"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 30,
+      "topic": "Հոսանքի աշխատանք",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն աշխատանք է կատարում հոսանքը $18$ Վ լարման տակ $6$ Ա հոսանք անցկացնող հաղորդչում $102$ վ-ում։",
+      "difficulty": "միջին",
+      "hint": "$A=UIt$։",
+      "solution_steps": [
+        "$A=18\\cdot 6\\cdot 102=11016$ Ջ"
+      ],
+      "options": [
+        "108 Ջ",
+        "11034 Ջ",
+        "11016 Ջ",
+        "1836 Ջ"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 31,
+      "topic": "Էլեկտրական լիցք",
+      "group": null,
+      "type": "single_choice",
+      "question": "Հաղորդչով $23$ վ-ի ընթացքում անցնում է $6$ Ա հաստատուն հոսանք։ Որքա՞ն է անցած լիցքը։",
+      "difficulty": "հեշտ",
+      "hint": "$q=It$։",
+      "solution_steps": [
+        "$q=6\\cdot 23=138$ Կլ"
+      ],
+      "options": [
+        "29 Կլ",
+        "144 Կլ",
+        "23 Կլ",
+        "138 Կլ"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 32,
+      "topic": "Հաստատուն հոսանք",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է լարումը $6$ Օմ դիմադրության վրա, եթե նրանով անցնում է $9$ Ա հոսանք։",
+      "difficulty": "հեշտ",
+      "hint": "$U=IR$։",
+      "solution_steps": [
+        "$U=9\\cdot 6=54$ Վ"
+      ],
+      "options": [
+        "54 Վ",
+        "15 Վ",
+        "63 Վ",
+        "6 Վ"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 33,
+      "topic": "Հոսանքի հզորություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն հզորություն է անջատվում $3$ Օմ դիմադրության վրա, երբ նրանով անցնում է $7$ Ա հոսանք։",
+      "difficulty": "միջին",
+      "hint": "$P=I^2R$։",
+      "solution_steps": [
+        "$P=7^2\\cdot 3=147$ Վտ"
+      ],
+      "options": [
+        "21 Վտ",
+        "147 Վտ",
+        "150 Վտ",
+        "42 Վտ"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 34,
+      "topic": "Հաստատուն հոսանք",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է հոսանքի ուժը հաղորդչում, եթե լարումը $91$ Վ է, դիմադրությունը՝ $13$ Օմ։",
+      "difficulty": "հեշտ",
+      "hint": "$I=\\dfrac{U}{R}$։",
+      "solution_steps": [
+        "$I=\\dfrac{91}{13}=7$ Ա"
+      ],
+      "options": [
+        "1183 Ա",
+        "8 Ա",
+        "7 Ա",
+        "91 Ա"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 35,
+      "topic": "Հոսանքի հզորություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է $152$ Վ լարման տակ $8$ Ա հոսանք սպառող սարքի հզորությունը։",
+      "difficulty": "միջին",
+      "hint": "$P=UI$։",
+      "solution_steps": [
+        "$P=152\\cdot 8=1216$ Վտ"
+      ],
+      "options": [
+        "160 Վտ",
+        "1368 Վտ",
+        "152 Վտ",
+        "1216 Վտ"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 36,
+      "topic": "Քվանտային ֆիզիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է $\\lambda=590$ նմ ալիքի երկարությամբ ֆոտոնի էներգիան։ $h=6{,}6\\cdot10^{-34}$ Ջ·վ, $c=3\\cdot10^{8}$ մ/վ։",
+      "difficulty": "միջին",
+      "hint": "$E=\\dfrac{hc}{\\lambda}$։",
+      "solution_steps": [
+        "$E=\\dfrac{6{,}6\\cdot10^{-34}\\cdot 3\\cdot10^{8}}{590\\cdot10^{-9}}=3{,}36\\cdot10^{-19}$ Ջ"
+      ],
+      "options": [
+        "$3{,}36\\cdot10^{-19}$ Ջ",
+        "$6{,}72\\cdot10^{-19}$ Ջ",
+        "$1{,}68\\cdot10^{-19}$ Ջ",
+        "$3{,}36\\cdot10^{-27}$ Ջ"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 37,
+      "topic": "Քվանտային ֆիզիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "Որքա՞ն է $\\lambda=220$ նմ ալիքի երկարությամբ ֆոտոնի իմպուլսը։ $h=6{,}6\\cdot10^{-34}$ Ջ·վ։",
+      "difficulty": "միջին",
+      "hint": "$p=\\dfrac{h}{\\lambda}$։",
+      "solution_steps": [
+        "$p=\\dfrac{6{,}6\\cdot10^{-34}}{220\\cdot10^{-9}}=3\\cdot10^{-27}$ կգ·մ/վ"
+      ],
+      "options": [
+        "$6\\cdot10^{-27}$ կգ·մ/վ",
+        "$3\\cdot10^{-27}$ կգ·մ/վ",
+        "$1{,}5\\cdot10^{-27}$ կգ·մ/վ",
+        "$3\\cdot10^{-34}$ կգ·մ/վ"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 38,
+      "topic": "Ատոմի միջուկ",
+      "group": null,
+      "type": "single_choice",
+      "question": "Ի՞նչ մասնիկներից է կազմված $^{108}_{47}\\mathrm{Ag}$ միջուկը։",
+      "difficulty": "հեշտ",
+      "hint": "$Z$՝ պրոտոն, $A-Z$՝ նեյտրոն։",
+      "solution_steps": [
+        "$Z=47$, $N=108-47=61$"
+      ],
+      "options": [
+        "$47$ պրոտոնից և $108$ նեյտրոնից",
+        "$61$ պրոտոնից և $47$ նեյտրոնից",
+        "$47$ պրոտոնից և $61$ նեյտրոնից",
+        "$47$ էլեկտրոնից և $61$ պրոտոնից"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 39,
+      "topic": "Ռադիոակտիվություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Ռադիոակտիվ նմուշում սկզբում կար $224$ միջուկ։ Քանի՞սը կմնա չքայքայված $5$ կիսաքայքայման պարբերությունից հետո։",
+      "difficulty": "միջին",
+      "hint": "$N=\\dfrac{N_0}{2^{t/T}}$։",
+      "solution_steps": [
+        "$N=\\dfrac{224}{2^{5}}=\\dfrac{224}{32}=7$"
+      ],
+      "options": [
+        "14",
+        "35",
+        "8",
+        "7"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 40,
+      "topic": "Ալիքային օպտիկա",
+      "group": null,
+      "type": "single_choice",
+      "question": "$540$ նմ ալիքի երկարությամբ լույսը վակուումից անցնում է $2$ բեկման ցուցիչով միջավայր։ Որքա՞ն է ալիքի երկարությունը միջավայրում։",
+      "difficulty": "միջին",
+      "hint": "$\\lambda'=\\dfrac{\\lambda}{n}$։",
+      "solution_steps": [
+        "$\\lambda'=\\dfrac{540}{2}=270$ նմ"
+      ],
+      "options": [
+        "270 նմ",
+        "540 նմ",
+        "280 նմ",
+        "1080 նմ"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 41,
+      "topic": "Դինամիկա",
+      "group": null,
+      "type": "free_response",
+      "question": "$198$ կմ/ժ արագությամբ շարժվող ավտոմեքենան կտրուկ արգելակում է։ Անիվների և ճանապարհի միջև շփման գործակիցը $0{,}3$ է, $g=10$ մ/վ²։ Ի՞նչ ճանապարհ կանցնի մեքենան մինչև կանգնելը (մ, կլորացրած հարյուրերորդականով)։",
+      "difficulty": "բարձր",
+      "hint": "$s=\\dfrac{v^2}{2\\mu g}$ ($v$-ն մ/վ-ով)։",
+      "solution_steps": [
+        "$v=198$ կմ/ժ $=55$ մ/վ",
+        "$s=\\dfrac{55^2}{2\\cdot 0{,}3\\cdot 10}=504,2$ մ"
+      ],
+      "answer": "504,2"
+    },
+    {
+      "number": 42,
+      "topic": "Իդեալական գազ",
+      "group": null,
+      "type": "free_response",
+      "question": "Իդեալական գազի ճնշումը $9{,}66$ ՄՊա է, մոլեկուլների կոնցենտրացիան՝ $10\\cdot10^{26}$ մ⁻³։ Բոլցմանի հաստատունը $1{,}38\\cdot10^{-23}$ Ջ/Կ։ Որքա՞ն է գազի ջերմաստիճանը (Կ)։",
+      "difficulty": "միջին",
+      "hint": "$p=nkT\\Rightarrow T=\\dfrac{p}{nk}$։",
+      "solution_steps": [
+        "$T=\\dfrac{9{,}66\\cdot10^{6}}{10\\cdot10^{26}\\cdot 1{,}38\\cdot10^{-23}}=700$ Կ"
+      ],
+      "answer": "700"
+    },
+    {
+      "number": 43,
+      "topic": "Մագնիսական դաշտ",
+      "group": null,
+      "type": "free_response",
+      "question": "$2$ մ երկարությամբ ուղիղ հաղորդիչը գտնվում է $0{,}5$ Տլ ինդուկցիայով դաշտում՝ գծերին ուղղահայաց։ Նրա վրա ազդող ուժը $5$ Ն է։ Որքա՞ն է հոսանքի ուժը (Ա)։",
+      "difficulty": "միջին",
+      "hint": "$F=BIL\\Rightarrow I=\\dfrac{F}{BL}$։",
+      "solution_steps": [
+        "$I=\\dfrac{5}{0{,}5\\cdot 2}=5$ Ա"
+      ],
+      "answer": "5"
+    },
+    {
+      "number": 44,
+      "topic": "Ֆոտոէֆեկտ",
+      "group": null,
+      "type": "free_response",
+      "question": "Մետաղի կաթոդը լուսավորում են $330$ նմ ալիքի երկարությամբ ճառագայթմամբ։ Ելքի աշխատանքը $1{,}2\\cdot10^{-19}$ Ջ է։ Որքա՞ն է կասեցնող լարումը (Վ)։ $h=6{,}6\\cdot10^{-34}$ Ջ·վ, $c=3\\cdot10^{8}$ մ/վ, $e=1{,}6\\cdot10^{-19}$ Կլ։",
+      "difficulty": "բարձր",
+      "hint": "$\\dfrac{hc}{\\lambda}=A+eU_{\\text{կաս}}$։",
+      "solution_steps": [
+        "$\\dfrac{hc}{\\lambda}=6\\cdot10^{-19}$ Ջ",
+        "$eU=4{,}8\\cdot10^{-19}$ Ջ",
+        "$U_{\\text{կաս}}=3$ Վ"
+      ],
+      "answer": "3"
+    },
+    {
+      "number": 45,
+      "topic": "Դինամիկա",
+      "group": "g1",
+      "type": "free_response",
+      "question": "(45-46) $22$ կգ զանգվածով մարմնի վրա ազդում են իրար փոխուղղահայաց $F_1=66$ Ն և $F_2=88$ Ն ուժեր։\n\nՈրքա՞ն է մարմնի արագացումը (մ/վ²)։",
+      "difficulty": "միջին",
+      "hint": "$F=\\sqrt{F_1^2+F_2^2}$, $a=\\dfrac{F}{m}$։",
+      "solution_steps": [
+        "$F=\\sqrt{66^2+88^2}=110$ Ն",
+        "$a=\\dfrac{110}{22}=5$ մ/վ²"
+      ],
+      "answer": "5"
+    },
+    {
+      "number": 46,
+      "topic": "Դինամիկա",
+      "group": "g1",
+      "type": "free_response",
+      "question": "(45-46) $22$ կգ զանգվածով մարմնի վրա ազդում են իրար փոխուղղահայաց $F_1=66$ Ն և $F_2=88$ Ն ուժեր։\n\nԻ՞նչ մեծությամբ լրացուցիչ ուժ պետք է ազդի, որպեսզի արագացումը դառնա զրո (Ն)։",
+      "difficulty": "միջին",
+      "hint": "Լրացուցիչ ուժը հավասարակշռում է համազորը։",
+      "solution_steps": [
+        "Համազորը՝ $110$ Ն",
+        "Լրացուցիչ ուժը՝ $110$ Ն"
+      ],
+      "answer": "110"
+    },
+    {
+      "number": 47,
+      "topic": "Տատանումներ",
+      "group": "g2",
+      "type": "free_response",
+      "question": "(47-48) $10$ գ զանգվածով գնդիկի տատանումները նկարագրվում են $x=0{,}2\\sin(50t)$ հավասարմամբ (ՄՀ միավորներով)։\n\nՈրքա՞ն է գնդիկի առավելագույն արագությունը (մ/վ)։",
+      "difficulty": "միջին",
+      "hint": "$v_{max}=A\\omega$։",
+      "solution_steps": [
+        "$v_{max}=0{,}2\\cdot 50=10$ մ/վ"
+      ],
+      "answer": "10"
+    },
+    {
+      "number": 48,
+      "topic": "Տատանումներ",
+      "group": "g2",
+      "type": "free_response",
+      "question": "(47-48) $10$ գ զանգվածով գնդիկի տատանումները նկարագրվում են $x=0{,}2\\sin(50t)$ հավասարմամբ (ՄՀ միավորներով)։\n\nՈրքա՞ն է գնդիկի առավելագույն արագացումը (մ/վ²)։",
+      "difficulty": "բարձր",
+      "hint": "$a_{max}=A\\omega^2$։",
+      "solution_steps": [
+        "$a_{max}=0{,}2\\cdot 50^2=500$ մ/վ²"
+      ],
+      "answer": "500"
+    },
+    {
+      "number": 49,
+      "topic": "Մեխանիկական էներգիա",
+      "group": "g3",
+      "type": "free_response",
+      "question": "(49-50) $2$ գ զանգվածով մանրագնդակը $350$ մ/վ արագությամբ ծակում-անցնում է տախտակը՝ դուրս գալով $50$ մ/վ արագությամբ։\n\nՈրքա՞ն մեխանիկական էներգիա է կորցնում մանրագնդակը (Ջ)։",
+      "difficulty": "միջին",
+      "hint": "$\\Delta E=\\dfrac{m(v_1^2-v_2^2)}{2}$։",
+      "solution_steps": [
+        "$\\Delta E=\\dfrac{0{,}002(350^2-50^2)}{2}=120$ Ջ"
+      ],
+      "answer": "120"
+    },
+    {
+      "number": 50,
+      "topic": "Ներքին էներգիա",
+      "group": "g3",
+      "type": "free_response",
+      "question": "(49-50) $2$ գ զանգվածով մանրագնդակը $350$ մ/վ արագությամբ ծակում-անցնում է տախտակը՝ դուրս գալով $50$ մ/վ արագությամբ։\n\nԿորցրած էներգիայի $50\\%$-ը ծախսվում է ներքին էներգիայի աճի համար։ Որքա՞ն է այդ ջերմաքանակը (Ջ)։",
+      "difficulty": "միջին",
+      "hint": "$Q=0{,}5\\cdot\\Delta E$։",
+      "solution_steps": [
+        "$Q=0{,}5\\cdot 120=60$ Ջ"
+      ],
+      "answer": "60"
+    },
+    {
+      "number": 51,
+      "topic": "Հաստատուն հոսանք",
+      "group": "g4",
+      "type": "free_response",
+      "question": "(51-52) Նկարում պատկերված շղթայում հոսանքի աղբյուրի ԷլՇՈւ-ն $\\varepsilon=12$ Վ է, ներքին դիմադրությունը՝ $r=4$ Օմ, արտաքին դիմադրությունը՝ $R=2$ Օմ։ Ամպերաչափն ու վոլտաչափն իդեալական են։\n\nՈրքա՞ն է ամպերաչափի ցուցմունքը (Ա)։",
+      "difficulty": "միջին",
+      "hint": "$I=\\dfrac{\\varepsilon}{R+r}$։",
+      "solution_steps": [
+        "$I=\\dfrac{12}{2+4}=2$ Ա"
+      ],
+      "answer": "2",
+      "figure_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 310 190\" width=\"310\" height=\"190\" font-family=\"sans-serif\" font-size=\"13\"><line x1=\"60\" y1=\"45\" x2=\"230\" y2=\"45\" stroke=\"#333\" stroke-width=\"2\"/><line x1=\"230\" y1=\"45\" x2=\"230\" y2=\"92\" stroke=\"#333\" stroke-width=\"2\"/><line x1=\"230\" y1=\"128\" x2=\"230\" y2=\"165\" stroke=\"#333\" stroke-width=\"2\"/><line x1=\"60\" y1=\"165\" x2=\"230\" y2=\"165\" stroke=\"#333\" stroke-width=\"2\"/><line x1=\"60\" y1=\"45\" x2=\"60\" y2=\"96\" stroke=\"#333\" stroke-width=\"2\"/><line x1=\"60\" y1=\"112\" x2=\"60\" y2=\"165\" stroke=\"#333\" stroke-width=\"2\"/><line x1=\"49\" y1=\"96\" x2=\"71\" y2=\"96\" stroke=\"#333\" stroke-width=\"3.5\"/><line x1=\"54\" y1=\"112\" x2=\"66\" y2=\"112\" stroke=\"#333\" stroke-width=\"2\"/><text x=\"16\" y=\"109\" font-style=\"italic\">ε, r</text><circle cx=\"145\" cy=\"45\" r=\"14\" fill=\"#fff\" stroke=\"#333\" stroke-width=\"1.7\"/><text x=\"139\" y=\"50\">A</text><rect x=\"220\" y=\"92\" width=\"20\" height=\"36\" fill=\"#fff\" stroke=\"#333\" stroke-width=\"1.7\"/><text x=\"216\" y=\"115\" text-anchor=\"end\" font-style=\"italic\">R</text><line x1=\"230\" y1=\"92\" x2=\"278\" y2=\"92\" stroke=\"#333\" stroke-width=\"1.5\"/><line x1=\"278\" y1=\"92\" x2=\"278\" y2=\"98\" stroke=\"#333\" stroke-width=\"1.5\"/><line x1=\"230\" y1=\"128\" x2=\"278\" y2=\"128\" stroke=\"#333\" stroke-width=\"1.5\"/><line x1=\"278\" y1=\"128\" x2=\"278\" y2=\"122\" stroke=\"#333\" stroke-width=\"1.5\"/><circle cx=\"278\" cy=\"110\" r=\"13\" fill=\"#fff\" stroke=\"#333\" stroke-width=\"1.7\"/><text x=\"272\" y=\"115\">V</text></svg>"
+    },
+    {
+      "number": 52,
+      "topic": "Հաստատուն հոսանք",
+      "group": "g4",
+      "type": "free_response",
+      "question": "(51-52) Նկարում պատկերված շղթայում հոսանքի աղբյուրի ԷլՇՈւ-ն $\\varepsilon=12$ Վ է, ներքին դիմադրությունը՝ $r=4$ Օմ, արտաքին դիմադրությունը՝ $R=2$ Օմ։ Ամպերաչափն ու վոլտաչափն իդեալական են։\n\nՈրքա՞ն է վոլտաչափի ցուցմունքը (Վ)։",
+      "difficulty": "միջին",
+      "hint": "$U=IR$։",
+      "solution_steps": [
+        "$U=2\\cdot 2=4$ Վ"
+      ],
+      "answer": "4"
+    },
+    {
+      "number": 53,
+      "topic": "Օպտիկա",
+      "group": "g5",
+      "type": "free_response",
+      "question": "(53-54) Լույսը $860$ նմ ալիքի երկարությամբ վակուումից անցնում է թափանցիկ միջավայր, որի բեկման ցուցիչը $2$ է։ Վակուումում լույսի արագությունը $3\\cdot10^{8}$ մ/վ է։\n\nՈրքա՞ն է լույսի արագությունը միջավայրում։ Պատասխանը արտահայտեք $10^{8}$ մ/վ-ով։",
+      "difficulty": "միջին",
+      "hint": "$v=\\dfrac{c}{n}$։",
+      "solution_steps": [
+        "$v=\\dfrac{3\\cdot10^{8}}{2}=1,5\\cdot10^{8}$ մ/վ"
+      ],
+      "answer": "1,5"
+    },
+    {
+      "number": 54,
+      "topic": "Օպտիկա",
+      "group": "g5",
+      "type": "free_response",
+      "question": "(53-54) Լույսը $860$ նմ ալիքի երկարությամբ վակուումից անցնում է թափանցիկ միջավայր, որի բեկման ցուցիչը $2$ է։ Վակուումում լույսի արագությունը $3\\cdot10^{8}$ մ/վ է։\n\nՈրքա՞ն է լույսի ալիքի երկարությունը միջավայրում (նմ)։",
+      "difficulty": "միջին",
+      "hint": "$\\lambda'=\\dfrac{\\lambda}{n}$։",
+      "solution_steps": [
+        "$\\lambda'=\\dfrac{860}{2}=430$ նմ"
+      ],
+      "answer": "430"
+    },
+    {
+      "number": 55,
+      "topic": "Ջերմադինամիկա",
+      "group": "g6",
+      "type": "free_response",
+      "question": "(55-57) Միատոմ իդեալական գազը իզոբար ընդարձակվում է $P=6\\cdot10^{5}$ Պա հաստատուն ճնշման տակ՝ ծավալը $1\\cdot10^{-3}$ մ³-ից ($1$ վիճակ) դառնում է $3\\cdot10^{-3}$ մ³ ($2$ վիճակ) (տես գրաֆիկը)։\n\nՈրքա՞ն աշխատանք է կատարում գազը (Ջ)։",
+      "difficulty": "միջին",
+      "hint": "Իզոբար՝ $A=P\\Delta V$։",
+      "solution_steps": [
+        "$A=6\\cdot10^{5}\\cdot(3-1)\\cdot10^{-3}=1200$ Ջ"
+      ],
+      "answer": "1200",
+      "figure_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 300 190\" width=\"300\" height=\"190\" font-family=\"sans-serif\" font-size=\"13\"><defs><marker id=\"ax\" markerWidth=\"8\" markerHeight=\"8\" refX=\"6\" refY=\"3\" orient=\"auto\"><path d=\"M0,0 L6,3 L0,6 Z\" fill=\"#333\"/></marker></defs><line x1=\"55\" y1=\"165\" x2=\"255\" y2=\"165\" stroke=\"#333\" stroke-width=\"1.5\" marker-end=\"url(#ax)\"/><line x1=\"55\" y1=\"165\" x2=\"55\" y2=\"25\" stroke=\"#333\" stroke-width=\"1.5\" marker-end=\"url(#ax)\"/><text x=\"245\" y=\"183\" font-style=\"italic\">V</text><text x=\"13\" y=\"32\" font-style=\"italic\">P</text><line x1=\"98.3\" y1=\"75.0\" x2=\"185.0\" y2=\"75.0\" stroke=\"#c0392b\" stroke-width=\"2.5\"/><circle cx=\"98.3\" cy=\"75.0\" r=\"3.5\" fill=\"#c0392b\"/><circle cx=\"185.0\" cy=\"75.0\" r=\"3.5\" fill=\"#c0392b\"/><text x=\"94\" y=\"67\">1</text><text x=\"181\" y=\"67\">2</text><line x1=\"98.3\" y1=\"165\" x2=\"98.3\" y2=\"75.0\" stroke=\"#999\" stroke-dasharray=\"3\"/><line x1=\"185.0\" y1=\"165\" x2=\"185.0\" y2=\"75.0\" stroke=\"#999\" stroke-dasharray=\"3\"/><text x=\"94\" y=\"181\">1</text><text x=\"181\" y=\"181\">3</text></svg>"
+    },
+    {
+      "number": 56,
+      "topic": "Ջերմադինամիկա",
+      "group": "g6",
+      "type": "free_response",
+      "question": "(55-57) Միատոմ իդեալական գազը իզոբար ընդարձակվում է $P=6\\cdot10^{5}$ Պա հաստատուն ճնշման տակ՝ ծավալը $1\\cdot10^{-3}$ մ³-ից ($1$ վիճակ) դառնում է $3\\cdot10^{-3}$ մ³ ($2$ վիճակ) (տես գրաֆիկը)։\n\nՈրքա՞ն է $T_2/T_1$ ջերմաստիճանների հարաբերությունը։",
+      "difficulty": "միջին",
+      "hint": "Իզոբար՝ $V\\propto T$։",
+      "solution_steps": [
+        "$\\dfrac{T_2}{T_1}=\\dfrac{V_2}{V_1}=3$"
+      ],
+      "answer": "3"
+    },
+    {
+      "number": 57,
+      "topic": "Ջերմադինամիկա",
+      "group": "g6",
+      "type": "free_response",
+      "question": "(55-57) Միատոմ իդեալական գազը իզոբար ընդարձակվում է $P=6\\cdot10^{5}$ Պա հաստատուն ճնշման տակ՝ ծավալը $1\\cdot10^{-3}$ մ³-ից ($1$ վիճակ) դառնում է $3\\cdot10^{-3}$ մ³ ($2$ վիճակ) (տես գրաֆիկը)։\n\nՈրքա՞ն ջերմաքանակ է հաղորդվել գազին (Ջ)։",
+      "difficulty": "բարձր",
+      "hint": "$Q=\\Delta U+A$, միատոմ՝ $\\Delta U=\\dfrac{3}{2}P\\Delta V$։",
+      "solution_steps": [
+        "$\\Delta U=\\dfrac{3}{2}\\cdot 1200=1800$ Ջ",
+        "$Q=1800+1200=3000$ Ջ"
+      ],
+      "answer": "3000"
+    },
+    {
+      "number": 58,
+      "topic": "Օպտիկա",
+      "group": "g7",
+      "type": "free_response",
+      "question": "(58-60) Բարակ ժողովող ոսպնյակի կիզակետային հեռավորությունը $F=0{,}12$ մ է։ Առարկան, որի բարձրությունը $4$ սմ է, գտնվում է ոսպնյակից $d=0{,}14$ մ հեռավորության վրա։\n\nՈրքա՞ն է պատկերի հեռավորությունը ոսպնյակից (մ)։",
+      "difficulty": "միջին",
+      "hint": "$\\dfrac{1}{F}=\\dfrac{1}{d}+\\dfrac{1}{f}$։",
+      "solution_steps": [
+        "$\\dfrac{1}{f}=\\dfrac{1}{0{,}12}-\\dfrac{1}{0{,}14}$",
+        "$f=0{,}84$ մ"
+      ],
+      "answer": "0,84"
+    },
+    {
+      "number": 59,
+      "topic": "Օպտիկա",
+      "group": "g7",
+      "type": "free_response",
+      "question": "(58-60) Բարակ ժողովող ոսպնյակի կիզակետային հեռավորությունը $F=0{,}12$ մ է։ Առարկան, որի բարձրությունը $4$ սմ է, գտնվում է ոսպնյակից $d=0{,}14$ մ հեռավորության վրա։\n\nՈրքա՞ն է գծային խոշորացումը։",
+      "difficulty": "միջին",
+      "hint": "$\\Gamma=\\dfrac{f}{d}$։",
+      "solution_steps": [
+        "$\\Gamma=\\dfrac{0{,}84}{0{,}14}=6$"
+      ],
+      "answer": "6"
+    },
+    {
+      "number": 60,
+      "topic": "Օպտիկա",
+      "group": "g7",
+      "type": "free_response",
+      "question": "(58-60) Բարակ ժողովող ոսպնյակի կիզակետային հեռավորությունը $F=0{,}12$ մ է։ Առարկան, որի բարձրությունը $4$ սմ է, գտնվում է ոսպնյակից $d=0{,}14$ մ հեռավորության վրա։\n\nՈրքա՞ն է պատկերի բարձրությունը (սմ)։",
+      "difficulty": "միջին",
+      "hint": "$H=\\Gamma h$։",
+      "solution_steps": [
+        "$H=6\\cdot 4=24$ սմ"
+      ],
+      "answer": "24"
+    },
+    {
+      "number": 61,
+      "topic": "Դինամիկա",
+      "group": "g8",
+      "type": "free_response",
+      "question": "(61-64) Հարթ սեղանի վրա գտնվող $m_1=5$ կգ մարմինը թելով, անշփ ճախարակի վրայով, կապված է կախված $m_2=5$ կգ մարմնի հետ (տես նկարը)։ Սեղանի և $m_1$-ի միջև շփումը բացակայում է, $g=10$ մ/վ²։ Համակարգը շարժվում է դադարից։\n\nՈրքա՞ն է համակարգի արագացումը (մ/վ²)։",
+      "difficulty": "միջին",
+      "hint": "$a=\\dfrac{m_2 g}{m_1+m_2}$։",
+      "solution_steps": [
+        "$a=\\dfrac{5\\cdot 10}{5+5}=5$ մ/վ²"
+      ],
+      "answer": "5",
+      "figure_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 300 200\" width=\"300\" height=\"200\" font-family=\"sans-serif\" font-size=\"13\"><rect x=\"30\" y=\"120\" width=\"150\" height=\"12\" fill=\"#bdc3c7\" stroke=\"#333\"/><line x1=\"60\" y1=\"132\" x2=\"60\" y2=\"175\" stroke=\"#333\"/><line x1=\"150\" y1=\"132\" x2=\"150\" y2=\"175\" stroke=\"#333\"/><rect x=\"70\" y=\"96\" width=\"40\" height=\"24\" fill=\"#5dade2\" stroke=\"#1b4f72\"/><text x=\"82\" y=\"112\" fill=\"#fff\" font-style=\"italic\">m1</text><circle cx=\"190\" cy=\"120\" r=\"10\" fill=\"none\" stroke=\"#333\" stroke-width=\"2\"/><line x1=\"110\" y1=\"108\" x2=\"182\" y2=\"112\" stroke=\"#333\"/><line x1=\"200\" y1=\"120\" x2=\"200\" y2=\"165\" stroke=\"#333\"/><rect x=\"185\" y=\"165\" width=\"30\" height=\"24\" fill=\"#e67e22\" stroke=\"#a04000\"/><text x=\"192\" y=\"181\" fill=\"#fff\" font-style=\"italic\">m2</text></svg>"
+    },
+    {
+      "number": 62,
+      "topic": "Դինամիկա",
+      "group": "g8",
+      "type": "free_response",
+      "question": "(61-64) Հարթ սեղանի վրա գտնվող $m_1=5$ կգ մարմինը թելով, անշփ ճախարակի վրայով, կապված է կախված $m_2=5$ կգ մարմնի հետ (տես նկարը)։ Սեղանի և $m_1$-ի միջև շփումը բացակայում է, $g=10$ մ/վ²։ Համակարգը շարժվում է դադարից։\n\nՈրքա՞ն է թելի լարվածությունը (Ն)։",
+      "difficulty": "միջին",
+      "hint": "$T=m_1 a$։",
+      "solution_steps": [
+        "$T=5\\cdot 5=25$ Ն"
+      ],
+      "answer": "25"
+    },
+    {
+      "number": 63,
+      "topic": "Կինեմատիկա",
+      "group": "g8",
+      "type": "free_response",
+      "question": "(61-64) Հարթ սեղանի վրա գտնվող $m_1=5$ կգ մարմինը թելով, անշփ ճախարակի վրայով, կապված է կախված $m_2=5$ կգ մարմնի հետ (տես նկարը)։ Սեղանի և $m_1$-ի միջև շփումը բացակայում է, $g=10$ մ/վ²։ Համակարգը շարժվում է դադարից։\n\nՈրքա՞ն կլինի արագությունը $3$ վ հետո (մ/վ)։",
+      "difficulty": "միջին",
+      "hint": "$v=at$։",
+      "solution_steps": [
+        "$v=5\\cdot 3=15$ մ/վ"
+      ],
+      "answer": "15"
+    },
+    {
+      "number": 64,
+      "topic": "Կինեմատիկա",
+      "group": "g8",
+      "type": "free_response",
+      "question": "(61-64) Հարթ սեղանի վրա գտնվող $m_1=5$ կգ մարմինը թելով, անշփ ճախարակի վրայով, կապված է կախված $m_2=5$ կգ մարմնի հետ (տես նկարը)։ Սեղանի և $m_1$-ի միջև շփումը բացակայում է, $g=10$ մ/վ²։ Համակարգը շարժվում է դադարից։\n\nԻ՞նչ ճանապարհ կանցնի համակարգը $3$ վ-ում (մ)։",
+      "difficulty": "միջին",
+      "hint": "$s=\\dfrac{at^2}{2}$։",
+      "solution_steps": [
+        "$s=\\dfrac{5\\cdot 3^2}{2}=22$ մ"
+      ],
+      "answer": "22"
+    },
+    {
+      "number": 65,
+      "topic": "Մագնիսական դաշտ",
+      "group": "g9",
+      "type": "free_response",
+      "question": "(65-68) Պրոտոնը $v=3\\cdot10^{6}$ մ/վ արագությամբ մտնում է $B=1$ Տլ ինդուկցիայով համասեռ մագնիսական դաշտ՝ գծերին ուղղահայաց (տես նկարը)։ Պրոտոնի լիցքը $q=1{,}6\\cdot10^{-19}$ Կլ է, զանգվածը՝ $m=1{,}6\\cdot10^{-27}$ կգ։\n\nՈրքա՞ն է պրոտոնի վրա ազդող ուժը։ Պատասխանը բազմապատկեք $10^{13}$-ով։",
+      "difficulty": "միջին",
+      "hint": "$F=qvB$։",
+      "solution_steps": [
+        "$F=1{,}6\\cdot10^{-19}\\cdot 3\\cdot10^{6}\\cdot 1=4,8\\cdot10^{-13}$ Ն"
+      ],
+      "answer": "4,8",
+      "figure_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 300 200\" width=\"300\" height=\"200\" font-family=\"sans-serif\" font-size=\"13\"><rect x=\"90\" y=\"30\" width=\"150\" height=\"140\" fill=\"#eaf2f8\" stroke=\"#2980b9\"/><circle cx=\"105\" cy=\"45\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"105\" cy=\"67\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"105\" cy=\"89\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"105\" cy=\"111\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"105\" cy=\"133\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"105\" cy=\"155\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"127\" cy=\"45\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"127\" cy=\"67\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"127\" cy=\"89\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"127\" cy=\"111\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"127\" cy=\"133\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"127\" cy=\"155\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"149\" cy=\"45\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"149\" cy=\"67\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"149\" cy=\"89\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"149\" cy=\"111\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"149\" cy=\"133\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"149\" cy=\"155\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"171\" cy=\"45\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"171\" cy=\"67\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"171\" cy=\"89\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"171\" cy=\"111\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"171\" cy=\"133\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"171\" cy=\"155\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"193\" cy=\"45\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"193\" cy=\"67\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"193\" cy=\"89\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"193\" cy=\"111\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"193\" cy=\"133\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"193\" cy=\"155\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"215\" cy=\"45\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"215\" cy=\"67\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"215\" cy=\"89\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"215\" cy=\"111\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"215\" cy=\"133\" r=\"2\" fill=\"#2980b9\"/><circle cx=\"215\" cy=\"155\" r=\"2\" fill=\"#2980b9\"/><defs><marker id=\"vh\" markerWidth=\"9\" markerHeight=\"9\" refX=\"7\" refY=\"3.2\" orient=\"auto\"><path d=\"M0,0 L7,3.2 L0,6.4 Z\" fill=\"#c0392b\"/></marker></defs><line x1=\"30\" y1=\"100\" x2=\"88\" y2=\"100\" stroke=\"#c0392b\" stroke-width=\"2.4\" marker-end=\"url(#vh)\"/><text x=\"45\" y=\"93\" fill=\"#c0392b\" font-style=\"italic\">v</text><text x=\"150\" y=\"185\" fill=\"#2980b9\" font-style=\"italic\">B</text><text x=\"150\" y=\"24\" font-style=\"italic\">d</text><line x1=\"90\" y1=\"18\" x2=\"240\" y2=\"18\" stroke=\"#333\" stroke-dasharray=\"3\"/></svg>"
+    },
+    {
+      "number": 66,
+      "topic": "Մագնիսական դաշտ",
+      "group": "g9",
+      "type": "free_response",
+      "question": "(65-68) Պրոտոնը $v=3\\cdot10^{6}$ մ/վ արագությամբ մտնում է $B=1$ Տլ ինդուկցիայով համասեռ մագնիսական դաշտ՝ գծերին ուղղահայաց (տես նկարը)։ Պրոտոնի լիցքը $q=1{,}6\\cdot10^{-19}$ Կլ է, զանգվածը՝ $m=1{,}6\\cdot10^{-27}$ կգ։\n\nՈրքա՞ն է շրջանագծի շառավիղը (մ)։",
+      "difficulty": "միջին",
+      "hint": "$r=\\dfrac{mv}{qB}$։",
+      "solution_steps": [
+        "$r=\\dfrac{1{,}6\\cdot10^{-27}\\cdot 3\\cdot10^{6}}{1{,}6\\cdot10^{-19}\\cdot 1}=0,03$ մ"
+      ],
+      "answer": "0,03"
+    },
+    {
+      "number": 67,
+      "topic": "Մագնիսական դաշտ",
+      "group": "g9",
+      "type": "free_response",
+      "question": "(65-68) Պրոտոնը $v=3\\cdot10^{6}$ մ/վ արագությամբ մտնում է $B=1$ Տլ ինդուկցիայով համասեռ մագնիսական դաշտ՝ գծերին ուղղահայաց (տես նկարը)։ Պրոտոնի լիցքը $q=1{,}6\\cdot10^{-19}$ Կլ է, զանգվածը՝ $m=1{,}6\\cdot10^{-27}$ կգ։\n\nՈրքա՞ն է պտտման պարբերությունը։ Ընդունել $\\pi=3$։ Պատասխանը բազմապատկեք $10^{7}$-ով։",
+      "difficulty": "բարձր",
+      "hint": "$T=\\dfrac{2\\pi m}{qB}$։",
+      "solution_steps": [
+        "$T=\\dfrac{2\\cdot 3\\cdot 1{,}6\\cdot10^{-27}}{1{,}6\\cdot10^{-19}\\cdot 1}=0,6\\cdot10^{-7}$ վ"
+      ],
+      "answer": "0,6"
+    },
+    {
+      "number": 68,
+      "topic": "Մագնիսական դաշտ",
+      "group": "g9",
+      "type": "free_response",
+      "question": "(65-68) Պրոտոնը $v=3\\cdot10^{6}$ մ/վ արագությամբ մտնում է $B=1$ Տլ ինդուկցիայով համասեռ մագնիսական դաշտ՝ գծերին ուղղահայաց (տես նկարը)։ Պրոտոնի լիցքը $q=1{,}6\\cdot10^{-19}$ Կլ է, զանգվածը՝ $m=1{,}6\\cdot10^{-27}$ կգ։\n\nՈրքա՞ն է կենտրոնաձիգ արագացումը։ Պատասխանը բազմապատկեք $10^{-13}$-ով։",
+      "difficulty": "բարձր",
+      "hint": "$a=\\dfrac{v^2}{r}$։",
+      "solution_steps": [
+        "$a=\\dfrac{(3\\cdot10^{6})^2}{0,03}=30\\cdot10^{13}$ մ/վ²"
+      ],
+      "answer": "30"
+    },
+    {
+      "number": 69,
+      "topic": "Քվանտային ֆիզիկա",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Մետաղի մակերևույթը լուսավորվում է $530$ նմ ալիքի երկարությամբ լույսով։ Հաստատե՛ք կամ ժխտե՛ք ֆոտոնի և ֆոտոէֆեկտի վերաբերյալ հետևյալ պնդումները։",
+      "difficulty": "միջին",
+      "hint": "Ֆոտոէֆեկտն ունի կարմիր սահման։",
+      "solution_steps": [
+        "$E=h\\nu$ (Ա, Բ)",
+        "Ֆոտոէֆեկտ՝ միայն $\\nu\\ge\\nu_{\\text{կարմիր}}$ (Գ սխալ)",
+        "$p=\\dfrac{h}{\\lambda}$ (Դ)"
+      ],
+      "statements": [
+        "Ա) Ֆոտոնը լույսի քվանտն է",
+        "Բ) Ֆոտոնի էներգիան որոշվում է $E=h\\nu$ բանաձևով",
+        "Գ) Ֆոտոէֆեկտ դիտվում է լույսի ցանկացած հաճախության դեպքում",
+        "Դ) Ֆոտոնի իմպուլսը՝ $p=E/c$"
+      ],
+      "correct_option": "Ա, Բ և Դ"
+    },
+    {
+      "number": 70,
+      "topic": "Ջերմադինամիկա",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Հաստատուն ծավալով անոթում գազի ջերմաստիճանը $540$ Կ-ից բարձրացնում են մինչև $1080$ Կ։ Հաստատե՛ք կամ ժխտե՛ք հետևյալ պնդումները։",
+      "difficulty": "բարձր",
+      "hint": "Իզոխոր՝ $V=$const, $A=0$, $Q=\\Delta U$։",
+      "solution_steps": [
+        "$A=0$ (Բ, Զ սխալ)",
+        "$Q=\\Delta U$ (Ե ճիշտ)",
+        "$T\\uparrow\\Rightarrow P\\uparrow,\\ \\bar E_k\\uparrow$ (Գ, Դ)"
+      ],
+      "statements": [
+        "Ա) Գազի ներքին էներգիան մեծացավ",
+        "Բ) Գազը կատարեց դրական աշխատանք",
+        "Գ) Գազի ճնշումը մեծացավ",
+        "Դ) Մոլեկուլների միջին կինետիկ էներգիան մեծացավ",
+        "Ե) Գազին հաղորդված ջերմությունն ամբողջությամբ գնաց ներքին էներգիայի աճին",
+        "Զ) Գազի ծավալը մեծացավ"
+      ],
+      "correct_option": "Ա, Գ, Դ և Ե"
+    }
+  ]
+}

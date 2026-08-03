@@ -25,6 +25,12 @@ export function HomePage() {
           Պարապել
         </Link>
         <Link
+          to="/mock-exams"
+          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+        >
+          📝 Ամբողջական թեստեր
+        </Link>
+        <Link
           to="/assistant"
           className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
         >
