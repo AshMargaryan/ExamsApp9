@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 def default_student_limit() -> int:
@@ -75,3 +77,88 @@ class TeacherStudentConnection(models.Model):
 
     def __str__(self):
         return f"TeacherStudentConnection({self.teacher} -> {self.student}, {self.status})"
+
+
+class AssignmentType(models.TextChoices):
+    MOCK_EXAM = "mock_exam", "Mock Exam"
+    TOPIC = "topic", "Topic"
+    SUBTOPIC = "subtopic", "Subtopic"
+
+
+class AssignmentStatus(models.TextChoices):
+    ASSIGNED = "assigned", "Assigned"
+    IN_PROGRESS = "in_progress", "In Progress"
+    COMPLETED = "completed", "Completed"
+
+
+class Assignment(models.Model):
+    """
+    Work a teacher assigns a student, referencing existing learning content
+    instead of duplicating it. Exactly one of mock_exam/topic/subtopic is
+    set, matching `assignment_type` — three explicit FKs rather than a
+    generic relation since there are only ever these three target kinds.
+
+    "Overdue" is deliberately not a stored status: it's derived from
+    due_date vs. now so it can never drift out of sync with completion.
+    Submission content/AI grading are future additions or on top of this
+    row (e.g. a OneToOne submission model) — status here only tracks the
+    assignment's own lifecycle.
+    """
+
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assignments_given"
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assignments_received"
+    )
+    assignment_type = models.CharField(max_length=10, choices=AssignmentType.choices)
+
+    mock_exam = models.ForeignKey(
+        "mock_exams.MockExam", on_delete=models.CASCADE, null=True, blank=True, related_name="assignments"
+    )
+    topic = models.ForeignKey(
+        "practice.Topic", on_delete=models.CASCADE, null=True, blank=True, related_name="assignments"
+    )
+    subtopic = models.ForeignKey(
+        "practice.Subtopic", on_delete=models.CASCADE, null=True, blank=True, related_name="assignments"
+    )
+
+    title = models.CharField(max_length=255)
+    instructions = models.TextField(blank=True, default="")
+    due_date = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=15, choices=AssignmentStatus.choices, default=AssignmentStatus.ASSIGNED
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Assignment({self.title} -> {self.student})"
+
+    @property
+    def is_overdue(self) -> bool:
+        return (
+            self.due_date is not None
+            and self.status != AssignmentStatus.COMPLETED
+            and self.due_date < timezone.now()
+        )
+
+    def clean(self):
+        target_field = {
+            AssignmentType.MOCK_EXAM: "mock_exam",
+            AssignmentType.TOPIC: "topic",
+            AssignmentType.SUBTOPIC: "subtopic",
+        }.get(self.assignment_type)
+        if target_field is None:
+            raise ValidationError({"assignment_type": "Անվավեր առաջադրանքի տեսակ։"})
+
+        others = {"mock_exam", "topic", "subtopic"} - {target_field}
+        if getattr(self, f"{target_field}_id") is None:
+            raise ValidationError({target_field: "Այս դաշտը պարտադիր է ընտրված տեսակի համար։"})
+        for other in others:
+            if getattr(self, f"{other}_id") is not None:
+                raise ValidationError({other: "Այս դաշտը պետք է դատարկ լինի ընտրված տեսակի համար։"})

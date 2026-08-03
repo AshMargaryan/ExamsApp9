@@ -5,10 +5,13 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import ConnectionStatus, TeacherProfile, TeacherStudentConnection
+from .models import Assignment, AssignmentStatus, ConnectionStatus, TeacherProfile, TeacherStudentConnection
 from .permissions import IsStudent, IsTeacher
-from .serializers import StudentSearchSerializer, TeacherStudentConnectionSerializer
-from .services import accepted_student_count
+from .serializers import (
+    AssignmentCreateSerializer, AssignmentSerializer,
+    StudentSearchSerializer, TeacherStudentConnectionSerializer,
+)
+from .services import accepted_student_count, is_connected
 
 User = get_user_model()
 
@@ -134,3 +137,73 @@ class CancelInvitationView(APIView):
         connection.active = False
         connection.save(update_fields=["active"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AssignmentCreateView(APIView):
+    """POST /api/teaching/assignments/ — teacher assigns a test/topic/subtopic to a connected student."""
+
+    permission_classes = [IsTeacher]
+
+    def post(self, request):
+        serializer = AssignmentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        student = serializer.validated_data["student"]
+        if not is_connected(request.user, student):
+            return Response(
+                {"detail": "Կարող եք առաջադրանք տալ միայն ձեզ հետ կապակցված աշակերտներին։"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        assignment = serializer.save(teacher=request.user)
+        return Response(
+            AssignmentSerializer(assignment, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AssignmentListView(generics.ListAPIView):
+    """
+    GET /api/teaching/assignments/ — assignments relevant to the caller:
+    given ones for a teacher, received ones for a student. Optional
+    ?student_id= filter for a teacher viewing one student's assignments.
+    """
+
+    serializer_class = AssignmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = Assignment.objects.select_related(
+            "teacher__profile", "student__profile", "mock_exam", "topic", "subtopic"
+        )
+        if user.role == "teacher":
+            qs = qs.filter(teacher=user)
+            student_id = self.request.query_params.get("student_id")
+            if student_id:
+                qs = qs.filter(student_id=student_id)
+            return qs
+        return qs.filter(student=user)
+
+
+class AssignmentStatusUpdateView(APIView):
+    """
+    PATCH /api/teaching/assignments/<pk>/status/ {status: in_progress|completed}
+    — the assigned student updates their own progress. Submission content
+    and grading are future additions on top of this.
+    """
+
+    permission_classes = [IsStudent]
+
+    def patch(self, request, pk):
+        assignment = get_object_or_404(Assignment, pk=pk, student=request.user)
+        new_status = request.data.get("status")
+        if new_status not in (AssignmentStatus.IN_PROGRESS, AssignmentStatus.COMPLETED):
+            return Response(
+                {"detail": "status-ը պետք է լինի in_progress կամ completed։"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        assignment.status = new_status
+        assignment.save(update_fields=["status", "updated_at"])
+        return Response(AssignmentSerializer(assignment, context={"request": request}).data)
