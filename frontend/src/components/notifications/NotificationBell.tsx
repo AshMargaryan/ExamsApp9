@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import * as friendsApi from "../../api/friends";
 import type { FriendRequest } from "../../api/friends";
+import * as teachingApi from "../../api/teaching";
+import type { TeacherStudentConnection } from "../../api/teaching";
+import { useAuth } from "../../auth/AuthContext";
 import { PublicProfileModal } from "../profile/PublicProfileModal";
 
 function displayName(u: { username: string; first_name: string; last_name: string }) {
@@ -9,20 +12,28 @@ function displayName(u: { username: string; first_name: string; last_name: strin
 }
 
 export function NotificationBell() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [incoming, setIncoming] = useState<FriendRequest[] | null>(null);
+  const [teachingInvitations, setTeachingInvitations] = useState<TeacherStudentConnection[] | null>(null);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  const isStudent = user?.role === "student";
+
   function loadIncoming() {
     friendsApi.fetchIncomingRequests().then(setIncoming);
+    // Only a student has invitations waiting on *their* response — a
+    // teacher's own pending invitations are outgoing, not actionable here.
+    if (isStudent) teachingApi.fetchInvitations().then(setTeachingInvitations);
   }
 
   useEffect(() => {
     loadIncoming();
     const interval = setInterval(loadIncoming, 30000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStudent]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -39,7 +50,12 @@ export function NotificationBell() {
     loadIncoming();
   }
 
-  const count = incoming?.length ?? 0;
+  async function handleRespondInvitation(id: number, action: "accept" | "decline") {
+    await teachingApi.respondToInvitation(id, action);
+    loadIncoming();
+  }
+
+  const count = (incoming?.length ?? 0) + (teachingInvitations?.length ?? 0);
 
   return (
     <div ref={wrapRef} className="fixed right-4 top-4 z-40">
@@ -61,7 +77,7 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 max-h-96 w-[min(92vw,22rem)] overflow-y-auto rounded-[var(--radius)] border border-border bg-surface shadow-xl">
           <div className="border-b border-border px-4 py-3">
-            <span className="text-sm font-medium text-text">Ընկերության հարցումներ</span>
+            <span className="text-sm font-medium text-text">Հաղորդագրություններ</span>
           </div>
 
           {incoming === null && <p className="p-4 text-sm text-text-muted">Բեռնվում է...</p>}
@@ -113,6 +129,68 @@ export function NotificationBell() {
               </div>
             </div>
           ))}
+
+          {isStudent && (
+            <>
+              <div className="border-b border-t border-border px-4 py-3">
+                <span className="text-sm font-medium text-text">Ուսուցիչների հրավերներ</span>
+              </div>
+              {teachingInvitations === null && <p className="p-4 text-sm text-text-muted">Բեռնվում է...</p>}
+              {teachingInvitations?.length === 0 && (
+                <p className="p-4 text-sm text-text-muted">Նոր հրավերներ չկան։</p>
+              )}
+              {teachingInvitations?.map((inv) => (
+                <div key={inv.id} className="flex items-center gap-3 border-b border-border p-3 last:border-0">
+                  <button
+                    type="button"
+                    onClick={() => setViewingUserId(inv.teacher.id)}
+                    title="Տեսնել պրոֆիլը"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted transition-colors hover:border-primary"
+                  >
+                    {inv.teacher.avatar ? (
+                      <img
+                        src={inv.teacher.avatar}
+                        alt={inv.teacher.username}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      (inv.teacher.first_name || inv.teacher.username).slice(0, 1).toUpperCase()
+                    )}
+                  </button>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-text">
+                      <span className="font-medium">{displayName(inv.teacher)}</span>-ից ուսուցչի հրավեր
+                    </p>
+                    <p className="text-xs text-text-muted">@{inv.teacher.username}</p>
+                    <div className="mt-1.5 flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleRespondInvitation(inv.id, "accept")}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Ընդունել
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRespondInvitation(inv.id, "decline")}
+                        className="text-sm text-text-muted hover:underline"
+                      >
+                        Մերժել
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewingUserId(inv.teacher.id)}
+                        className="text-sm text-text-muted hover:underline"
+                      >
+                        Պրոֆիլ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
 
