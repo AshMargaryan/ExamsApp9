@@ -88,6 +88,7 @@ class AssignmentType(models.TextChoices):
 class AssignmentStatus(models.TextChoices):
     ASSIGNED = "assigned", "Assigned"
     IN_PROGRESS = "in_progress", "In Progress"
+    SUBMITTED = "submitted", "Submitted"
     COMPLETED = "completed", "Completed"
 
 
@@ -98,11 +99,17 @@ class Assignment(models.Model):
     set, matching `assignment_type` — three explicit FKs rather than a
     generic relation since there are only ever these three target kinds.
 
+    Lifecycle: assigned -> in_progress (student opens it) -> submitted
+    (student has finished the underlying problems and writes `explanation`
+    of what they learned) -> completed (teacher approves) or back to
+    in_progress (teacher rejects, `teacher_feedback` says why — student
+    edits the explanation and/or redoes problems, then resubmits). Only the
+    latest submission is kept (explanation/teacher_feedback are overwritten
+    on resubmit) — no submission history table for now.
+
     "Overdue" is deliberately not a stored status: it's derived from
-    due_date vs. now so it can never drift out of sync with completion.
-    Submission content/AI grading are future additions or on top of this
-    row (e.g. a OneToOne submission model) — status here only tracks the
-    assignment's own lifecycle.
+    due_date vs. now (and doesn't apply once submitted/completed) so it can
+    never drift out of sync.
     """
 
     teacher = models.ForeignKey(
@@ -130,6 +137,15 @@ class Assignment(models.Model):
         max_length=15, choices=AssignmentStatus.choices, default=AssignmentStatus.ASSIGNED
     )
 
+    explanation = models.TextField(
+        blank=True, default="", help_text="Student's write-up of what they learned, sent with submission."
+    )
+    teacher_feedback = models.TextField(
+        blank=True, default="", help_text="Optional note from the teacher when rejecting a submission."
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -143,7 +159,7 @@ class Assignment(models.Model):
     def is_overdue(self) -> bool:
         return (
             self.due_date is not None
-            and self.status != AssignmentStatus.COMPLETED
+            and self.status not in (AssignmentStatus.SUBMITTED, AssignmentStatus.COMPLETED)
             and self.due_date < timezone.now()
         )
 

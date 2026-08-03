@@ -5,7 +5,8 @@ from apps.friends.serializers import MiniUserSerializer
 from apps.mock_exams.models import MockExam
 from apps.practice.models import Subtopic, Topic
 
-from .models import Assignment, AssignmentType, TeacherStudentConnection
+from .models import Assignment, AssignmentStatus, AssignmentType, TeacherStudentConnection
+from .services import build_problem_sets, is_content_complete
 
 User = get_user_model()
 
@@ -62,15 +63,46 @@ class AssignmentSerializer(serializers.ModelSerializer):
     topic = TopicRefSerializer(read_only=True)
     subtopic = SubtopicRefSerializer(read_only=True)
     is_overdue = serializers.BooleanField(read_only=True)
+    content_complete = serializers.SerializerMethodField()
 
     class Meta:
         model = Assignment
         fields = [
             "id", "teacher", "student", "assignment_type",
             "mock_exam", "topic", "subtopic",
-            "title", "instructions", "due_date", "status", "is_overdue",
+            "title", "instructions", "due_date", "status", "is_overdue", "content_complete",
+            "explanation", "teacher_feedback", "submitted_at", "reviewed_at",
             "created_at", "updated_at",
         ]
+
+    def get_content_complete(self, obj) -> bool:
+        return is_content_complete(obj)
+
+
+class AssignmentDetailSerializer(AssignmentSerializer):
+    problem_sets = serializers.SerializerMethodField()
+
+    class Meta(AssignmentSerializer.Meta):
+        fields = AssignmentSerializer.Meta.fields + ["problem_sets"]
+
+    def get_problem_sets(self, obj) -> list:
+        return build_problem_sets(obj)
+
+
+class StudentRosterSerializer(serializers.ModelSerializer):
+    """One row per connected student for the teacher dashboard roster."""
+
+    student = MiniUserSerializer(read_only=True)
+    has_pending_review = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TeacherStudentConnection
+        fields = ["student", "has_pending_review"]
+
+    def get_has_pending_review(self, obj) -> bool:
+        return Assignment.objects.filter(
+            teacher=obj.teacher, student=obj.student, status=AssignmentStatus.SUBMITTED
+        ).exists()
 
 
 class AssignmentCreateSerializer(serializers.ModelSerializer):
