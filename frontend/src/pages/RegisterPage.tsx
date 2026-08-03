@@ -5,6 +5,7 @@ import { AxiosError } from "axios";
 import { SearchSelect } from "../components/SearchSelect";
 import { searchSchools, searchUniversities } from "../api/schools";
 import { MessageModal } from "../components/MessageModal";
+import type { Role } from "../api/auth";
 
 const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
 
@@ -17,6 +18,8 @@ interface Option {
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  const [role, setRole] = useState<Role | null>(null);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -38,6 +41,8 @@ export function RegisterPage() {
     e.preventDefault();
     setError(null);
 
+    if (!role) return;
+
     if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
       setError("Գաղտնաբառը պետք է լինի առնվազն 8 նիշ և պարունակի տառեր ու թվեր։");
       return;
@@ -57,6 +62,7 @@ export function RegisterPage() {
         confirm_password: confirmPassword,
         first_name: firstName,
         last_name: lastName,
+        role,
         age: age ? Number(age) : undefined,
         grade: grade ? Number(grade) : undefined,
         sex: sex || undefined,
@@ -91,6 +97,46 @@ export function RegisterPage() {
     "mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
   const labelClass = "mb-1 block text-sm text-text-muted";
 
+  if (!role) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
+        <div className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm">
+          <h1 className="mb-2 text-2xl font-semibold text-text">Գրանցում</h1>
+          <p className="mb-6 text-sm text-text-muted">Ընտրեք, թե ինչպես եք ցանկանում գրանցվել</p>
+
+          <button
+            type="button"
+            onClick={() => setRole("student")}
+            className="mb-4 w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary"
+          >
+            <span className="block font-medium text-text">🎓 Աշակերտ</span>
+            <span className="mt-1 block text-sm text-text-muted">
+              Ես ուզում եմ սովորել և պատրաստվել քննություններին
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setRole("teacher")}
+            className="w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary"
+          >
+            <span className="block font-medium text-text">🧑‍🏫 Ուսուցիչ</span>
+            <span className="mt-1 block text-sm text-text-muted">
+              Ես ուզում եմ դասավանդել և հետևել աշակերտների առաջընթացին
+            </span>
+          </button>
+
+          <p className="mt-6 text-center text-sm text-text-muted">
+            Արդեն հաշիվ ունե՞ք։{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Մուտք
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
       <form
@@ -98,7 +144,18 @@ export function RegisterPage() {
         noValidate
         className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm"
       >
-        <h1 className="mb-6 text-2xl font-semibold text-text">Գրանցում</h1>
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-text">
+            Գրանցում {role === "teacher" ? "(Ուսուցիչ)" : "(Աշակերտ)"}
+          </h1>
+          <button
+            type="button"
+            onClick={() => setRole(null)}
+            className="text-sm text-primary hover:underline"
+          >
+            Փոխել
+          </button>
+        </div>
 
         <label className={labelClass}>Օգտանուն</label>
         <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required />
@@ -150,16 +207,6 @@ export function RegisterPage() {
           onChange={(e) => setAge(e.target.value)}
         />
 
-        <label className={labelClass}>Դասարան</label>
-        <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
-          <option value="">Չընտրված</option>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>
-              {g}-րդ դասարան
-            </option>
-          ))}
-        </select>
-
         <label className={labelClass}>Սեռ</label>
         <select className={inputClass} value={sex} onChange={(e) => setSex(e.target.value as "" | "male" | "female")}>
           <option value="">Չընտրված</option>
@@ -167,20 +214,34 @@ export function RegisterPage() {
           <option value="female">Իգական</option>
         </select>
 
-        <label className={labelClass}>Դպրոց</label>
-        <div className="mb-4">
-          <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
-        </div>
+        {role === "student" && (
+          <>
+            <label className={labelClass}>Դասարան</label>
+            <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
+              <option value="">Չընտրված</option>
+              {GRADES.map((g) => (
+                <option key={g} value={g}>
+                  {g}-րդ դասարան
+                </option>
+              ))}
+            </select>
 
-        <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
-        <div className="mb-4">
-          <SearchSelect
-            placeholder="Փնտրեք բուհ..."
-            value={university}
-            onChange={setUniversity}
-            search={universitySearch}
-          />
-        </div>
+            <label className={labelClass}>Դպրոց</label>
+            <div className="mb-4">
+              <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+            </div>
+
+            <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
+            <div className="mb-4">
+              <SearchSelect
+                placeholder="Փնտրեք բուհ..."
+                value={university}
+                onChange={setUniversity}
+                search={universitySearch}
+              />
+            </div>
+          </>
+        )}
 
         <button
           type="submit"
