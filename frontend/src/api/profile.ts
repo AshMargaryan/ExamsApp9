@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
-import type { School, University } from "./auth";
+import type { Role, School, University } from "./auth";
+import type { FriendUser } from "./friends";
 
 export interface LearningStats {
   questions_solved: number;
@@ -12,6 +13,7 @@ export interface LearningStats {
 export interface Profile {
   avatar: string | null;
   bio: string;
+  role: Role;
   username: string;
   first_name: string;
   last_name: string;
@@ -26,6 +28,10 @@ export interface Profile {
   xp_for_next_level: number;
   trophies_count: number;
   stats: LearningStats;
+  total_students: number | null;
+  students: FriendUser[] | null;
+  avg_student_accuracy_improvement: number | null;
+  avg_student_test_improvement: number | null;
   updated_at: string;
 }
 

@@ -2,7 +2,9 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
+from apps.friends.serializers import MiniUserSerializer
 from apps.practice.models import AttemptAnswer, PracticeAttempt
+from apps.teaching.models import ConnectionStatus, TeacherProfile, TeacherStudentConnection
 from apps.users.serializers import SchoolSerializer, UniversitySerializer
 from apps.users.models import School, University
 
@@ -46,6 +48,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     avatar = serializers.ImageField(required=False, allow_null=True)
 
+    role = serializers.CharField(source="user.role", read_only=True)
     username = serializers.CharField(source="user.username")
     first_name = serializers.CharField(source="user.first_name", required=False, allow_blank=True)
     last_name = serializers.CharField(source="user.last_name", required=False, allow_blank=True)
@@ -70,14 +73,22 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     stats = serializers.SerializerMethodField()
 
+    # Teacher-only — null for students, populated from apps.teaching data.
+    total_students = serializers.SerializerMethodField()
+    students = serializers.SerializerMethodField()
+    avg_student_accuracy_improvement = serializers.SerializerMethodField()
+    avg_student_test_improvement = serializers.SerializerMethodField()
+
     class Meta:
         model = Profile
         fields = [
-            "avatar", "bio",
+            "avatar", "bio", "role",
             "username", "first_name", "last_name",
             "school", "school_id", "grade", "age", "marz", "university", "university_id",
             "total_xp", "level", "xp_into_level", "xp_for_next_level", "trophies_count",
             "stats",
+            "total_students", "students",
+            "avg_student_accuracy_improvement", "avg_student_test_improvement",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
@@ -148,6 +159,36 @@ class ProfileSerializer(serializers.ModelSerializer):
             "total_learning_time_seconds": None,
         }
         return LearningStatsSerializer(data).data
+
+    def _accepted_connections(self, obj):
+        return TeacherStudentConnection.objects.filter(
+            teacher=obj.user, status=ConnectionStatus.ACCEPTED, active=True
+        ).select_related("student__profile")
+
+    def get_total_students(self, obj):
+        if obj.user.role != "teacher":
+            return None
+        return self._accepted_connections(obj).count()
+
+    def get_students(self, obj):
+        if obj.user.role != "teacher":
+            return None
+        students = [conn.student for conn in self._accepted_connections(obj)]
+        return MiniUserSerializer(students, many=True, context=self.context).data
+
+    def _teacher_profile(self, obj):
+        teacher_profile, _ = TeacherProfile.objects.get_or_create(user=obj.user)
+        return teacher_profile
+
+    def get_avg_student_accuracy_improvement(self, obj):
+        if obj.user.role != "teacher":
+            return None
+        return self._teacher_profile(obj).avg_student_accuracy_improvement
+
+    def get_avg_student_test_improvement(self, obj):
+        if obj.user.role != "teacher":
+            return None
+        return self._teacher_profile(obj).avg_student_test_improvement
 
     @transaction.atomic
     def update(self, instance, validated_data):
