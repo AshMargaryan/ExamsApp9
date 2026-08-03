@@ -17,36 +17,47 @@ export function HomePage() {
 
       <h1 className="text-3xl font-semibold text-text">Բարի գալուստ</h1>
 
-      <div className="flex gap-4">
-        <Link
-          to="/practice"
-          className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-        >
-          Պարապել
-        </Link>
-        <Link
-          to="/mock-exams"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          📝 Ամբողջական թեստեր
-        </Link>
-        <Link
-          to="/assistant"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          🤖 AI Օգնական
-        </Link>
+      <div className="flex flex-wrap justify-center gap-4">
+        {user?.role === "teacher" ? (
+          <Link
+            to="/teacher-dashboard"
+            className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+          >
+            🧑‍🏫 Ուսուցչի վահանակ
+          </Link>
+        ) : (
+          <>
+            <Link
+              to="/practice"
+              className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+            >
+              Պարապել
+            </Link>
+            <Link
+              to="/mock-exams"
+              className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+            >
+              📝 Ամբողջական թեստեր
+            </Link>
+            <Link
+              to="/assistant"
+              className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+            >
+              🤖 AI Օգնական
+            </Link>
+            <Link
+              to="/games"
+              className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+            >
+              🏆 Խաղասենյակներ
+            </Link>
+          </>
+        )}
         <Link
           to="/profile"
           className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
         >
           👤 Իմ պրոֆիլը
-        </Link>
-        <Link
-          to="/games"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          🏆 Խաղասենյակներ
         </Link>
       </div>
     </div>

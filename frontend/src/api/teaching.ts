@@ -44,3 +44,60 @@ export async function respondToInvitation(
 export async function cancelInvitation(id: number): Promise<void> {
   await apiClient.delete(`/teaching/invitations/${id}/`);
 }
+
+export type AssignmentType = "mock_exam" | "topic" | "subtopic";
+export type AssignmentStatus = "assigned" | "in_progress" | "completed";
+
+export interface AssignmentRef {
+  id: number;
+  title?: string;
+  name?: string;
+}
+
+export interface Assignment {
+  id: number;
+  teacher: FriendUser;
+  student: FriendUser;
+  assignment_type: AssignmentType;
+  mock_exam: AssignmentRef | null;
+  topic: AssignmentRef | null;
+  subtopic: AssignmentRef | null;
+  title: string;
+  instructions: string;
+  due_date: string | null;
+  status: AssignmentStatus;
+  is_overdue: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAssignmentPayload {
+  student_id: number;
+  assignment_type: AssignmentType;
+  mock_exam_id?: number;
+  topic_id?: number;
+  subtopic_id?: number;
+  title: string;
+  instructions?: string;
+  due_date?: string;
+}
+
+export async function createAssignment(payload: CreateAssignmentPayload): Promise<Assignment> {
+  const { data } = await apiClient.post("/teaching/assignments/create/", payload);
+  return data;
+}
+
+export async function fetchAssignments(studentId?: number): Promise<Assignment[]> {
+  const { data } = await apiClient.get("/teaching/assignments/", {
+    params: studentId ? { student_id: studentId } : undefined,
+  });
+  return data;
+}
+
+export async function updateAssignmentStatus(
+  id: number,
+  status: "in_progress" | "completed",
+): Promise<Assignment> {
+  const { data } = await apiClient.patch(`/teaching/assignments/${id}/status/`, { status });
+  return data;
+}
