@@ -12,6 +12,7 @@ import { searchSchools, searchUniversities } from "../api/schools";
 import { SearchSelect } from "../components/SearchSelect";
 import { MessageModal } from "../components/MessageModal";
 import { FriendsModal } from "../components/friends/FriendsModal";
+import { TeachingModal } from "../components/teaching/TeachingModal";
 import { PublicProfileModal } from "../components/profile/PublicProfileModal";
 import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
 import { useAuth } from "../auth/AuthContext";
@@ -97,6 +98,7 @@ export function ProfilePage() {
   const [practicePercent, setPracticePercent] = useState<number | null>(null);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const [teachingOpen, setTeachingOpen] = useState(false);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,6 +143,15 @@ export function ProfilePage() {
       setPracticePercent(Math.round(avg));
     });
   }, []);
+
+  function refreshProfile() {
+    profileApi.fetchProfile().then(setProfile);
+  }
+
+  function handleTeachingClose() {
+    setTeachingOpen(false);
+    refreshProfile();
+  }
 
   function handleFriendsClose() {
     setFriendsOpen(false);
@@ -474,9 +485,18 @@ export function ProfilePage() {
 
         {profile.role === "teacher" && (
           <section className="mt-8">
-            <h2 className="mb-3 text-lg font-semibold text-text">
-              Աշակերտներ {profile.total_students !== null ? `(${profile.total_students})` : ""}
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text">
+                Աշակերտներ {profile.total_students !== null ? `(${profile.total_students})` : ""}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setTeachingOpen(true)}
+                className="rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+              >
+                Հրավիրել / Հրավերներ
+              </button>
+            </div>
             {profile.students && profile.students.length > 0 ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {profile.students.map((s) => (
@@ -493,9 +513,18 @@ export function ProfilePage() {
 
         {profile.role === "student" && (
           <section className="mt-8">
-            <h2 className="mb-3 text-lg font-semibold text-text">
-              Ուսուցիչներ {profile.teachers !== null ? `(${profile.teachers.length})` : ""}
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text">
+                Ուսուցիչներ {profile.teachers !== null ? `(${profile.teachers.length})` : ""}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setTeachingOpen(true)}
+                className="rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+              >
+                Հրավերներ
+              </button>
+            </div>
             {profile.teachers && profile.teachers.length > 0 ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {profile.teachers.map((t) => (
@@ -538,6 +567,9 @@ export function ProfilePage() {
 
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
       {friendsOpen && <FriendsModal onClose={handleFriendsClose} />}
+      {teachingOpen && (
+        <TeachingModal role={profile.role} onClose={handleTeachingClose} onChange={refreshProfile} />
+      )}
       {viewingUserId !== null && (
         <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
       )}
