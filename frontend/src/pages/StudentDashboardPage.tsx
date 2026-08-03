@@ -26,72 +26,142 @@ function isToday(dateStr: string): boolean {
   );
 }
 
+const STATUS_LABELS: Record<Assignment["status"], string> = {
+  assigned: "Հանձնարարված",
+  in_progress: "Ընթացքի մեջ",
+  submitted: "Ուղարկված է՝ սպասում է հաստատման",
+  completed: "Ավարտված",
+};
+
 function AssignmentCard({
   assignment,
   onStart,
-  onComplete,
+  onSubmit,
 }: {
   assignment: Assignment;
   onStart: (id: number) => void;
-  onComplete: (id: number) => void;
+  onSubmit: (id: number, explanation: string) => Promise<void>;
 }) {
+  const [explanation, setExplanation] = useState(assignment.explanation);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const teacherName =
     [assignment.teacher.first_name, assignment.teacher.last_name].filter(Boolean).join(" ") ||
     assignment.teacher.username;
+  const wasRejected = assignment.status === "in_progress" && assignment.teacher_feedback;
+  const canWorkOn = assignment.status === "assigned" || assignment.status === "in_progress";
+
+  async function handleSubmit() {
+    setError(null);
+    if (!explanation.trim()) {
+      setError("Խնդրում ենք գրել բացատրություն, թե ինչ եք սովորել։");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await onSubmit(assignment.id, explanation.trim());
+    } catch {
+      setError("Ուղարկելիս սխալ տեղի ունեցավ։ Փորձեք կրկին։");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-[var(--radius)] border border-border bg-surface p-4">
-      <div className="min-w-0">
-        <p className="truncate font-medium text-text">{assignment.title}</p>
-        <p className="text-sm text-text-muted">
-          {teacherName} · {assignmentTargetLabel(assignment)}
-        </p>
-        {assignment.instructions && (
-          <p className="mt-1 text-sm text-text-muted">{assignment.instructions}</p>
-        )}
-        {assignment.due_date && (
-          <p className="text-xs text-text-muted">
-            Վերջնաժամկետ՝ {new Date(assignment.due_date).toLocaleDateString("hy-AM")}
+    <div className="rounded-[var(--radius)] border border-border bg-surface p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate font-medium text-text">{assignment.title}</p>
+          <p className="text-sm text-text-muted">
+            {teacherName} · {assignmentTargetLabel(assignment)}
           </p>
-        )}
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-2">
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${
-            assignment.is_overdue
-              ? "bg-incorrect/10 text-incorrect"
-              : assignment.status === "completed"
-                ? "bg-primary/10 text-primary"
-                : "bg-surface-muted text-text-muted"
-          }`}
-        >
-          {assignment.is_overdue
-            ? "Ուշացած"
-            : assignment.status === "assigned"
-              ? "Հանձնարարված"
-              : assignment.status === "in_progress"
-                ? "Ընթացքի մեջ"
-                : "Ավարտված"}
-        </span>
-        {assignment.status !== "completed" && (
-          <div className="flex gap-2">
-            <Link
-              to={assignmentLink(assignment)}
-              onClick={() => assignment.status === "assigned" && onStart(assignment.id)}
-              className="text-sm text-primary hover:underline"
-            >
-              Բացել
-            </Link>
-            <button
-              type="button"
-              onClick={() => onComplete(assignment.id)}
-              className="text-sm text-text-muted hover:underline"
-            >
-              Նշել ավարտված
-            </button>
+          {assignment.instructions && (
+            <p className="mt-1 text-sm text-text-muted">{assignment.instructions}</p>
+          )}
+          {assignment.due_date && (
+            <p className="text-xs text-text-muted">
+              Վերջնաժամկետ՝ {new Date(assignment.due_date).toLocaleDateString("hy-AM")}
+            </p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span
+            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${
+              assignment.is_overdue
+                ? "bg-incorrect/10 text-incorrect"
+                : assignment.status === "completed"
+                  ? "bg-primary/10 text-primary"
+                  : assignment.status === "submitted"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-surface-muted text-text-muted"
+            }`}
+          >
+            {assignment.is_overdue ? "Ուշացած" : STATUS_LABELS[assignment.status]}
+          </span>
+          <div className="flex gap-3">
+            {canWorkOn && (
+              <Link
+                to={assignmentLink(assignment)}
+                onClick={() => assignment.status === "assigned" && onStart(assignment.id)}
+                className="text-sm text-primary hover:underline"
+              >
+                Բացել
+              </Link>
+            )}
+            {(assignment.status === "submitted" || assignment.status === "completed") && (
+              <Link to={`/assignments/${assignment.id}`} className="text-sm text-primary hover:underline">
+                Մանրամասն
+              </Link>
+            )}
           </div>
-        )}
+        </div>
       </div>
+
+      {wasRejected && (
+        <div className="mt-3 rounded-[var(--radius)] border border-incorrect/30 bg-incorrect/5 p-3">
+          <p className="text-sm font-medium text-incorrect">Ուսուցչի մեկնաբանություն</p>
+          <p className="text-sm text-text">{assignment.teacher_feedback}</p>
+        </div>
+      )}
+
+      {canWorkOn && (
+        <div className="mt-3 border-t border-border pt-3">
+          {!assignment.content_complete ? (
+            <p className="text-sm text-text-muted">
+              Ավարտեք առաջադրանքի բոլոր հարցերը՝ ուսուցչին ուղարկելու համար։
+            </p>
+          ) : (
+            <>
+              <label className="mb-1 block text-sm text-text-muted">
+                Ի՞նչ սովորեցիք։ Գրեք բացատրություն և ուղարկեք ուսուցչին ստուգելու համար։
+              </label>
+              <textarea
+                className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+                rows={2}
+                value={explanation}
+                onChange={(e) => setExplanation(e.target.value)}
+              />
+              {error && <p className="mb-2 text-sm text-incorrect">{error}</p>}
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+              >
+                {submitting ? "..." : "Ուղարկել ուսուցչին"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {assignment.status === "submitted" && (
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="text-sm text-text-muted">Ձեր բացատրությունը՝</p>
+          <p className="text-sm text-text">{assignment.explanation}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -121,12 +191,12 @@ export function StudentDashboardPage() {
   }
 
   async function handleStart(id: number) {
-    await teachingApi.updateAssignmentStatus(id, "in_progress");
+    await teachingApi.startAssignment(id);
     refreshAssignments();
   }
 
-  async function handleComplete(id: number) {
-    await teachingApi.updateAssignmentStatus(id, "completed");
+  async function handleSubmit(id: number, explanation: string) {
+    await teachingApi.submitAssignment(id, explanation);
     refreshAssignments();
   }
 
@@ -172,7 +242,7 @@ export function StudentDashboardPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {today.map((a) => (
-                <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onComplete={handleComplete} />
+                <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onSubmit={handleSubmit} />
               ))}
             </div>
           )}
@@ -183,7 +253,7 @@ export function StudentDashboardPage() {
             <h2 className="mb-3 text-lg font-semibold text-incorrect">Ուշացած առաջադրանքներ</h2>
             <div className="flex flex-col gap-3">
               {overdue.map((a) => (
-                <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onComplete={handleComplete} />
+                <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onSubmit={handleSubmit} />
               ))}
             </div>
           </section>
@@ -199,7 +269,7 @@ export function StudentDashboardPage() {
           )}
           <div className="flex flex-col gap-3">
             {upcoming.map((a) => (
-              <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onComplete={handleComplete} />
+              <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onSubmit={handleSubmit} />
             ))}
           </div>
         </section>
@@ -215,7 +285,7 @@ export function StudentDashboardPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {completed.map((a) => (
-                <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onComplete={handleComplete} />
+                <AssignmentCard key={a.id} assignment={a} onStart={handleStart} onSubmit={handleSubmit} />
               ))}
             </div>
           )}

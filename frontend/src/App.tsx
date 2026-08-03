@@ -13,6 +13,7 @@ import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { TeacherDashboardPage } from "./pages/TeacherDashboardPage";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage";
+import { AssignmentReviewPage } from "./pages/AssignmentReviewPage";
 import { GamesPage } from "./pages/GamesPage";
 import { GameRoomPage } from "./pages/GameRoomPage";
 import { MatchmakingPage } from "./pages/MatchmakingPage";
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/teacher-dashboard" element={<TeacherDashboardPage />} />
           <Route path="/student-dashboard" element={<StudentDashboardPage />} />
+          <Route path="/assignments/:id" element={<AssignmentReviewPage />} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/games/find" element={<MatchmakingPage />} />
           <Route path="/games/:roomCode" element={<GameRoomPage />} />

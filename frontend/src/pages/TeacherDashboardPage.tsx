@@ -1,37 +1,50 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import * as profileApi from "../api/profile";
-import type { Profile } from "../api/profile";
 import * as teachingApi from "../api/teaching";
-import type { Assignment, AssignmentType } from "../api/teaching";
+import type { AssignmentType, StudentRosterEntry } from "../api/teaching";
 import { listMockExams } from "../api/mockExams";
 import type { MockExamSummary } from "../api/mockExams";
 import { getHierarchy } from "../api/practice";
 import type { SubjectNode } from "../api/practice";
-import { PersonBox } from "../components/PersonBox";
-import { PublicProfileModal } from "../components/profile/PublicProfileModal";
+import { StudentReviewPanel } from "../components/teaching/StudentReviewPanel";
 import { TeachingModal } from "../components/teaching/TeachingModal";
 import { MessageModal } from "../components/MessageModal";
 
-const ASSIGNMENT_STATUS_LABELS: Record<Assignment["status"], string> = {
-  assigned: "Հանձնարարված",
-  in_progress: "Ընթացքի մեջ",
-  completed: "Ավարտված",
-};
-
-function assignmentTargetLabel(a: Assignment): string {
-  if (a.assignment_type === "mock_exam") return a.mock_exam?.title ?? "";
-  if (a.assignment_type === "topic") return a.topic?.name ?? "";
-  return a.subtopic?.name ?? "";
+function StudentBox({ entry, onClick }: { entry: StudentRosterEntry; onClick: () => void }) {
+  const { student, has_pending_review } = entry;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative flex flex-col items-center gap-2 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
+    >
+      {has_pending_review && (
+        <span
+          title="Աշակերտն ուղարկել է առաջադրանք՝ սպասում է հաստատման"
+          className="absolute right-2 top-2 h-3 w-3 rounded-full bg-primary"
+        />
+      )}
+      <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-lg font-semibold text-text-muted">
+        {student.avatar ? (
+          <img src={student.avatar} alt={student.username} className="h-full w-full object-cover" />
+        ) : (
+          (student.first_name || student.username).slice(0, 1).toUpperCase()
+        )}
+      </span>
+      <span className="text-sm font-medium text-text">
+        {[student.first_name, student.last_name].filter(Boolean).join(" ") || student.username}
+      </span>
+      <span className="text-xs text-text-muted">@{student.username}</span>
+    </button>
+  );
 }
 
 export function TeacherDashboardPage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [assignments, setAssignments] = useState<Assignment[] | null>(null);
+  const [roster, setRoster] = useState<StudentRosterEntry[] | null>(null);
   const [mockExams, setMockExams] = useState<MockExamSummary[] | null>(null);
   const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
   const [teachingOpen, setTeachingOpen] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
+  const [viewingStudentId, setViewingStudentId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [studentId, setStudentId] = useState("");
@@ -42,24 +55,24 @@ export function TeacherDashboardPage() {
   const [dueDate, setDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  function refreshProfile() {
-    profileApi.fetchProfile().then(setProfile);
-  }
-
-  function refreshAssignments() {
-    teachingApi.fetchAssignments().then(setAssignments);
+  function refreshRoster() {
+    teachingApi.fetchStudentRoster().then(setRoster);
   }
 
   useEffect(() => {
-    refreshProfile();
-    refreshAssignments();
+    refreshRoster();
     listMockExams().then(setMockExams);
     getHierarchy().then(setSubjects);
   }, []);
 
   function handleTeachingClose() {
     setTeachingOpen(false);
-    refreshProfile();
+    refreshRoster();
+  }
+
+  function handleReviewPanelClose() {
+    setViewingStudentId(null);
+    refreshRoster();
   }
 
   const subtopicOptions =
@@ -102,7 +115,6 @@ export function TeacherDashboardPage() {
       setTitle("");
       setInstructions("");
       setDueDate("");
-      refreshAssignments();
     } catch (err) {
       const detail =
         err && typeof err === "object" && "response" in err
@@ -114,7 +126,7 @@ export function TeacherDashboardPage() {
     }
   }
 
-  if (!profile) {
+  if (!roster) {
     return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
   }
 
@@ -146,13 +158,15 @@ export function TeacherDashboardPage() {
         </div>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-text">
-            Աշակերտներ {profile.total_students !== null ? `(${profile.total_students})` : ""}
-          </h2>
-          {profile.students && profile.students.length > 0 ? (
+          <h2 className="mb-3 text-lg font-semibold text-text">Աշակերտներ {`(${roster.length})`}</h2>
+          {roster.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {profile.students.map((s) => (
-                <PersonBox key={s.id} person={s} onClick={() => setViewingUserId(s.id)} />
+              {roster.map((entry) => (
+                <StudentBox
+                  key={entry.student.id}
+                  entry={entry}
+                  onClick={() => setViewingStudentId(entry.student.id)}
+                />
               ))}
             </div>
           ) : (
@@ -162,16 +176,17 @@ export function TeacherDashboardPage() {
           )}
         </section>
 
-        <section className="mb-8 rounded-[var(--radius)] border border-border bg-surface p-6">
+        <section className="rounded-[var(--radius)] border border-border bg-surface p-6">
           <h2 className="mb-4 text-lg font-semibold text-text">Նոր առաջադրանք</h2>
           <form onSubmit={handleCreateAssignment} className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className={labelClass}>Աշակերտ</label>
               <select className={inputClass} value={studentId} onChange={(e) => setStudentId(e.target.value)}>
                 <option value="">Ընտրեք աշակերտ</option>
-                {profile.students?.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {[s.first_name, s.last_name].filter(Boolean).join(" ") || s.username}
+                {roster.map((entry) => (
+                  <option key={entry.student.id} value={entry.student.id}>
+                    {[entry.student.first_name, entry.student.last_name].filter(Boolean).join(" ") ||
+                      entry.student.username}
                   </option>
                 ))}
               </select>
@@ -236,57 +251,14 @@ export function TeacherDashboardPage() {
             </div>
           </form>
         </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-text">Իմ առաջադրանքները</h2>
-          {assignments === null && <p className="text-text-muted">Բեռնվում է...</p>}
-          {assignments?.length === 0 && (
-            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-              Առաջադրանքներ դեռ չկան։
-            </p>
-          )}
-          <div className="flex flex-col gap-3">
-            {assignments?.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between rounded-[var(--radius)] border border-border bg-surface p-4"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-text">{a.title}</p>
-                  <p className="text-sm text-text-muted">
-                    {[a.student.first_name, a.student.last_name].filter(Boolean).join(" ") || a.student.username}
-                    {" · "}
-                    {assignmentTargetLabel(a)}
-                  </p>
-                  {a.due_date && (
-                    <p className="text-xs text-text-muted">
-                      Վերջնաժամկետ՝ {new Date(a.due_date).toLocaleDateString("hy-AM")}
-                    </p>
-                  )}
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
-                    a.is_overdue
-                      ? "bg-incorrect/10 text-incorrect"
-                      : a.status === "completed"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-surface-muted text-text-muted"
-                  }`}
-                >
-                  {a.is_overdue ? "Ուշացած" : ASSIGNMENT_STATUS_LABELS[a.status]}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
 
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
       {teachingOpen && (
-        <TeachingModal role="teacher" onClose={handleTeachingClose} onChange={refreshProfile} />
+        <TeachingModal role="teacher" onClose={handleTeachingClose} onChange={refreshRoster} />
       )}
-      {viewingUserId !== null && (
-        <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
+      {viewingStudentId !== null && (
+        <StudentReviewPanel studentId={viewingStudentId} onClose={handleReviewPanelClose} />
       )}
     </div>
   );

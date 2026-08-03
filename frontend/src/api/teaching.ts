@@ -46,7 +46,7 @@ export async function cancelInvitation(id: number): Promise<void> {
 }
 
 export type AssignmentType = "mock_exam" | "topic" | "subtopic";
-export type AssignmentStatus = "assigned" | "in_progress" | "completed";
+export type AssignmentStatus = "assigned" | "in_progress" | "submitted" | "completed";
 
 export interface AssignmentRef {
   id: number;
@@ -67,8 +67,41 @@ export interface Assignment {
   due_date: string | null;
   status: AssignmentStatus;
   is_overdue: boolean;
+  content_complete: boolean;
+  explanation: string;
+  teacher_feedback: string;
+  submitted_at: string | null;
+  reviewed_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProblemQuestionReview {
+  id: number;
+  text: string;
+  question_type: string;
+  choices: { id: number; text: string; is_correct: boolean }[];
+  statements: { id: number; label: string; text: string; is_true: boolean }[];
+  correct_answer_text: string | null;
+  selected_choice_id: number | null;
+  answer_text: string;
+  selected_statement_ids: number[];
+  is_correct: boolean;
+}
+
+export interface ProblemSet {
+  label: string;
+  score: number | null;
+  questions: ProblemQuestionReview[];
+}
+
+export interface AssignmentDetail extends Assignment {
+  problem_sets: ProblemSet[];
+}
+
+export interface StudentRosterEntry {
+  student: FriendUser;
+  has_pending_review: boolean;
 }
 
 export interface CreateAssignmentPayload {
@@ -94,10 +127,31 @@ export async function fetchAssignments(studentId?: number): Promise<Assignment[]
   return data;
 }
 
-export async function updateAssignmentStatus(
+export async function startAssignment(id: number): Promise<Assignment> {
+  const { data } = await apiClient.post(`/teaching/assignments/${id}/start/`);
+  return data;
+}
+
+export async function submitAssignment(id: number, explanation: string): Promise<Assignment> {
+  const { data } = await apiClient.post(`/teaching/assignments/${id}/submit/`, { explanation });
+  return data;
+}
+
+export async function reviewAssignment(
   id: number,
-  status: "in_progress" | "completed",
+  action: "approve" | "reject",
+  feedback?: string,
 ): Promise<Assignment> {
-  const { data } = await apiClient.patch(`/teaching/assignments/${id}/status/`, { status });
+  const { data } = await apiClient.post(`/teaching/assignments/${id}/review/`, { action, feedback });
+  return data;
+}
+
+export async function fetchAssignmentDetail(id: number): Promise<AssignmentDetail> {
+  const { data } = await apiClient.get(`/teaching/assignments/${id}/detail/`);
+  return data;
+}
+
+export async function fetchStudentRoster(): Promise<StudentRosterEntry[]> {
+  const { data } = await apiClient.get("/teaching/students/");
   return data;
 }
