@@ -9,7 +9,6 @@ import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { HomePage } from "./pages/HomePage";
 import { PracticePage } from "./pages/PracticePage";
 import { TierPage } from "./pages/TierPage";
-import { IntroPage } from "./pages/IntroPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { GamesPage } from "./pages/GamesPage";
@@ -43,7 +42,6 @@ export default function App() {
           <Route path="/games/:roomCode/play" element={<GameplayPage />} />
           <Route path="/games/:roomCode/results" element={<ResultsPage />} />
           <Route path="/practice/subtopic/:subtopicId/:tier" element={<TierPage />} />
-          <Route path="/practice/:kind/:id" element={<IntroPage />} />
           <Route path="/mock-exams" element={<MockExamsPage />} />
           <Route path="/mock-exams/attempt/:attemptId" element={<MockExamAttemptPage />} />
           <Route path="/mock-exams/attempt/:attemptId/results" element={<MockExamResultsPage />} />

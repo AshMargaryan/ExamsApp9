@@ -3,6 +3,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import { API_ORIGIN } from "../../api/client";
+
+function resolveImageSrc(src?: string) {
+  if (!src) return src;
+  return src.startsWith("/") ? `${API_ORIGIN}${src}` : src;
+}
 
 function CodeBlock({ className, children }: { className?: string; children?: React.ReactNode }) {
   const [copied, setCopied] = useState(false);
@@ -38,9 +44,15 @@ function CodeBlock({ className, children }: { className?: string; children?: Rea
   );
 }
 
-export function MarkdownMessage({ content }: { content: string }) {
+export function MarkdownMessage({
+  content,
+  className = "text-[15px] leading-relaxed",
+}: {
+  content: string;
+  className?: string;
+}) {
   return (
-    <div className="prose-chat text-[15px] leading-relaxed break-words">
+    <div className={`prose-chat break-words ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -50,6 +62,14 @@ export function MarkdownMessage({ content }: { content: string }) {
             <a {...props} target="_blank" rel="noreferrer" className="text-primary underline">
               {children}
             </a>
+          ),
+          img: ({ alt, ...props }) => (
+            <img
+              {...props}
+              src={resolveImageSrc(props.src)}
+              alt={alt ?? ""}
+              className="float-right ml-5 mb-4 w-full max-w-[560px] rounded-[var(--radius)] border border-border shadow-sm md:w-[55%] lg:max-w-[680px]"
+            />
           ),
         }}
       >

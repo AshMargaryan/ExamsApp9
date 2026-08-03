@@ -42,6 +42,13 @@ export interface SubtopicNode {
   name: string;
   order: number;
   tier_scores: Record<Tier, number | null>;
+  has_learning_material: boolean;
+}
+
+export interface SubtopicMaterial {
+  id: number;
+  name: string;
+  learning_material: string;
 }
 
 export interface TopicNode {
@@ -93,6 +100,11 @@ export interface SubmitResult {
 export async function getHierarchy(): Promise<SubjectNode[]> {
   const { data } = await apiClient.get("/practice/hierarchy/");
   return data.results;
+}
+
+export async function getSubtopicMaterial(subtopicId: number): Promise<SubtopicMaterial> {
+  const { data } = await apiClient.get(`/practice/subtopics/${subtopicId}/material/`);
+  return data;
 }
 
 export async function getTierQuestions(subtopicId: number, tier: Tier): Promise<Question[]> {
