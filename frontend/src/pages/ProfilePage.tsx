@@ -55,7 +55,7 @@ function StreakCard({ streak }: { streak: LearningStreak | null }) {
   );
 }
 
-function StudentBox({ student, onClick }: { student: FriendUser; onClick: () => void }) {
+function PersonBox({ person, onClick }: { person: FriendUser; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -63,16 +63,16 @@ function StudentBox({ student, onClick }: { student: FriendUser; onClick: () => 
       className="flex flex-col items-center gap-2 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
     >
       <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-lg font-semibold text-text-muted">
-        {student.avatar ? (
-          <img src={student.avatar} alt={student.username} className="h-full w-full object-cover" />
+        {person.avatar ? (
+          <img src={person.avatar} alt={person.username} className="h-full w-full object-cover" />
         ) : (
-          (student.first_name || student.username).slice(0, 1).toUpperCase()
+          (person.first_name || person.username).slice(0, 1).toUpperCase()
         )}
       </span>
       <span className="text-sm font-medium text-text">
-        {[student.first_name, student.last_name].filter(Boolean).join(" ") || student.username}
+        {[person.first_name, person.last_name].filter(Boolean).join(" ") || person.username}
       </span>
-      <span className="text-xs text-text-muted">@{student.username}</span>
+      <span className="text-xs text-text-muted">@{person.username}</span>
     </button>
   );
 }
@@ -97,7 +97,7 @@ export function ProfilePage() {
   const [practicePercent, setPracticePercent] = useState<number | null>(null);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [friendsOpen, setFriendsOpen] = useState(false);
-  const [viewingStudentId, setViewingStudentId] = useState<number | null>(null);
+  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -219,10 +219,6 @@ export function ProfilePage() {
     "w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
   const labelClass = "mb-1 block text-sm text-text-muted";
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
-  const xpPercent =
-    profile.xp_for_next_level > 0
-      ? Math.min(100, Math.round((profile.xp_into_level / profile.xp_for_next_level) * 100))
-      : 100;
 
   return (
     <div className="min-h-screen bg-bg px-4 py-8">
@@ -434,25 +430,15 @@ export function ProfilePage() {
           <h2 className="mb-3 text-lg font-semibold text-text">Վիճակագրություն</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <StatCard
-              label="Պարապանքի առաջընթաց"
+              label="Պարապունքի առաջընթաց"
               value={practicePercent !== null ? `${practicePercent}%` : "..."}
             />
             <StatCard label="Ճշգրտություն" value={`${profile.stats.accuracy_percentage}%`} />
+            <StatCard label="Ավարտված թեստեր" value={String(profile.stats.tests_completed)} />
             <StatCard
-              label="Ավարտված թեստեր"
-              value={String(profile.stats.practice_tests_completed)}
-              hint="Ամբողջական հաշվարկը՝ շուտով"
+              label="Պարապանք վերջին շաբաթում"
+              value={`${(profile.stats.weekly_study_seconds / 3600).toFixed(1)} ժ`}
             />
-            <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-center">
-              <p className="text-2xl font-semibold text-text">{profile.level}</p>
-              <p className="mt-1 text-sm text-text-muted">Մակարդակ</p>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${xpPercent}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-text-muted">
-                {profile.xp_into_level} / {profile.xp_for_next_level} XP
-              </p>
-            </div>
           </div>
         </section>
 
@@ -494,12 +480,31 @@ export function ProfilePage() {
             {profile.students && profile.students.length > 0 ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {profile.students.map((s) => (
-                  <StudentBox key={s.id} student={s} onClick={() => setViewingStudentId(s.id)} />
+                  <PersonBox key={s.id} person={s} onClick={() => setViewingUserId(s.id)} />
                 ))}
               </div>
             ) : (
               <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
                 Դեռ կապակցված աշակերտներ չկան։
+              </p>
+            )}
+          </section>
+        )}
+
+        {profile.role === "student" && (
+          <section className="mt-8">
+            <h2 className="mb-3 text-lg font-semibold text-text">
+              Ուսուցիչներ {profile.teachers !== null ? `(${profile.teachers.length})` : ""}
+            </h2>
+            {profile.teachers && profile.teachers.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {profile.teachers.map((t) => (
+                  <PersonBox key={t.id} person={t} onClick={() => setViewingUserId(t.id)} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
+                Դեռ կապակցված ուսուցիչներ չկան։
               </p>
             )}
           </section>
@@ -533,8 +538,8 @@ export function ProfilePage() {
 
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
       {friendsOpen && <FriendsModal onClose={handleFriendsClose} />}
-      {viewingStudentId !== null && (
-        <PublicProfileModal userId={viewingStudentId} onClose={() => setViewingStudentId(null)} />
+      {viewingUserId !== null && (
+        <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
       )}
     </div>
   );

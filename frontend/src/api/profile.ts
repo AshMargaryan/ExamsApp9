@@ -6,8 +6,9 @@ export interface LearningStats {
   questions_solved: number;
   correct_answers: number;
   accuracy_percentage: number;
-  practice_tests_completed: number;
+  tests_completed: number;
   total_learning_time_seconds: number | null;
+  weekly_study_seconds: number;
 }
 
 export interface Profile {
@@ -32,6 +33,7 @@ export interface Profile {
   students: FriendUser[] | null;
   avg_student_accuracy_improvement: number | null;
   avg_student_test_improvement: number | null;
+  teachers: FriendUser[] | null;
   updated_at: string;
 }
 
