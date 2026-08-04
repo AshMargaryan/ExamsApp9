@@ -6,7 +6,7 @@ from apps.mock_exams.models import MockExam
 from apps.practice.models import Subtopic, Topic
 
 from .models import Assignment, AssignmentStatus, AssignmentType, TeacherStudentConnection
-from .services import build_problem_sets, is_content_complete
+from .services import assignment_progress, build_problem_sets, is_content_complete, mock_exam_status
 
 User = get_user_model()
 
@@ -39,7 +39,7 @@ class TeacherStudentConnectionSerializer(serializers.ModelSerializer):
 class MockExamRefSerializer(serializers.ModelSerializer):
     class Meta:
         model = MockExam
-        fields = ["id", "title"]
+        fields = ["id", "title", "subject"]
 
 
 class TopicRefSerializer(serializers.ModelSerializer):
@@ -64,6 +64,8 @@ class AssignmentSerializer(serializers.ModelSerializer):
     subtopic = SubtopicRefSerializer(read_only=True)
     is_overdue = serializers.BooleanField(read_only=True)
     content_complete = serializers.SerializerMethodField()
+    progress = serializers.SerializerMethodField()
+    test_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Assignment
@@ -71,12 +73,20 @@ class AssignmentSerializer(serializers.ModelSerializer):
             "id", "teacher", "student", "assignment_type",
             "mock_exam", "topic", "subtopic",
             "title", "instructions", "due_date", "status", "is_overdue", "content_complete",
+            "progress", "test_status",
             "explanation", "teacher_feedback", "submitted_at", "reviewed_at",
+            "seen_by_student", "seen_by_teacher",
             "created_at", "updated_at",
         ]
 
     def get_content_complete(self, obj) -> bool:
         return is_content_complete(obj)
+
+    def get_progress(self, obj) -> int:
+        return assignment_progress(obj)
+
+    def get_test_status(self, obj) -> str | None:
+        return mock_exam_status(obj)
 
 
 class AssignmentDetailSerializer(AssignmentSerializer):

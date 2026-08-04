@@ -9,6 +9,7 @@ import type { SubjectNode } from "../api/practice";
 import { StudentReviewPanel } from "../components/teaching/StudentReviewPanel";
 import { TeachingModal } from "../components/teaching/TeachingModal";
 import { MessageModal } from "../components/MessageModal";
+import { SuccessModal } from "../components/SuccessModal";
 
 function StudentBox({ entry, onClick }: { entry: StudentRosterEntry; onClick: () => void }) {
   const { student, has_pending_review } = entry;
@@ -46,6 +47,7 @@ export function TeacherDashboardPage() {
   const [teachingOpen, setTeachingOpen] = useState(false);
   const [viewingStudentId, setViewingStudentId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const [studentId, setStudentId] = useState("");
   const [assignmentType, setAssignmentType] = useState<AssignmentType>("subtopic");
@@ -53,6 +55,7 @@ export function TeacherDashboardPage() {
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [noDeadline, setNoDeadline] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   function refreshRoster() {
@@ -95,8 +98,8 @@ export function TeacherDashboardPage() {
   async function handleCreateAssignment(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!studentId || !targetId || !title.trim()) {
-      setError("Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը։");
+    if (!studentId || !targetId) {
+      setError("Խնդրում ենք ընտրել աշակերտ և առաջադրանքի բովանդակություն։");
       return;
     }
     setSubmitting(true);
@@ -107,14 +110,21 @@ export function TeacherDashboardPage() {
         mock_exam_id: assignmentType === "mock_exam" ? Number(targetId) : undefined,
         topic_id: assignmentType === "topic" ? Number(targetId) : undefined,
         subtopic_id: assignmentType === "subtopic" ? Number(targetId) : undefined,
-        title,
-        instructions,
-        due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
+        title: title.trim() || undefined,
+        instructions: instructions.trim() || undefined,
+        due_date: !noDeadline && dueDate ? new Date(dueDate).toISOString() : undefined,
       });
+      const studentName = roster?.find((e) => String(e.student.id) === studentId)?.student;
+      setSentTo(
+        studentName
+          ? [studentName.first_name, studentName.last_name].filter(Boolean).join(" ") || studentName.username
+          : null,
+      );
       setTargetId("");
       setTitle("");
       setInstructions("");
       setDueDate("");
+      setNoDeadline(true);
     } catch (err) {
       const detail =
         err && typeof err === "object" && "response" in err
@@ -220,25 +230,36 @@ export function TeacherDashboardPage() {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass}>Վերնագիր</label>
-              <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <label className={labelClass}>Վերնագիր (ընտրովի)</label>
+              <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass}>Հրահանգներ</label>
+              <label className={labelClass}>Հաղորդագրություն (ընտրովի)</label>
               <textarea
                 className={`${inputClass} min-h-20 resize-y`}
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
               />
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <label className={labelClass}>Վերջնաժամկետ</label>
-              <input
-                type="date"
-                className={inputClass}
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={dueDate}
+                  disabled={noDeadline}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+                <label className="flex shrink-0 items-center gap-2 text-sm text-text-muted">
+                  <input
+                    type="checkbox"
+                    checked={noDeadline}
+                    onChange={(e) => setNoDeadline(e.target.checked)}
+                  />
+                  Առանց վերջնաժամկետի
+                </label>
+              </div>
             </div>
             <div className="flex items-end sm:col-span-2">
               <button
@@ -254,6 +275,12 @@ export function TeacherDashboardPage() {
       </div>
 
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {sentTo && (
+        <SuccessModal
+          message={`Առաջադրանքն ուղարկվել է ${sentTo}-ին։`}
+          onClose={() => setSentTo(null)}
+        />
+      )}
       {teachingOpen && (
         <TeachingModal role="teacher" onClose={handleTeachingClose} onChange={refreshRoster} />
       )}

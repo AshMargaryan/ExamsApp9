@@ -1,14 +1,26 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import * as friendsApi from "../../api/friends";
 import type { FriendRequest } from "../../api/friends";
 import * as teachingApi from "../../api/teaching";
-import type { TeacherStudentConnection } from "../../api/teaching";
+import type { Assignment, TeacherStudentConnection } from "../../api/teaching";
 import { useAuth } from "../../auth/AuthContext";
+import { useAssignmentNotifications } from "../../hooks/useAssignmentNotifications";
+import { assignmentDisplayTitle, assignmentTargetLabel } from "../../lib/assignmentLabels";
 import { PublicProfileModal } from "../profile/PublicProfileModal";
 
 function displayName(u: { username: string; first_name: string; last_name: string }) {
   const full = [u.first_name, u.last_name].filter(Boolean).join(" ");
   return full || u.username;
+}
+
+function assignmentNotificationText(a: Assignment, isStudent: boolean): string {
+  if (isStudent) {
+    if (a.status === "in_progress" && a.teacher_feedback) return "Ուսուցիչը հետ է ուղարկել առաջադրանքը";
+    if (a.status === "completed") return "Ուսուցիչը հաստատել է առաջադրանքը";
+    return "Նոր առաջադրանք";
+  }
+  return "Աշակերտն ուղարկել է առաջադրանք ստուգման";
 }
 
 export function NotificationBell() {
@@ -20,6 +32,7 @@ export function NotificationBell() {
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const isStudent = user?.role === "student";
+  const assignmentNotifications = useAssignmentNotifications();
 
   function loadIncoming() {
     friendsApi.fetchIncomingRequests().then(setIncoming);
@@ -55,7 +68,13 @@ export function NotificationBell() {
     loadIncoming();
   }
 
-  const count = (incoming?.length ?? 0) + (teachingInvitations?.length ?? 0);
+  async function handleAssignmentClick(id: number) {
+    await teachingApi.markAssignmentSeen(id);
+    setOpen(false);
+  }
+
+  const count =
+    (incoming?.length ?? 0) + (teachingInvitations?.length ?? 0) + (assignmentNotifications?.length ?? 0);
 
   return (
     <div ref={wrapRef} className="fixed right-4 top-4 z-40">
@@ -191,6 +210,27 @@ export function NotificationBell() {
               ))}
             </>
           )}
+
+          <div className="border-b border-t border-border px-4 py-3">
+            <span className="text-sm font-medium text-text">Առաջադրանքներ</span>
+          </div>
+          {assignmentNotifications === null && <p className="p-4 text-sm text-text-muted">Բեռնվում է...</p>}
+          {assignmentNotifications?.length === 0 && (
+            <p className="p-4 text-sm text-text-muted">Նոր առաջադրանքային ծանուցումներ չկան։</p>
+          )}
+          {assignmentNotifications?.map((a) => (
+            <Link
+              key={a.id}
+              to={isStudent ? "/student-dashboard" : `/assignments/${a.id}`}
+              onClick={() => handleAssignmentClick(a.id)}
+              className="block border-b border-border p-3 transition-colors last:border-0 hover:bg-surface-muted"
+            >
+              <p className="truncate text-sm text-text">{assignmentNotificationText(a, isStudent)}</p>
+              <p className="truncate text-xs text-text-muted">
+                {assignmentDisplayTitle(a)} · {assignmentTargetLabel(a)}
+              </p>
+            </Link>
+          ))}
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { listMockExams, startAttempt, type MockExamSummary, type MockExamSubject } from "../api/mockExams";
 import { MockExamStartPanel } from "../components/MockExamStartPanel";
 
@@ -11,6 +11,9 @@ const SUBJECTS: { key: MockExamSubject; label: string }[] = [
 
 export function MockExamsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navState = location.state as { examId?: number } | null;
+
   const [subject, setSubject] = useState<MockExamSubject>("math");
   const [exams, setExams] = useState<MockExamSummary[] | null>(null);
   const [startingExam, setStartingExam] = useState<MockExamSummary | null>(null);
@@ -20,6 +23,22 @@ export function MockExamsPage() {
     setExams(null);
     listMockExams(subject).then(setExams);
   }, [subject]);
+
+  // Deep-link from an assignment's "Կատարել" — find the assigned exam
+  // (which may be in a different subject tab) and open it directly. Keyed
+  // on location.key (unique per navigation) rather than a "did we already
+  // do this" flag, so clicking "Կատարել" again while already on this page
+  // still re-opens it instead of silently no-oping.
+  useEffect(() => {
+    if (!navState?.examId) return;
+    listMockExams().then((all) => {
+      const exam = all.find((e) => e.id === navState.examId);
+      if (!exam) return;
+      setSubject(exam.subject);
+      handleCardClick(exam);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navState?.examId, location.key]);
 
   async function handleStart(durationMinutes: number | null, hintsEnabled: boolean) {
     if (!startingExam) return;

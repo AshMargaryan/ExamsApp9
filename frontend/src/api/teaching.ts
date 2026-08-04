@@ -47,11 +47,13 @@ export async function cancelInvitation(id: number): Promise<void> {
 
 export type AssignmentType = "mock_exam" | "topic" | "subtopic";
 export type AssignmentStatus = "assigned" | "in_progress" | "submitted" | "completed";
+export type MockExamAssignmentStatus = "not_started" | "started" | "drafted" | "completed";
 
 export interface AssignmentRef {
   id: number;
   title?: string;
   name?: string;
+  subject?: string;
 }
 
 export interface Assignment {
@@ -68,10 +70,14 @@ export interface Assignment {
   status: AssignmentStatus;
   is_overdue: boolean;
   content_complete: boolean;
+  progress: number;
+  test_status: MockExamAssignmentStatus | null;
   explanation: string;
   teacher_feedback: string;
   submitted_at: string | null;
   reviewed_at: string | null;
+  seen_by_student: boolean;
+  seen_by_teacher: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -110,7 +116,7 @@ export interface CreateAssignmentPayload {
   mock_exam_id?: number;
   topic_id?: number;
   subtopic_id?: number;
-  title: string;
+  title?: string;
   instructions?: string;
   due_date?: string;
 }
@@ -153,5 +159,25 @@ export async function fetchAssignmentDetail(id: number): Promise<AssignmentDetai
 
 export async function fetchStudentRoster(): Promise<StudentRosterEntry[]> {
   const { data } = await apiClient.get("/teaching/students/");
+  return data;
+}
+
+export async function updateLearningProgress(id: number, progress: number): Promise<Assignment> {
+  const { data } = await apiClient.post(`/teaching/assignments/${id}/learning-progress/`, { progress });
+  return data;
+}
+
+export async function markAssignmentSeen(id: number): Promise<Assignment> {
+  const { data } = await apiClient.post(`/teaching/assignments/${id}/mark-seen/`);
+  return data;
+}
+
+export async function fetchAssignmentNotifications(): Promise<Assignment[]> {
+  const { data } = await apiClient.get("/teaching/assignments/notifications/");
+  return data;
+}
+
+export async function redoAssignment(id: number): Promise<Assignment> {
+  const { data } = await apiClient.post(`/teaching/assignments/${id}/redo/`);
   return data;
 }

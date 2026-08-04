@@ -11,7 +11,7 @@ from .serializers import (
     AssignmentCreateSerializer, AssignmentDetailSerializer, AssignmentSerializer,
     StudentRosterSerializer, StudentSearchSerializer, TeacherStudentConnectionSerializer,
 )
-from .services import accepted_student_count, is_connected, is_content_complete
+from .services import accepted_student_count, is_connected
 
 User = get_user_model()
 
@@ -204,8 +204,9 @@ class AssignmentStartView(APIView):
 class AssignmentSubmitView(APIView):
     """
     POST /api/teaching/assignments/<pk>/submit/ {explanation} — student
-    submits their finished work for teacher review. Requires the underlying
-    problems to actually be completed and a non-blank explanation.
+    submits their work for teacher review. The student can send at any
+    point, finished or not — the teacher sees exactly how much progress
+    was made (via Assignment.progress/test_status) and decides from there.
     """
 
     permission_classes = [IsStudent]
@@ -223,15 +224,12 @@ class AssignmentSubmitView(APIView):
                 {"detail": "Խնդրում ենք գրել բացատրություն, թե ինչ եք սովորել։"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if not is_content_complete(assignment):
-            return Response(
-                {"detail": "Նախ ավարտեք առաջադրանքի բոլոր հարցերը։"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
         assignment.status = AssignmentStatus.SUBMITTED
         assignment.explanation = explanation
         assignment.submitted_at = timezone.now()
-        assignment.save(update_fields=["status", "explanation", "submitted_at", "updated_at"])
+        assignment.seen_by_teacher = False
+        assignment.save(update_fields=["status", "explanation", "submitted_at", "seen_by_teacher", "updated_at"])
         return Response(AssignmentSerializer(assignment, context={"request": request}).data)
 
 
@@ -259,8 +257,112 @@ class AssignmentReviewActionView(APIView):
                 {"detail": "action-ը պետք է լինի approve կամ reject։"}, status=status.HTTP_400_BAD_REQUEST
             )
         assignment.reviewed_at = timezone.now()
-        assignment.save(update_fields=["status", "teacher_feedback", "reviewed_at", "updated_at"])
+        assignment.seen_by_student = False
+        assignment.save(
+            update_fields=["status", "teacher_feedback", "reviewed_at", "seen_by_student", "updated_at"]
+        )
         return Response(AssignmentSerializer(assignment, context={"request": request}).data)
+
+
+class AssignmentLearningProgressView(APIView):
+    """
+    POST /api/teaching/assignments/<pk>/learning-progress/ {progress: 0..1}
+    — student reports how far they've scrolled through a subtopic's
+    learning material. Monotonic (never decreases) and moves
+    assigned -> in_progress like AssignmentStartView.
+    """
+
+    permission_classes = [IsStudent]
+
+    def post(self, request, pk):
+        assignment = get_object_or_404(
+            Assignment,
+            pk=pk,
+            student=request.user,
+            assignment_type="subtopic",
+            status__in=[AssignmentStatus.ASSIGNED, AssignmentStatus.IN_PROGRESS],
+        )
+        try:
+            progress = float(request.data.get("progress"))
+        except (TypeError, ValueError):
+            return Response({"detail": "progress-ը պետք է լինի թիվ։"}, status=status.HTTP_400_BAD_REQUEST)
+        progress = max(0.0, min(1.0, progress))
+
+        update_fields = ["updated_at"]
+        if progress > assignment.learning_progress:
+            assignment.learning_progress = progress
+            update_fields.append("learning_progress")
+        if assignment.status == AssignmentStatus.ASSIGNED:
+            assignment.status = AssignmentStatus.IN_PROGRESS
+            update_fields.append("status")
+        assignment.save(update_fields=update_fields)
+        return Response(AssignmentSerializer(assignment, context={"request": request}).data)
+
+
+class AssignmentRedoView(APIView):
+    """
+    POST /api/teaching/assignments/<pk>/redo/ — student restarts a rejected
+    (or otherwise still-open) assignment. Bumps progress_reset_at so prior
+    practice/test attempts stop counting toward progress/completion,
+    without touching the underlying attempt data.
+    """
+
+    permission_classes = [IsStudent]
+
+    def post(self, request, pk):
+        assignment = get_object_or_404(
+            Assignment,
+            pk=pk,
+            student=request.user,
+            status__in=[AssignmentStatus.ASSIGNED, AssignmentStatus.IN_PROGRESS],
+        )
+        assignment.progress_reset_at = timezone.now()
+        assignment.explanation = ""
+        assignment.learning_progress = 0.0
+        assignment.save(update_fields=["progress_reset_at", "explanation", "learning_progress", "updated_at"])
+        return Response(AssignmentSerializer(assignment, context={"request": request}).data)
+
+
+class AssignmentMarkSeenView(APIView):
+    """POST /api/teaching/assignments/<pk>/mark-seen/ — clears the caller's notification flag."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        assignment = get_object_or_404(Assignment, pk=pk)
+        if request.user == assignment.student:
+            assignment.seen_by_student = True
+            assignment.save(update_fields=["seen_by_student"])
+        elif request.user == assignment.teacher:
+            assignment.seen_by_teacher = True
+            assignment.save(update_fields=["seen_by_teacher"])
+        else:
+            return Response(
+                {"detail": "Այս առաջադրանքը հասանելի չէ ձեզ։"}, status=status.HTTP_403_FORBIDDEN
+            )
+        return Response(AssignmentSerializer(assignment, context={"request": request}).data)
+
+
+class AssignmentNotificationListView(generics.ListAPIView):
+    """
+    GET /api/teaching/assignments/notifications/ — unseen assignment events
+    for the caller: newly assigned/reviewed items for a student, newly
+    submitted items for a teacher. Backs the notification bell + the small
+    dot on the "Assignments" home link.
+    """
+
+    serializer_class = AssignmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = Assignment.objects.select_related(
+            "teacher__profile", "student__profile", "mock_exam", "topic", "subtopic"
+        )
+        if user.role == "teacher":
+            return qs.filter(teacher=user, seen_by_teacher=False, status=AssignmentStatus.SUBMITTED)
+        return qs.filter(student=user, seen_by_student=False)
 
 
 class AssignmentDetailView(APIView):

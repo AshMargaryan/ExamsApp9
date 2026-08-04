@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
 
 export function HomePage() {
   const { user, logout } = useAuth();
+  const notifications = useAssignmentNotifications();
+  const hasUnseenAssignments = (notifications?.length ?? 0) > 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
@@ -21,9 +24,12 @@ export function HomePage() {
         {user?.role === "teacher" ? (
           <Link
             to="/teacher-dashboard"
-            className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+            className="relative rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
           >
             🧑‍🏫 Ուսուցչի վահանակ
+            {hasUnseenAssignments && (
+              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />
+            )}
           </Link>
         ) : (
           <>
@@ -53,9 +59,12 @@ export function HomePage() {
             </Link>
             <Link
               to="/student-dashboard"
-              className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+              className="relative rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
             >
               📋 Առաջադրանքներ
+              {hasUnseenAssignments && (
+                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />
+              )}
             </Link>
           </>
         )}

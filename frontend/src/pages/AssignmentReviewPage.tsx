@@ -4,6 +4,7 @@ import { MathText } from "../components/MathText";
 import { useAuth } from "../auth/AuthContext";
 import * as teachingApi from "../api/teaching";
 import type { AssignmentDetail, ProblemQuestionReview } from "../api/teaching";
+import { assignmentDisplayTitle } from "../lib/assignmentLabels";
 
 const STATUS_LABELS: Record<AssignmentDetail["status"], string> = {
   assigned: "Հանձնարարված",
@@ -158,7 +159,7 @@ export function AssignmentReviewPage() {
         </div>
 
         <div className="mb-6 rounded-[var(--radius)] border border-border bg-surface p-6">
-          <h1 className="mb-1 text-xl font-semibold text-text">{assignment.title}</h1>
+          <h1 className="mb-1 text-xl font-semibold text-text">{assignmentDisplayTitle(assignment)}</h1>
           <p className="text-sm text-text-muted">
             {[assignment.student.first_name, assignment.student.last_name].filter(Boolean).join(" ") ||
               assignment.student.username}

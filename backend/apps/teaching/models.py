@@ -130,11 +130,31 @@ class Assignment(models.Model):
         "practice.Subtopic", on_delete=models.CASCADE, null=True, blank=True, related_name="assignments"
     )
 
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, blank=True, default="")
     instructions = models.TextField(blank=True, default="")
     due_date = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
         max_length=15, choices=AssignmentStatus.choices, default=AssignmentStatus.ASSIGNED
+    )
+
+    learning_progress = models.FloatField(
+        default=0.0,
+        help_text="Fraction (0-1) of the subtopic's learning material the student has scrolled through. "
+        "Only meaningful for assignment_type=subtopic.",
+    )
+    progress_reset_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Progress/completion only counts practice attempts made after this (falls back to "
+        "created_at). Bumped to now() when the student redoes a rejected assignment, so old completions "
+        "from before the redo stop counting without touching the underlying practice data.",
+    )
+    seen_by_student = models.BooleanField(
+        default=False,
+        help_text="False right after creation or after a teacher review — drives the student's notification bell.",
+    )
+    seen_by_teacher = models.BooleanField(
+        default=True,
+        help_text="False right after a student submission — drives the teacher's notification bell.",
     )
 
     explanation = models.TextField(

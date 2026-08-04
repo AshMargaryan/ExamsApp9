@@ -4,6 +4,9 @@ import * as profileApi from "../../api/profile";
 import type { Profile } from "../../api/profile";
 import * as teachingApi from "../../api/teaching";
 import type { Assignment } from "../../api/teaching";
+import { assignmentDisplayTitle, assignmentTargetLabel } from "../../lib/assignmentLabels";
+import { AssignmentProgressBar } from "./AssignmentProgressBar";
+import { TestStatusIndicator } from "./TestStatusIndicator";
 
 const STATUS_LABELS: Record<Assignment["status"], string> = {
   assigned: "Հանձնարարված",
@@ -11,12 +14,6 @@ const STATUS_LABELS: Record<Assignment["status"], string> = {
   submitted: "Սպասում է հաստատման",
   completed: "Ավարտված",
 };
-
-function assignmentTargetLabel(a: Assignment): string {
-  if (a.assignment_type === "mock_exam") return a.mock_exam?.title ?? "";
-  if (a.assignment_type === "topic") return a.topic?.name ?? "";
-  return a.subtopic?.name ?? "";
-}
 
 export function StudentReviewPanel({ studentId, onClose }: { studentId: number; onClose: () => void }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -26,7 +23,18 @@ export function StudentReviewPanel({ studentId, onClose }: { studentId: number; 
     setProfile(null);
     setAssignments(null);
     profileApi.fetchUserProfile(studentId).then(setProfile);
-    teachingApi.fetchAssignments(studentId).then(setAssignments);
+
+    function loadAssignments() {
+      teachingApi.fetchAssignments(studentId).then((list) => {
+        setAssignments(list);
+        list
+          .filter((a) => a.status === "submitted" && !a.seen_by_teacher)
+          .forEach((a) => teachingApi.markAssignmentSeen(a.id));
+      });
+    }
+    loadAssignments();
+    const interval = setInterval(loadAssignments, 5000);
+    return () => clearInterval(interval);
   }, [studentId]);
 
   const fullName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") : "";
@@ -93,18 +101,26 @@ export function StudentReviewPanel({ studentId, onClose }: { studentId: number; 
                   <Link
                     key={a.id}
                     to={`/assignments/${a.id}`}
-                    className="flex items-center justify-between rounded-[var(--radius)] border border-border bg-bg p-3 transition-colors hover:border-primary"
+                    className="rounded-[var(--radius)] border border-border bg-bg p-3 transition-colors hover:border-primary"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-text">{a.title}</p>
-                      <p className="text-xs text-text-muted">{assignmentTargetLabel(a)}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-text">{assignmentDisplayTitle(a)}</p>
+                        <p className="text-xs text-text-muted">{assignmentTargetLabel(a)}</p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-text-muted">
+                        {a.status === "submitted" && (
+                          <span className="h-2 w-2 rounded-full bg-primary" title="Սպասում է հաստատման" />
+                        )}
+                        {STATUS_LABELS[a.status]}
+                      </span>
                     </div>
-                    <span className="flex shrink-0 items-center gap-1.5 text-xs text-text-muted">
-                      {a.status === "submitted" && (
-                        <span className="h-2 w-2 rounded-full bg-primary" title="Սպասում է հաստատման" />
-                      )}
-                      {STATUS_LABELS[a.status]}
-                    </span>
+                    {(a.status === "assigned" || a.status === "in_progress") &&
+                      (a.assignment_type === "mock_exam" ? (
+                        a.test_status && <TestStatusIndicator status={a.test_status} className="mt-2" />
+                      ) : (
+                        <AssignmentProgressBar percent={a.progress} className="mt-2" />
+                      ))}
                   </Link>
                 ))}
               </div>
