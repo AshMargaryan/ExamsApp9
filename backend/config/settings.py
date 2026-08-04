@@ -267,3 +267,9 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Gitus <noreply@gitus.loc
 # that day can come without a schema change.
 TEACHER_DEFAULT_STUDENT_LIMIT = env.int("TEACHER_DEFAULT_STUDENT_LIMIT", default=20)
 
+# ---------------------------------------------------------------------------
+# Chat
+# ---------------------------------------------------------------------------
+
+CHAT_MAX_ATTACHMENT_SIZE_MB = env.int("CHAT_MAX_ATTACHMENT_SIZE_MB", default=20)
+

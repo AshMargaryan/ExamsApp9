@@ -6,6 +6,7 @@ from apps.friends.serializers import MiniUserSerializer
 
 from .models import Attachment, Conversation, ConversationParticipant, ConversationType, Message
 from .services import conversation_service
+from .validators import validate_attachment_file
 
 User = get_user_model()
 
@@ -35,6 +36,17 @@ class AttachmentSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         path = reverse("chat_attachment_download", kwargs={"pk": obj.pk})
         return request.build_absolute_uri(path) if request else path
+
+
+class AttachmentUploadSerializer(serializers.Serializer):
+    conversation = serializers.PrimaryKeyRelatedField(queryset=Conversation.objects.all())
+    file = serializers.FileField()
+
+    def validate(self, attrs):
+        attachment_type, mime_type = validate_attachment_file(attrs["file"])
+        attrs["file_type"] = attachment_type
+        attrs["mime_type"] = mime_type
+        return attrs
 
 
 class MessageSerializer(serializers.ModelSerializer):

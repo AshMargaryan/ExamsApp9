@@ -1,15 +1,17 @@
 from django.contrib.auth import get_user_model
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Conversation, ConversationType
-from .permissions import IsConversationParticipant, IsGroupOwner
+from .models import Attachment, Conversation, ConversationType
+from .permissions import IsConversationParticipant, IsGroupOwner, is_participant
 from .serializers import (
-    AddParticipantsSerializer, ConversationSerializer, CreateGroupConversationSerializer,
-    CreatePrivateConversationSerializer, GroupSettingsSerializer, MessageSerializer, SendMessageSerializer,
+    AddParticipantsSerializer, AttachmentSerializer, AttachmentUploadSerializer, ConversationSerializer,
+    CreateGroupConversationSerializer, CreatePrivateConversationSerializer, GroupSettingsSerializer,
+    MessageSerializer, SendMessageSerializer,
 )
 from .services import conversation_service, group_service, message_service
 
@@ -188,4 +190,69 @@ class MessageSendView(APIView):
 
         return Response(
             MessageSerializer(message, context={"request": request}).data, status=status.HTTP_201_CREATED
+        )
+
+
+class AttachmentUploadView(APIView):
+    """
+    POST /api/chat/attachments/ (multipart: conversation, file) — validated
+    upload, independent of any Message (see Attachment model docstring for
+    the "upload first, attach on send" flow). Requires the uploader to
+    already be a participant of the target conversation.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        serializer = AttachmentUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        d = serializer.validated_data
+
+        conversation = d["conversation"]
+        if not is_participant(conversation.id, request.user):
+            return Response(
+                {"detail": "Դուք այս զրույցի մասնակից չեք։"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        uploaded_file = d["file"]
+        attachment = Attachment.objects.create(
+            conversation=conversation,
+            uploaded_by=request.user,
+            file=uploaded_file,
+            original_filename=uploaded_file.name,
+            mime_type=d["mime_type"],
+            file_size=uploaded_file.size,
+            file_type=d["file_type"],
+        )
+        return Response(
+            AttachmentSerializer(attachment, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ChatAttachmentDownloadView(APIView):
+    """
+    GET /api/chat/attachments/<id>/download/ — the only sanctioned way to
+    read an attachment's bytes (see AttachmentSerializer.get_download_url).
+    Enforces requirement #7 itself instead of relying on an unguessable
+    storage path: any active participant of the conversation may download
+    once it's attached to a sent message; before that, only the uploader
+    can (it's still just a draft they might discard).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        attachment = get_object_or_404(Attachment, pk=pk)
+
+        if attachment.message_id is None:
+            allowed = attachment.uploaded_by_id == request.user.id
+        else:
+            allowed = is_participant(attachment.conversation_id, request.user)
+        if not allowed:
+            raise Http404
+
+        return FileResponse(
+            attachment.file.open("rb"), filename=attachment.original_filename, content_type=attachment.mime_type,
         )
