@@ -78,7 +78,7 @@ export function PublicProfileModal({ userId, onClose }: { userId: number; onClos
                 <p className="text-xs text-text-muted">Ճշգրտություն</p>
               </div>
               <div>
-                <p className="text-lg font-semibold text-text">{profile.stats.practice_tests_completed}</p>
+                <p className="text-lg font-semibold text-text">{profile.stats.tests_completed}</p>
                 <p className="text-xs text-text-muted">Ավարտված թեստեր</p>
               </div>
               <div>

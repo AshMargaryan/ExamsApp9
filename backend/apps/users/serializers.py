@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from .models import School, University
+from .models import Role, School, University
 
 User = get_user_model()
 
@@ -48,12 +48,17 @@ class RegisterSerializer(serializers.ModelSerializer):
     )
     first_name = serializers.CharField(required=True, allow_blank=False)
     last_name = serializers.CharField(required=True, allow_blank=False)
+    role = serializers.ChoiceField(
+        choices=Role.choices,
+        required=True,
+        error_messages={"required": "Խնդրում ենք ընտրել դեր՝ աշակերտ կամ ուսուցիչ։"},
+    )
 
     class Meta:
         model = User
         fields = [
             "id", "username", "email", "password", "confirm_password",
-            "first_name", "last_name",
+            "first_name", "last_name", "role",
             "age", "grade", "sex", "school", "university",
         ]
         extra_kwargs = {
@@ -103,11 +108,11 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "id", "username", "email", "date_joined", "is_email_verified",
+            "id", "username", "email", "date_joined", "is_email_verified", "role",
             "first_name", "last_name", "age", "grade", "sex",
             "school", "university", "school_id", "university_id",
         ]
-        read_only_fields = ["id", "date_joined", "is_email_verified"]
+        read_only_fields = ["id", "date_joined", "is_email_verified", "role"]
 
     def validate_grade(self, value):
         if value is not None and not (1 <= value <= 12):

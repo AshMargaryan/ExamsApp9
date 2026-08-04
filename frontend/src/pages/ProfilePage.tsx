@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AxiosError } from "axios";
 import * as profileApi from "../api/profile";
 import type { Achievement, Profile, UserAchievement } from "../api/profile";
+import { PersonBox } from "../components/PersonBox";
 import * as streaksApi from "../api/streaks";
 import type { LearningStreak } from "../api/streaks";
 import * as friendsApi from "../api/friends";
@@ -11,6 +12,8 @@ import { searchSchools, searchUniversities } from "../api/schools";
 import { SearchSelect } from "../components/SearchSelect";
 import { MessageModal } from "../components/MessageModal";
 import { FriendsModal } from "../components/friends/FriendsModal";
+import { TeachingModal } from "../components/teaching/TeachingModal";
+import { PublicProfileModal } from "../components/profile/PublicProfileModal";
 import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
 import { useAuth } from "../auth/AuthContext";
 
@@ -73,6 +76,8 @@ export function ProfilePage() {
   const [practicePercent, setPracticePercent] = useState<number | null>(null);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const [teachingOpen, setTeachingOpen] = useState(false);
+  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -116,6 +121,15 @@ export function ProfilePage() {
       setPracticePercent(Math.round(avg));
     });
   }, []);
+
+  function refreshProfile() {
+    profileApi.fetchProfile().then(setProfile);
+  }
+
+  function handleTeachingClose() {
+    setTeachingOpen(false);
+    refreshProfile();
+  }
 
   function handleFriendsClose() {
     setFriendsOpen(false);
@@ -194,10 +208,6 @@ export function ProfilePage() {
     "w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
   const labelClass = "mb-1 block text-sm text-text-muted";
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
-  const xpPercent =
-    profile.xp_for_next_level > 0
-      ? Math.min(100, Math.round((profile.xp_into_level / profile.xp_for_next_level) * 100))
-      : 100;
 
   return (
     <div className="min-h-screen bg-bg px-4 py-8">
@@ -273,10 +283,15 @@ export function ProfilePage() {
                   <>
                     <h1 className="text-2xl font-semibold text-text">{fullName || profile.username}</h1>
                     <p className="text-text-muted">@{profile.username}</p>
-                    <p className="mt-1 text-sm text-text-muted">
-                      Մակարդակ {profile.level} · {profile.total_xp} XP
-                    </p>
-                    {(profile.grade || profile.age) && (
+                    {profile.role === "teacher" && (
+                      <p className="mt-1 text-sm text-text-muted">🧑‍🏫 Ուսուցիչ</p>
+                    )}
+                    {profile.role === "student" && (
+                      <p className="mt-1 text-sm text-text-muted">
+                        Մակարդակ {profile.level} · {profile.total_xp} XP
+                      </p>
+                    )}
+                    {profile.role === "student" && (profile.grade || profile.age) && (
                       <p className="mt-1 text-sm text-text-muted">
                         {[profile.grade ? `${profile.grade}-րդ դասարան` : null, profile.age ? `${profile.age} տարեկան` : null]
                           .filter(Boolean)
@@ -309,17 +324,19 @@ export function ProfilePage() {
                         onChange={(e) => setAge(e.target.value)}
                       />
                     </div>
-                    <div>
-                      <label className={labelClass}>Դասարան</label>
-                      <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
-                        <option value="">Չընտրված</option>
-                        {GRADES.map((g) => (
-                          <option key={g} value={g}>
-                            {g}-րդ դասարան
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {profile.role === "student" && (
+                      <div>
+                        <label className={labelClass}>Դասարան</label>
+                        <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
+                          <option value="">Չընտրված</option>
+                          {GRADES.map((g) => (
+                            <option key={g} value={g}>
+                              {g}-րդ դասարան
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -341,61 +358,76 @@ export function ProfilePage() {
               )}
             </div>
 
-            <div className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
-              <div>
-                <p className={labelClass}>Դպրոց</p>
-                {!editing ? (
-                  <p className="text-text">
-                    {profile.school ? `${profile.school.name}${profile.school.marz ? ` (${profile.school.marz})` : ""}` : "Չնշված"}
-                  </p>
-                ) : (
-                  <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
-                )}
+            {profile.role === "student" && (
+              <div className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
+                <div>
+                  <p className={labelClass}>Դպրոց</p>
+                  {!editing ? (
+                    <p className="text-text">
+                      {profile.school ? `${profile.school.name}${profile.school.marz ? ` (${profile.school.marz})` : ""}` : "Չնշված"}
+                    </p>
+                  ) : (
+                    <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+                  )}
+                </div>
+                <div>
+                  <p className={labelClass}>Ցանկալի բուհ</p>
+                  {!editing ? (
+                    <p className="text-text">{profile.university ? profile.university.name : "Չնշված"}</p>
+                  ) : (
+                    <SearchSelect
+                      placeholder="Փնտրեք բուհ..."
+                      value={university}
+                      onChange={setUniversity}
+                      search={universitySearch}
+                    />
+                  )}
+                </div>
               </div>
-              <div>
-                <p className={labelClass}>Ցանկալի բուհ</p>
-                {!editing ? (
-                  <p className="text-text">{profile.university ? profile.university.name : "Չնշված"}</p>
-                ) : (
-                  <SearchSelect
-                    placeholder="Փնտրեք բուհ..."
-                    value={university}
-                    onChange={setUniversity}
-                    search={universitySearch}
-                  />
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </form>
 
-        <section className="mt-8">
-          <StreakCard streak={streak} />
-        </section>
+        {profile.role === "student" && (
+          <section className="mt-8">
+            <StreakCard streak={streak} />
+          </section>
+        )}
 
+        {profile.role === "teacher" && (
+          <section className="mt-8">
+            <h2 className="mb-3 text-lg font-semibold text-text">Վիճակագրություն</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <StatCard label="Աշակերտներ" value={String(profile.total_students ?? 0)} />
+              <StatCard
+                label="Ճշգրտության միջին առաջընթաց"
+                value={profile.avg_student_accuracy_improvement !== null ? `${profile.avg_student_accuracy_improvement}%` : "—"}
+                hint="Շուտով"
+              />
+              <StatCard
+                label="Թեստերի միջին առաջընթաց"
+                value={profile.avg_student_test_improvement !== null ? `${profile.avg_student_test_improvement}%` : "—"}
+                hint="Շուտով"
+              />
+            </div>
+          </section>
+        )}
+
+        {profile.role === "student" && (
+        <>
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-text">Վիճակագրություն</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <StatCard
-              label="Պարապանքի առաջընթաց"
+              label="Պարապունքի առաջընթաց"
               value={practicePercent !== null ? `${practicePercent}%` : "..."}
             />
             <StatCard label="Ճշգրտություն" value={`${profile.stats.accuracy_percentage}%`} />
+            <StatCard label="Ավարտված թեստեր" value={String(profile.stats.tests_completed)} />
             <StatCard
-              label="Ավարտված թեստեր"
-              value={String(profile.stats.practice_tests_completed)}
-              hint="Ամբողջական հաշվարկը՝ շուտով"
+              label="Պարապանք վերջին շաբաթում"
+              value={`${(profile.stats.weekly_study_seconds / 3600).toFixed(1)} ժ`}
             />
-            <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-center">
-              <p className="text-2xl font-semibold text-text">{profile.level}</p>
-              <p className="mt-1 text-sm text-text-muted">Մակարդակ</p>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${xpPercent}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-text-muted">
-                {profile.xp_into_level} / {profile.xp_for_next_level} XP
-              </p>
-            </div>
           </div>
         </section>
 
@@ -426,6 +458,64 @@ export function ProfilePage() {
             )}
           </div>
         </section>
+        </>
+        )}
+
+        {profile.role === "teacher" && (
+          <section className="mt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text">
+                Աշակերտներ {profile.total_students !== null ? `(${profile.total_students})` : ""}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setTeachingOpen(true)}
+                className="rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+              >
+                Հրավիրել / Հրավերներ
+              </button>
+            </div>
+            {profile.students && profile.students.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {profile.students.map((s) => (
+                  <PersonBox key={s.id} person={s} onClick={() => setViewingUserId(s.id)} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
+                Դեռ կապակցված աշակերտներ չկան։
+              </p>
+            )}
+          </section>
+        )}
+
+        {profile.role === "student" && (
+          <section className="mt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text">
+                Ուսուցիչներ {profile.teachers !== null ? `(${profile.teachers.length})` : ""}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setTeachingOpen(true)}
+                className="rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+              >
+                Հրավերներ
+              </button>
+            </div>
+            {profile.teachers && profile.teachers.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {profile.teachers.map((t) => (
+                  <PersonBox key={t.id} person={t} onClick={() => setViewingUserId(t.id)} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
+                Դեռ կապակցված ուսուցիչներ չկան։
+              </p>
+            )}
+          </section>
+        )}
 
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-text">Ընկերներ</h2>
@@ -455,6 +545,12 @@ export function ProfilePage() {
 
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
       {friendsOpen && <FriendsModal onClose={handleFriendsClose} />}
+      {teachingOpen && (
+        <TeachingModal role={profile.role} onClose={handleTeachingClose} onChange={refreshProfile} />
+      )}
+      {viewingUserId !== null && (
+        <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
+      )}
     </div>
   );
 }

@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     "apps.friends",
     "apps.games",
     "apps.mock_exams",
+    "apps.activity",
+    "apps.teaching",
 ]
 
 MIDDLEWARE = [
@@ -245,4 +247,14 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Gitus <noreply@gitus.local>")
+
+# ---------------------------------------------------------------------------
+# Teacher-student system
+# ---------------------------------------------------------------------------
+
+# Default max number of accepted students per teacher, used when a
+# TeacherProfile doesn't set its own override. Will become plan-dependent
+# once subscriptions exist — kept here (not hardcoded in the model/view) so
+# that day can come without a schema change.
+TEACHER_DEFAULT_STUDENT_LIMIT = env.int("TEACHER_DEFAULT_STUDENT_LIMIT", default=20)
 

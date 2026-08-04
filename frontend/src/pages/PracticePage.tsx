@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   getHierarchy, getSubtopicMaterial, TIER_LABELS,
   type SubjectNode, type DomainNode, type TopicNode, type SubtopicNode,
   type SubtopicMaterial, type Tier,
 } from "../api/practice";
+import * as teachingApi from "../api/teaching";
 import { Battery } from "../components/Battery";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
+import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
+import { useAuth } from "../auth/AuthContext";
 
 const TIERS: Tier[] = ["easy", "medium", "hard"];
 
@@ -27,7 +30,7 @@ function IntroPanel({ name, introText }: { name: string; introText: string }) {
   );
 }
 
-function SubtopicPanel({ subtopic }: { subtopic: SubtopicNode }) {
+function SubtopicPanel({ subtopic, trackAssignmentId }: { subtopic: SubtopicNode; trackAssignmentId?: number }) {
   const [material, setMaterial] = useState<SubtopicMaterial | null>(null);
   const exercisesRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +40,35 @@ function SubtopicPanel({ subtopic }: { subtopic: SubtopicNode }) {
       getSubtopicMaterial(subtopic.id).then(setMaterial);
     }
   }, [subtopic.id, subtopic.has_learning_material]);
+
+  useEffect(() => {
+    if (!trackAssignmentId || !subtopic.has_learning_material) return;
+    const assignmentId = trackAssignmentId;
+    let lastSent = 0;
+    let ticking = false;
+
+    function report() {
+      ticking = false;
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      // Snap to "fully read" once within 40px of the bottom — scrollY rarely
+      // reaches the exact theoretical max (subpixel rounding, overscroll).
+      const fraction = scrollable <= 0 || scrollable - window.scrollY < 40 ? 1 : window.scrollY / scrollable;
+      if (fraction - lastSent >= 0.05 || (fraction >= 0.95 && lastSent < 0.95)) {
+        lastSent = fraction;
+        teachingApi.updateLearningProgress(assignmentId, fraction).catch(() => {});
+      }
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(report);
+      }
+    }
+
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [trackAssignmentId, subtopic.id, subtopic.has_learning_material]);
 
   return (
     <div>
@@ -87,13 +119,63 @@ function SubtopicPanel({ subtopic }: { subtopic: SubtopicNode }) {
 }
 
 export function PracticePage() {
+  useStudyActivityTracker();
+
+  const location = useLocation();
+  const navState = location.state as { subtopicId?: number; topicId?: number } | null;
+
+  const { user } = useAuth();
   const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
   const [selected, setSelected] = useState<Selected | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // subtopic id -> the open (assigned/in_progress) assignment id targeting it, for scroll tracking.
+  const [openSubtopicAssignments, setOpenSubtopicAssignments] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
     getHierarchy().then(setSubjects);
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== "student") return;
+    teachingApi.fetchAssignments().then((list) => {
+      const map = new Map<number, number>();
+      for (const a of list) {
+        if (
+          a.assignment_type === "subtopic" &&
+          (a.status === "assigned" || a.status === "in_progress") &&
+          a.subtopic
+        ) {
+          map.set(a.subtopic.id, a.id);
+        }
+      }
+      setOpenSubtopicAssignments(map);
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!subjects || !navState) return;
+    for (const subject of subjects) {
+      for (const domain of subject.domains) {
+        for (const topic of domain.topics) {
+          if (navState.topicId === topic.id) {
+            setSelected({ kind: "topic", node: topic });
+            return;
+          }
+          for (const subtopic of topic.subtopics) {
+            if (navState.subtopicId === subtopic.id) {
+              setSelected({ kind: "subtopic", node: subtopic });
+              return;
+            }
+          }
+        }
+      }
+    }
+    // location.key changes on every navigation (even to the same path), so
+    // clicking "Կատարել" again while already on /practice still re-selects —
+    // depending on navState alone wouldn't since its identity is stable
+    // when the object shape repeats.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjects, location.key]);
 
   if (!subjects) {
     return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
@@ -187,7 +269,12 @@ export function PracticePage() {
           <p className="text-lg text-text-muted">Ընտրեք ոլորտ, թեմա կամ ենթաթեմա ձախ կողմի ցանկից՝ սկսելու համար։</p>
         )}
 
-        {selected?.kind === "subtopic" && <SubtopicPanel subtopic={selected.node} />}
+        {selected?.kind === "subtopic" && (
+          <SubtopicPanel
+            subtopic={selected.node}
+            trackAssignmentId={openSubtopicAssignments.get(selected.node.id)}
+          />
+        )}
 
         {(selected?.kind === "domain" || selected?.kind === "topic") && (
           <IntroPanel name={selected.node.name} introText={selected.node.intro_text} />

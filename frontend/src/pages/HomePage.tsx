@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
 
 export function HomePage() {
   const { user, logout } = useAuth();
+  const notifications = useAssignmentNotifications();
+  const hasUnseenAssignments = (notifications?.length ?? 0) > 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
@@ -17,36 +20,59 @@ export function HomePage() {
 
       <h1 className="text-3xl font-semibold text-text">Բարի գալուստ</h1>
 
-      <div className="flex gap-4">
-        <Link
-          to="/practice"
-          className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-        >
-          Պարապել
-        </Link>
-        <Link
-          to="/mock-exams"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          📝 Ամբողջական թեստեր
-        </Link>
-        <Link
-          to="/assistant"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          🤖 AI Օգնական
-        </Link>
+      <div className="flex flex-wrap justify-center gap-4">
+        {user?.role === "teacher" ? (
+          <Link
+            to="/teacher-dashboard"
+            className="relative rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+          >
+            🧑‍🏫 Ուսուցչի վահանակ
+            {hasUnseenAssignments && (
+              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />
+            )}
+          </Link>
+        ) : (
+          <>
+            <Link
+              to="/practice"
+              className="rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+            >
+              Պարապել
+            </Link>
+            <Link
+              to="/mock-exams"
+              className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+            >
+              📝 Ամբողջական թեստեր
+            </Link>
+            <Link
+              to="/assistant"
+              className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+            >
+              🤖 AI Օգնական
+            </Link>
+            <Link
+              to="/games"
+              className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+            >
+              🏆 Խաղասենյակներ
+            </Link>
+            <Link
+              to="/student-dashboard"
+              className="relative rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+            >
+              📋 Առաջադրանքներ
+              {hasUnseenAssignments && (
+                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />
+              )}
+            </Link>
+          </>
+        )}
         <Link
           to="/profile"
           className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
         >
           👤 Իմ պրոֆիլը
-        </Link>
-        <Link
-          to="/games"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          🏆 Խաղասենյակներ
         </Link>
       </div>
     </div>
