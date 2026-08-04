@@ -23,6 +23,7 @@ import { MockExamsPage } from "./pages/MockExamsPage";
 import { MockExamAttemptPage } from "./pages/MockExamAttemptPage";
 import { MockExamResultsPage } from "./pages/MockExamResultsPage";
 import { MockExamHistoryPage } from "./pages/MockExamHistoryPage";
+import { ChatPage } from "./pages/ChatPage";
 
 export default function App() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/mock-exams/attempt/:attemptId" element={<MockExamAttemptPage />} />
           <Route path="/mock-exams/attempt/:attemptId/results" element={<MockExamResultsPage />} />
           <Route path="/mock-exams/:examId/history" element={<MockExamHistoryPage />} />
+          <Route path="/chat" element={<ChatPage />} />
         </Route>
       </Routes>
     </AuthProvider>

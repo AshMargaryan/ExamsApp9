@@ -1,0 +1,222 @@
+import { useEffect, useState } from "react";
+import * as friendsApi from "../../api/friends";
+import type { SearchResultUser } from "../../api/friends";
+
+function UserPickerRow({
+  user, selected, onToggle,
+}: {
+  user: SearchResultUser;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors ${
+        selected ? "bg-primary/10" : "hover:bg-surface-muted"
+      }`}
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted">
+        {user.avatar ? (
+          <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+        ) : (
+          (user.first_name || user.username).slice(0, 1).toUpperCase()
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-text">
+          {[user.first_name, user.last_name].filter(Boolean).join(" ") || user.username}
+        </p>
+        <p className="truncate text-xs text-text-muted">@{user.username}</p>
+      </div>
+      {selected && <span className="shrink-0 text-primary">✓</span>}
+    </button>
+  );
+}
+
+export function NewConversationModal({
+  onClose, onCreatePrivate, onCreateGroup,
+}: {
+  onClose: () => void;
+  onCreatePrivate: (userId: number) => Promise<void>;
+  onCreateGroup: (name: string, participantIds: number[]) => Promise<void>;
+}) {
+  const [mode, setMode] = useState<"private" | "group">("private");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResultUser[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedUsers, setSelectedUsers] = useState<Map<number, SearchResultUser>>(new Map());
+  const [groupName, setGroupName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      friendsApi.searchUsers(query.trim()).then(setResults);
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [query]);
+
+  function toggleUser(user: SearchResultUser) {
+    if (mode === "private") {
+      setSelectedIds(new Set([user.id]));
+      setSelectedUsers(new Map([[user.id, user]]));
+      return;
+    }
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(user.id)) next.delete(user.id);
+      else next.add(user.id);
+      return next;
+    });
+    setSelectedUsers((prev) => {
+      const next = new Map(prev);
+      if (next.has(user.id)) next.delete(user.id);
+      else next.set(user.id, user);
+      return next;
+    });
+  }
+
+  async function handleSubmit() {
+    setError(null);
+    if (mode === "private") {
+      const userId = [...selectedIds][0];
+      if (!userId) {
+        setError("Ընտրեք օգտատեր։");
+        return;
+      }
+      setBusy(true);
+      try {
+        await onCreatePrivate(userId);
+      } catch {
+        setError("Զրույցը ստեղծելիս սխալ տեղի ունեցավ։");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    if (!groupName.trim()) {
+      setError("Խնդրում ենք գրել խմբի անունը։");
+      return;
+    }
+    if (selectedIds.size === 0) {
+      setError("Ընտրեք առնվազն մեկ մասնակից։");
+      return;
+    }
+    setBusy(true);
+    try {
+      await onCreateGroup(groupName.trim(), [...selectedIds]);
+    } catch {
+      setError("Խումբը ստեղծելիս սխալ տեղի ունեցավ։");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        className="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-[var(--radius)] border border-border bg-surface shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-lg font-semibold text-text">Նոր զրույց</h2>
+          <button type="button" onClick={onClose} className="text-lg text-text-muted hover:text-text">
+            ✕
+          </button>
+        </div>
+
+        <div className="flex gap-2 border-b border-border px-4 py-3">
+          <button
+            type="button"
+            onClick={() => {
+              setMode("private");
+              setSelectedIds(new Set());
+              setSelectedUsers(new Map());
+            }}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              mode === "private" ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
+            }`}
+          >
+            Անձնական
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("group");
+              setSelectedIds(new Set());
+              setSelectedUsers(new Map());
+            }}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              mode === "group" ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
+            }`}
+          >
+            Խումբ
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {mode === "group" && (
+            <input
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder="Խմբի անունը"
+              className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+            />
+          )}
+
+          {mode === "group" && selectedUsers.size > 0 && (
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {[...selectedUsers.values()].map((u) => (
+                <span
+                  key={u.id}
+                  className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary"
+                >
+                  {u.first_name || u.username}
+                  <button type="button" onClick={() => toggleUser(u)} className="hover:opacity-70">
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Փնտրել օգտատեր..."
+            className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+          />
+
+          <div className="flex flex-col gap-1">
+            {results.map((u) => (
+              <UserPickerRow key={u.id} user={u} selected={selectedIds.has(u.id)} onToggle={() => toggleUser(u)} />
+            ))}
+            {query.trim() && results.length === 0 && (
+              <p className="px-2 py-3 text-sm text-text-muted">Օգտատերեր չեն գտնվել։</p>
+            )}
+          </div>
+        </div>
+
+        {error && <p className="px-4 pb-2 text-sm text-incorrect">{error}</p>}
+
+        <div className="border-t border-border p-4">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={busy}
+            className="w-full rounded-md bg-primary py-2.5 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+          >
+            {busy ? "..." : mode === "private" ? "Սկսել զրույցը" : "Ստեղծել խումբը"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
