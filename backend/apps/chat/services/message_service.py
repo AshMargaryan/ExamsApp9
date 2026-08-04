@@ -4,6 +4,33 @@ from django.utils import timezone
 from ..models import Attachment, AttachmentType, Conversation, Message, MessageType
 from . import realtime
 
+DEFAULT_PAGE_SIZE = 30
+MAX_PAGE_SIZE = 100
+
+
+def list_messages(
+    conversation: Conversation, before_id: int | None = None, limit: int = DEFAULT_PAGE_SIZE,
+) -> tuple[list[Message], bool]:
+    """
+    Cursor pagination for "load newest, then infinite-scroll upward" — NOT
+    PageNumberPagination, which breaks under a live-inserting list (page 2
+    shifts every time someone sends a message). `before_id` excludes
+    everything at or after that message id; omit it for the newest page.
+    Returns (messages, has_more) with messages already in chronological
+    (oldest-first) order, ready to prepend/render directly.
+    """
+    limit = max(1, min(limit, MAX_PAGE_SIZE))
+
+    qs = conversation.messages.select_related("sender").prefetch_related("attachments").order_by("-id")
+    if before_id is not None:
+        qs = qs.filter(id__lt=before_id)
+
+    page = list(qs[: limit + 1])
+    has_more = len(page) > limit
+    page = page[:limit]
+    page.reverse()
+    return page, has_more
+
 
 def _resolve_message_type(attachments: list[Attachment]) -> str:
     if not attachments:

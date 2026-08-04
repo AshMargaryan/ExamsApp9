@@ -161,20 +161,46 @@ class ConversationParticipantDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class MessageSendView(APIView):
+class MessageListSendView(APIView):
     """
-    POST /api/chat/conversations/<id>/messages/ {text?, attachment_ids?} —
-    REST fallback for sending (e.g. right after an attachment upload, or
-    for a client that isn't WebSocket-connected). Calls the exact same
-    message_service.send_message as ChatConsumer, so a message sent this
-    way still broadcasts live to everyone connected via WebSocket.
+    GET /api/chat/conversations/<id>/messages/?before=<message_id>&limit=30
+    — cursor-paginated history (newest page by default; pass the oldest
+    loaded message's id as `before` to load older ones for infinite
+    scroll). See message_service.list_messages for why this isn't
+    PageNumberPagination.
+
+    POST {text?, attachment_ids?} — REST fallback for sending (e.g. right
+    after an attachment upload, or for a client that isn't
+    WebSocket-connected). Calls the exact same message_service.send_message
+    as ChatConsumer, so a message sent this way still broadcasts live to
+    everyone connected via WebSocket.
     """
 
     permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
 
-    def post(self, request, pk):
+    def _get_conversation(self, request, pk):
         conversation = get_object_or_404(Conversation, pk=pk)
         self.check_object_permissions(request, conversation)
+        return conversation
+
+    def get(self, request, pk):
+        conversation = self._get_conversation(request, pk)
+
+        before = request.query_params.get("before")
+        try:
+            before_id = int(before) if before is not None else None
+            limit = int(request.query_params.get("limit", message_service.DEFAULT_PAGE_SIZE))
+        except ValueError:
+            return Response({"detail": "before/limit-ը պետք է լինեն թվեր։"}, status=status.HTTP_400_BAD_REQUEST)
+
+        messages, has_more = message_service.list_messages(conversation, before_id=before_id, limit=limit)
+        return Response({
+            "results": MessageSerializer(messages, many=True, context={"request": request}).data,
+            "has_more": has_more,
+        })
+
+    def post(self, request, pk):
+        conversation = self._get_conversation(request, pk)
 
         serializer = SendMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
