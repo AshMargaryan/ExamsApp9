@@ -15,6 +15,7 @@ urlpatterns = [
     path("api/mock-exams/", include("apps.mock_exams.urls")),
     path("api/activity/", include("apps.activity.urls")),
     path("api/teaching/", include("apps.teaching.urls")),
+    path("api/chat/", include("apps.chat.urls")),
 ]
 
 if settings.DEBUG:
