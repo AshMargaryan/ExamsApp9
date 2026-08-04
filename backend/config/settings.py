@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.mock_exams",
     "apps.activity",
     "apps.teaching",
+    "apps.chat",
 ]
 
 MIDDLEWARE = [
