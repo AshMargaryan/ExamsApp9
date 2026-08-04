@@ -13,7 +13,7 @@ from .serializers import (
     CreateGroupConversationSerializer, CreatePrivateConversationSerializer, GroupSettingsSerializer,
     MessageSerializer, SendMessageSerializer,
 )
-from .services import conversation_service, group_service, message_service
+from .services import conversation_service, group_service, message_service, read_service
 
 User = get_user_model()
 
@@ -282,3 +282,33 @@ class ChatAttachmentDownloadView(APIView):
         return FileResponse(
             attachment.file.open("rb"), filename=attachment.original_filename, content_type=attachment.mime_type,
         )
+
+
+class ConversationReadView(APIView):
+    """
+    POST /api/chat/conversations/<id>/read/ {message_id?} — REST
+    equivalent of ChatConsumer's "read" action, for marking read without a
+    live WebSocket connection (e.g. from a conversation-list preview).
+    Omit message_id to mark everything read.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+
+    def post(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        self.check_object_permissions(request, conversation)
+
+        message_id = request.data.get("message_id")
+        read_service.mark_read(conversation, request.user, up_to_message_id=message_id)
+
+        conversation_service.attach_summary(conversation, request.user)
+        return Response(ConversationSerializer(conversation, context={"request": request}).data)
+
+
+class UnreadCountView(APIView):
+    """GET /api/chat/conversations/unread-count/ — total unread across every conversation, for a header badge."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({"unread_count": conversation_service.total_unread_count(request.user)})

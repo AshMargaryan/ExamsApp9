@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 
-from ..models import Attachment, AttachmentType, Conversation, Message, MessageType
+from ..models import Attachment, AttachmentType, Conversation, ConversationParticipant, Message, MessageType
 from . import realtime
 
 DEFAULT_PAGE_SIZE = 30
@@ -74,6 +74,12 @@ def send_message(
             Attachment.objects.filter(id__in=[a.id for a in attachments]).update(message=message)
 
         Conversation.objects.filter(pk=conversation.pk).update(updated_at=timezone.now())
+        # Sending implicitly reads your own message — without this the
+        # sender would see their own conversation as having unread
+        # messages right after they wrote them.
+        ConversationParticipant.objects.filter(conversation=conversation, user=sender).update(
+            last_read_message=message
+        )
 
     message.refresh_from_db()
     realtime.broadcast_message(message)

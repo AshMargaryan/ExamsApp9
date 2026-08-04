@@ -125,6 +125,15 @@ def create_group(creator, name: str, participant_ids: list[int]) -> Conversation
     return conversation
 
 
+def total_unread_count(user) -> int:
+    """Backs a header badge — summed across every conversation the user's in."""
+    conversations = list(
+        Conversation.objects.filter(memberships__user=user, memberships__active=True).only("id", "updated_at")
+    )
+    _attach_unread_counts(conversations, user)
+    return sum(c._unread_count for c in conversations)
+
+
 def other_participant(conversation: Conversation, user):
     """For a private conversation, the user on the other end — used by the
     serializer so the frontend can show their name/avatar as the title."""
