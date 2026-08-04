@@ -9,9 +9,9 @@ from .models import Conversation, ConversationType
 from .permissions import IsConversationParticipant, IsGroupOwner
 from .serializers import (
     AddParticipantsSerializer, ConversationSerializer, CreateGroupConversationSerializer,
-    CreatePrivateConversationSerializer, GroupSettingsSerializer,
+    CreatePrivateConversationSerializer, GroupSettingsSerializer, MessageSerializer, SendMessageSerializer,
 )
-from .services import conversation_service, group_service
+from .services import conversation_service, group_service, message_service
 
 User = get_user_model()
 
@@ -157,3 +157,35 @@ class ConversationParticipantDetailView(APIView):
         target = get_object_or_404(User, pk=user_id)
         group_service.remove_participant(conversation, target)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MessageSendView(APIView):
+    """
+    POST /api/chat/conversations/<id>/messages/ {text?, attachment_ids?} —
+    REST fallback for sending (e.g. right after an attachment upload, or
+    for a client that isn't WebSocket-connected). Calls the exact same
+    message_service.send_message as ChatConsumer, so a message sent this
+    way still broadcasts live to everyone connected via WebSocket.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+
+    def post(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        self.check_object_permissions(request, conversation)
+
+        serializer = SendMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            message = message_service.send_message(
+                conversation, request.user,
+                text=serializer.validated_data["text"],
+                attachment_ids=serializer.validated_data["attachment_ids"],
+            )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            MessageSerializer(message, context={"request": request}).data, status=status.HTTP_201_CREATED
+        )

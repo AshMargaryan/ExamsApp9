@@ -1,9 +1,10 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
 from apps.friends.serializers import MiniUserSerializer
 
-from .models import Conversation, ConversationParticipant, ConversationType, Message
+from .models import Attachment, Conversation, ConversationParticipant, ConversationType, Message
 from .services import conversation_service
 
 User = get_user_model()
@@ -15,6 +16,37 @@ class ConversationParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConversationParticipant
         fields = ["id", "user", "role", "joined_at", "active"]
+
+
+class AttachmentSerializer(serializers.ModelSerializer):
+    # Points at the authenticated download view, never at storage directly —
+    # keeps the frontend decoupled from where files actually live (local
+    # disk today, S3/R2 later) and lets us enforce "participants only" on
+    # every download instead of relying on an unguessable path.
+    download_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Attachment
+        fields = [
+            "id", "file_type", "original_filename", "mime_type", "file_size", "download_url", "uploaded_at",
+        ]
+
+    def get_download_url(self, obj) -> str:
+        request = self.context.get("request")
+        path = reverse("chat_attachment_download", kwargs={"pk": obj.pk})
+        return request.build_absolute_uri(path) if request else path
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender = MiniUserSerializer(read_only=True)
+    attachments = AttachmentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Message
+        fields = [
+            "id", "conversation", "sender", "message_type", "text",
+            "attachments", "created_at", "edited_at", "deleted_at",
+        ]
 
 
 class LastMessagePreviewSerializer(serializers.ModelSerializer):
@@ -86,6 +118,11 @@ class AddParticipantsSerializer(serializers.Serializer):
 
     def validate_user_ids(self, value):
         return [u.id for u in value]
+
+
+class SendMessageSerializer(serializers.Serializer):
+    text = serializers.CharField(required=False, allow_blank=True, default="")
+    attachment_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
 
 
 class GroupSettingsSerializer(serializers.ModelSerializer):
