@@ -79,3 +79,17 @@ class CreateGroupConversationSerializer(serializers.Serializer):
 
     def validate_participant_ids(self, value):
         return [u.id for u in value]
+
+
+class AddParticipantsSerializer(serializers.Serializer):
+    user_ids = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True)
+
+    def validate_user_ids(self, value):
+        return [u.id for u in value]
+
+
+class GroupSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Conversation
+        fields = ["name", "image"]
+        extra_kwargs = {"name": {"required": False}, "image": {"required": False}}

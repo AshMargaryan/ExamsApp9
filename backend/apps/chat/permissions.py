@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from .models import ConversationParticipant
+from .models import ConversationParticipant, ParticipantRole
 
 
 class IsConversationParticipant(BasePermission):
@@ -14,6 +14,22 @@ class IsConversationParticipant(BasePermission):
     def has_object_permission(self, request, view, obj):
         return ConversationParticipant.objects.filter(
             conversation=obj, user=request.user, active=True
+        ).exists()
+
+
+class IsGroupOwner(BasePermission):
+    """
+    Object-level check for group-management actions (add/remove
+    participants, rename, change image). Only the owner role today —
+    ConversationParticipant.role already has ADMIN in its choices so this
+    can grow to `role__in=[OWNER, ADMIN]` later without a schema change.
+    """
+
+    message = "Այս գործողությունը հասանելի է միայն խմբի սեփականատիրոջը։"
+
+    def has_object_permission(self, request, view, obj):
+        return ConversationParticipant.objects.filter(
+            conversation=obj, user=request.user, active=True, role=ParticipantRole.OWNER
         ).exists()
 
 
