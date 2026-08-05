@@ -1,4 +1,8 @@
+import { useState } from "react";
 import type { Attachment, Message } from "../../api/chat";
+import { useAuthenticatedImageUrl } from "../../hooks/useAuthenticatedImageUrl";
+import { downloadAuthenticatedFile, saveBlobUrl } from "../../lib/authenticatedFile";
+import { ImageLightbox } from "./ImageLightbox";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} Բ`;
@@ -6,32 +10,68 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} ՄԲ`;
 }
 
-function AttachmentView({ attachment, own }: { attachment: Attachment; own: boolean }) {
-  if (attachment.file_type === "image") {
+function ImageAttachment({ attachment }: { attachment: Attachment }) {
+  const { src, error } = useAuthenticatedImageUrl(attachment.download_url);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  if (error) {
     return (
-      <a href={attachment.download_url} target="_blank" rel="noreferrer">
-        <img
-          src={attachment.download_url}
-          alt={attachment.original_filename}
-          className="max-h-64 max-w-full rounded-md object-cover"
-        />
-      </a>
+      <div className="flex h-40 w-64 max-w-full items-center justify-center rounded-md border border-border bg-surface-muted text-sm text-text-muted">
+        Նկարը հասանելի չէ
+      </div>
     );
   }
+
+  if (!src) {
+    return <div className="h-40 w-64 max-w-full animate-pulse rounded-md bg-surface-muted" />;
+  }
+
   return (
-    <a
-      href={attachment.download_url}
-      target="_blank"
-      rel="noreferrer"
-      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+    <>
+      <button
+        type="button"
+        onClick={() => setLightboxOpen(true)}
+        className="block max-w-full overflow-hidden rounded-md"
+      >
+        <img
+          src={src}
+          alt={attachment.original_filename}
+          className="max-h-80 w-full max-w-full rounded-md object-cover"
+        />
+      </button>
+      {lightboxOpen && (
+        <ImageLightbox
+          src={src}
+          filename={attachment.original_filename}
+          onClose={() => setLightboxOpen(false)}
+          onSave={() => saveBlobUrl(src, attachment.original_filename)}
+        />
+      )}
+    </>
+  );
+}
+
+function FileAttachment({ attachment, own }: { attachment: Attachment; own: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={() => downloadAuthenticatedFile(attachment.download_url, attachment.original_filename)}
+      className={`flex min-w-[14rem] items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
         own ? "border-primary-contrast/30 hover:bg-black/10" : "border-border hover:bg-surface-muted"
       }`}
     >
-      <span>📎</span>
+      <span className="text-xl">📎</span>
       <span className="min-w-0 flex-1 truncate">{attachment.original_filename}</span>
-      <span className={own ? "text-primary-contrast/70" : "text-text-muted"}>{formatSize(attachment.file_size)}</span>
-    </a>
+      <span className={own ? "shrink-0 text-primary-contrast/70" : "shrink-0 text-text-muted"}>
+        {formatSize(attachment.file_size)}
+      </span>
+    </button>
   );
+}
+
+function AttachmentView({ attachment, own }: { attachment: Attachment; own: boolean }) {
+  if (attachment.file_type === "image") return <ImageAttachment attachment={attachment} />;
+  return <FileAttachment attachment={attachment} own={own} />;
 }
 
 export function MessageBubble({

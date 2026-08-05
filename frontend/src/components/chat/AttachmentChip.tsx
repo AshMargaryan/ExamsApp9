@@ -1,4 +1,5 @@
 import type { Attachment } from "../../api/chat";
+import { useAuthenticatedImageUrl } from "../../hooks/useAuthenticatedImageUrl";
 
 const TYPE_ICON: Record<Attachment["file_type"], string> = {
   image: "🖼️",
@@ -15,14 +16,20 @@ export function AttachmentChip({
   attachment: Attachment;
   onRemove?: () => void;
 }) {
+  const { src } = useAuthenticatedImageUrl(attachment.file_type === "image" ? attachment.download_url : null);
+
   if (attachment.file_type === "image") {
     return (
       <div className="relative">
-        <img
-          src={attachment.download_url}
-          alt={attachment.original_filename}
-          className="h-16 w-16 rounded-md border border-border object-cover"
-        />
+        {src ? (
+          <img
+            src={src}
+            alt={attachment.original_filename}
+            className="h-16 w-16 rounded-md border border-border object-cover"
+          />
+        ) : (
+          <div className="h-16 w-16 animate-pulse rounded-md border border-border bg-surface-muted" />
+        )}
         {onRemove && (
           <button
             type="button"

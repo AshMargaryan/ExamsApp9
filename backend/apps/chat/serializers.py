@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -33,9 +34,14 @@ class AttachmentSerializer(serializers.ModelSerializer):
         ]
 
     def get_download_url(self, obj) -> str:
+        # No request in context when this serializer runs inside a
+        # WebSocket broadcast (see services.realtime.broadcast_message) —
+        # fall back to BACKEND_URL so a live-pushed message's attachment
+        # link is still absolute, not resolved against the frontend's own
+        # origin (which has no /api/chat/... route of its own).
         request = self.context.get("request")
         path = reverse("chat_attachment_download", kwargs={"pk": obj.pk})
-        return request.build_absolute_uri(path) if request else path
+        return request.build_absolute_uri(path) if request else f"{settings.BACKEND_URL}{path}"
 
 
 class AttachmentUploadSerializer(serializers.Serializer):

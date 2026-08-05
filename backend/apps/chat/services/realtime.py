@@ -12,6 +12,22 @@ match that precedent and apps.chat.services' overall style.
 """
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.conf import settings
+
+
+class _AbsoluteUriContext:
+    """
+    Stand-in for DRF's `request` context object, for serializing outside an
+    actual HTTP request (i.e. every WS broadcast). Nested fields like
+    AttachmentSerializer.get_download_url and MiniUserSerializer.get_avatar
+    check `context.get("request")` and call `.build_absolute_uri(path)` on
+    it to turn a relative path into a full URL — without this, those URLs
+    would resolve against the *frontend's* origin instead of the backend's,
+    since relative paths in JSON carry no origin of their own.
+    """
+
+    def build_absolute_uri(self, path: str) -> str:
+        return f"{settings.BACKEND_URL}{path}"
 
 
 def group_name(conversation_id: int) -> str:
@@ -35,7 +51,10 @@ def broadcast_message(message) -> None:
     """Sync entry point — call right after a Message is created and committed."""
     from ..serializers import MessageSerializer
 
-    payload = {"type": "message", "message": MessageSerializer(message).data}
+    payload = {
+        "type": "message",
+        "message": MessageSerializer(message, context={"request": _AbsoluteUriContext()}).data,
+    }
     _group_send(message.conversation_id, "chat.message", payload)
 
 
