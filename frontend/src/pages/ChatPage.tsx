@@ -34,6 +34,14 @@ export function ChatPage() {
 
   const selectedConversation = conversations?.find((c) => c.id === selectedId) ?? null;
 
+  function handleSelect(id: number) {
+    setSelectedId(id);
+    // Opening the conversation marks it read on the backend immediately
+    // (WS connect / mark-read); zero the badge here too instead of waiting
+    // up to 15s for the next poll to catch up.
+    setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, unread_count: 0 } : c)) ?? prev);
+  }
+
   async function handleCreatePrivate(userId: number) {
     const conversation = await chatApi.createPrivateConversation(userId);
     await refresh();
@@ -77,7 +85,7 @@ export function ChatPage() {
             conversations={conversations}
             selectedId={selectedId}
             onSelect={(id) => {
-              setSelectedId(id);
+              handleSelect(id);
               setSidebarOpen(false);
             }}
           />

@@ -34,7 +34,11 @@ export function useConversationMessages(conversationId: number | null) {
     if (!event || event.type !== "message") return;
     if (event.message.conversation !== conversationId) return;
     setMessages((prev) => (prev.some((m) => m.id === event.message.id) ? prev : [...prev, event.message]));
-  }, [event, conversationId]);
+    // The conversation is open in this tab right now, so any message that
+    // arrives live counts as read immediately — connect() only covers what
+    // already existed when the socket opened.
+    markRead(event.message.id);
+  }, [event, conversationId, markRead]);
 
   async function loadOlder() {
     if (conversationId === null || messages.length === 0 || loadingOlder || !hasMore) return;

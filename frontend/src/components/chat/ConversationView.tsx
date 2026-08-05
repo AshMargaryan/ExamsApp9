@@ -51,11 +51,11 @@ export function ConversationView({ conversation }: { conversation: Conversation 
     }
   }, [messages]);
 
-  async function handleSend(text: string) {
+  async function handleSend(text: string, attachmentIds: number[]) {
     setError(null);
     try {
       nearBottomRef.current = true;
-      await sendText(text);
+      await sendText(text, attachmentIds);
     } catch {
       setError("Հաղորդագրությունն ուղարկելիս սխալ տեղի ունեցավ։");
     }
@@ -79,7 +79,7 @@ export function ConversationView({ conversation }: { conversation: Conversation 
 
       {error && <p className="px-4 pb-1 text-sm text-incorrect">{error}</p>}
       <div className="border-t border-border p-3">
-        <MessageInput onSend={handleSend} />
+        <MessageInput conversationId={conversation.id} onSend={handleSend} />
       </div>
     </>
   );
