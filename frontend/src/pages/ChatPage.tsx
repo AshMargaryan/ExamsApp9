@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import * as chatApi from "../api/chat";
 import type { Conversation } from "../api/chat";
 import { ConversationList } from "../components/chat/ConversationList";
+import { ConversationView } from "../components/chat/ConversationView";
 import { NewConversationModal } from "../components/chat/NewConversationModal";
 import { conversationTitle } from "../lib/chatLabels";
 
@@ -115,9 +116,13 @@ export function ChatPage() {
           </h1>
         </header>
 
-        <div className="flex flex-1 items-center justify-center text-text-muted">
-          {selectedId ? "Հաղորդագրությունների պատուհանը շուտով..." : "Ընտրեք զրույց կամ սկսեք նորը։"}
-        </div>
+        {selectedConversation ? (
+          <ConversationView key={selectedConversation.id} conversation={selectedConversation} />
+        ) : (
+          <div className="flex flex-1 items-center justify-center text-text-muted">
+            Ընտրեք զրույց կամ սկսեք նորը։
+          </div>
+        )}
       </main>
 
       {creating && (
