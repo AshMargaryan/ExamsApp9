@@ -22,9 +22,14 @@ const MESSAGE_TYPE_PREVIEW: Record<string, string> = {
   file: "📎 Ֆայլ",
 };
 
+/** Text/image/file preview label for anything shaped like a message (last-message preview, reply bar, in-bubble quote). */
+export function messagePreviewText(message: { text: string; message_type: string }): string {
+  if (message.message_type !== "text") return MESSAGE_TYPE_PREVIEW[message.message_type] ?? message.text;
+  return message.text;
+}
+
 export function lastMessagePreviewText(conversation: Conversation): string {
   const last = conversation.last_message;
   if (!last) return "Հաղորդագրություններ դեռ չկան";
-  if (last.message_type !== "text") return MESSAGE_TYPE_PREVIEW[last.message_type] ?? last.text;
-  return last.text;
+  return messagePreviewText(last);
 }

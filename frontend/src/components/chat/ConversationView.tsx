@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import type { Conversation } from "../../api/chat";
+import type { Conversation, Message } from "../../api/chat";
 import { useAuth } from "../../auth/AuthContext";
 import { useConversationMessages } from "../../hooks/useConversationMessages";
+import { ForwardModal } from "./ForwardModal";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 
 const SCROLL_TOP_THRESHOLD = 80;
 const NEAR_BOTTOM_THRESHOLD = 150;
+const HIGHLIGHT_DURATION_MS = 1500;
 
 export function ConversationView({ conversation }: { conversation: Conversation }) {
   const { user } = useAuth();
-  const { messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText } =
+  const { messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText, react } =
     useConversationMessages(conversation.id);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -22,10 +24,15 @@ export function ConversationView({ conversation }: { conversation: Conversation 
   // shouldn't yank them down if they're reading older history, but a fresh
   // arrival should still auto-follow when they're already at the bottom.
   const nearBottomRef = useRef(true);
+  const messageElsRef = useRef<Map<number, HTMLDivElement>>(new Map());
   const [error, setError] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
 
   useEffect(() => {
     nearBottomRef.current = true;
+    setReplyingTo(null);
   }, [conversation.id]);
 
   function handleScroll() {
@@ -51,11 +58,25 @@ export function ConversationView({ conversation }: { conversation: Conversation 
     }
   }, [messages]);
 
+  // Only scrolls to a message that's already loaded in this conversation's
+  // current window — older messages paginated out of `messages` aren't
+  // fetched on demand here (a "keep loading older until found" fallback is
+  // a reasonable follow-up, but not needed for the common case of replying
+  // to something still on screen or nearby).
+  function jumpToMessage(messageId: number) {
+    const el = messageElsRef.current.get(messageId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedId(messageId);
+    setTimeout(() => setHighlightedId((current) => (current === messageId ? null : current)), HIGHLIGHT_DURATION_MS);
+  }
+
   async function handleSend(text: string, attachmentIds: number[]) {
     setError(null);
     try {
       nearBottomRef.current = true;
-      await sendText(text, attachmentIds);
+      await sendText(text, attachmentIds, replyingTo?.id ?? null);
+      setReplyingTo(null);
     } catch {
       setError("Հաղորդագրությունն ուղարկելիս սխալ տեղի ունեցավ։");
     }
@@ -73,14 +94,39 @@ export function ConversationView({ conversation }: { conversation: Conversation 
           const own = m.sender?.id === user?.id;
           const prev = messages[i - 1];
           const showSender = conversation.type === "group" && (!prev || prev.sender?.id !== m.sender?.id);
-          return <MessageBubble key={m.id} message={m} own={own} showSender={showSender} />;
+          return (
+            <MessageBubble
+              key={m.id}
+              message={m}
+              own={own}
+              showSender={showSender}
+              highlighted={highlightedId === m.id}
+              registerRef={(el) => {
+                if (el) messageElsRef.current.set(m.id, el);
+                else messageElsRef.current.delete(m.id);
+              }}
+              onReply={() => setReplyingTo(m)}
+              onForward={() => setForwardingMessage(m)}
+              onJumpToMessage={jumpToMessage}
+              onReact={(emoji) => react(m.id, emoji)}
+            />
+          );
         })}
       </div>
 
       {error && <p className="px-4 pb-1 text-sm text-incorrect">{error}</p>}
       <div className="border-t border-border p-3">
-        <MessageInput conversationId={conversation.id} onSend={handleSend} />
+        <MessageInput
+          conversationId={conversation.id}
+          onSend={handleSend}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo(null)}
+        />
       </div>
+
+      {forwardingMessage && (
+        <ForwardModal message={forwardingMessage} onClose={() => setForwardingMessage(null)} />
+      )}
     </>
   );
 }

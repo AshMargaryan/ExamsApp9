@@ -16,7 +16,7 @@ export function useConversationMessages(conversationId: number | null) {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
-  const { event, status, sendMessage: wsSendMessage, markRead } = useChatSocket(conversationId);
+  const { event, status, sendMessage: wsSendMessage, markRead, react: wsReact } = useChatSocket(conversationId);
 
   useEffect(() => {
     setMessages([]);
@@ -33,7 +33,16 @@ export function useConversationMessages(conversationId: number | null) {
   useEffect(() => {
     if (!event || event.type !== "message") return;
     if (event.message.conversation !== conversationId) return;
-    setMessages((prev) => (prev.some((m) => m.id === event.message.id) ? prev : [...prev, event.message]));
+    setMessages((prev) => {
+      const index = prev.findIndex((m) => m.id === event.message.id);
+      // Same broadcast event covers both "new message" and "existing
+      // message changed" (e.g. a reaction) — an unknown id gets appended,
+      // a known one gets replaced in place instead of duplicated.
+      if (index === -1) return [...prev, event.message];
+      const next = [...prev];
+      next[index] = event.message;
+      return next;
+    });
     // The conversation is open in this tab right now, so any message that
     // arrives live counts as read immediately — connect() only covers what
     // already existed when the socket opened.
@@ -52,14 +61,22 @@ export function useConversationMessages(conversationId: number | null) {
     }
   }
 
-  async function sendText(text: string, attachmentIds: number[] = []) {
+  async function sendText(text: string, attachmentIds: number[] = [], replyToId: number | null = null) {
     if (conversationId === null) return;
-    const sentLive = wsSendMessage(text, attachmentIds);
+    const sentLive = wsSendMessage(text, attachmentIds, replyToId);
     if (!sentLive) {
-      const message = await chatApi.sendMessage(conversationId, text, attachmentIds);
+      const message = await chatApi.sendMessage(conversationId, text, attachmentIds, replyToId);
       setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
     }
   }
 
-  return { messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText, status, markRead };
+  async function react(messageId: number, emoji: string) {
+    const sentLive = wsReact(messageId, emoji);
+    if (!sentLive) {
+      const message = await chatApi.setReaction(messageId, emoji);
+      setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
+    }
+  }
+
+  return { messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText, react, status, markRead };
 }

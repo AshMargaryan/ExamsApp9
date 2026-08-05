@@ -137,6 +137,13 @@ class Message(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="chat_messages"
     )
     message_type = models.CharField(max_length=10, choices=MessageType.choices, default=MessageType.TEXT)
+    # SET_NULL rather than CASCADE: deleting the original message shouldn't
+    # take every reply to it down too — the reply just loses its quoted
+    # preview (frontend already has to handle reply_to being null for
+    # "no reply" anyway, so this reuses the same code path).
+    reply_to = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="replies"
+    )
 
     # Body text for TEXT messages; optional caption for IMAGE/FILE messages.
     text = models.TextField(blank=True, default="")
@@ -158,6 +165,30 @@ class Message(models.Model):
 
     def __str__(self):
         return f"[{self.message_type}] {self.sender}: {self.text[:50]}"
+
+
+class MessageReaction(models.Model):
+    """
+    One emoji per (message, user) — the unique constraint is what makes
+    "changeable" free: setting a new emoji is just an update, not a second
+    row. services.reaction_service also treats re-picking the same emoji as
+    "remove it" (a toggle), same as every reference chat UI does.
+    """
+
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="reactions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_message_reactions"
+    )
+    emoji = models.CharField(max_length=8)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["message", "user"], name="unique_message_reaction_per_user"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} reacted {self.emoji} to message {self.message_id}"
 
 
 # ---------------------------------------------------------------------------

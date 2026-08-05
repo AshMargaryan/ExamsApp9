@@ -1,9 +1,9 @@
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from .models import Conversation
+from .models import Conversation, Message
 from .permissions import is_participant
-from .services import message_service, read_service, realtime
+from .services import message_service, reaction_service, read_service, realtime
 
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
@@ -50,6 +50,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self._handle_message(content)
         elif action == "read":
             await self._mark_read(content.get("message_id"))
+        elif action == "react":
+            await self._set_reaction(content.get("message_id"), content.get("emoji"))
 
     async def _handle_message(self, content):
         try:
@@ -78,9 +80,22 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             conversation, self.user,
             text=content.get("text", ""),
             attachment_ids=content.get("attachment_ids"),
+            reply_to_id=content.get("reply_to_id"),
         )
 
     @database_sync_to_async
     def _mark_read(self, message_id):
         conversation = Conversation.objects.get(pk=self.conversation_id)
         read_service.mark_read(conversation, self.user, up_to_message_id=message_id)
+
+    @database_sync_to_async
+    def _set_reaction(self, message_id, emoji):
+        if not message_id or not emoji:
+            return
+        # Scoped to this connection's conversation — connect() already
+        # verified participation in it, so this is the only conversation a
+        # message id from this socket is allowed to touch.
+        message = Message.objects.filter(pk=message_id, conversation_id=self.conversation_id).first()
+        if message is None:
+            return
+        reaction_service.set_reaction(message, self.user, emoji)

@@ -21,7 +21,11 @@ def list_messages(
     """
     limit = max(1, min(limit, MAX_PAGE_SIZE))
 
-    qs = conversation.messages.select_related("sender").prefetch_related("attachments").order_by("-id")
+    qs = (
+        conversation.messages.select_related("sender", "reply_to", "reply_to__sender")
+        .prefetch_related("attachments", "reactions__user")
+        .order_by("-id")
+    )
     if before_id is not None:
         qs = qs.filter(id__lt=before_id)
 
@@ -42,6 +46,7 @@ def _resolve_message_type(attachments: list[Attachment]) -> str:
 
 def send_message(
     conversation: Conversation, sender, text: str = "", attachment_ids: list[int] | None = None,
+    reply_to_id: int | None = None,
 ) -> Message:
     """
     The single place a chat Message gets created — called by both
@@ -66,9 +71,16 @@ def send_message(
         if not text and not attachments:
             raise ValueError("Հաղորդագրությունը դատարկ է։")
 
+        # Only honored if the target is actually in this conversation —
+        # otherwise silently ignored rather than erroring, same as an
+        # attachment_id that doesn't resolve to anything claimable above.
+        reply_to = None
+        if reply_to_id is not None:
+            reply_to = Message.objects.filter(id=reply_to_id, conversation=conversation).first()
+
         message = Message.objects.create(
             conversation=conversation, sender=sender, text=text,
-            message_type=_resolve_message_type(attachments),
+            message_type=_resolve_message_type(attachments), reply_to=reply_to,
         )
         if attachments:
             Attachment.objects.filter(id__in=[a.id for a in attachments]).update(message=message)
@@ -78,6 +90,44 @@ def send_message(
         # sender would see their own conversation as having unread
         # messages right after they wrote them.
         ConversationParticipant.objects.filter(conversation=conversation, user=sender).update(
+            last_read_message=message
+        )
+
+    message.refresh_from_db()
+    realtime.broadcast_message(message)
+    return message
+
+
+def forward_message(original: Message, target_conversation: Conversation, sender) -> Message:
+    """
+    Sends a copy of `original` (text + attachments, verbatim) into
+    `target_conversation` as a new Message from `sender` — not a reply, and
+    not linked back to the original (a forward is a fresh message that
+    happens to start out identical). Attachments are duplicated as new
+    Attachment rows pointing at the same underlying file (no byte copy):
+    the original row's (conversation, message, uploaded_by) can't just be
+    reused since a forward can land in a conversation/sender the original
+    attachment has nothing to do with, and Attachment.conversation is what
+    ChatAttachmentDownloadView's permission check keys off of.
+    """
+    with transaction.atomic():
+        message = Message.objects.create(
+            conversation=target_conversation, sender=sender, text=original.text,
+            message_type=original.message_type,
+        )
+        new_attachments = [
+            Attachment(
+                conversation=target_conversation, uploaded_by=sender, message=message,
+                file=att.file.name, file_type=att.file_type, original_filename=att.original_filename,
+                mime_type=att.mime_type, file_size=att.file_size, metadata=att.metadata,
+            )
+            for att in original.attachments.all()
+        ]
+        if new_attachments:
+            Attachment.objects.bulk_create(new_attachments)
+
+        Conversation.objects.filter(pk=target_conversation.pk).update(updated_at=timezone.now())
+        ConversationParticipant.objects.filter(conversation=target_conversation, user=sender).update(
             last_read_message=message
         )
 

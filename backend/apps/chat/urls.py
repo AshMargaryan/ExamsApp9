@@ -2,8 +2,8 @@ from django.urls import path
 
 from .views import (
     AttachmentUploadView, ChatAttachmentDownloadView, ConversationDetailView, ConversationListCreateView,
-    ConversationParticipantDetailView, ConversationParticipantsView, ConversationReadView, MessageListSendView,
-    UnreadCountView,
+    ConversationParticipantDetailView, ConversationParticipantsView, ConversationReadView, MessageForwardView,
+    MessageListSendView, MessageReactionView, UnreadCountView,
 )
 
 urlpatterns = [
@@ -21,6 +21,8 @@ urlpatterns = [
         name="conversation_participant_detail",
     ),
     path("conversations/<int:pk>/messages/", MessageListSendView.as_view(), name="message_list_send"),
+    path("messages/<int:message_id>/forward/", MessageForwardView.as_view(), name="message_forward"),
+    path("messages/<int:message_id>/reactions/", MessageReactionView.as_view(), name="message_reaction"),
     path("conversations/<int:pk>/read/", ConversationReadView.as_view(), name="conversation_read"),
     path("attachments/", AttachmentUploadView.as_view(), name="attachment_upload"),
     path("attachments/<int:pk>/download/", ChatAttachmentDownloadView.as_view(), name="chat_attachment_download"),

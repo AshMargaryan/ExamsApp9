@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Attachment, Conversation, ConversationParticipant, Message
+from .models import Attachment, Conversation, ConversationParticipant, Message, MessageReaction
 
 
 class ConversationParticipantInline(admin.TabularInline):
@@ -40,6 +40,13 @@ class MessageAdmin(admin.ModelAdmin):
     list_filter = ["message_type"]
     search_fields = ["text", "sender__username"]
     autocomplete_fields = ["conversation", "sender"]
+
+
+@admin.register(MessageReaction)
+class MessageReactionAdmin(admin.ModelAdmin):
+    list_display = ["id", "message", "user", "emoji", "created_at"]
+    search_fields = ["user__username"]
+    autocomplete_fields = ["message", "user"]
 
 
 @admin.register(Attachment)

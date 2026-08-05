@@ -1,5 +1,6 @@
-import { useRef, useState, type DragEvent, type KeyboardEvent } from "react";
-import { uploadAttachment, type Attachment } from "../../api/chat";
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { uploadAttachment, type Attachment, type Message } from "../../api/chat";
+import { messagePreviewText } from "../../lib/chatLabels";
 import { AttachmentChip } from "./AttachmentChip";
 import { EmojiPicker } from "./EmojiPicker";
 
@@ -9,10 +10,14 @@ export function MessageInput({
   conversationId,
   disabled,
   onSend,
+  replyingTo,
+  onCancelReply,
 }: {
   conversationId: number;
   disabled?: boolean;
   onSend: (text: string, attachmentIds: number[]) => void;
+  replyingTo?: Message | null;
+  onCancelReply?: () => void;
 }) {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -21,6 +26,11 @@ export function MessageInput({
   const [dragOver, setDragOver] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (replyingTo) textareaRef.current?.focus();
+  }, [replyingTo]);
 
   async function handleFiles(files: FileList | File[]) {
     setUploadError(null);
@@ -70,6 +80,28 @@ export function MessageInput({
         dragOver ? "border-primary bg-surface-muted" : "border-transparent"
       }`}
     >
+      {replyingTo && (
+        <div className="mb-2 flex items-start gap-2 rounded-md border-l-4 border-primary bg-surface-muted px-3 py-1.5">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-primary">
+              {replyingTo.sender
+                ? [replyingTo.sender.first_name, replyingTo.sender.last_name].filter(Boolean).join(" ")
+                  || replyingTo.sender.username
+                : "Ջնջված օգտատեր"}
+            </p>
+            <p className="truncate text-sm text-text-muted">{messagePreviewText(replyingTo)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancelReply}
+            className="shrink-0 text-text-muted hover:text-text"
+            title="Չեղարկել"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {attachments.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2">
           {attachments.map((a) => (
@@ -125,6 +157,7 @@ export function MessageInput({
         </div>
 
         <textarea
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}

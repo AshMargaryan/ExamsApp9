@@ -6,7 +6,13 @@ const EMOJIS = [
   "❤️", "🔥", "🎉", "✅", "❌", "⭐", "💡", "📌", "🎯", "🚀",
 ];
 
-export function EmojiPicker({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) {
+export function EmojiPicker({
+  onSelect, onClose, align = "left",
+}: {
+  onSelect: (emoji: string) => void;
+  onClose: () => void;
+  align?: "left" | "right";
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,7 +26,9 @@ export function EmojiPicker({ onSelect, onClose }: { onSelect: (emoji: string) =
   return (
     <div
       ref={ref}
-      className="absolute bottom-full left-0 z-10 mb-2 grid w-64 grid-cols-6 gap-1 rounded-md border border-border bg-surface p-2 shadow-lg"
+      className={`absolute bottom-full z-10 mb-2 grid w-64 grid-cols-6 gap-1 rounded-md border border-border bg-surface p-2 shadow-lg ${
+        align === "right" ? "right-0" : "left-0"
+      }`}
     >
       {EMOJIS.map((emoji) => (
         <button

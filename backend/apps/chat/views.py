@@ -6,14 +6,14 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Attachment, Conversation, ConversationType
+from .models import Attachment, Conversation, ConversationType, Message
 from .permissions import IsConversationParticipant, IsGroupOwner, is_participant
 from .serializers import (
     AddParticipantsSerializer, AttachmentSerializer, AttachmentUploadSerializer, ConversationSerializer,
     CreateGroupConversationSerializer, CreatePrivateConversationSerializer, GroupSettingsSerializer,
     MessageSerializer, SendMessageSerializer,
 )
-from .services import conversation_service, group_service, message_service, read_service
+from .services import conversation_service, group_service, message_service, reaction_service, read_service
 
 User = get_user_model()
 
@@ -210,6 +210,7 @@ class MessageListSendView(APIView):
                 conversation, request.user,
                 text=serializer.validated_data["text"],
                 attachment_ids=serializer.validated_data["attachment_ids"],
+                reply_to_id=serializer.validated_data["reply_to_id"],
             )
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -217,6 +218,55 @@ class MessageListSendView(APIView):
         return Response(
             MessageSerializer(message, context={"request": request}).data, status=status.HTTP_201_CREATED
         )
+
+
+class MessageForwardView(APIView):
+    """
+    POST /api/chat/messages/<message_id>/forward/ {conversation_id} — sends
+    a copy of an existing message into another conversation. Requires
+    participation in both: the source (to have ever seen the message) and
+    the target (to send there).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        if not is_participant(message.conversation_id, request.user):
+            raise Http404
+
+        target = get_object_or_404(Conversation, pk=request.data.get("conversation_id"))
+        if not is_participant(target.id, request.user):
+            return Response(
+                {"detail": "Դուք այս զրույցի մասնակից չեք։"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        forwarded = message_service.forward_message(message, target, request.user)
+        return Response(
+            MessageSerializer(forwarded, context={"request": request}).data, status=status.HTTP_201_CREATED
+        )
+
+
+class MessageReactionView(APIView):
+    """
+    POST /api/chat/messages/<message_id>/reactions/ {emoji} — set the
+    caller's reaction on a message. Re-sending the same emoji clears it;
+    a different emoji replaces it (see reaction_service.set_reaction).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        if not is_participant(message.conversation_id, request.user):
+            raise Http404
+
+        emoji = request.data.get("emoji")
+        if not emoji:
+            return Response({"detail": "emoji-ն պարտադիր է։"}, status=status.HTTP_400_BAD_REQUEST)
+
+        message = reaction_service.set_reaction(message, request.user, emoji)
+        return Response(MessageSerializer(message, context={"request": request}).data)
 
 
 class AttachmentUploadView(APIView):

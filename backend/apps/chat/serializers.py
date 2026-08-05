@@ -5,7 +5,7 @@ from rest_framework.reverse import reverse
 
 from apps.friends.serializers import MiniUserSerializer
 
-from .models import Attachment, Conversation, ConversationParticipant, ConversationType, Message
+from .models import Attachment, Conversation, ConversationParticipant, ConversationType, Message, MessageReaction
 from .services import conversation_service
 from .validators import validate_attachment_file
 
@@ -55,15 +55,48 @@ class AttachmentUploadSerializer(serializers.Serializer):
         return attrs
 
 
+class ReplyPreviewSerializer(serializers.ModelSerializer):
+    """
+    Trimmed-down quote of a replied-to message — just enough for the
+    frontend's "reply bar" (sender + text, or a message_type-based label
+    like "Նկար" when there's no text). Deliberately not the full
+    MessageSerializer: nesting attachments here would mean a reply-to-a-
+    reply-to-a-reply chain pulls in unbounded data, and the UI never shows
+    the quoted message's own attachments anyway (see ChatPage's
+    ReplyPreviewBar/ReplyQuote — clicking it jumps to the original instead).
+    """
+
+    sender = MiniUserSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ["id", "text", "sender", "message_type"]
+
+
+class MessageReactionSerializer(serializers.ModelSerializer):
+    # Flat rows (one per user), not grouped/counted server-side — grouping
+    # would need "does the viewer's own reaction show as active," which is
+    # per-viewer state a single WS broadcast payload can't carry (it goes
+    # to every participant identically). The frontend groups these by
+    # emoji and checks its own user id locally instead.
+    user = MiniUserSerializer(read_only=True)
+
+    class Meta:
+        model = MessageReaction
+        fields = ["id", "emoji", "user"]
+
+
 class MessageSerializer(serializers.ModelSerializer):
     sender = MiniUserSerializer(read_only=True)
     attachments = AttachmentSerializer(many=True, read_only=True)
+    reply_to = ReplyPreviewSerializer(read_only=True)
+    reactions = MessageReactionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Message
         fields = [
             "id", "conversation", "sender", "message_type", "text",
-            "attachments", "created_at", "edited_at", "deleted_at",
+            "attachments", "reply_to", "reactions", "created_at", "edited_at", "deleted_at",
         ]
 
 
@@ -141,6 +174,7 @@ class AddParticipantsSerializer(serializers.Serializer):
 class SendMessageSerializer(serializers.Serializer):
     text = serializers.CharField(required=False, allow_blank=True, default="")
     attachment_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
+    reply_to_id = serializers.IntegerField(required=False, allow_null=True, default=None)
 
 
 class GroupSettingsSerializer(serializers.ModelSerializer):

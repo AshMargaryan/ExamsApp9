@@ -82,12 +82,15 @@ export function useChatSocket(conversationId: number | null) {
     };
   }, [conversationId, connect]);
 
-  const sendMessage = useCallback((text: string, attachmentIds: number[] = []): boolean => {
-    const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-    ws.send(JSON.stringify({ action: "message", text, attachment_ids: attachmentIds }));
-    return true;
-  }, []);
+  const sendMessage = useCallback(
+    (text: string, attachmentIds: number[] = [], replyToId: number | null = null): boolean => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+      ws.send(JSON.stringify({ action: "message", text, attachment_ids: attachmentIds, reply_to_id: replyToId }));
+      return true;
+    },
+    [],
+  );
 
   const markRead = useCallback((messageId?: number): boolean => {
     const ws = wsRef.current;
@@ -96,5 +99,12 @@ export function useChatSocket(conversationId: number | null) {
     return true;
   }, []);
 
-  return { event, status, sendMessage, markRead };
+  const react = useCallback((messageId: number, emoji: string): boolean => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    ws.send(JSON.stringify({ action: "react", message_id: messageId, emoji }));
+    return true;
+  }, []);
+
+  return { event, status, sendMessage, markRead, react };
 }

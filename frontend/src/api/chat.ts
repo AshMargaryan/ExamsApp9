@@ -24,6 +24,19 @@ export interface Attachment {
   uploaded_at: string;
 }
 
+export interface ReplyPreview {
+  id: number;
+  text: string;
+  sender: FriendUser | null;
+  message_type: MessageType;
+}
+
+export interface Reaction {
+  id: number;
+  emoji: string;
+  user: FriendUser;
+}
+
 export interface Message {
   id: number;
   conversation: number;
@@ -31,6 +44,8 @@ export interface Message {
   message_type: MessageType;
   text: string;
   attachments: Attachment[];
+  reply_to: ReplyPreview | null;
+  reactions: Reaction[];
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
@@ -117,11 +132,23 @@ export async function listMessages(
 }
 
 export async function sendMessage(
-  conversationId: number, text: string, attachmentIds: number[] = [],
+  conversationId: number, text: string, attachmentIds: number[] = [], replyToId: number | null = null,
 ): Promise<Message> {
   const { data } = await apiClient.post(`/chat/conversations/${conversationId}/messages/`, {
-    text, attachment_ids: attachmentIds,
+    text, attachment_ids: attachmentIds, reply_to_id: replyToId,
   });
+  return data;
+}
+
+export async function forwardMessage(messageId: number, conversationId: number): Promise<Message> {
+  const { data } = await apiClient.post(`/chat/messages/${messageId}/forward/`, {
+    conversation_id: conversationId,
+  });
+  return data;
+}
+
+export async function setReaction(messageId: number, emoji: string): Promise<Message> {
+  const { data } = await apiClient.post(`/chat/messages/${messageId}/reactions/`, { emoji });
   return data;
 }
 
