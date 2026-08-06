@@ -8,6 +8,7 @@ import {
 import { HintButton } from "../components/HintButton";
 import { MathText } from "../components/MathText";
 import { ScoreModal } from "../components/ScoreModal";
+import { SpeakOnSelect } from "../components/SpeakOnSelect";
 import { ClozeChoiceQuestion } from "../components/questions/ClozeChoiceQuestion";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
@@ -107,29 +108,9 @@ export function TierPage() {
     }
   }
 
-  return (
-    <NotepadProvider>
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to={practiceHref} className="text-sm text-primary hover:underline">
-        ← Վերադառնալ ցանկին
-      </Link>
-
-      <h1 className="mt-2 mb-1 text-3xl font-semibold text-text">
-        {subtopicName ?? `Ենթաթեմա #${id}`}
-      </h1>
-      <p className="mb-6 text-lg text-text-muted">{TIER_LABELS[tier as Tier]} մակարդակ</p>
-
-      {submitResult && (
-        <div className="mb-6 rounded-md border border-primary bg-surface-muted px-4 py-3 text-lg text-text">
-          Արդյունք՝ {submitResult.correct_count} / {submitResult.total} ճիշտ
-          {submitResult.attempt.revealed_answers && (
-            <span className="ml-2 text-sm text-text-muted">(չի հաշվվում՝ պատասխանները դիտված են)</span>
-          )}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-6">
-        {questions.map((q, idx) => {
+  const questionCards = (
+    <div className="flex flex-col gap-6">
+      {questions.map((q, idx) => {
           const revealedQ = revealedMap?.[q.id];
           const answer = answers[q.id] ?? {};
 
@@ -224,7 +205,31 @@ export function TierPage() {
             </div>
           );
         })}
-      </div>
+    </div>
+  );
+
+  return (
+    <NotepadProvider>
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <Link to={practiceHref} className="text-sm text-primary hover:underline">
+        ← Վերադառնալ ցանկին
+      </Link>
+
+      <h1 className="mt-2 mb-1 text-3xl font-semibold text-text">
+        {subtopicName ?? `Ենթաթեմա #${id}`}
+      </h1>
+      <p className="mb-6 text-lg text-text-muted">{TIER_LABELS[tier as Tier]} մակարդակ</p>
+
+      {submitResult && (
+        <div className="mb-6 rounded-md border border-primary bg-surface-muted px-4 py-3 text-lg text-text">
+          Արդյունք՝ {submitResult.correct_count} / {submitResult.total} ճիշտ
+          {submitResult.attempt.revealed_answers && (
+            <span className="ml-2 text-sm text-text-muted">(չի հաշվվում՝ պատասխանները դիտված են)</span>
+          )}
+        </div>
+      )}
+
+      {isMath ? questionCards : <SpeakOnSelect>{questionCards}</SpeakOnSelect>}
 
       <div className="mt-6 flex flex-wrap gap-3">
         <button
