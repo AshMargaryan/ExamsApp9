@@ -156,7 +156,7 @@ class QuestionPracticeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            "id", "question_type", "tier", "text", "hint", "video_url",
+            "id", "question_type", "tier", "text", "passage", "hint", "video_url",
             "choices", "statements",
         ]
 
@@ -169,7 +169,7 @@ class QuestionRevealSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            "id", "question_type", "tier", "text", "explanation", "video_url",
+            "id", "question_type", "tier", "text", "passage", "explanation", "video_url",
             "choices", "statements", "correct_answer_text",
         ]
 
