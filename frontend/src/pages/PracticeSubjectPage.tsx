@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
-  getHierarchy, getSubtopicMaterial, TIER_LABELS,
+  getHierarchy, getSubtopicMaterial, TIER_LABELS, MATH_SUBJECT_NAME,
   type SubjectNode, type DomainNode, type TopicNode, type SubtopicNode,
   type SubtopicMaterial, type Tier,
 } from "../api/practice";
 import * as teachingApi from "../api/teaching";
 import { Battery } from "../components/Battery";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
+import { ToolsDock } from "../components/ToolsDock";
+import { NotepadProvider } from "../context/NotepadContext";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 import { useAuth } from "../auth/AuthContext";
 
@@ -207,7 +209,10 @@ export function PracticeSubjectPage() {
     return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
   }
 
+  const isMath = subject.name === MATH_SUBJECT_NAME;
+
   return (
+    <NotepadProvider>
     <div className="flex min-h-screen bg-bg">
       {sidebarOpen ? (
         <aside className="w-[26rem] shrink-0 overflow-y-auto border-r border-border bg-surface p-5">
@@ -302,6 +307,9 @@ export function PracticeSubjectPage() {
           <IntroPanel name={selected.node.name} introText={selected.node.intro_text} />
         )}
       </main>
+
+      {isMath && <ToolsDock />}
     </div>
+    </NotepadProvider>
   );
 }
