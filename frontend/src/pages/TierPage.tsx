@@ -8,6 +8,7 @@ import {
 import { HintButton } from "../components/HintButton";
 import { MathText } from "../components/MathText";
 import { ScoreModal } from "../components/ScoreModal";
+import { ClozeChoiceQuestion } from "../components/questions/ClozeChoiceQuestion";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
@@ -128,14 +129,26 @@ export function TierPage() {
           const revealedQ = revealedMap?.[q.id];
           const answer = answers[q.id] ?? {};
 
+          const isCloze = q.question_type === "multiple_choice" && q.text.includes("_____");
+
           return (
             <div key={q.id} className="rounded-[var(--radius)] border border-border bg-surface p-6">
-              <p className="mb-4 text-xl font-medium text-text">
-                {idx + 1}. <MathText text={q.text} allowInsert />
-              </p>
+              {q.passage && (
+                <div className="mb-4 rounded-md bg-surface-muted p-4 text-lg leading-relaxed whitespace-pre-line text-text">
+                  <MathText text={q.passage} />
+                </div>
+              )}
 
-              {q.question_type === "multiple_choice" && (
-                <MultipleChoiceQuestion
+              {!isCloze && (
+                <p className="mb-4 text-xl font-medium text-text">
+                  {idx + 1}. <MathText text={q.text} allowInsert />
+                </p>
+              )}
+
+              {isCloze ? (
+                <ClozeChoiceQuestion
+                  index={idx + 1}
+                  text={q.text}
                   choices={revealedQ?.choices ?? q.choices}
                   selectedChoiceId={answer.selected_choice_id}
                   revealed={revealed}
@@ -146,6 +159,20 @@ export function TierPage() {
                     }))
                   }
                 />
+              ) : (
+                q.question_type === "multiple_choice" && (
+                  <MultipleChoiceQuestion
+                    choices={revealedQ?.choices ?? q.choices}
+                    selectedChoiceId={answer.selected_choice_id}
+                    revealed={revealed}
+                    onSelect={(choiceId) =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [q.id]: { selected_choice_id: choiceId },
+                      }))
+                    }
+                  />
+                )
               )}
 
               {q.question_type === "short_answer" && (

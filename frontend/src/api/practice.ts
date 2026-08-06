@@ -24,6 +24,7 @@ export interface Question {
   question_type: QuestionType;
   tier: Tier;
   text: string;
+  passage?: string;
   hint?: string;
   video_url?: string;
   choices: Choice[];
