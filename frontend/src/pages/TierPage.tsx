@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   getTierQuestions, submitTier, revealTier,
-  TIER_LABELS,
+  TIER_LABELS, MATH_SUBJECT_NAME,
   type Question, type Tier, type AnswerInput, type SubmitResult,
 } from "../api/practice";
 import { HintButton } from "../components/HintButton";
@@ -27,7 +27,10 @@ export function TierPage() {
   const { subtopicId, tier } = useParams<{ subtopicId: string; tier: Tier }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const subtopicName = (location.state as { subtopicName?: string } | null)?.subtopicName;
+  const navBackState = location.state as { subtopicName?: string; subjectId?: number } | null;
+  const subtopicName = navBackState?.subtopicName;
+  const subjectId = navBackState?.subjectId;
+  const practiceHref = subjectId ? `/practice/${subjectId}` : "/practice";
 
   const id = Number(subtopicId);
 
@@ -56,6 +59,7 @@ export function TierPage() {
   const revealed = revealedMap !== null;
   const currentIndex = TIER_ORDER.indexOf(tier as Tier);
   const nextTier = TIER_ORDER[currentIndex + 1];
+  const isMath = questions[0]?.subject_name === MATH_SUBJECT_NAME;
 
   function buildAnswerInputs(): AnswerInput[] {
     return questions!.map((q) => ({
@@ -97,16 +101,16 @@ export function TierPage() {
   function handleModalContinue() {
     setShowScoreModal(false);
     if (nextTier) {
-      navigate(`/practice/subtopic/${id}/${nextTier}`, { state: { subtopicName } });
+      navigate(`/practice/subtopic/${id}/${nextTier}`, { state: { subtopicName, subjectId } });
     } else {
-      navigate("/practice");
+      navigate(practiceHref);
     }
   }
 
   return (
     <NotepadProvider>
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/practice" className="text-sm text-primary hover:underline">
+      <Link to={practiceHref} className="text-sm text-primary hover:underline">
         ← Վերադառնալ ցանկին
       </Link>
 
@@ -134,14 +138,14 @@ export function TierPage() {
           return (
             <div key={q.id} className="rounded-[var(--radius)] border border-border bg-surface p-6">
               {q.passage && (
-                <div className="mb-4 rounded-md bg-surface-muted p-4 text-lg leading-relaxed whitespace-pre-line text-text">
+                <div className="mb-4 rounded-md bg-surface-muted p-4 text-lg leading-relaxed italic whitespace-pre-line text-text">
                   <MathText text={q.passage} />
                 </div>
               )}
 
               {!isCloze && (
                 <p className="mb-4 text-xl font-medium text-text">
-                  {idx + 1}. <MathText text={q.text} allowInsert />
+                  {idx + 1}. <MathText text={q.text} allowInsert={isMath} />
                 </p>
               )}
 
@@ -214,7 +218,7 @@ export function TierPage() {
 
               {revealed && showExplanations && revealedQ?.explanation && (
                 <div className="mt-3 rounded-md bg-surface-muted p-4 text-base leading-relaxed text-text-muted whitespace-pre-line">
-                  <MathText text={revealedQ.explanation} allowInsert />
+                  <MathText text={revealedQ.explanation} allowInsert={isMath} />
                 </div>
               )}
             </div>
@@ -262,7 +266,7 @@ export function TierPage() {
         />
       )}
 
-      <ToolsDock />
+      {isMath && <ToolsDock />}
     </div>
     </NotepadProvider>
   );

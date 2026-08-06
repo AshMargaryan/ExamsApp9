@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   getHierarchy, getSubtopicMaterial, TIER_LABELS,
   type SubjectNode, type DomainNode, type TopicNode, type SubtopicNode,
@@ -30,7 +30,13 @@ function IntroPanel({ name, introText }: { name: string; introText: string }) {
   );
 }
 
-function SubtopicPanel({ subtopic, trackAssignmentId }: { subtopic: SubtopicNode; trackAssignmentId?: number }) {
+function SubtopicPanel({
+  subtopic, subjectId, trackAssignmentId,
+}: {
+  subtopic: SubtopicNode;
+  subjectId: number;
+  trackAssignmentId?: number;
+}) {
   const [material, setMaterial] = useState<SubtopicMaterial | null>(null);
   const exercisesRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +107,7 @@ function SubtopicPanel({ subtopic, trackAssignmentId }: { subtopic: SubtopicNode
             <Link
               key={tier}
               to={`/practice/subtopic/${subtopic.id}/${tier}`}
-              state={{ subtopicName: subtopic.name }}
+              state={{ subtopicName: subtopic.name, subjectId }}
               className="rounded-[var(--radius)] border border-border bg-surface p-6 text-center transition-colors hover:border-primary"
             >
               <div
@@ -118,22 +124,33 @@ function SubtopicPanel({ subtopic, trackAssignmentId }: { subtopic: SubtopicNode
   );
 }
 
-export function PracticePage() {
+export function PracticeSubjectPage() {
   useStudyActivityTracker();
+
+  const { subjectId } = useParams<{ subjectId: string }>();
+  const id = Number(subjectId);
 
   const location = useLocation();
   const navState = location.state as { subtopicId?: number; topicId?: number } | null;
 
   const { user } = useAuth();
-  const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
+  const [subject, setSubject] = useState<SubjectNode | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [selected, setSelected] = useState<Selected | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   // subtopic id -> the open (assigned/in_progress) assignment id targeting it, for scroll tracking.
   const [openSubtopicAssignments, setOpenSubtopicAssignments] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
-    getHierarchy().then(setSubjects);
-  }, []);
+    setSubject(null);
+    setSelected(null);
+    setNotFound(false);
+    getHierarchy().then((subjects) => {
+      const found = subjects.find((s) => s.id === id) ?? null;
+      setSubject(found);
+      setNotFound(!found);
+    });
+  }, [id]);
 
   useEffect(() => {
     if (user?.role !== "student") return;
@@ -153,31 +170,40 @@ export function PracticePage() {
   }, [user]);
 
   useEffect(() => {
-    if (!subjects || !navState) return;
-    for (const subject of subjects) {
-      for (const domain of subject.domains) {
-        for (const topic of domain.topics) {
-          if (navState.topicId === topic.id) {
-            setSelected({ kind: "topic", node: topic });
+    if (!subject || !navState) return;
+    for (const domain of subject.domains) {
+      for (const topic of domain.topics) {
+        if (navState.topicId === topic.id) {
+          setSelected({ kind: "topic", node: topic });
+          return;
+        }
+        for (const subtopic of topic.subtopics) {
+          if (navState.subtopicId === subtopic.id) {
+            setSelected({ kind: "subtopic", node: subtopic });
             return;
-          }
-          for (const subtopic of topic.subtopics) {
-            if (navState.subtopicId === subtopic.id) {
-              setSelected({ kind: "subtopic", node: subtopic });
-              return;
-            }
           }
         }
       }
     }
     // location.key changes on every navigation (even to the same path), so
-    // clicking "Կատարել" again while already on /practice still re-selects —
+    // clicking "Կատարել" again while already on this page still re-selects —
     // depending on navState alone wouldn't since its identity is stable
     // when the object shape repeats.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subjects, location.key]);
+  }, [subject, location.key]);
 
-  if (!subjects) {
+  if (notFound) {
+    return (
+      <div className="p-8">
+        <p className="text-lg text-text-muted">Առարկան չի գտնվել։</p>
+        <Link to="/practice" className="text-sm text-primary hover:underline">
+          ← Առարկաներ
+        </Link>
+      </div>
+    );
+  }
+
+  if (!subject) {
     return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
   }
 
@@ -186,8 +212,8 @@ export function PracticePage() {
       {sidebarOpen ? (
         <aside className="w-[26rem] shrink-0 overflow-y-auto border-r border-border bg-surface p-5">
           <div className="mb-4 flex items-center justify-between">
-            <Link to="/" className="text-sm text-primary hover:underline">
-              ← Գլխավոր
+            <Link to="/practice" className="text-sm text-primary hover:underline">
+              ← Առարկաներ
             </Link>
             <button
               type="button"
@@ -198,57 +224,52 @@ export function PracticePage() {
               ‹‹
             </button>
           </div>
-          <h2 className="mb-4 text-xl font-semibold text-text">Պարապել</h2>
 
-          {subjects.map((subject) => (
-            <div key={subject.id} className="mb-3">
-              <div className="mb-2 flex items-center justify-between text-base font-semibold text-text">
-                <span>{subject.name}</span>
-                <Battery percent={subject.progress.percent} avgScore={subject.progress.avg_score} />
-              </div>
+          <div className="mb-4 flex items-center justify-between text-xl font-semibold text-text">
+            <span>{subject.name}</span>
+            <Battery percent={subject.progress.percent} avgScore={subject.progress.avg_score} />
+          </div>
 
-              {subject.domains.map((domain) => (
-                <details key={domain.id} className="mb-1 ml-1">
+          {subject.domains.map((domain) => (
+            <details key={domain.id} className="mb-1" open>
+              <summary
+                onClick={() => setSelected({ kind: "domain", node: domain })}
+                className="flex cursor-pointer items-center justify-between rounded px-1.5 py-1.5 text-base text-text hover:bg-surface-muted"
+              >
+                <span>{domain.name}</span>
+                <Battery percent={domain.progress.percent} avgScore={domain.progress.avg_score} />
+              </summary>
+
+              {domain.topics.map((topic) => (
+                <details key={topic.id} className="mb-1 ml-4" open>
                   <summary
-                    onClick={() => setSelected({ kind: "domain", node: domain })}
-                    className="flex cursor-pointer items-center justify-between rounded px-1.5 py-1.5 text-base text-text hover:bg-surface-muted"
+                    onClick={() => setSelected({ kind: "topic", node: topic })}
+                    className="flex cursor-pointer items-center justify-between rounded px-1.5 py-1 text-sm text-text-muted hover:bg-surface-muted"
                   >
-                    <span>{domain.name}</span>
-                    <Battery percent={domain.progress.percent} avgScore={domain.progress.avg_score} />
+                    <span>{topic.name}</span>
+                    <Battery percent={topic.progress.percent} avgScore={topic.progress.avg_score} />
                   </summary>
 
-                  {domain.topics.map((topic) => (
-                    <details key={topic.id} className="mb-1 ml-4" open>
-                      <summary
-                        onClick={() => setSelected({ kind: "topic", node: topic })}
-                        className="flex cursor-pointer items-center justify-between rounded px-1.5 py-1 text-sm text-text-muted hover:bg-surface-muted"
-                      >
-                        <span>{topic.name}</span>
-                        <Battery percent={topic.progress.percent} avgScore={topic.progress.avg_score} />
-                      </summary>
-
-                      <ul className="ml-4">
-                        {topic.subtopics.map((subtopic) => (
-                          <li key={subtopic.id}>
-                            <button
-                              type="button"
-                              onClick={() => setSelected({ kind: "subtopic", node: subtopic })}
-                              className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors ${
-                                selected?.kind === "subtopic" && selected.node.id === subtopic.id
-                                  ? "bg-primary text-primary-contrast"
-                                  : "text-text hover:bg-surface-muted"
-                              }`}
-                            >
-                              {subtopic.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  ))}
+                  <ul className="ml-4">
+                    {topic.subtopics.map((subtopic) => (
+                      <li key={subtopic.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelected({ kind: "subtopic", node: subtopic })}
+                          className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors ${
+                            selected?.kind === "subtopic" && selected.node.id === subtopic.id
+                              ? "bg-primary text-primary-contrast"
+                              : "text-text hover:bg-surface-muted"
+                          }`}
+                        >
+                          {subtopic.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </details>
               ))}
-            </div>
+            </details>
           ))}
         </aside>
       ) : (
@@ -272,6 +293,7 @@ export function PracticePage() {
         {selected?.kind === "subtopic" && (
           <SubtopicPanel
             subtopic={selected.node}
+            subjectId={subject.id}
             trackAssignmentId={openSubtopicAssignments.get(selected.node.id)}
           />
         )}

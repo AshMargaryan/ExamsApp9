@@ -3,6 +3,9 @@ import { apiClient } from "./client";
 export type Tier = "easy" | "medium" | "hard";
 export type QuestionType = "multiple_choice" | "short_answer" | "true_false";
 
+// The only subject with the calculator/notepad tools enabled, for now.
+export const MATH_SUBJECT_NAME = "Մաթեմատիկա";
+
 export interface Choice {
   id: number;
   text: string;
@@ -31,6 +34,7 @@ export interface Question {
   statements: Statement[];
   explanation?: string;
   correct_answer_text?: string;
+  subject_name?: string;
 }
 
 export interface Progress {

@@ -69,7 +69,7 @@ class TierQuestionsView(generics.ListAPIView):
     def get_queryset(self):
         return Question.objects.filter(
             subtopic_id=self.kwargs["subtopic_id"], tier=self.kwargs["tier"]
-        ).prefetch_related("choices", "statements")
+        ).select_related("subtopic__topic__domain__subject").prefetch_related("choices", "statements")
 
 
 class RevealTierView(APIView):
@@ -83,7 +83,7 @@ class RevealTierView(APIView):
     def get(self, request, subtopic_id, tier):
         questions = Question.objects.filter(
             subtopic_id=subtopic_id, tier=tier
-        ).prefetch_related("choices", "statements")
+        ).select_related("subtopic__topic__domain__subject").prefetch_related("choices", "statements")
 
         attempt, _ = PracticeAttempt.objects.get_or_create(
             user=request.user, subtopic_id=subtopic_id, tier=tier

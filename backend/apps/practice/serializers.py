@@ -152,12 +152,13 @@ class QuestionPracticeSerializer(serializers.ModelSerializer):
     """Sent when serving questions to answer — never includes correct answers."""
     choices = ChoiceSerializer(many=True, read_only=True)
     statements = StatementSerializer(many=True, read_only=True)
+    subject_name = serializers.CharField(source="subtopic.topic.domain.subject.name", read_only=True)
 
     class Meta:
         model = Question
         fields = [
             "id", "question_type", "tier", "text", "passage", "hint", "video_url",
-            "choices", "statements",
+            "choices", "statements", "subject_name",
         ]
 
 
@@ -165,12 +166,13 @@ class QuestionRevealSerializer(serializers.ModelSerializer):
     """Sent when the user clicks 'show answers' — correct answers + explanation."""
     choices = ChoiceRevealSerializer(many=True, read_only=True)
     statements = StatementRevealSerializer(many=True, read_only=True)
+    subject_name = serializers.CharField(source="subtopic.topic.domain.subject.name", read_only=True)
 
     class Meta:
         model = Question
         fields = [
             "id", "question_type", "tier", "text", "passage", "explanation", "video_url",
-            "choices", "statements", "correct_answer_text",
+            "choices", "statements", "correct_answer_text", "subject_name",
         ]
 
 
