@@ -9,12 +9,13 @@ add a matching evaluator function below, and register it in
 REQUIREMENT_EVALUATORS. No schema change needed for new thresholds — those
 are just Achievement rows (seeded via management command / admin / migration).
 """
-from django.db.models import F, Max
+from django.db.models import Max
 
 from apps.practice.models import AttemptAnswer, PracticeAttempt
 from apps.streaks.models import LearningStreak
 
 from .models import Achievement, RequirementType, UserAchievement
+from .xp import award_xp
 
 
 def _questions_solved(user) -> int:
@@ -78,10 +79,12 @@ def evaluate_achievements(user) -> list[Achievement]:
                 newly_unlocked.append(achievement)
 
     if newly_unlocked:
-        from .models import Profile
-
         xp_gained = sum(a.xp_reward for a in newly_unlocked)
-        if xp_gained:
-            Profile.objects.filter(user=user).update(total_xp=F("total_xp") + xp_gained)
+        award_xp(user, xp_gained)
+
+        from apps.parents.models import NotificationType  # local import: avoids a load-order dependency
+        from apps.parents.services import notify_parents
+        for achievement in newly_unlocked:
+            notify_parents(user, NotificationType.BADGE_EARNED, f"Ստացավ «{achievement.name}» կրծքանշանը։")
 
     return newly_unlocked
