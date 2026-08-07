@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   getTierQuestions, submitTier, revealTier,
-  TIER_LABELS,
+  TIER_LABELS, MATH_SUBJECT_NAME,
   type Question, type Tier, type AnswerInput, type SubmitResult,
 } from "../api/practice";
 import { HintButton } from "../components/HintButton";
 import { MathText } from "../components/MathText";
 import { ScoreModal } from "../components/ScoreModal";
+import { SpeakOnSelect } from "../components/SpeakOnSelect";
+import { ClozeChoiceQuestion } from "../components/questions/ClozeChoiceQuestion";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
@@ -26,7 +28,10 @@ export function TierPage() {
   const { subtopicId, tier } = useParams<{ subtopicId: string; tier: Tier }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const subtopicName = (location.state as { subtopicName?: string } | null)?.subtopicName;
+  const navBackState = location.state as { subtopicName?: string; subjectId?: number } | null;
+  const subtopicName = navBackState?.subtopicName;
+  const subjectId = navBackState?.subjectId;
+  const practiceHref = subjectId ? `/practice/${subjectId}` : "/practice";
 
   const id = Number(subtopicId);
 
@@ -55,6 +60,7 @@ export function TierPage() {
   const revealed = revealedMap !== null;
   const currentIndex = TIER_ORDER.indexOf(tier as Tier);
   const nextTier = TIER_ORDER[currentIndex + 1];
+  const isMath = questions[0]?.subject_name === MATH_SUBJECT_NAME;
 
   function buildAnswerInputs(): AnswerInput[] {
     return questions!.map((q) => ({
@@ -96,46 +102,38 @@ export function TierPage() {
   function handleModalContinue() {
     setShowScoreModal(false);
     if (nextTier) {
-      navigate(`/practice/subtopic/${id}/${nextTier}`, { state: { subtopicName } });
+      navigate(`/practice/subtopic/${id}/${nextTier}`, { state: { subtopicName, subjectId } });
     } else {
-      navigate("/practice");
+      navigate(practiceHref);
     }
   }
 
-  return (
-    <NotepadProvider>
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/practice" className="text-sm text-primary hover:underline">
-        ← Վերադառնալ ցանկին
-      </Link>
-
-      <h1 className="mt-2 mb-1 text-3xl font-semibold text-text">
-        {subtopicName ?? `Ենթաթեմա #${id}`}
-      </h1>
-      <p className="mb-6 text-lg text-text-muted">{TIER_LABELS[tier as Tier]} մակարդակ</p>
-
-      {submitResult && (
-        <div className="mb-6 rounded-md border border-primary bg-surface-muted px-4 py-3 text-lg text-text">
-          Արդյունք՝ {submitResult.correct_count} / {submitResult.total} ճիշտ
-          {submitResult.attempt.revealed_answers && (
-            <span className="ml-2 text-sm text-text-muted">(չի հաշվվում՝ պատասխանները դիտված են)</span>
-          )}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-6">
-        {questions.map((q, idx) => {
+  const questionCards = (
+    <div className="flex flex-col gap-6">
+      {questions.map((q, idx) => {
           const revealedQ = revealedMap?.[q.id];
           const answer = answers[q.id] ?? {};
 
+          const isCloze = q.question_type === "multiple_choice" && q.text.includes("_____");
+
           return (
             <div key={q.id} className="rounded-[var(--radius)] border border-border bg-surface p-6">
-              <p className="mb-4 text-xl font-medium text-text">
-                {idx + 1}. <MathText text={q.text} allowInsert />
-              </p>
+              {q.passage && (
+                <div className="mb-4 rounded-md bg-surface-muted p-4 text-lg leading-relaxed italic whitespace-pre-line text-text">
+                  <MathText text={q.passage} />
+                </div>
+              )}
 
-              {q.question_type === "multiple_choice" && (
-                <MultipleChoiceQuestion
+              {!isCloze && (
+                <p className="mb-4 text-xl font-medium text-text">
+                  {idx + 1}. <MathText text={q.text} allowInsert={isMath} />
+                </p>
+              )}
+
+              {isCloze ? (
+                <ClozeChoiceQuestion
+                  index={idx + 1}
+                  text={q.text}
                   choices={revealedQ?.choices ?? q.choices}
                   selectedChoiceId={answer.selected_choice_id}
                   revealed={revealed}
@@ -146,6 +144,20 @@ export function TierPage() {
                     }))
                   }
                 />
+              ) : (
+                q.question_type === "multiple_choice" && (
+                  <MultipleChoiceQuestion
+                    choices={revealedQ?.choices ?? q.choices}
+                    selectedChoiceId={answer.selected_choice_id}
+                    revealed={revealed}
+                    onSelect={(choiceId) =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [q.id]: { selected_choice_id: choiceId },
+                      }))
+                    }
+                  />
+                )
               )}
 
               {q.question_type === "short_answer" && (
@@ -187,13 +199,37 @@ export function TierPage() {
 
               {revealed && showExplanations && revealedQ?.explanation && (
                 <div className="mt-3 rounded-md bg-surface-muted p-4 text-base leading-relaxed text-text-muted whitespace-pre-line">
-                  <MathText text={revealedQ.explanation} allowInsert />
+                  <MathText text={revealedQ.explanation} allowInsert={isMath} />
                 </div>
               )}
             </div>
           );
         })}
-      </div>
+    </div>
+  );
+
+  return (
+    <NotepadProvider>
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <Link to={practiceHref} className="text-sm text-primary hover:underline">
+        ← Վերադառնալ ցանկին
+      </Link>
+
+      <h1 className="mt-2 mb-1 text-3xl font-semibold text-text">
+        {subtopicName ?? `Ենթաթեմա #${id}`}
+      </h1>
+      <p className="mb-6 text-lg text-text-muted">{TIER_LABELS[tier as Tier]} մակարդակ</p>
+
+      {submitResult && (
+        <div className="mb-6 rounded-md border border-primary bg-surface-muted px-4 py-3 text-lg text-text">
+          Արդյունք՝ {submitResult.correct_count} / {submitResult.total} ճիշտ
+          {submitResult.attempt.revealed_answers && (
+            <span className="ml-2 text-sm text-text-muted">(չի հաշվվում՝ պատասխանները դիտված են)</span>
+          )}
+        </div>
+      )}
+
+      {isMath ? questionCards : <SpeakOnSelect>{questionCards}</SpeakOnSelect>}
 
       <div className="mt-6 flex flex-wrap gap-3">
         <button
@@ -235,7 +271,7 @@ export function TierPage() {
         />
       )}
 
-      <ToolsDock />
+      {isMath && <ToolsDock />}
     </div>
     </NotepadProvider>
   );

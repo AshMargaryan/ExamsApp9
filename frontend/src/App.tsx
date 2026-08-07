@@ -8,7 +8,8 @@ import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { HomePage } from "./pages/HomePage";
-import { PracticePage } from "./pages/PracticePage";
+import { PracticeSubjectsPage } from "./pages/PracticeSubjectsPage";
+import { PracticeSubjectPage } from "./pages/PracticeSubjectPage";
 import { TierPage } from "./pages/TierPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -45,7 +46,8 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
-            <Route path="/practice" element={<PracticePage />} />
+            <Route path="/practice" element={<PracticeSubjectsPage />} />
+            <Route path="/practice/:subjectId" element={<PracticeSubjectPage />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/teacher-dashboard" element={<TeacherDashboardPage />} />
