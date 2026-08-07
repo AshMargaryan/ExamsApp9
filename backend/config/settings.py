@@ -38,7 +38,11 @@ INSTALLED_APPS = [
     "apps.streaks",
     "apps.friends",
     "apps.games",
+    "apps.notifications",
     "apps.mock_exams",
+    "apps.flashcards",
+    "apps.rankings",
+    "apps.parents",
 ]
 
 MIDDLEWARE = [
@@ -159,6 +163,9 @@ WHITENOISE_USE_FINDERS = DEBUG
 # This is only exercised in prod, once `collectstatic` actually runs — see
 # DJANGO_COLLECTSTATIC in docker/entrypoint.sh.
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -220,6 +227,10 @@ AI_ASSISTANT_HISTORY_WINDOW = env.int("AI_ASSISTANT_HISTORY_WINDOW", default=20)
 
 # Attachment upload limits.
 AI_ASSISTANT_MAX_ATTACHMENT_SIZE_MB = env.int("AI_ASSISTANT_MAX_ATTACHMENT_SIZE_MB", default=15)
+
+# Flashcard image/audio upload limits.
+FLASHCARDS_MAX_IMAGE_SIZE_MB = env.int("FLASHCARDS_MAX_IMAGE_SIZE_MB", default=5)
+FLASHCARDS_MAX_AUDIO_SIZE_MB = env.int("FLASHCARDS_MAX_AUDIO_SIZE_MB", default=15)
 
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")

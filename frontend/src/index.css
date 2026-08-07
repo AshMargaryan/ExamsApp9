@@ -50,11 +50,17 @@ body {
   padding: 0.3em 0.6em;
 }
 /* Inline KaTeX (esp. \dfrac) is taller than normal text — without this,
-   its numerator/denominator overlap the line above/below it. */
-.prose-chat p:has(.katex),
-.prose-chat li:has(.katex),
-.prose-chat td:has(.katex) {
+   its numerator/denominator overlap the line above/below it. Applies
+   globally (not just AI-chat markdown) since MathText renders practice
+   questions/hints/explanations, mock-exam questions, and flashcards too. */
+:is(p, li, td, div, span, h1, h2, h3, label):has(.katex) {
   line-height: 2.2;
+}
+/* KaTeX's own display blocks (from $$...$$) already manage their own
+   vertical spacing — don't let the rule above stretch them further. */
+.katex-display {
+  line-height: normal;
+  margin: 0.5em 0;
 }
 
 /* Gameplay timer/feedback animations — kept subtle and short-lived. */
@@ -99,4 +105,27 @@ body {
 @keyframes firework-particle {
   0% { transform: translate(0, 0) scale(1); opacity: 1; }
   100% { transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.2); opacity: 0; }
+}
+
+/* Flashcard 3D flip — front/back faces stacked in the same box, rotated
+   around the Y axis so the flip reveals depth instead of just swapping text. */
+.flashcard-scene {
+  perspective: 1600px;
+}
+.flashcard-flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4, 0.15, 0.2, 1);
+}
+.flashcard-flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flashcard-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flashcard-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
 }
