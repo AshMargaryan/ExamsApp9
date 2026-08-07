@@ -7,6 +7,16 @@ interface Widget {
   text: string;
 }
 
+// The learning material mixes Armenian explanations with English examples —
+// only the latter should be voicable, since reading Armenian through the
+// English TTS voice comes out wrong. A selection counts as English when it
+// has a Latin letter and no Armenian one.
+const ARMENIAN_LETTER = /[Ա-Ֆա-և]/;
+const LATIN_LETTER = /[A-Za-z]/;
+function isEnglishText(text: string): boolean {
+  return LATIN_LETTER.test(text) && !ARMENIAN_LETTER.test(text);
+}
+
 // Wraps its children so that selecting any text inside pops up a small
 // speaker button near the selection — click it to hear the selection read
 // aloud, click again (or press Escape/Q) to stop mid-playback. Used to let
@@ -40,6 +50,10 @@ export function SpeakOnSelect({ children }: { children: React.ReactNode }) {
         return;
       }
       if (!containerRef.current?.contains(selection.anchorNode)) {
+        setWidget(null);
+        return;
+      }
+      if (!isEnglishText(text)) {
         setWidget(null);
         return;
       }

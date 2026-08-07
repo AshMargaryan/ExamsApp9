@@ -8,6 +8,7 @@ import {
 import * as teachingApi from "../api/teaching";
 import { Battery } from "../components/Battery";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
+import { SpeakOnSelect } from "../components/SpeakOnSelect";
 import { ToolsDock } from "../components/ToolsDock";
 import { NotepadProvider } from "../context/NotepadContext";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
@@ -296,15 +297,31 @@ export function PracticeSubjectPage() {
         )}
 
         {selected?.kind === "subtopic" && (
-          <SubtopicPanel
-            subtopic={selected.node}
-            subjectId={subject.id}
-            trackAssignmentId={openSubtopicAssignments.get(selected.node.id)}
-          />
+          isMath ? (
+            <SubtopicPanel
+              subtopic={selected.node}
+              subjectId={subject.id}
+              trackAssignmentId={openSubtopicAssignments.get(selected.node.id)}
+            />
+          ) : (
+            <SpeakOnSelect>
+              <SubtopicPanel
+                subtopic={selected.node}
+                subjectId={subject.id}
+                trackAssignmentId={openSubtopicAssignments.get(selected.node.id)}
+              />
+            </SpeakOnSelect>
+          )
         )}
 
         {(selected?.kind === "domain" || selected?.kind === "topic") && (
-          <IntroPanel name={selected.node.name} introText={selected.node.intro_text} />
+          isMath ? (
+            <IntroPanel name={selected.node.name} introText={selected.node.intro_text} />
+          ) : (
+            <SpeakOnSelect>
+              <IntroPanel name={selected.node.name} introText={selected.node.intro_text} />
+            </SpeakOnSelect>
+          )
         )}
       </main>
 
