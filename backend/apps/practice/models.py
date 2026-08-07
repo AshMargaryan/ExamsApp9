@@ -89,6 +89,10 @@ class Question(models.Model):
     # For true_false: the shared exercise_text all statements refer to.
     text = models.TextField()
 
+    # Reading-comprehension passage shown above the question, if any
+    # (English reading subtopics; unused by math/other subjects).
+    passage = models.TextField(blank=True, default="")
+
     hint = models.TextField(blank=True, default="")
     explanation = models.TextField(blank=True, default="")
     video_url = models.URLField(blank=True, default="")

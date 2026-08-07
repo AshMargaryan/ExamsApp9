@@ -1,5 +1,10 @@
+import hashlib
 from collections import defaultdict
+from pathlib import Path
 
+import requests
+from django.conf import settings
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -69,7 +74,7 @@ class TierQuestionsView(generics.ListAPIView):
     def get_queryset(self):
         return Question.objects.filter(
             subtopic_id=self.kwargs["subtopic_id"], tier=self.kwargs["tier"]
-        ).prefetch_related("choices", "statements")
+        ).select_related("subtopic__topic__domain__subject").prefetch_related("choices", "statements")
 
 
 class RevealTierView(APIView):
@@ -83,7 +88,7 @@ class RevealTierView(APIView):
     def get(self, request, subtopic_id, tier):
         questions = Question.objects.filter(
             subtopic_id=subtopic_id, tier=tier
-        ).prefetch_related("choices", "statements")
+        ).select_related("subtopic__topic__domain__subject").prefetch_related("choices", "statements")
 
         attempt, _ = PracticeAttempt.objects.get_or_create(
             user=request.user, subtopic_id=subtopic_id, tier=tier
@@ -150,3 +155,45 @@ class SubmitTierView(APIView):
             attempt=attempt, question=question, defaults=defaults,
         )
         return defaults["is_correct"], ua
+
+
+PRONOUNCE_CACHE_DIR = settings.BASE_DIR / "media" / "tts_cache"
+PRONOUNCE_MAX_CHARS = 200  # Google's translate_tts endpoint isn't meant for longer text.
+
+
+class PronounceView(APIView):
+    """
+    GET /api/practice/pronounce/?text=...
+    Fallback pronunciation audio for browsers/OSes (mainly Linux, and some
+    non-Chrome browsers) whose local Web Speech API voices only expose a
+    robotic offline synthesizer. Proxies short text to Google Translate's
+    (unofficial, undocumented) TTS endpoint and caches the result on disk
+    by text hash, so the same word/sentence is only ever fetched once —
+    keeps this from depending too heavily on an endpoint that isn't a
+    stable, sanctioned API and could change or rate-limit without notice.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        text = request.query_params.get("text", "").strip()[:PRONOUNCE_MAX_CHARS]
+        if not text:
+            return HttpResponse(status=400)
+
+        PRONOUNCE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache_key = hashlib.sha256(text.encode("utf-8")).hexdigest()[:32]
+        cache_path = PRONOUNCE_CACHE_DIR / f"{cache_key}.mp3"
+
+        if not cache_path.exists():
+            try:
+                resp = requests.get(
+                    "https://translate.google.com/translate_tts",
+                    params={"ie": "UTF-8", "q": text, "tl": "en", "client": "tw-ob"},
+                    headers={"User-Agent": "Mozilla/5.0"},
+                    timeout=8,
+                )
+                resp.raise_for_status()
+            except requests.RequestException:
+                return HttpResponse(status=502)
+            cache_path.write_bytes(resp.content)
+
+        return HttpResponse(cache_path.read_bytes(), content_type="audio/mpeg")
