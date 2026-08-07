@@ -6,6 +6,7 @@ const SUBJECTS: { key: FlashcardSubject; label: string }[] = [
   { key: "physics", label: "Ֆիզիկա" },
   { key: "biology", label: "Կենսաբանություն" },
   { key: "chemistry", label: "Քիմիա" },
+  { key: "english", label: "Անգլերեն" },
 ];
 
 interface Props {

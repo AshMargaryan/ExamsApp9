@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     "apps.flashcards",
     "apps.rankings",
     "apps.parents",
+    "apps.activity",
+    "apps.teaching",
+    "apps.chat",
 ]
 
 MIDDLEWARE = [
@@ -162,6 +165,11 @@ WHITENOISE_USE_FINDERS = DEBUG
 # filename (e.g. app-3f2a1c.css) and pre-gzips them at collectstatic time.
 # This is only exercised in prod, once `collectstatic` actually runs — see
 # DJANGO_COLLECTSTATIC in docker/entrypoint.sh.
+# "default" must be listed explicitly once STORAGES is customized at all —
+# Django does NOT fall back to its implicit default for the keys you don't
+# mention. Without this, every FileField/ImageField save in the project
+# (avatars, AI assistant attachments, chat attachments, ...) raises
+# InvalidStorageError the moment something is actually uploaded.
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -171,7 +179,7 @@ STORAGES = {
     },
 }
 
-# Media files (user uploads — currently just AI assistant attachments).
+# Media files (user uploads — avatars, AI assistant attachments, chat attachments).
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -256,4 +264,20 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Gitus <noreply@gitus.local>")
+
+# ---------------------------------------------------------------------------
+# Teacher-student system
+# ---------------------------------------------------------------------------
+
+# Default max number of accepted students per teacher, used when a
+# TeacherProfile doesn't set its own override. Will become plan-dependent
+# once subscriptions exist — kept here (not hardcoded in the model/view) so
+# that day can come without a schema change.
+TEACHER_DEFAULT_STUDENT_LIMIT = env.int("TEACHER_DEFAULT_STUDENT_LIMIT", default=20)
+
+# ---------------------------------------------------------------------------
+# Chat
+# ---------------------------------------------------------------------------
+
+CHAT_MAX_ATTACHMENT_SIZE_MB = env.int("CHAT_MAX_ATTACHMENT_SIZE_MB", default=20)
 

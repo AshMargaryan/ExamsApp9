@@ -232,6 +232,13 @@ class FinishAttemptView(APIView):
             if defaults["is_correct"]:
                 raw_score += 1
                 tier_correct[question.difficulty] += 1
+            elif question.topic:
+                from apps.practice.models import MistakeSource  # local import: avoids a load-order dependency
+                from apps.practice.services import record_topic_mistake
+                record_topic_mistake(
+                    request.user, source=MistakeSource.MOCK_EXAM,
+                    subject_name=attempt.exam.get_subject_display(), topic_label=question.topic,
+                )
 
         attempt.raw_score = raw_score
         attempt.percent_answered = round(100 * answered_count / len(questions), 2) if questions else 0.0

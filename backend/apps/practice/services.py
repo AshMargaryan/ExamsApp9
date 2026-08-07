@@ -2,9 +2,10 @@ import hashlib
 from collections import defaultdict
 from datetime import timedelta
 
+from django.db.models import F
 from django.utils import timezone
 
-from .models import AttemptAnswer, Question, Subtopic, Tier
+from .models import AttemptAnswer, MistakeSource, Question, Subtopic, Tier
 
 TIERS = [t.value for t in Tier]
 
@@ -35,43 +36,79 @@ def subtopic_ids_with_questions():
 
 
 # ---------------------------------------------------------------------------
-# Recommended exercises — for the home dashboard: subtopics the user hasn't
-# started yet (in hierarchy order), then subtopics where their best score is
-# weak, up to `limit`.
+# Weakness tracking — called every time a graded answer (Practice tier
+# submission, Daily Problem, or Mock Exam) comes back incorrect. Keeps a
+# running per-student mistake count per topic, which drives the ranking below.
 # ---------------------------------------------------------------------------
 
-WEAK_SCORE_THRESHOLD = 70
+def record_topic_mistake(student, *, source, subject_name, topic_label, subtopic=None):
+    from .models import TopicMistake
 
+    now = timezone.now()
+    obj, created = TopicMistake.objects.get_or_create(
+        student=student, source=source, subject_name=subject_name, topic_label=topic_label,
+        defaults={"subtopic": subtopic, "incorrect_count": 1, "last_incorrect_at": now},
+    )
+    if not created:
+        TopicMistake.objects.filter(pk=obj.pk).update(
+            incorrect_count=F("incorrect_count") + 1, last_incorrect_at=now,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Recommended exercises — for the home dashboard: subtopics ranked by how
+# many wrong answers the user has racked up there (most mistakes first),
+# then subtopics the user hasn't started yet (in hierarchy order) filling any
+# remaining slots, up to `limit`. Weak topics lead so a student with a mix of
+# untouched and struggling subtopics is steered at their weak spots first.
+# ---------------------------------------------------------------------------
 
 def get_recommended_subtopics(user, limit=5):
+    from .models import TopicMistake
+
     progress = progress_by_subtopic(user)
     ids_with_questions = subtopic_ids_with_questions()
 
-    subtopics = (
-        Subtopic.objects
+    subtopics = {
+        s.id: s for s in Subtopic.objects
         .filter(id__in=ids_with_questions)
         .select_related("topic__domain__subject")
-        .order_by(
-            "topic__domain__subject__order", "topic__domain__order",
-            "topic__order", "order",
-        )
+    }
+    hierarchy_order = sorted(
+        subtopics.values(),
+        key=lambda s: (
+            s.topic.domain.subject.order, s.topic.domain.order, s.topic.order, s.order,
+        ),
     )
 
-    not_started = []
+    not_started = [(s, None, "easy") for s in hierarchy_order if not progress.get(s.id)]
+
+    mistake_rows = (
+        TopicMistake.objects
+        .filter(student=user, source=MistakeSource.PRACTICE, subtopic_id__in=subtopics.keys())
+        .values_list("subtopic_id", "incorrect_count", "last_incorrect_at")
+    )
+    mistakes_by_subtopic = defaultdict(lambda: [0, None])
+    for subtopic_id, count, last_at in mistake_rows:
+        entry = mistakes_by_subtopic[subtopic_id]
+        entry[0] += count
+        if entry[1] is None or last_at > entry[1]:
+            entry[1] = last_at
+
     weak = []
-    for s in subtopics:
-        scores = progress.get(s.id, {})
-        if not scores:
-            not_started.append((s, None, "easy"))
+    for subtopic_id, (count, last_at) in mistakes_by_subtopic.items():
+        s = subtopics.get(subtopic_id)
+        scores = progress.get(subtopic_id)
+        if s is None or not scores or count <= 0:
             continue
-        avg = sum(scores.values()) / len(scores)
-        if avg < WEAK_SCORE_THRESHOLD:
-            next_tier = next((t for t in TIERS if t not in scores), None)
-            weak.append((s, round(avg, 1), next_tier or "hard"))
+        next_tier = next((t for t in TIERS if t not in scores), None)
+        weak.append((s, count, last_at, next_tier or "hard"))
 
-    weak.sort(key=lambda item: item[1])
+    # Highest mistake frequency first; ties broken by the most recent mistake,
+    # so recent wrong answers also nudge future recommendations, not just totals.
+    weak.sort(key=lambda item: (-item[1], -(item[2].timestamp() if item[2] else 0)))
 
-    picks = (not_started + weak)[:limit]
+    picks = ([(s, count, tier) for s, count, _, tier in weak] + not_started)[:limit]
     return [
         {
             "subtopic_id": s.id,
@@ -79,10 +116,10 @@ def get_recommended_subtopics(user, limit=5):
             "topic_name": s.topic.name,
             "domain_name": s.topic.domain.name,
             "subject_name": s.topic.domain.subject.name,
-            "best_avg_score": avg,
+            "mistake_count": count,
             "suggested_tier": tier,
         }
-        for s, avg, tier in picks
+        for s, count, tier in picks
     ]
 
 

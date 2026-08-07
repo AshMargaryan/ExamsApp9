@@ -13,6 +13,7 @@ const SUBJECTS: { key: FlashcardSubject; label: string; icon: string }[] = [
   { key: "physics", label: "Ֆիզիկա", icon: "⚛" },
   { key: "biology", label: "Կենսաբանություն", icon: "🧬" },
   { key: "chemistry", label: "Քիմիա", icon: "⚗" },
+  { key: "english", label: "Անգլերեն", icon: "🇬🇧" },
 ];
 
 type Tab = "library" | "mine";

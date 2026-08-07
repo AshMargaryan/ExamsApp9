@@ -1,17 +1,20 @@
 import { apiClient } from "./client";
-import type { School, University } from "./auth";
+import type { AccountRole, School, University } from "./auth";
+import type { FriendUser } from "./friends";
 
 export interface LearningStats {
   questions_solved: number;
   correct_answers: number;
   accuracy_percentage: number;
-  practice_tests_completed: number;
+  tests_completed: number;
   total_learning_time_seconds: number | null;
+  weekly_study_seconds: number;
 }
 
 export interface Profile {
   avatar: string | null;
   bio: string;
+  role: AccountRole;
   username: string;
   first_name: string;
   last_name: string;
@@ -28,6 +31,11 @@ export interface Profile {
   target_exam_date: string | null;
   days_until_exam: number | null;
   stats: LearningStats;
+  total_students: number | null;
+  students: FriendUser[] | null;
+  avg_student_accuracy_improvement: number | null;
+  avg_student_test_improvement: number | null;
+  teachers: FriendUser[] | null;
   updated_at: string;
 }
 

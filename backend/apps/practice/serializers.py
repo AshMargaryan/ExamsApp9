@@ -214,7 +214,7 @@ class RecommendedSubtopicSerializer(serializers.Serializer):
     topic_name = serializers.CharField()
     domain_name = serializers.CharField()
     subject_name = serializers.CharField()
-    best_avg_score = serializers.FloatField(allow_null=True)
+    mistake_count = serializers.IntegerField(allow_null=True)
     suggested_tier = serializers.ChoiceField(choices=TIERS)
 
 

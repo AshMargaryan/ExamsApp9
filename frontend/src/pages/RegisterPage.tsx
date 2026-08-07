@@ -9,6 +9,33 @@ import type { AccountRole } from "../api/auth";
 
 const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
 
+const ROLE_CARDS: { role: AccountRole; icon: string; title: string; description: string }[] = [
+  {
+    role: "student",
+    icon: "🎓",
+    title: "Աշակերտ",
+    description: "Ես ուզում եմ սովորել և պատրաստվել քննություններին",
+  },
+  {
+    role: "teacher",
+    icon: "🧑‍🏫",
+    title: "Ուսուցիչ",
+    description: "Ես ուզում եմ դասավանդել և հետևել աշակերտների առաջընթացին",
+  },
+  {
+    role: "parent",
+    icon: "👨‍👩‍👧",
+    title: "Ծնող",
+    description: "Ես ուզում եմ հետևել իմ երեխայի առաջընթացին",
+  },
+];
+
+const ROLE_LABELS: Record<AccountRole, string> = {
+  student: "Աշակերտ",
+  teacher: "Ուսուցիչ",
+  parent: "Ծնող",
+};
+
 interface Option {
   id: number;
   label: string;
@@ -19,7 +46,7 @@ export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const [role, setRole] = useState<AccountRole>("student");
+  const [role, setRole] = useState<AccountRole | null>(null);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -41,6 +68,8 @@ export function RegisterPage() {
     e.preventDefault();
     setError(null);
 
+    if (!role) return;
+
     if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
       setError("Գաղտնաբառը պետք է լինի առնվազն 8 նիշ և պարունակի տառեր ու թվեր։");
       return;
@@ -61,9 +90,9 @@ export function RegisterPage() {
         first_name: firstName,
         last_name: lastName,
         role,
-        age: role === "student" && age ? Number(age) : undefined,
+        age: age ? Number(age) : undefined,
         grade: role === "student" && grade ? Number(grade) : undefined,
-        sex: role === "student" && sex ? sex : undefined,
+        sex: sex || undefined,
         school: role === "student" ? school?.id : undefined,
         university: role === "student" ? university?.id : undefined,
       });
@@ -95,6 +124,38 @@ export function RegisterPage() {
     "mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
   const labelClass = "mb-1 block text-sm text-text-muted";
 
+  if (!role) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
+        <div className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm">
+          <h1 className="mb-2 text-2xl font-semibold text-text">Գրանցում</h1>
+          <p className="mb-6 text-sm text-text-muted">Ընտրեք, թե ինչպես եք ցանկանում գրանցվել</p>
+
+          {ROLE_CARDS.map((card) => (
+            <button
+              key={card.role}
+              type="button"
+              onClick={() => setRole(card.role)}
+              className="mb-4 w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary last:mb-0"
+            >
+              <span className="block font-medium text-text">
+                {card.icon} {card.title}
+              </span>
+              <span className="mt-1 block text-sm text-text-muted">{card.description}</span>
+            </button>
+          ))}
+
+          <p className="mt-6 text-center text-sm text-text-muted">
+            Արդեն հաշիվ ունե՞ք։{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Մուտք
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
       <form
@@ -102,31 +163,14 @@ export function RegisterPage() {
         noValidate
         className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm"
       >
-        <h1 className="mb-6 text-2xl font-semibold text-text">Գրանցում</h1>
-
-        <label className={labelClass}>Ես եմ՝</label>
-        <div className="mb-4 grid grid-cols-2 gap-2">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-text">Գրանցում ({ROLE_LABELS[role]})</h1>
           <button
             type="button"
-            onClick={() => setRole("student")}
-            className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-              role === "student"
-                ? "border-primary bg-surface-muted text-primary"
-                : "border-border text-text-muted hover:border-primary"
-            }`}
+            onClick={() => setRole(null)}
+            className="text-sm text-primary hover:underline"
           >
-            🎓 Աշակերտ
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole("parent")}
-            className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-              role === "parent"
-                ? "border-primary bg-surface-muted text-primary"
-                : "border-border text-text-muted hover:border-primary"
-            }`}
-          >
-            👨‍👩‍👧 Ծնող
+            Փոխել
           </button>
         </div>
 
@@ -165,23 +209,30 @@ export function RegisterPage() {
           required
         />
 
+        <div className="mb-4 mt-2 border-t border-border pt-4 text-sm text-text-muted">
+          Հետևյալ դաշտերը <span className="font-medium text-text">ընտրովի են</span> և կօգտագործվեն միայն
+          վիճակագրության համար։
+        </div>
+
+        <label className={labelClass}>Տարիք</label>
+        <input
+          type="number"
+          min={1}
+          max={120}
+          className={inputClass}
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
+        />
+
+        <label className={labelClass}>Սեռ</label>
+        <select className={inputClass} value={sex} onChange={(e) => setSex(e.target.value as "" | "male" | "female")}>
+          <option value="">Չընտրված</option>
+          <option value="male">Արական</option>
+          <option value="female">Իգական</option>
+        </select>
+
         {role === "student" && (
           <>
-            <div className="mb-4 mt-2 border-t border-border pt-4 text-sm text-text-muted">
-              Հետևյալ դաշտերը <span className="font-medium text-text">ընտրովի են</span> և կօգտագործվեն միայն
-              վիճակագրության համար։
-            </div>
-
-            <label className={labelClass}>Տարիք</label>
-            <input
-              type="number"
-              min={1}
-              max={120}
-              className={inputClass}
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-            />
-
             <label className={labelClass}>Դասարան</label>
             <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
               <option value="">Չընտրված</option>
@@ -190,13 +241,6 @@ export function RegisterPage() {
                   {g}-րդ դասարան
                 </option>
               ))}
-            </select>
-
-            <label className={labelClass}>Սեռ</label>
-            <select className={inputClass} value={sex} onChange={(e) => setSex(e.target.value as "" | "male" | "female")}>
-              <option value="">Չընտրված</option>
-              <option value="male">Արական</option>
-              <option value="female">Իգական</option>
             </select>
 
             <label className={labelClass}>Դպրոց</label>

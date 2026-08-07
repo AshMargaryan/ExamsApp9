@@ -11,6 +11,8 @@ import {
 } from "../api/practice";
 import { WeeklyProgressChart } from "../components/WeeklyProgressChart";
 import { DailyProblemCard } from "../components/DailyProblemCard";
+import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
+import { useChatUnreadCount } from "../hooks/useChatUnreadCount";
 
 const NAV_LINKS = [
   { to: "/practice", icon: "📚", label: "Պարապել" },
@@ -107,7 +109,9 @@ function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
       <p className="font-medium text-text">{item.subtopic_name}</p>
       <div className="mt-1 flex items-center justify-between">
         <span className="text-xs text-text-muted">
-          {item.best_avg_score === null ? "Դեռ չսկսված" : `Լավագույն արդյունք՝ ${item.best_avg_score}%`}
+          {item.mistake_count === null
+            ? "Դեռ չսկսված"
+            : `Սխալների քանակ՝ ${item.mistake_count}`}
         </span>
         <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-primary">
           {TIER_LABELS[item.suggested_tier]}
@@ -117,12 +121,89 @@ function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
   );
 }
 
+function ChatNavTile() {
+  const unreadChatCount = useChatUnreadCount();
+  return (
+    <Link
+      to="/chat"
+      className="relative flex flex-col items-center gap-1 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
+    >
+      <span className="text-2xl">💬</span>
+      <span className="text-xs font-medium text-text">Հաղորդագրություններ</span>
+      {unreadChatCount > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-incorrect px-1 text-xs font-semibold text-white">
+          {unreadChatCount > 99 ? "99+" : unreadChatCount}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function AssignmentsNavTile({ hasUnseen }: { hasUnseen: boolean }) {
+  return (
+    <Link
+      to="/student-dashboard"
+      className="relative flex flex-col items-center gap-1 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
+    >
+      <span className="text-2xl">📋</span>
+      <span className="text-xs font-medium text-text">Առաջադրանքներ</span>
+      {hasUnseen && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />}
+    </Link>
+  );
+}
+
+function TeacherHomePage({ user, logout }: { user: { username: string }; logout: () => void }) {
+  const notifications = useAssignmentNotifications();
+  const hasUnseenAssignments = (notifications?.length ?? 0) > 0;
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
+      <div className="absolute right-4 top-4 flex items-center gap-3 text-sm text-text-muted">
+        <Link to="/profile" className="text-primary hover:underline">
+          {user.username}
+        </Link>
+        <button onClick={logout} className="text-primary hover:underline">
+          Ելք
+        </button>
+      </div>
+
+      <h1 className="text-3xl font-semibold text-text">Բարի գալուստ</h1>
+
+      <div className="flex flex-wrap justify-center gap-4">
+        <Link
+          to="/teacher-dashboard"
+          className="relative rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+        >
+          🧑‍🏫 Ուսուցչի վահանակ
+          {hasUnseenAssignments && (
+            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />
+          )}
+        </Link>
+        <Link
+          to="/chat"
+          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+        >
+          💬 Հաղորդագրություններ
+        </Link>
+        <Link
+          to="/profile"
+          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
+        >
+          👤 Իմ պրոֆիլը
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function HomePage() {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [streak, setStreak] = useState<LearningStreak | null>(null);
   const [recommended, setRecommended] = useState<RecommendedSubtopic[] | null>(null);
   const [weeklyProgress, setWeeklyProgress] = useState<WeeklyProgressPoint[] | null>(null);
+  const assignmentNotifications = useAssignmentNotifications();
+  const hasUnseenAssignments = (assignmentNotifications?.length ?? 0) > 0;
 
   useEffect(() => {
     profileApi.fetchProfile().then(setProfile);
@@ -137,6 +218,10 @@ export function HomePage() {
   // order never changes between renders.
   if (user?.role === "parent") {
     return <Navigate to="/family" replace />;
+  }
+
+  if (user?.role === "teacher") {
+    return <TeacherHomePage user={user} logout={logout} />;
   }
 
   const xpPercent =
@@ -234,7 +319,7 @@ export function HomePage() {
                     <p className="text-xs text-text-muted">Ճշգրտություն</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xl font-semibold text-text">{profile.stats.practice_tests_completed}</p>
+                    <p className="text-xl font-semibold text-text">{profile.stats.tests_completed}</p>
                     <p className="text-xs text-text-muted">Ավարտված թեստեր</p>
                   </div>
                 </div>
@@ -274,6 +359,8 @@ export function HomePage() {
                     <span className="text-xs font-medium text-text">{link.label}</span>
                   </Link>
                 ))}
+                <AssignmentsNavTile hasUnseen={hasUnseenAssignments} />
+                <ChatNavTile />
               </div>
             </section>
           </>

@@ -2,6 +2,8 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
 import { NotificationBell } from "./notifications/NotificationBell";
+import { ReloadButton } from "./ReloadButton";
+import { AssignmentSidebar } from "./teaching/AssignmentSidebar";
 
 export function ProtectedRoute() {
   const { user, isLoading } = useAuth();
@@ -22,7 +24,9 @@ export function ProtectedRoute() {
   return (
     <>
       <Outlet />
+      <ReloadButton />
       <NotificationBell />
+      {user.role === "student" && <AssignmentSidebar />}
       <FloatingAssistantWidget />
     </>
   );

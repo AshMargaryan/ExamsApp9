@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type FlashcardSubject = "math" | "physics" | "biology" | "chemistry";
+export type FlashcardSubject = "math" | "physics" | "biology" | "chemistry" | "english";
 export type FlashcardDifficulty = "easy" | "medium" | "hard";
 
 export interface FlashcardDeckSummary {

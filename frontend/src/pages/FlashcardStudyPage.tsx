@@ -374,13 +374,13 @@ export function FlashcardStudyPage() {
 
   function restart(nextMode: StudyMode = mode) {
     setMode(nextMode);
-    startSession(data, nextMode, shuffled);
+    startSession(data!, nextMode, shuffled);
   }
 
   function toggleShuffle() {
     const next = !shuffled;
     setShuffled(next);
-    startSession(data, mode, next);
+    startSession(data!, mode, next);
   }
 
   function toggleQuizMode() {

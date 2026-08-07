@@ -12,6 +12,9 @@ import { PracticePage } from "./pages/PracticePage";
 import { TierPage } from "./pages/TierPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { TeacherDashboardPage } from "./pages/TeacherDashboardPage";
+import { StudentDashboardPage } from "./pages/StudentDashboardPage";
+import { AssignmentReviewPage } from "./pages/AssignmentReviewPage";
 import { GamesPage } from "./pages/GamesPage";
 import { GameRoomPage } from "./pages/GameRoomPage";
 import { MatchmakingPage } from "./pages/MatchmakingPage";
@@ -27,6 +30,7 @@ import { FlashcardEditorPage } from "./pages/FlashcardEditorPage";
 import { FlashcardDeckManagePage } from "./pages/FlashcardDeckManagePage";
 import { RankingsPage } from "./pages/RankingsPage";
 import { ParentDashboardPage } from "./pages/ParentDashboardPage";
+import { ChatPage } from "./pages/ChatPage";
 
 export default function App() {
   return (
@@ -44,6 +48,9 @@ export default function App() {
             <Route path="/practice" element={<PracticePage />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/teacher-dashboard" element={<TeacherDashboardPage />} />
+            <Route path="/student-dashboard" element={<StudentDashboardPage />} />
+            <Route path="/assignments/:id" element={<AssignmentReviewPage />} />
             <Route path="/games" element={<GamesPage />} />
             <Route path="/games/find" element={<MatchmakingPage />} />
             <Route path="/games/:roomCode" element={<GameRoomPage />} />
@@ -61,6 +68,7 @@ export default function App() {
             <Route path="/flashcards/:deckId" element={<FlashcardStudyPage />} />
             <Route path="/rankings" element={<RankingsPage />} />
             <Route path="/family" element={<ParentDashboardPage />} />
+            <Route path="/chat" element={<ChatPage />} />
           </Route>
         </Routes>
       </ToastProvider>

@@ -16,6 +16,9 @@ urlpatterns = [
     path("api/flashcards/", include("apps.flashcards.urls")),
     path("api/rankings/", include("apps.rankings.urls")),
     path("api/parents/", include("apps.parents.urls")),
+    path("api/activity/", include("apps.activity.urls")),
+    path("api/teaching/", include("apps.teaching.urls")),
+    path("api/chat/", include("apps.chat.urls")),
 ]
 
 if settings.DEBUG:

@@ -146,7 +146,7 @@ export interface RecommendedSubtopic {
   topic_name: string;
   domain_name: string;
   subject_name: string;
-  best_avg_score: number | null;
+  mistake_count: number | null;
   suggested_tier: Tier;
 }
 

@@ -14,6 +14,7 @@ import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
 import { MatchingQuestion } from "../components/questions/MatchingQuestion";
 import { ToolsDock } from "../components/ToolsDock";
 import { NotepadProvider } from "../context/NotepadContext";
+import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 
 const AUTOSAVE_INTERVAL_MS = 30_000;
 
@@ -25,6 +26,8 @@ interface AnswerState {
 }
 
 export function MockExamAttemptPage() {
+  useStudyActivityTracker();
+
   const { attemptId } = useParams<{ attemptId: string }>();
   const navigate = useNavigate();
   const id = Number(attemptId);

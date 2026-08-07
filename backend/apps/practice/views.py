@@ -3,12 +3,16 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer, DailyProblemAttempt
+from .models import (
+    Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer, DailyProblemAttempt,
+    MistakeSource,
+)
 from .scoring import score_answer
 from .services import (
     progress_by_subtopic as _progress_by_subtopic,
     subtopic_ids_with_questions as _subtopic_ids_with_questions,
     get_recommended_subtopics, get_weekly_progress, get_daily_question,
+    record_topic_mistake,
 )
 from .serializers import (
     SubjectHierarchySerializer, SubtopicMaterialSerializer,
@@ -95,7 +99,7 @@ class SubmitTierView(APIView):
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
 
-        subtopic = Subtopic.objects.get(pk=subtopic_id)
+        subtopic = Subtopic.objects.select_related("topic__domain__subject").get(pk=subtopic_id)
         questions = {
             q.id: q for q in Question.objects.filter(subtopic=subtopic, tier=tier)
             .prefetch_related("choices", "statements")
@@ -114,7 +118,7 @@ class SubmitTierView(APIView):
             question = questions.get(a["question_id"])
             if question is None:
                 continue
-            is_correct, newly_correct, ua = self._score_answer(attempt, question, a)
+            is_correct, newly_correct, ua = self._score_answer(attempt, subtopic, question, a)
             if is_correct:
                 correct_count += 1
             if newly_correct:
@@ -149,7 +153,7 @@ class SubmitTierView(APIView):
             "total": total,
         }, status=status.HTTP_200_OK)
 
-    def _score_answer(self, attempt, question: Question, a: dict):
+    def _score_answer(self, attempt, subtopic: Subtopic, question: Question, a: dict):
         defaults = score_answer(question, a)
         was_correct_before = AttemptAnswer.objects.filter(
             attempt=attempt, question=question, is_correct=True
@@ -157,6 +161,12 @@ class SubmitTierView(APIView):
         ua, _ = AttemptAnswer.objects.update_or_create(
             attempt=attempt, question=question, defaults=defaults,
         )
+        if not defaults["is_correct"] and not attempt.revealed_answers:
+            record_topic_mistake(
+                attempt.user, source=MistakeSource.PRACTICE,
+                subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
+                subtopic=subtopic,
+            )
         newly_correct = defaults["is_correct"] and not was_correct_before
         return defaults["is_correct"], newly_correct, ua
 
@@ -226,6 +236,14 @@ class DailyProblemView(APIView):
         attempt = DailyProblemAttempt.objects.create(
             user=request.user, date=today, question=question, **defaults,
         )
+
+        if not attempt.is_correct:
+            subtopic = question.subtopic
+            record_topic_mistake(
+                request.user, source=MistakeSource.PRACTICE,
+                subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
+                subtopic=subtopic,
+            )
 
         record_activity(request.user)
         evaluate_achievements(request.user)

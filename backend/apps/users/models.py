@@ -31,6 +31,7 @@ class Sex(models.TextChoices):
 
 class AccountRole(models.TextChoices):
     STUDENT = "student", "Աշակերտ"
+    TEACHER = "teacher", "Ուսուցիչ"
     PARENT = "parent", "Ծնող"
 
 

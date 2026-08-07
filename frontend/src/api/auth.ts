@@ -11,7 +11,7 @@ export interface University {
   name: string;
 }
 
-export type AccountRole = "student" | "parent";
+export type AccountRole = "student" | "teacher" | "parent";
 
 export interface User {
   id: number;

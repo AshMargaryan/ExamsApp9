@@ -15,7 +15,7 @@ export function QuestionText({
 }) {
   const match = text.match(NOTE_RE);
   const note = match?.[1] ?? null;
-  const rest = note ? text.slice(0, match.index) + text.slice((match.index ?? 0) + match[0].length) : text;
+  const rest = match ? text.slice(0, match.index) + text.slice((match.index ?? 0) + match[0].length) : text;
 
   return (
     <>

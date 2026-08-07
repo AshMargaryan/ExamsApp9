@@ -15,6 +15,7 @@ class FlashcardSubject(models.TextChoices):
     PHYSICS = "physics", "Physics"
     BIOLOGY = "biology", "Biology"
     CHEMISTRY = "chemistry", "Chemistry"
+    ENGLISH = "english", "English"
 
 
 class FlashcardDeck(models.Model):

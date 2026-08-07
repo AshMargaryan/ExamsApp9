@@ -8,8 +8,11 @@ import { MessageBubble } from "../components/assistant/MessageBubble";
 import { MessageInput } from "../components/assistant/MessageInput";
 import { WelcomeMessage } from "../components/assistant/WelcomeMessage";
 import { useConversationChat } from "../hooks/useConversationChat";
+import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 
 export function AssistantPage() {
+  useStudyActivityTracker();
+
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
