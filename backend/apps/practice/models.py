@@ -180,3 +180,30 @@ class AttemptAnswer(models.Model):
 
     class Meta:
         unique_together = [("attempt", "question")]
+
+
+# ---------------------------------------------------------------------------
+# Daily problem — one deterministically-picked question per calendar day,
+# the same for every user, answered at most once.
+# ---------------------------------------------------------------------------
+
+class DailyProblemAttempt(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="daily_problem_attempts"
+    )
+    date = models.DateField()
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="daily_attempts")
+    is_correct = models.BooleanField()
+
+    selected_choice = models.ForeignKey(Choice, null=True, blank=True, on_delete=models.SET_NULL)
+    answer_text = models.TextField(blank=True, default="")
+    selected_statement_ids = models.JSONField(default=list, blank=True)
+
+    answered_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("user", "date")]
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.user} / {self.date} = {'✓' if self.is_correct else '✗'}"

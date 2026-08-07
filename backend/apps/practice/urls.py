@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     HierarchyView, SubtopicMaterialView,
     TierQuestionsView, RevealTierView, SubmitTierView,
+    RecommendedExercisesView, WeeklyProgressView, DailyProblemView,
 )
 
 urlpatterns = [
@@ -22,4 +23,13 @@ urlpatterns = [
         "subtopics/<int:subtopic_id>/<str:tier>/submit/",
         SubmitTierView.as_view(), name="practice-tier-submit",
     ),
+    path(
+        "dashboard/recommended/",
+        RecommendedExercisesView.as_view(), name="practice-dashboard-recommended",
+    ),
+    path(
+        "dashboard/weekly-progress/",
+        WeeklyProgressView.as_view(), name="practice-dashboard-weekly-progress",
+    ),
+    path("daily-problem/", DailyProblemView.as_view(), name="practice-daily-problem"),
 ]

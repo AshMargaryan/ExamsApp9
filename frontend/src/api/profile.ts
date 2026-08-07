@@ -25,6 +25,8 @@ export interface Profile {
   xp_into_level: number;
   xp_for_next_level: number;
   trophies_count: number;
+  target_exam_date: string | null;
+  days_until_exam: number | null;
   stats: LearningStats;
   updated_at: string;
 }
@@ -59,6 +61,12 @@ export interface UpdateProfilePayload {
   school_id?: number | null;
   university_id?: number | null;
   avatar?: File;
+  target_exam_date?: string | null;
+}
+
+export async function setExamDate(date: string): Promise<Profile> {
+  const { data } = await apiClient.patch("/profile/me/", { target_exam_date: date });
+  return data;
 }
 
 export async function fetchProfile(): Promise<Profile> {

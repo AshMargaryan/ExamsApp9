@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import (
     Subject, Domain, Topic, Subtopic,
     Question, Choice, Statement,
-    PracticeAttempt, AttemptAnswer,
+    PracticeAttempt, AttemptAnswer, DailyProblemAttempt,
     Tier,
 )
 
@@ -202,3 +202,57 @@ class PracticeAttemptSerializer(serializers.ModelSerializer):
     class Meta:
         model = PracticeAttempt
         fields = ["id", "subtopic", "tier", "score", "revealed_answers", "completed_at"]
+
+
+# ---------------------------------------------------------------------------
+# Home dashboard: recommended exercises, weekly progress, daily problem
+# ---------------------------------------------------------------------------
+
+class RecommendedSubtopicSerializer(serializers.Serializer):
+    subtopic_id = serializers.IntegerField()
+    subtopic_name = serializers.CharField()
+    topic_name = serializers.CharField()
+    domain_name = serializers.CharField()
+    subject_name = serializers.CharField()
+    best_avg_score = serializers.FloatField(allow_null=True)
+    suggested_tier = serializers.ChoiceField(choices=TIERS)
+
+
+class WeeklyProgressPointSerializer(serializers.Serializer):
+    week_start = serializers.DateField()
+    solved = serializers.IntegerField()
+    correct = serializers.IntegerField()
+
+
+class DailyProblemSerializer(serializers.Serializer):
+    """Sent when the daily problem hasn't been answered yet — no correct answers included."""
+    date = serializers.DateField()
+    question = QuestionPracticeSerializer()
+    already_answered = serializers.BooleanField()
+    result = serializers.SerializerMethodField()
+
+    def get_result(self, obj):
+        attempt = obj.get("attempt")
+        if not attempt:
+            return None
+        return {
+            "is_correct": attempt.is_correct,
+            "selected_choice_id": attempt.selected_choice_id,
+            "answer_text": attempt.answer_text,
+            "selected_statement_ids": attempt.selected_statement_ids,
+            "question": QuestionRevealSerializer(obj["question"]).data,
+        }
+
+
+class DailyProblemSubmitSerializer(serializers.Serializer):
+    selected_choice_id = serializers.IntegerField(required=False, allow_null=True)
+    answer_text = serializers.CharField(required=False, allow_blank=True)
+    selected_statement_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, default=list
+    )
+
+
+class DailyProblemAttemptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyProblemAttempt
+        fields = ["id", "date", "question", "is_correct", "answered_at"]

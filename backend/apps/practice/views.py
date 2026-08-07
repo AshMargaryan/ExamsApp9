@@ -1,39 +1,28 @@
-from collections import defaultdict
-
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer
+from .models import Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer, DailyProblemAttempt
 from .scoring import score_answer
+from .services import (
+    progress_by_subtopic as _progress_by_subtopic,
+    subtopic_ids_with_questions as _subtopic_ids_with_questions,
+    get_recommended_subtopics, get_weekly_progress, get_daily_question,
+)
 from .serializers import (
     SubjectHierarchySerializer, SubtopicMaterialSerializer,
     QuestionPracticeSerializer, QuestionRevealSerializer,
     SubmitTierSerializer, PracticeAttemptSerializer,
+    RecommendedSubtopicSerializer, WeeklyProgressPointSerializer,
+    DailyProblemSerializer, DailyProblemSubmitSerializer,
 )
 from apps.profiles.engine import evaluate_achievements
+from apps.profiles.xp import award_xp
 from apps.streaks.services import record_activity
 
-
-def _progress_by_subtopic(user):
-    """{subtopic_id: {tier: score}} for attempts the user finished without revealing."""
-    progress = defaultdict(dict)
-    if not user or not user.is_authenticated:
-        return progress
-    qs = PracticeAttempt.objects.filter(
-        user=user, revealed_answers=False, completed_at__isnull=False, score__isnull=False,
-    ).values_list("subtopic_id", "tier", "score")
-    for subtopic_id, tier, score in qs:
-        progress[subtopic_id][tier] = score
-    return progress
-
-
-def _subtopic_ids_with_questions():
-    """Subtopics with zero imported questions are left out of the hierarchy entirely."""
-    return set(
-        Question.objects.values_list("subtopic_id", flat=True).distinct()
-    )
+XP_PER_CORRECT_PRACTICE_ANSWER = 3
+XP_PER_CORRECT_DAILY_PROBLEM = 10
 
 
 class HierarchyView(generics.ListAPIView):
@@ -120,13 +109,16 @@ class SubmitTierView(APIView):
 
         results = []
         correct_count = 0
+        newly_correct_count = 0
         for a in d["answers"]:
             question = questions.get(a["question_id"])
             if question is None:
                 continue
-            is_correct, ua = self._score_answer(attempt, question, a)
+            is_correct, newly_correct, ua = self._score_answer(attempt, question, a)
             if is_correct:
                 correct_count += 1
+            if newly_correct:
+                newly_correct_count += 1
             results.append(is_correct)
 
         total = len(results)
@@ -137,6 +129,19 @@ class SubmitTierView(APIView):
         if not attempt.revealed_answers:
             record_activity(request.user)
             evaluate_achievements(request.user)
+            award_xp(request.user, newly_correct_count * XP_PER_CORRECT_PRACTICE_ANSWER)
+
+            from apps.parents.models import NotificationType  # local import: avoids a load-order dependency
+            from apps.parents.services import notify_parents
+            notify_parents(
+                request.user, NotificationType.LESSON_COMPLETED,
+                f"Ավարտեց «{subtopic.name}» թեման ({tier} մակարդակ), {attempt.score}% արդյունքով։",
+            )
+            if attempt.score is not None and attempt.score < 50:
+                notify_parents(
+                    request.user, NotificationType.STRUGGLING_TOPIC,
+                    f"Դժվարանում է «{subtopic.name}» թեմայում ({attempt.score}%)։",
+                )
 
         return Response({
             "attempt": PracticeAttemptSerializer(attempt).data,
@@ -146,7 +151,86 @@ class SubmitTierView(APIView):
 
     def _score_answer(self, attempt, question: Question, a: dict):
         defaults = score_answer(question, a)
+        was_correct_before = AttemptAnswer.objects.filter(
+            attempt=attempt, question=question, is_correct=True
+        ).exists()
         ua, _ = AttemptAnswer.objects.update_or_create(
             attempt=attempt, question=question, defaults=defaults,
         )
-        return defaults["is_correct"], ua
+        newly_correct = defaults["is_correct"] and not was_correct_before
+        return defaults["is_correct"], newly_correct, ua
+
+
+# ---------------------------------------------------------------------------
+# Home dashboard
+# ---------------------------------------------------------------------------
+
+class RecommendedExercisesView(APIView):
+    """GET /api/practice/dashboard/recommended/ — up to 5 subtopics to practice next."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        picks = get_recommended_subtopics(request.user)
+        return Response(RecommendedSubtopicSerializer(picks, many=True).data)
+
+
+class WeeklyProgressView(APIView):
+    """GET /api/practice/dashboard/weekly-progress/ — questions solved per week, last 8 weeks."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        points = get_weekly_progress(request.user)
+        return Response(WeeklyProgressPointSerializer(points, many=True).data)
+
+
+class DailyProblemView(APIView):
+    """
+    GET /api/practice/daily-problem/ — today's question (answers hidden), or the
+    already-submitted result if the user has already answered today.
+    POST /api/practice/daily-problem/ — submit an answer; scored once per day.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        today = timezone.localdate()
+        question = get_daily_question(today)
+        if question is None:
+            return Response({"detail": "Այսօրվա հարցը հասանելի չէ։"}, status=status.HTTP_404_NOT_FOUND)
+
+        attempt = DailyProblemAttempt.objects.filter(user=request.user, date=today).first()
+        data = {
+            "date": today, "question": question,
+            "already_answered": attempt is not None,
+            "attempt": attempt,
+        }
+        return Response(DailyProblemSerializer(data).data)
+
+    def post(self, request):
+        today = timezone.localdate()
+        question = get_daily_question(today)
+        if question is None:
+            return Response({"detail": "Այսօրվա հարցը հասանելի չէ։"}, status=status.HTTP_404_NOT_FOUND)
+
+        existing = DailyProblemAttempt.objects.filter(user=request.user, date=today).first()
+        if existing is not None:
+            data = {
+                "date": today, "question": question,
+                "already_answered": True, "attempt": existing,
+            }
+            return Response(DailyProblemSerializer(data).data)
+
+        serializer = DailyProblemSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        defaults = score_answer(question, serializer.validated_data)
+
+        attempt = DailyProblemAttempt.objects.create(
+            user=request.user, date=today, question=question, **defaults,
+        )
+
+        record_activity(request.user)
+        evaluate_achievements(request.user)
+        if attempt.is_correct:
+            award_xp(request.user, XP_PER_CORRECT_DAILY_PROBLEM)
+
+        data = {"date": today, "question": question, "already_answered": True, "attempt": attempt}
+        return Response(DailyProblemSerializer(data).data, status=status.HTTP_201_CREATED)
