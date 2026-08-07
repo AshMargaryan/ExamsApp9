@@ -29,9 +29,16 @@ class Sex(models.TextChoices):
     FEMALE = "female", "Իգական"
 
 
+class AccountRole(models.TextChoices):
+    STUDENT = "student", "Աշակերտ"
+    PARENT = "parent", "Ծնող"
+
+
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    role = models.CharField(max_length=10, choices=AccountRole.choices, default=AccountRole.STUDENT)
 
     is_email_verified = models.BooleanField(default=False)
     email_verification_code = models.CharField(max_length=6, blank=True, default="")

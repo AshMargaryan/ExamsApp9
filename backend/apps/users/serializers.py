@@ -53,10 +53,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             "id", "username", "email", "password", "confirm_password",
-            "first_name", "last_name",
+            "first_name", "last_name", "role",
             "age", "grade", "sex", "school", "university",
         ]
         extra_kwargs = {
+            "role": {"required": True},
             "age": {"required": False},
             "grade": {"required": False},
             "sex": {"required": False},
@@ -103,11 +104,11 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "id", "username", "email", "date_joined", "is_email_verified",
+            "id", "username", "email", "date_joined", "is_email_verified", "role",
             "first_name", "last_name", "age", "grade", "sex",
             "school", "university", "school_id", "university_id",
         ]
-        read_only_fields = ["id", "date_joined", "is_email_verified"]
+        read_only_fields = ["id", "date_joined", "is_email_verified", "role"]
 
     def validate_grade(self, value):
         if value is not None and not (1 <= value <= 12):

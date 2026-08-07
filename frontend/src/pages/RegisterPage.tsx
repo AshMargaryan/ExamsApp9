@@ -5,6 +5,7 @@ import { AxiosError } from "axios";
 import { SearchSelect } from "../components/SearchSelect";
 import { searchSchools, searchUniversities } from "../api/schools";
 import { MessageModal } from "../components/MessageModal";
+import type { AccountRole } from "../api/auth";
 
 const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
 
@@ -17,6 +18,8 @@ interface Option {
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  const [role, setRole] = useState<AccountRole>("student");
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -57,11 +60,12 @@ export function RegisterPage() {
         confirm_password: confirmPassword,
         first_name: firstName,
         last_name: lastName,
-        age: age ? Number(age) : undefined,
-        grade: grade ? Number(grade) : undefined,
-        sex: sex || undefined,
-        school: school?.id,
-        university: university?.id,
+        role,
+        age: role === "student" && age ? Number(age) : undefined,
+        grade: role === "student" && grade ? Number(grade) : undefined,
+        sex: role === "student" && sex ? sex : undefined,
+        school: role === "student" ? school?.id : undefined,
+        university: role === "student" ? university?.id : undefined,
       });
       navigate("/verify-email");
     } catch (err) {
@@ -100,6 +104,32 @@ export function RegisterPage() {
       >
         <h1 className="mb-6 text-2xl font-semibold text-text">Գրանցում</h1>
 
+        <label className={labelClass}>Ես եմ՝</label>
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setRole("student")}
+            className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+              role === "student"
+                ? "border-primary bg-surface-muted text-primary"
+                : "border-border text-text-muted hover:border-primary"
+            }`}
+          >
+            🎓 Աշակերտ
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("parent")}
+            className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+              role === "parent"
+                ? "border-primary bg-surface-muted text-primary"
+                : "border-border text-text-muted hover:border-primary"
+            }`}
+          >
+            👨‍👩‍👧 Ծնող
+          </button>
+        </div>
+
         <label className={labelClass}>Օգտանուն</label>
         <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required />
 
@@ -135,52 +165,56 @@ export function RegisterPage() {
           required
         />
 
-        <div className="mb-4 mt-2 border-t border-border pt-4 text-sm text-text-muted">
-          Հետևյալ դաշտերը <span className="font-medium text-text">ընտրովի են</span> և կօգտագործվեն միայն
-          վիճակագրության համար։
-        </div>
+        {role === "student" && (
+          <>
+            <div className="mb-4 mt-2 border-t border-border pt-4 text-sm text-text-muted">
+              Հետևյալ դաշտերը <span className="font-medium text-text">ընտրովի են</span> և կօգտագործվեն միայն
+              վիճակագրության համար։
+            </div>
 
-        <label className={labelClass}>Տարիք</label>
-        <input
-          type="number"
-          min={1}
-          max={120}
-          className={inputClass}
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-        />
+            <label className={labelClass}>Տարիք</label>
+            <input
+              type="number"
+              min={1}
+              max={120}
+              className={inputClass}
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+            />
 
-        <label className={labelClass}>Դասարան</label>
-        <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
-          <option value="">Չընտրված</option>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>
-              {g}-րդ դասարան
-            </option>
-          ))}
-        </select>
+            <label className={labelClass}>Դասարան</label>
+            <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
+              <option value="">Չընտրված</option>
+              {GRADES.map((g) => (
+                <option key={g} value={g}>
+                  {g}-րդ դասարան
+                </option>
+              ))}
+            </select>
 
-        <label className={labelClass}>Սեռ</label>
-        <select className={inputClass} value={sex} onChange={(e) => setSex(e.target.value as "" | "male" | "female")}>
-          <option value="">Չընտրված</option>
-          <option value="male">Արական</option>
-          <option value="female">Իգական</option>
-        </select>
+            <label className={labelClass}>Սեռ</label>
+            <select className={inputClass} value={sex} onChange={(e) => setSex(e.target.value as "" | "male" | "female")}>
+              <option value="">Չընտրված</option>
+              <option value="male">Արական</option>
+              <option value="female">Իգական</option>
+            </select>
 
-        <label className={labelClass}>Դպրոց</label>
-        <div className="mb-4">
-          <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
-        </div>
+            <label className={labelClass}>Դպրոց</label>
+            <div className="mb-4">
+              <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+            </div>
 
-        <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
-        <div className="mb-4">
-          <SearchSelect
-            placeholder="Փնտրեք բուհ..."
-            value={university}
-            onChange={setUniversity}
-            search={universitySearch}
-          />
-        </div>
+            <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
+            <div className="mb-4">
+              <SearchSelect
+                placeholder="Փնտրեք բուհ..."
+                value={university}
+                onChange={setUniversity}
+                search={universitySearch}
+              />
+            </div>
+          </>
+        )}
 
         <button
           type="submit"

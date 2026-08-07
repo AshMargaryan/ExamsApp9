@@ -13,8 +13,10 @@ export function VerifyEmailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
 
+  const home = user?.role === "parent" ? "/family" : "/";
+
   if (user?.is_email_verified) {
-    navigate("/");
+    navigate(home);
     return null;
   }
 
@@ -26,7 +28,7 @@ export function VerifyEmailPage() {
     try {
       await verifyEmail(code);
       await refreshUser();
-      navigate("/");
+      navigate(home);
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
         setError((err.response.data as { detail?: string }).detail ?? "Կոդը սխալ է։");
@@ -96,7 +98,7 @@ export function VerifyEmailPage() {
 
         <button
           type="button"
-          onClick={() => navigate("/")}
+          onClick={() => navigate(home)}
           className="mt-4 w-full text-center text-sm text-text-muted hover:text-primary"
         >
           Հետագայում

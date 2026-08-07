@@ -19,6 +19,12 @@ def record_activity(user, on_date=None) -> LearningStreak:
     if streak.last_activity_date == today:
         return streak
 
+    was_broken = (
+        streak.current_streak > 1
+        and streak.last_activity_date is not None
+        and streak.last_activity_date != today - timedelta(days=1)
+    )
+
     if streak.last_activity_date == today - timedelta(days=1):
         streak.current_streak += 1
     else:
@@ -27,4 +33,10 @@ def record_activity(user, on_date=None) -> LearningStreak:
     streak.longest_streak = max(streak.longest_streak, streak.current_streak)
     streak.last_activity_date = today
     streak.save(update_fields=["current_streak", "longest_streak", "last_activity_date"])
+
+    if was_broken:
+        from apps.parents.models import NotificationType  # local import: avoids a load-order dependency
+        from apps.parents.services import notify_parents
+        notify_parents(user, NotificationType.STREAK_BROKEN, "Ուսումնական շարքը ընդհատվեց։")
+
     return streak
