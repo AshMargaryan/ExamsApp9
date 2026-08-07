@@ -1,0 +1,56 @@
+{
+  "deck_id": "FC-MATH-TRIG6-001",
+  "title": "Եռանկյունաչափություն — կրկնակի, կիսանկյուն և արտադրյալի բանաձևեր",
+  "subject": "math",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "Կրկնակի անկյուն",
+      "front": "Ինչպե՞ս ես բացում $\\sin 2\\alpha$",
+      "back": "$$\\sin 2\\alpha = 2\\sin\\alpha\\cos\\alpha$$",
+      "hint": "Ուղղակի բխում է $\\sin(\\alpha+\\alpha)$-ից"
+    },
+    {
+      "number": 2,
+      "topic": "Կրկնակի անկյուն",
+      "front": "$\\cos 2\\alpha$-ն ունի 3 համարժեք տեսք. ո՞րոնք են դրանք",
+      "back": "$$\\cos 2\\alpha = \\cos^2\\alpha - \\sin^2\\alpha = 2\\cos^2\\alpha - 1 = 1 - 2\\sin^2\\alpha$$",
+      "hint": "Վերջին երկուսը ստացվում են՝ առաջինում փոխարինելով $\\sin^2\\alpha+\\cos^2\\alpha=1$-ով"
+    },
+    {
+      "number": 3,
+      "topic": "Կրկնակի անկյուն",
+      "front": "Ինչպե՞ս ես բացում $\\tan 2\\alpha$",
+      "back": "$$\\tan 2\\alpha = \\dfrac{2\\tan\\alpha}{1 - \\tan^2\\alpha}$$",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "Կիսանկյուն",
+      "front": "Ինչպե՞ս ես արտահայտում $\\sin^2\\dfrac{\\alpha}{2}$-ը $\\cos\\alpha$-ով",
+      "back": "$$\\sin^2\\dfrac{\\alpha}{2} = \\dfrac{1-\\cos\\alpha}{2}$$",
+      "hint": "Ստացվում է $\\cos 2\\alpha=1-2\\sin^2\\alpha$ բանաձևից՝ $\\alpha \\to \\alpha/2$"
+    },
+    {
+      "number": 5,
+      "topic": "Կիսանկյուն",
+      "front": "Ինչպե՞ս ես արտահայտում $\\cos^2\\dfrac{\\alpha}{2}$-ը $\\cos\\alpha$-ով",
+      "back": "$$\\cos^2\\dfrac{\\alpha}{2} = \\dfrac{1+\\cos\\alpha}{2}$$",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "Գումարից արտադրյալի",
+      "front": "Ինչպե՞ս ես $\\sin\\alpha + \\sin\\beta$ գումարը վերածում արտադրյալի",
+      "back": "$$\\sin\\alpha+\\sin\\beta = 2\\sin\\dfrac{\\alpha+\\beta}{2}\\cos\\dfrac{\\alpha-\\beta}{2}$$",
+      "hint": "Օգտակար է հավասարումներ լուծելիս, երբ գումարը պիտի հավասարեցնես զրոյի"
+    },
+    {
+      "number": 7,
+      "topic": "Գումարից արտադրյալի",
+      "front": "Ինչպե՞ս ես $\\cos\\alpha + \\cos\\beta$ գումարը վերածում արտադրյալի",
+      "back": "$$\\cos\\alpha+\\cos\\beta = 2\\cos\\dfrac{\\alpha+\\beta}{2}\\cos\\dfrac{\\alpha-\\beta}{2}$$",
+      "hint": ""
+    }
+  ]
+}
