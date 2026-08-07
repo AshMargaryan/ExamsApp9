@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getResults, DIFFICULTY_LABELS, type AttemptResults, type MockExamQuestion } from "../api/mockExams";
 import { MathText } from "../components/MathText";
+import { QuestionText } from "../components/QuestionText";
 import { QuestionFigure } from "../components/QuestionFigure";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
@@ -94,9 +95,7 @@ function RevealedQuestionCard({
           {isCorrect ? "Ճիշտ" : "Սխալ"}
         </span>
       </div>
-      <p className="mb-4 text-xl font-medium text-text">
-        {index + 1}. <MathText text={question.text} />
-      </p>
+      <QuestionText text={question.text} index={index} />
 
       <QuestionFigure svg={question.figure_svg} />
 

@@ -11,6 +11,8 @@ class MockExamSubject(models.TextChoices):
     MATH = "math", "Mathematics"
     PHYSICS = "physics", "Physics"
     BIOLOGY = "biology", "Biology"
+    CHEMISTRY = "chemistry", "Chemistry"
+    ENGLISH = "english", "English"
 
 
 class MockExam(models.Model):

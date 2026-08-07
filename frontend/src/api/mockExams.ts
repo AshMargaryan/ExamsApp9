@@ -3,7 +3,7 @@ import { apiClient } from "./client";
 export type MockExamQuestionType = "single_choice" | "free_response" | "multi_statement" | "matching";
 export type MockExamDifficulty = "easy" | "medium" | "hard";
 export type MockExamAttemptStatus = "in_progress" | "completed";
-export type MockExamSubject = "math" | "physics" | "biology";
+export type MockExamSubject = "math" | "physics" | "biology" | "chemistry" | "english";
 
 export interface MockExamChoice {
   id: number;

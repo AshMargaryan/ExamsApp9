@@ -5,7 +5,7 @@ import {
   type AnswerInput, type MockExamQuestion, type AttemptDetail,
 } from "../api/mockExams";
 import { HintButton } from "../components/HintButton";
-import { MathText } from "../components/MathText";
+import { QuestionText } from "../components/QuestionText";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { QuestionFigure } from "../components/QuestionFigure";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
@@ -232,9 +232,7 @@ function QuestionCard({
         <span>{DIFFICULTY_LABELS[question.difficulty]}</span>
         {question.topic && <span>· {question.topic}</span>}
       </div>
-      <p className="mb-4 text-xl font-medium text-text">
-        {index + 1}. <MathText text={question.text} />
-      </p>
+      <QuestionText text={question.text} index={index} />
 
       <QuestionFigure svg={question.figure_svg} />
 
