@@ -34,7 +34,7 @@ class EducationalContextSerializer(serializers.Serializer):
     difficulty = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     lesson_id = serializers.IntegerField(required=False, allow_null=True)
     conversation_mode = serializers.ChoiceField(
-        choices=["general_chat", "solving_question", "learning", "revision"],
+        choices=["general_chat", "solving_question", "learning", "revision", "homework_solver"],
         required=False, allow_null=True,
     )
 

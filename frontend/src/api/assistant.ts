@@ -3,7 +3,8 @@ import { apiClient } from "./client";
 export type MessageRole = "system" | "user" | "assistant" | "tool";
 export type MessageStatus = "sending" | "sent" | "failed";
 export type AttachmentType = "image" | "pdf" | "document" | "text" | "other";
-export type ConversationMode = "general_chat" | "solving_question" | "learning" | "revision";
+export type ConversationMode =
+  | "general_chat" | "solving_question" | "learning" | "revision" | "homework_solver";
 
 export interface Conversation {
   id: number;

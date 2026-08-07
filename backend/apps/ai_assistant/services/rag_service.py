@@ -33,6 +33,7 @@ class EducationalContext:
             [
                 self.question_id, self.subject, self.topic,
                 self.subtopic, self.difficulty, self.lesson_id,
+                self.conversation_mode,
             ]
         )
 

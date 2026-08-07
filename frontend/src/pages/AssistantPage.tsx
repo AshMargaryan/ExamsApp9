@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as assistantApi from "../api/assistant";
-import type { Conversation } from "../api/assistant";
+import type { Conversation, EducationalContext } from "../api/assistant";
 import { useAuth } from "../auth/AuthContext";
 import { ConversationSidebar } from "../components/assistant/ConversationSidebar";
 import { MessageBubble } from "../components/assistant/MessageBubble";
@@ -54,8 +54,10 @@ export function AssistantPage() {
     setSidebarOpen(false);
   }
 
-  async function handleSend(content: string, attachmentIds: number[]) {
-    await sendMessage(content, attachmentIds);
+  async function handleSend(
+    content: string, attachmentIds: number[], educationalContext?: EducationalContext,
+  ) {
+    await sendMessage(content, attachmentIds, educationalContext);
     await refreshConversations();
   }
 

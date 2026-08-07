@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent } from "react";
-import { uploadAttachment, type Attachment } from "../../api/assistant";
+import { uploadAttachment, type Attachment, type EducationalContext } from "../../api/assistant";
 import { AttachmentChip } from "./AttachmentChip";
 
 const ACCEPT = ".png,.jpg,.jpeg,.webp,.pdf,.docx,.txt,.md,.csv";
@@ -11,7 +11,7 @@ export function MessageInput({
 }: {
   conversationId: number;
   disabled?: boolean;
-  onSend: (content: string, attachmentIds: number[]) => void;
+  onSend: (content: string, attachmentIds: number[], educationalContext?: EducationalContext) => void;
 }) {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -41,10 +41,18 @@ export function MessageInput({
     if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   }
 
+  const hasImage = attachments.some((a) => a.attachment_type === "image");
+
   function handleSend() {
     const content = text.trim();
-    if (!content || uploading) return;
-    onSend(content, attachments.map((a) => a.id));
+    if ((!content && attachments.length === 0) || uploading) return;
+
+    const finalContent = content || "Կցեցի տնային աշխատանքի նկարը։ Օգնի՛ր ինձ քայլ առ քայլ լուծել։";
+    const educationalContext: EducationalContext | undefined = hasImage
+      ? { conversation_mode: "homework_solver" }
+      : undefined;
+
+    onSend(finalContent, attachments.map((a) => a.id), educationalContext);
     setText("");
     setAttachments([]);
   }
@@ -105,7 +113,7 @@ export function MessageInput({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Գրեք ձեր հարցը..."
+          placeholder={hasImage ? "Նկարագրեք հարցը (կամ պարզապես ուղարկեք նկարը)..." : "Գրեք ձեր հարցը..."}
           rows={1}
           disabled={disabled}
           className="max-h-40 flex-1 resize-none rounded-md border border-border bg-surface px-3 py-2 text-[15px] text-text focus:border-primary focus:outline-none"
@@ -114,7 +122,7 @@ export function MessageInput({
         <button
           type="button"
           onClick={handleSend}
-          disabled={disabled || uploading || !text.trim()}
+          disabled={disabled || uploading || (!text.trim() && attachments.length === 0)}
           title="Ուղարկել"
           className="shrink-0 rounded-md bg-primary px-4 py-2 text-lg text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
