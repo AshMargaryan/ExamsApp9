@@ -5,6 +5,7 @@ provider only ever receives this one final object — it never assembles a
 prompt itself.
 """
 
+import base64
 from typing import Optional
 
 from django.conf import settings
@@ -31,7 +32,7 @@ class PromptBuilder:
             AIMessage(
                 role=MessageRole.USER,
                 content=user_text,
-                attachments=self._attachment_metadata(attachments),
+                attachments=self._attachment_metadata(attachments, embed_images=True),
             )
         )
         if tool_results:
@@ -72,11 +73,19 @@ class PromptBuilder:
         )
         history.reverse()
         return [
-            AIMessage(role=m.role, content=m.content, attachments=self._attachment_metadata(m.attachments.all()))
+            # embed_images=False: re-encoding every past image on every turn would
+            # multiply token cost with conversation length. Only the newest
+            # message's images are ever sent as pixels (see build()) — if the
+            # model needs to see an older photo again, it'll ask the student to
+            # resend it rather than silently losing track of it.
+            AIMessage(
+                role=m.role, content=m.content,
+                attachments=self._attachment_metadata(m.attachments.all(), embed_images=False),
+            )
             for m in history
         ]
 
-    def _attachment_metadata(self, attachments) -> Optional[list[dict]]:
+    def _attachment_metadata(self, attachments, embed_images: bool) -> Optional[list[dict]]:
         if not attachments:
             return None
         return [
@@ -84,6 +93,20 @@ class PromptBuilder:
                 "filename": a.original_filename,
                 "attachment_type": a.attachment_type,
                 "mime_type": a.mime_type,
+                "data_url": self._image_data_url(a) if embed_images else None,
             }
             for a in attachments
         ]
+
+    def _image_data_url(self, attachment) -> Optional[str]:
+        """Base64 data URI for image attachments only, so a vision-capable
+        provider can actually see them — capped so a huge upload doesn't
+        blow up the request instead of silently degrading to text-only."""
+        if attachment.attachment_type != "image":
+            return None
+        max_bytes = getattr(settings, "AI_ASSISTANT_MAX_VISION_IMAGE_MB", 10) * 1024 * 1024
+        if attachment.size > max_bytes:
+            return None
+        with attachment.file.open("rb") as f:
+            encoded = base64.b64encode(f.read()).decode("ascii")
+        return f"data:{attachment.mime_type};base64,{encoded}"

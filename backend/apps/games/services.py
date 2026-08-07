@@ -1,9 +1,8 @@
 from django.db import transaction
-from django.db.models import F
 from django.utils import timezone
 
 from apps.profiles.engine import evaluate_achievements
-from apps.profiles.models import Profile
+from apps.profiles.xp import award_xp
 
 from .models import (
     GameParticipant,
@@ -156,7 +155,7 @@ def _settle_room(room: GameRoom) -> GameRoom:
 
         xp_gained = participant.score
         if xp_gained:
-            Profile.objects.filter(user=participant.user).update(total_xp=F("total_xp") + xp_gained)
+            award_xp(participant.user, xp_gained)
         newly_unlocked = evaluate_achievements(participant.user)
 
         participant.xp_earned = xp_gained

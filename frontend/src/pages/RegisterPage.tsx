@@ -5,9 +5,36 @@ import { AxiosError } from "axios";
 import { SearchSelect } from "../components/SearchSelect";
 import { searchSchools, searchUniversities } from "../api/schools";
 import { MessageModal } from "../components/MessageModal";
-import type { Role } from "../api/auth";
+import type { AccountRole } from "../api/auth";
 
 const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
+
+const ROLE_CARDS: { role: AccountRole; icon: string; title: string; description: string }[] = [
+  {
+    role: "student",
+    icon: "🎓",
+    title: "Աշակերտ",
+    description: "Ես ուզում եմ սովորել և պատրաստվել քննություններին",
+  },
+  {
+    role: "teacher",
+    icon: "🧑‍🏫",
+    title: "Ուսուցիչ",
+    description: "Ես ուզում եմ դասավանդել և հետևել աշակերտների առաջընթացին",
+  },
+  {
+    role: "parent",
+    icon: "👨‍👩‍👧",
+    title: "Ծնող",
+    description: "Ես ուզում եմ հետևել իմ երեխայի առաջընթացին",
+  },
+];
+
+const ROLE_LABELS: Record<AccountRole, string> = {
+  student: "Աշակերտ",
+  teacher: "Ուսուցիչ",
+  parent: "Ծնող",
+};
 
 interface Option {
   id: number;
@@ -19,7 +46,7 @@ export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const [role, setRole] = useState<Role | null>(null);
+  const [role, setRole] = useState<AccountRole | null>(null);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -64,10 +91,10 @@ export function RegisterPage() {
         last_name: lastName,
         role,
         age: age ? Number(age) : undefined,
-        grade: grade ? Number(grade) : undefined,
+        grade: role === "student" && grade ? Number(grade) : undefined,
         sex: sex || undefined,
-        school: school?.id,
-        university: university?.id,
+        school: role === "student" ? school?.id : undefined,
+        university: role === "student" ? university?.id : undefined,
       });
       navigate("/verify-email");
     } catch (err) {
@@ -104,27 +131,19 @@ export function RegisterPage() {
           <h1 className="mb-2 text-2xl font-semibold text-text">Գրանցում</h1>
           <p className="mb-6 text-sm text-text-muted">Ընտրեք, թե ինչպես եք ցանկանում գրանցվել</p>
 
-          <button
-            type="button"
-            onClick={() => setRole("student")}
-            className="mb-4 w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary"
-          >
-            <span className="block font-medium text-text">🎓 Աշակերտ</span>
-            <span className="mt-1 block text-sm text-text-muted">
-              Ես ուզում եմ սովորել և պատրաստվել քննություններին
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setRole("teacher")}
-            className="w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary"
-          >
-            <span className="block font-medium text-text">🧑‍🏫 Ուսուցիչ</span>
-            <span className="mt-1 block text-sm text-text-muted">
-              Ես ուզում եմ դասավանդել և հետևել աշակերտների առաջընթացին
-            </span>
-          </button>
+          {ROLE_CARDS.map((card) => (
+            <button
+              key={card.role}
+              type="button"
+              onClick={() => setRole(card.role)}
+              className="mb-4 w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary last:mb-0"
+            >
+              <span className="block font-medium text-text">
+                {card.icon} {card.title}
+              </span>
+              <span className="mt-1 block text-sm text-text-muted">{card.description}</span>
+            </button>
+          ))}
 
           <p className="mt-6 text-center text-sm text-text-muted">
             Արդեն հաշիվ ունե՞ք։{" "}
@@ -145,9 +164,7 @@ export function RegisterPage() {
         className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm"
       >
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-text">
-            Գրանցում {role === "teacher" ? "(Ուսուցիչ)" : "(Աշակերտ)"}
-          </h1>
+          <h1 className="text-2xl font-semibold text-text">Գրանցում ({ROLE_LABELS[role]})</h1>
           <button
             type="button"
             onClick={() => setRole(null)}

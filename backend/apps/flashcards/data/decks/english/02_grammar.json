@@ -1,0 +1,364 @@
+{
+  "deck_id": "FC-ENG-GRAM-001",
+  "title": "Անգլերեն — Քերականություն",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Which verb never takes the -ing (continuous) form?",
+      "back": "know",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "\"At the exact same instant, both drivers ___ lanes.\" Which form is correct for two short, simultaneous actions?",
+      "back": "changed (Past Simple)",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "\"Whenever thunder rumbled, our dog ___ under the bed.\" Repeated past habits use:",
+      "back": "Past Simple, even if each event was long",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "\"The museum has received two million visitors since it opened.\" A specific countable number pushes you toward:",
+      "back": "Present Perfect Simple",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Which signal most strongly suggests Present Perfect Continuous over Simple?",
+      "back": "\"still haven't\" / \"keeps + verb-ing\" (unfinished, ongoing)",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "",
+      "front": "\"By the time the police arrived, the thief ___ into the crowd.\" (disappear)",
+      "back": "had already disappeared (instant action)",
+      "hint": ""
+    },
+    {
+      "number": 7,
+      "topic": "",
+      "front": "\"No one had entered the building in over a decade.\" Why Past Perfect Simple, not Continuous, despite the long duration?",
+      "back": "it states one complete fact/absence, not an ongoing process",
+      "hint": ""
+    },
+    {
+      "number": 8,
+      "topic": "",
+      "front": "\"Look at those dark clouds! It ___ rain.\" Prediction based on visible present evidence uses:",
+      "back": "is going to",
+      "hint": ""
+    },
+    {
+      "number": 9,
+      "topic": "",
+      "front": "\"By next December, the crew ___ the bridge.\" (complete) — action finished before a future point uses:",
+      "back": "will have completed",
+      "hint": ""
+    },
+    {
+      "number": 10,
+      "topic": "",
+      "front": "\"The old warehouse ___ at the moment.\" (renovate) — ongoing passive action needs:",
+      "back": "is being renovated",
+      "hint": ""
+    },
+    {
+      "number": 11,
+      "topic": "",
+      "front": "After a modal verb, the passive is always formed as:",
+      "back": "modal + be + past participle",
+      "hint": ""
+    },
+    {
+      "number": 12,
+      "topic": "",
+      "front": "\"Students ___ bring calculators; the school provides one.\" Not required but allowed =",
+      "back": "don't have to",
+      "hint": ""
+    },
+    {
+      "number": 13,
+      "topic": "",
+      "front": "\"You ___ have told me about the schedule change earlier!\" (criticizing a missed action) uses:",
+      "back": "should have + past participle",
+      "hint": ""
+    },
+    {
+      "number": 14,
+      "topic": "",
+      "front": "\"The lights were on... someone ___ have been inside.\" (confident deduction) uses:",
+      "back": "must",
+      "hint": ""
+    },
+    {
+      "number": 15,
+      "topic": "",
+      "front": "General statements about a whole category of plural nouns (e.g. \"Lions live in groups\") use:",
+      "back": "no article at all",
+      "hint": ""
+    },
+    {
+      "number": 16,
+      "topic": "",
+      "front": "Superlatives (\"the youngest\", \"the most respected\") always take:",
+      "back": "the",
+      "hint": ""
+    },
+    {
+      "number": 17,
+      "topic": "",
+      "front": "Which of these is grammatically uncountable in English (no plural form)?",
+      "back": "furniture",
+      "hint": ""
+    },
+    {
+      "number": 18,
+      "topic": "",
+      "front": "\"The number of students ___ increased.\" vs \"A number of students ___ failed.\" Correct verbs are:",
+      "back": "has / have",
+      "hint": ""
+    },
+    {
+      "number": 19,
+      "topic": "",
+      "front": "\"Of the two candidates, Maria is ___ qualified.\" Comparing exactly two things uses:",
+      "back": "the more (not \"the most\")",
+      "hint": ""
+    },
+    {
+      "number": 20,
+      "topic": "",
+      "front": "Inside an \"as...as\" comparison, the adjective must be in its:",
+      "back": "base form (\"as good as\", not \"as better as\")",
+      "hint": ""
+    },
+    {
+      "number": 21,
+      "topic": "",
+      "front": "Which verb normally does NOT take a reflexive pronoun in English (unlike in many other languages)?",
+      "back": "relax",
+      "hint": ""
+    },
+    {
+      "number": 22,
+      "topic": "",
+      "front": "\"Tom and Sarah blamed ___ for the argument.\" (mutual action between two people) needs:",
+      "back": "each other",
+      "hint": ""
+    },
+    {
+      "number": 23,
+      "topic": "",
+      "front": "\"I'm looking forward to ___ you.\" (see) — because \"to\" here is a preposition, not an infinitive marker:",
+      "back": "seeing",
+      "hint": ""
+    },
+    {
+      "number": 24,
+      "topic": "",
+      "front": "\"I regret ___ you that the flight is cancelled.\" (formal bad news) uses:",
+      "back": "to inform",
+      "hint": ""
+    },
+    {
+      "number": 25,
+      "topic": "",
+      "front": "In an embedded question (\"Do you know where...?\"), the word order after the question word is:",
+      "back": "normal statement order (subject + verb), no inversion",
+      "hint": ""
+    },
+    {
+      "number": 26,
+      "topic": "",
+      "front": "\"Who called you last night?\" — no \"did\" is added because:",
+      "back": "\"who\" is itself the subject of the sentence",
+      "hint": ""
+    },
+    {
+      "number": 27,
+      "topic": "",
+      "front": "\"He had to leave early, ___?\" — because \"had to\" acts like an ordinary past verb here, the tag is:",
+      "back": "didn't he",
+      "hint": ""
+    },
+    {
+      "number": 28,
+      "topic": "",
+      "front": "The tag for \"I am late\" is irregularly:",
+      "back": "aren't I",
+      "hint": ""
+    },
+    {
+      "number": 29,
+      "topic": "",
+      "front": "\"She has studied French ___ three years.\" (duration, not a starting point) needs:",
+      "back": "for",
+      "hint": ""
+    },
+    {
+      "number": 30,
+      "topic": "",
+      "front": "Which preposition always follows \"responsible\"?",
+      "back": "for",
+      "hint": ""
+    },
+    {
+      "number": 31,
+      "topic": "",
+      "front": "The prefix \"in-\" changes to \"il-\" before words starting with which letter?",
+      "back": "l (illegal, illogical)",
+      "hint": ""
+    },
+    {
+      "number": 32,
+      "topic": "",
+      "front": "The negative form of \"honest\" is irregularly formed with:",
+      "back": "dis- (dishonest)",
+      "hint": ""
+    },
+    {
+      "number": 33,
+      "topic": "",
+      "front": "\"___ the heavy traffic, we arrived on time.\" (followed by a noun phrase, not a full clause) needs:",
+      "back": "Despite",
+      "hint": ""
+    },
+    {
+      "number": 34,
+      "topic": "",
+      "front": "\"Despite of\" is:",
+      "back": "always incorrect — use \"despite\" or \"in spite of\"",
+      "hint": ""
+    },
+    {
+      "number": 35,
+      "topic": "",
+      "front": "\"___ I known about the traffic, I would have left earlier.\" — inverted conditional form of \"If I had known\":",
+      "back": "Had",
+      "hint": ""
+    },
+    {
+      "number": 36,
+      "topic": "",
+      "front": "After \"No sooner\" or \"Hardly\" at the start of a sentence, the usual tense is:",
+      "back": "Past Perfect, inverted",
+      "hint": ""
+    },
+    {
+      "number": 37,
+      "topic": "",
+      "front": "\"If you mix red and blue, you ___ purple.\" (general scientific fact) uses:",
+      "back": "get (Zero Conditional: Present + Present)",
+      "hint": ""
+    },
+    {
+      "number": 38,
+      "topic": "",
+      "front": "\"Unless\" means:",
+      "back": "if...not",
+      "hint": ""
+    },
+    {
+      "number": 39,
+      "topic": "",
+      "front": "\"Her hobbies include painting, hiking, and ___.\" (matching the -ing form of the other items) needs:",
+      "back": "reading",
+      "hint": ""
+    },
+    {
+      "number": 40,
+      "topic": "",
+      "front": "In lists and correlative pairs (\"either...or\", \"not only...but also\"), every item must:",
+      "back": "share the same grammatical form",
+      "hint": ""
+    },
+    {
+      "number": 41,
+      "topic": "",
+      "front": "In reported speech, \"tomorrow\" (said today) becomes:",
+      "back": "the next day",
+      "hint": ""
+    },
+    {
+      "number": 42,
+      "topic": "",
+      "front": "General, always-true facts (e.g. \"Water boils at 100°C\") in reported speech:",
+      "back": "may keep their original present tense (backshift is optional)",
+      "hint": ""
+    },
+    {
+      "number": 43,
+      "topic": "",
+      "front": "Reporting a yes/no question (\"Are you coming?\") requires starting with:",
+      "back": "if / whether",
+      "hint": ""
+    },
+    {
+      "number": 44,
+      "topic": "",
+      "front": "In reported questions, the word order after the question word is:",
+      "back": "normal statement order, never inverted",
+      "hint": ""
+    },
+    {
+      "number": 45,
+      "topic": "",
+      "front": "\"Suggest\" is never followed directly by \"person + to\"; instead it takes:",
+      "back": "a gerund (\"suggested going\")",
+      "hint": ""
+    },
+    {
+      "number": 46,
+      "topic": "",
+      "front": "The basic structure for reporting a command is:",
+      "back": "tell/ask + person + to + base verb",
+      "hint": ""
+    },
+    {
+      "number": 47,
+      "topic": "",
+      "front": "Which modal does NOT change when reported, because it's already a \"past\" form?",
+      "back": "could",
+      "hint": ""
+    },
+    {
+      "number": 48,
+      "topic": "",
+      "front": "\"You must not open this door\" (prohibition) in reported speech:",
+      "back": "stays \"must not\"",
+      "hint": ""
+    },
+    {
+      "number": 49,
+      "topic": "",
+      "front": "\"So exhausting was the journey ___ several passengers fell asleep.\" — this cause/intensity structure is completed with:",
+      "back": "that",
+      "hint": ""
+    },
+    {
+      "number": 50,
+      "topic": "",
+      "front": "\"This soup ___ amazing!\" — describing a quality (not an active action) uses:",
+      "back": "tastes (Present Simple)",
+      "hint": ""
+    },
+    {
+      "number": 51,
+      "topic": "",
+      "front": "\"Why are you always interrupting me?\" — \"always\" + Present Continuous here expresses:",
+      "back": "annoyance at a repeated behaviour",
+      "hint": ""
+    }
+  ]
+}

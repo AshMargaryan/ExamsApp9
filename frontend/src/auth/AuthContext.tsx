@@ -6,8 +6,8 @@ import type { RegisterPayload, User } from "../api/auth";
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  login: (username: string, password: string) => Promise<User>;
+  register: (payload: RegisterPayload) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -32,12 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(username: string, password: string) {
     await authApi.login(username, password);
-    setUser(await authApi.fetchMe());
+    const me = await authApi.fetchMe();
+    setUser(me);
+    return me;
   }
 
   async function register(payload: RegisterPayload) {
     await authApi.register(payload);
-    await login(payload.username, payload.password);
+    return login(payload.username, payload.password);
   }
 
   async function refreshUser() {

@@ -7,6 +7,8 @@ const SUBJECTS: { key: MockExamSubject; label: string }[] = [
   { key: "math", label: "Մաթեմատիկա" },
   { key: "physics", label: "Ֆիզիկա" },
   { key: "biology", label: "Կենսաբանություն" },
+  { key: "chemistry", label: "Քիմիա" },
+  { key: "english", label: "Անգլերեն" },
 ];
 
 export function MockExamsPage() {

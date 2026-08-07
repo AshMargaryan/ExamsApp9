@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.activity.services import total_seconds_since, weekly_seconds
@@ -73,6 +74,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     xp_into_level = serializers.SerializerMethodField()
     xp_for_next_level = serializers.SerializerMethodField()
     trophies_count = serializers.SerializerMethodField()
+    days_until_exam = serializers.SerializerMethodField()
 
     stats = serializers.SerializerMethodField()
 
@@ -92,6 +94,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "username", "first_name", "last_name",
             "school", "school_id", "grade", "age", "marz", "university", "university_id",
             "total_xp", "level", "xp_into_level", "xp_for_next_level", "trophies_count",
+            "target_exam_date", "days_until_exam",
             "stats",
             "total_students", "students",
             "avg_student_accuracy_improvement", "avg_student_test_improvement",
@@ -142,6 +145,11 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_trophies_count(self, obj):
         return obj.user.unlocked_achievements.count()
+
+    def get_days_until_exam(self, obj):
+        if not obj.target_exam_date:
+            return None
+        return (obj.target_exam_date - timezone.localdate()).days
 
     def get_stats(self, obj):
         answers = AttemptAnswer.objects.filter(

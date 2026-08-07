@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as assistantApi from "../api/assistant";
-import type { Message } from "../api/assistant";
+import type { EducationalContext, Message } from "../api/assistant";
 
 const PENDING_ID = -1;
 
@@ -9,18 +9,33 @@ const PENDING_ID = -1;
  * widget so they behave identically. */
 export function useConversationChat(conversationId: number | null) {
   const [messages, setMessages] = useState<Message[] | null>(null);
+  const [messagesFailed, setMessagesFailed] = useState(false);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!conversationId) {
       setMessages(null);
+      setMessagesFailed(false);
       return;
     }
     setMessages(null);
-    assistantApi.listMessages(conversationId).then(setMessages);
+    setMessagesFailed(false);
+    assistantApi
+      .listMessages(conversationId)
+      .then(setMessages)
+      .catch(() => {
+        // Conversation deleted, or belongs to a different account that left
+        // its ID cached on this browser — don't hang on "Loading..." forever.
+        setMessages([]);
+        setMessagesFailed(true);
+      });
   }, [conversationId]);
 
-  async function sendMessage(content: string, attachmentIds: number[] = []) {
+  async function sendMessage(
+    content: string,
+    attachmentIds: number[] = [],
+    educationalContext?: EducationalContext,
+  ) {
     if (!conversationId) return;
     setSending(true);
 
@@ -45,7 +60,9 @@ export function useConversationChat(conversationId: number | null) {
     setMessages((prev) => [...(prev ?? []), pendingUser, pendingAssistant]);
 
     try {
-      const result = await assistantApi.sendMessage(conversationId, content, attachmentIds);
+      const result = await assistantApi.sendMessage(
+        conversationId, content, attachmentIds, educationalContext,
+      );
       setMessages((prev) => [
         ...(prev ?? []).filter((m) => m.id !== PENDING_ID && m.id !== PENDING_ID - 1),
         result.user_message,
@@ -80,5 +97,5 @@ export function useConversationChat(conversationId: number | null) {
     setMessages((prev) => (prev ?? []).filter((m) => m.id !== messageId));
   }
 
-  return { messages, sending, sendMessage, regenerate, editMessage, deleteMessage };
+  return { messages, messagesFailed, sending, sendMessage, regenerate, editMessage, deleteMessage };
 }

@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as friendsApi from "../../api/friends";
 import type { FriendRequest } from "../../api/friends";
+import * as parentsApi from "../../api/parents";
+import type { ParentChildRequest } from "../../api/parents";
+import { useNotificationSocket } from "../../hooks/useNotificationSocket";
 import * as teachingApi from "../../api/teaching";
 import type { Assignment, TeacherStudentConnection } from "../../api/teaching";
 import { useAuth } from "../../auth/AuthContext";
@@ -26,7 +29,8 @@ function assignmentNotificationText(a: Assignment, isStudent: boolean): string {
 export function NotificationBell() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [incoming, setIncoming] = useState<FriendRequest[] | null>(null);
+  const [incomingFriends, setIncomingFriends] = useState<FriendRequest[] | null>(null);
+  const [incomingParents, setIncomingParents] = useState<ParentChildRequest[] | null>(null);
   const [teachingInvitations, setTeachingInvitations] = useState<TeacherStudentConnection[] | null>(null);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -35,7 +39,8 @@ export function NotificationBell() {
   const assignmentNotifications = useAssignmentNotifications();
 
   function loadIncoming() {
-    friendsApi.fetchIncomingRequests().then(setIncoming);
+    friendsApi.fetchIncomingRequests().then(setIncomingFriends);
+    parentsApi.fetchIncomingChildRequests().then(setIncomingParents);
     // Only a student has invitations waiting on *their* response — a
     // teacher's own pending invitations are outgoing, not actionable here.
     if (isStudent) teachingApi.fetchInvitations().then(setTeachingInvitations);
@@ -48,6 +53,10 @@ export function NotificationBell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStudent]);
 
+  // Real-time push via WebSocket — the 30s poll above stays as a fallback
+  // for whenever the socket is momentarily disconnected/reconnecting.
+  useNotificationSocket(loadIncoming);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
@@ -58,8 +67,13 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  async function handleRespond(requestId: number, action: "accept" | "reject") {
+  async function handleRespondFriend(requestId: number, action: "accept" | "reject") {
     await friendsApi.respondToRequest(requestId, action);
+    loadIncoming();
+  }
+
+  async function handleRespondParent(requestId: number, action: "accept" | "reject") {
+    await parentsApi.respondToChildRequest(requestId, action);
     loadIncoming();
   }
 
@@ -74,7 +88,12 @@ export function NotificationBell() {
   }
 
   const count =
-    (incoming?.length ?? 0) + (teachingInvitations?.length ?? 0) + (assignmentNotifications?.length ?? 0);
+    (incomingFriends?.length ?? 0) +
+    (incomingParents?.length ?? 0) +
+    (teachingInvitations?.length ?? 0) +
+    (assignmentNotifications?.length ?? 0);
+  const loading = incomingFriends === null || incomingParents === null;
+  const isEmpty = !loading && count === 0;
 
   return (
     <div ref={wrapRef} className="fixed right-4 top-4 z-40">
@@ -96,14 +115,54 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 max-h-96 w-[min(92vw,22rem)] overflow-y-auto rounded-[var(--radius)] border border-border bg-surface shadow-xl">
           <div className="border-b border-border px-4 py-3">
-            <span className="text-sm font-medium text-text">Հաղորդագրություններ</span>
+            <span className="text-sm font-medium text-text">Ծանուցումներ</span>
           </div>
 
-          {incoming === null && <p className="p-4 text-sm text-text-muted">Բեռնվում է...</p>}
-          {incoming?.length === 0 && <p className="p-4 text-sm text-text-muted">Նոր հարցումներ չկան։</p>}
+          {loading && <p className="p-4 text-sm text-text-muted">Բեռնվում է...</p>}
+          {isEmpty && <p className="p-4 text-sm text-text-muted">Նոր ծանուցումներ չկան։</p>}
 
-          {incoming?.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 border-b border-border p-3 last:border-0">
+          {incomingParents?.map((r) => (
+            <div key={`parent-${r.id}`} className="flex items-center gap-3 border-b border-border p-3 last:border-0">
+              <button
+                type="button"
+                onClick={() => setViewingUserId(r.parent.id)}
+                title="Տեսնել պրոֆիլը"
+                className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted transition-colors hover:border-primary"
+              >
+                {r.parent.avatar ? (
+                  <img src={r.parent.avatar} alt={r.parent.username} className="h-full w-full object-cover" />
+                ) : (
+                  (r.parent.first_name || r.parent.username).slice(0, 1).toUpperCase()
+                )}
+              </button>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-text">
+                  👨‍👩‍👧 <span className="font-medium">{displayName(r.parent)}</span> ցանկանում է լինել ձեր ծնողը
+                </p>
+                <p className="text-xs text-text-muted">@{r.parent.username}</p>
+                <div className="mt-1.5 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleRespondParent(r.id, "accept")}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Ընդունել
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRespondParent(r.id, "reject")}
+                    className="text-sm text-text-muted hover:underline"
+                  >
+                    Մերժել
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {incomingFriends?.map((r) => (
+            <div key={`friend-${r.id}`} className="flex items-center gap-3 border-b border-border p-3 last:border-0">
               <button
                 type="button"
                 onClick={() => setViewingUserId(r.sender.id)}
@@ -125,14 +184,14 @@ export function NotificationBell() {
                 <div className="mt-1.5 flex gap-3">
                   <button
                     type="button"
-                    onClick={() => handleRespond(r.id, "accept")}
+                    onClick={() => handleRespondFriend(r.id, "accept")}
                     className="text-sm text-primary hover:underline"
                   >
                     Ընդունել
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleRespond(r.id, "reject")}
+                    onClick={() => handleRespondFriend(r.id, "reject")}
                     className="text-sm text-text-muted hover:underline"
                   >
                     Մերժել

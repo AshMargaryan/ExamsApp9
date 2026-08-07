@@ -20,6 +20,10 @@ class Profile(models.Model):
 
     total_xp = models.PositiveIntegerField(default=0)
 
+    target_exam_date = models.DateField(
+        null=True, blank=True, help_text="User-set date of their entrance exam, for the countdown."
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

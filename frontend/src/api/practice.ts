@@ -140,3 +140,64 @@ export const TIER_LABELS: Record<Tier, string> = {
   medium: "Միջին",
   hard: "Դժվար",
 };
+
+// ---------------------------------------------------------------------------
+// Home dashboard: recommended exercises, weekly progress, daily problem
+// ---------------------------------------------------------------------------
+
+export interface RecommendedSubtopic {
+  subtopic_id: number;
+  subtopic_name: string;
+  topic_name: string;
+  domain_name: string;
+  subject_name: string;
+  mistake_count: number | null;
+  suggested_tier: Tier;
+}
+
+export interface WeeklyProgressPoint {
+  week_start: string;
+  solved: number;
+  correct: number;
+}
+
+export interface DailyProblemResult {
+  is_correct: boolean;
+  selected_choice_id: number | null;
+  answer_text: string;
+  selected_statement_ids: number[];
+  question: Question;
+}
+
+export interface DailyProblem {
+  date: string;
+  question: Question;
+  already_answered: boolean;
+  result: DailyProblemResult | null;
+}
+
+export interface DailyProblemSubmitInput {
+  selected_choice_id?: number;
+  answer_text?: string;
+  selected_statement_ids?: number[];
+}
+
+export async function getRecommendedExercises(): Promise<RecommendedSubtopic[]> {
+  const { data } = await apiClient.get("/practice/dashboard/recommended/");
+  return data;
+}
+
+export async function getWeeklyProgress(): Promise<WeeklyProgressPoint[]> {
+  const { data } = await apiClient.get("/practice/dashboard/weekly-progress/");
+  return data;
+}
+
+export async function getDailyProblem(): Promise<DailyProblem> {
+  const { data } = await apiClient.get("/practice/daily-problem/");
+  return data;
+}
+
+export async function submitDailyProblem(input: DailyProblemSubmitInput): Promise<DailyProblem> {
+  const { data } = await apiClient.post("/practice/daily-problem/", input);
+  return data;
+}

@@ -5,6 +5,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.notifications.realtime import push_notification_refresh
+
 from .models import FriendRequest, FriendRequestStatus, Friendship
 from .serializers import FriendRequestSerializer, MiniUserSerializer, UserSearchSerializer
 from .services import are_friends, create_friendship, remove_friendship
@@ -54,6 +56,7 @@ class SendFriendRequestView(APIView):
             return Response({"detail": "Հարցումն արդեն առկա է։"}, status=status.HTTP_400_BAD_REQUEST)
 
         fr = FriendRequest.objects.create(sender=request.user, receiver=receiver)
+        push_notification_refresh(receiver.id)
         return Response(
             FriendRequestSerializer(fr, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -96,6 +99,7 @@ class RespondFriendRequestView(APIView):
             fr.save(update_fields=["status"])
         else:
             return Response({"detail": "Սխալ գործողություն։"}, status=status.HTTP_400_BAD_REQUEST)
+        push_notification_refresh(request.user.id)
         return Response(FriendRequestSerializer(fr, context={"request": request}).data)
 
 

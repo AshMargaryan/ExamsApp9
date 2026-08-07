@@ -1,0 +1,1902 @@
+{
+  "exam_id": "AEE-ENG-004",
+  "title": "Միասնական քննություն — Անգլերեն (թեստ 4)",
+  "question_count": 80,
+  "subject": "english",
+  "questions": [
+    {
+      "number": 1,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "Line number\n\n1.  The modern Olympic Games trace their origins to a proposal made in\n2.  the late nineteenth century by a French educator who believed that\n3.  international sporting competition could promote peace and mutual\n4.  understanding among nations. Inspired by the ancient games once held\n5.  in Olympia, Greece, organizers revived the tradition in 1896, staging\n6.  the first modern Olympics in Athens with athletes from just a handful\n7.  of countries.\n8.      In the decades that followed, the Games grew steadily in scale and\n9.  ambition. New sports were added, host cities competed fiercely for the\n10. honor of staging the event, and elaborate ceremonies became central to\n11. the opening and closing of each edition. Radio broadcasts, and later\n12. television, transformed the Olympics from a gathering witnessed mainly\n13. by spectators in the stadium into a global spectacle followed by\n14. hundreds of millions of viewers.\n15.     Despite this growth, the Games have not been without controversy.\n16. Two World Wars forced the cancellation of several planned Olympics,\n17. and political tensions during the Cold War led certain nations to\n18. boycott specific editions altogether. Questions about the enormous\n19. cost of hosting the Games have also prompted some cities to withdraw\n20. their bids, wary of the financial burden left behind once the athletes\n21. and spectators have gone home.\n22.     Nevertheless, the Olympics have continued to evolve in response to\n23. changing times. The Winter Games were introduced to showcase sports\n24. played on snow and ice, and the Paralympic Games were established to\n25. celebrate elite athletes with disabilities. Organizers have gradually\n26. expanded the program to include a wider range of sports, reflecting\n27. shifts in global sporting culture and public interest.\n28.     Today, supporters argue that the Olympics still fulfill their\n29. founding purpose by bringing together athletes and spectators from\n30. rival nations under a shared set of rules. Critics counter that\n31. commercial interests now shape the Games as much as any ideal of\n32. friendly competition. Even so, the event remains one of the most\n33. widely watched gatherings in the world every two years.\n\nAccording to the text, the modern Olympic Games were revived in 1896 based on\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "հեշտ",
+      "hint": "Համեմատել «revived the tradition» արտահայտությունը նախորդ նախադասության հետ:",
+      "solution_steps": [
+        "Տողեր 4-5. «Inspired by the ancient games once held in Olympia, Greece, organizers revived the tradition in 1896»:"
+      ],
+      "options": [
+        "the ancient games once held in Olympia, Greece",
+        "a proposal from the International Red Cross",
+        "a treaty signed after World War I",
+        "an agreement among Cold War rival nations"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 2,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "The pronoun their in line 20 stands for\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Գտնել այն գոյականը, որին վերաբերում է դերանունը:",
+      "solution_steps": [
+        "«...prompted some cities to withdraw their bids» — «their» վերաբերում է «cities»-ին:"
+      ],
+      "options": [
+        "athletes",
+        "cities",
+        "spectators",
+        "nations"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 3,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "According to paragraph 2 (lines 8-14), radio and television broadcasts changed the Olympics by\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Փնտրել պարբերության վերջին նախադասությունը:",
+      "solution_steps": [
+        "Տողեր 12-14-ը ասում են, որ հեռարձակումը վերածեց Օլիմպիադան համաշխարհային տեսարանի՝ հարյուրավոր միլիոն դիտողներով:"
+      ],
+      "options": [
+        "eliminating the need for host cities",
+        "reducing the number of sports included",
+        "turning it into a global spectacle followed by hundreds of millions of viewers",
+        "ending in-person spectator attendance entirely"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 4,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "Which of the sentences gives the main idea of the following sentence?\n\"Inspired by the ancient games once held in Olympia, Greece, organizers revived the tradition in 1896, staging the first modern Olympics in Athens with athletes from just a handful of countries.\"\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "հեշտ",
+      "hint": "Բացահայտել նախադասության հիմնական պնդումը:",
+      "solution_steps": [
+        "Նախադասությունն ասում է, որ ժամանակակից Օլիմպիադան սկսվեց 1896-ին Աթենքում՝ որպես հին խաղերի վերականգնում:"
+      ],
+      "options": [
+        "The Olympics have always included athletes from every country in the world.",
+        "The ancient Greek games were larger in scale than the modern Olympics.",
+        "Athens hosted the Olympics for the first time in the twentieth century.",
+        "The modern Olympics began in 1896 in Athens as a small revival of the ancient Greek games."
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 5,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "How did political tensions during the Cold War affect the Olympics, according to the text?\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Փնտրել Սառը պատերազմի հետևանքը 3-րդ պարբերությունում:",
+      "solution_steps": [
+        "Տողեր 17-18. «political tensions during the Cold War led certain nations to boycott specific editions»:"
+      ],
+      "options": [
+        "They led some nations to boycott specific editions.",
+        "They caused the permanent cancellation of the Games.",
+        "They had no effect on which countries participated.",
+        "They led to the creation of the Paralympic Games."
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 6,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "The word wary in line 20 may best be replaced by\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "«Wary» = զգուշավոր, կասկածամիտ:",
+      "solution_steps": [
+        "«wary of the financial burden» — «wary» = «cautious» (զգուշավոր):"
+      ],
+      "options": [
+        "enthusiastic",
+        "cautious",
+        "unaware",
+        "grateful"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 7,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "Which of the following statements is NOT true according to the text?\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "բարձր",
+      "hint": "Համեմատել յուրաքանչյուր տարբերակը 3-րդ պարբերության հետ:",
+      "solution_steps": [
+        "Տողեր 16-17-ը ասում են, որ երկու համաշխարհային պատերազմները հրաժարեցնում էին որոշ Օլիմպիադաներից, ինչը հակասում է a) տարբերակին:"
+      ],
+      "options": [
+        "Two World Wars forced the cancellation of several planned Olympics.",
+        "The Winter Games were introduced to showcase snow and ice sports.",
+        "Every planned Olympic Games has been held without cancellation since 1896.",
+        "Some cities have withdrawn their bids due to hosting costs."
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 8,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "The word elaborate in line 10 is closest in meaning to\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "«Elaborate» = մանրակրկիտ, բարդ:",
+      "solution_steps": [
+        "«elaborate ceremonies» — «elaborate» = «detailed and complex» (մանրակրկիտ):"
+      ],
+      "options": [
+        "simple and brief",
+        "inexpensive",
+        "outdated",
+        "detailed and complex"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 9,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "Paragraph 3 (lines 15-21) mainly\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Բացահայտել պարբերության հիմնական բովանդակությունը:",
+      "solution_steps": [
+        "Պարբերությունը թվարկում է պատերազմները, բոյկոտները և ծախսերի հարցերը՝ վեճերի օրինակներ:"
+      ],
+      "options": [
+        "describes controversies and challenges the Olympics have faced over time",
+        "argues that the Olympics should be permanently cancelled",
+        "explains the technical rules of Olympic boxing",
+        "lists every country that has hosted the Games"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 10,
+      "topic": "Ընթերցանության ըմբռնում",
+      "group": "reading-4",
+      "type": "single_choice",
+      "question": "The overall tone of the text can best be described as\n\nՀարցեր 1-10-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 1-10 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Գնահատել հեղինակի վերաբերմունքը եզրափակիչ պարբերության հիման վրա:",
+      "solution_steps": [
+        "Հեղինակը նշում է և՛ նվաճումները (տողեր 28-30), և՛ քննադատությունը (տողեր 30-31), ինչը հավասարակշռված տոն է:"
+      ],
+      "options": [
+        "entirely dismissive of the Olympics' value",
+        "balanced, acknowledging both the achievements and criticisms of the Olympics",
+        "purely celebratory with no mention of problems",
+        "hostile toward international sporting competition"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 11,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-morse",
+      "type": "single_choice",
+      "question": "Long-distance communication (11) __________ dramatically since the early 19th century. Before the telegraph, urgent news could travel no faster than a horse or ship could carry it. In the 1830s, while Samuel Morse (12) __________ on a way to send electrical signals along a wire, he developed a code of dots and dashes to represent letters. He realized that short and long pulses of current (13) __________ distinct letters when received at the other end.\n\nAlthough he demonstrated the invention successfully, a nationwide telegraph network (14) __________ by most cities for another decade. It wasn't until Congress funded an experimental line between Washington and Baltimore that the technology proved its value. It was estimated that within a few decades the telegraph (15) __________ how quickly news spread across the country.\n\nChoose the right option for gap (11).\n\nՀարցեր 11-15-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 11-15 refer to the text above.",
+      "difficulty": "հեշտ",
+      "hint": "«Since the early 19th century» պահանջում է Present Perfect:",
+      "solution_steps": [
+        "«has changed» ցույց է տալիս ներկայի հետ կապված փոփոխություն:"
+      ],
+      "options": [
+        "changed",
+        "is changing",
+        "has changed",
+        "had changed"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 12,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-morse",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (12).\n\nՀարցեր 11-15-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 11-15 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Ֆոնային ընթացող գործողություն:",
+      "solution_steps": [
+        "Past Continuous ցույց է տալիս ընթացիկ ֆոնային գործողություն:"
+      ],
+      "options": [
+        "worked",
+        "has been working",
+        "had worked",
+        "was working"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 13,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-morse",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (13).\n\nՀարցեր 11-15-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 11-15 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Ընթացիկ գործընթաց անցյալում:",
+      "solution_steps": [
+        "«were representing» (Past Continuous, ակտիվ) ցույց է տալիս ընթացիկ գործընթաց:"
+      ],
+      "options": [
+        "were representing",
+        "had been represented",
+        "have been represented",
+        "are represented"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 14,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-morse",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (14).\n\nՀարցեր 11-15-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 11-15 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Կոնկրետ ավարտված անցյալ ժամանակահատված:",
+      "solution_steps": [
+        "Past Simple Passive կոնկրետ, ավարտված անցյալի համար:"
+      ],
+      "options": [
+        "hasn't been adopted",
+        "wasn't adopted",
+        "is adopted",
+        "had adopted"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 15,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-morse",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (15).\n\nՀարցեր 11-15-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 11-15 refer to the text above.",
+      "difficulty": "բարձր",
+      "hint": "Ակտիվ սեռով Past Perfect:",
+      "solution_steps": [
+        "«telegraph»-ը ենթական է ակտիվ իմաստով, ուստի՝ «had transformed»:"
+      ],
+      "options": [
+        "was transformed",
+        "had been transformed",
+        "had transformed",
+        "would be transformed"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 16,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-spacetourism",
+      "type": "single_choice",
+      "question": "By the year 2100, the way ordinary people travel beyond Earth (16) __________ beyond recognition. Currently, aerospace companies (17) __________ to develop reusable spacecraft capable of carrying paying passengers into orbit. These spacecraft (18) __________ to make short orbital trips affordable for a wider range of travelers. However, some critics argue that such trips (19) __________ be too risky to insure at scale. If safety records continue to improve, experts predict that by the end of the century, most orbital flights (20) __________ by fully automated systems rather than human pilots.\n\nChoose the right option for gap (16).\n\nՀարցեր 16-20-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 16-20 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Ապագայում ավարտված գործողություն՝ Future Perfect:",
+      "solution_steps": [
+        "«By 2100» պահանջում է Future Perfect:"
+      ],
+      "options": [
+        "has changed",
+        "is changing",
+        "will be changing",
+        "will have changed"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 17,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-spacetourism",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (17).\n\nՀարցեր 16-20-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 16-20 refer to the text above.",
+      "difficulty": "հեշտ",
+      "hint": "«Currently» ցույց է տալիս ընթացիկ գործողություն:",
+      "solution_steps": [
+        "Present Continuous՝ «are striving»:"
+      ],
+      "options": [
+        "are striving",
+        "were striving",
+        "have striven",
+        "will have striven"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 18,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-spacetourism",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (18).\n\nՀարցեր 16-20-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 16-20 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Ընդհանուր նպատակի կրավորական նկարագրություն:",
+      "solution_steps": [
+        "Present Simple Passive՝ «are designed to»:"
+      ],
+      "options": [
+        "designed",
+        "are designed",
+        "have designed",
+        "had designed"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 19,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-spacetourism",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (19).\n\nՀարցեր 16-20-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 16-20 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Թույլ հավանականություն:",
+      "solution_steps": [
+        "«might» — թույլ ենթադրություն, «critics argue» համատեքստում:"
+      ],
+      "options": [
+        "has to",
+        "are allowed",
+        "might",
+        "ought"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 20,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-spacetourism",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (20).\n\nՀարցեր 16-20-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 16-20 refer to the text above.",
+      "difficulty": "բարձր",
+      "hint": "Ապագայում կանխատեսվող կրավորական գործողություն:",
+      "solution_steps": [
+        "Future Simple Passive՝ «will be operated»:"
+      ],
+      "options": [
+        "will operate",
+        "is operated",
+        "have operated",
+        "will be operated"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 21,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-voynich",
+      "type": "single_choice",
+      "question": "Discovered in 1912 among a collection of old books, the Voynich Manuscript remains one of the most puzzling texts ever found. Investigators believe the original author (21) __________ the script deliberately to disguise sensitive information, as no known language matches its patterns. Since certain pages contain detailed botanical drawings, some researchers concluded that the manuscript (22) __________ by a medieval herbalist recording plant remedies. Other theorists argued that the entire text (23) __________ as an elaborate hoax intended to deceive a wealthy buyer. Whatever the truth, the manuscript's script (24) __________ officially by any linguist or codebreaker, despite a century of attempts. Researchers continue to analyze the ink and parchment for clues. Unless a matching text (25) __________, the manuscript's meaning may never be confirmed.\n\nChoose the right option for gap (21).\n\nՀարցեր 21-25-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 21-25 refer to the text above.",
+      "difficulty": "բարձր",
+      "hint": "Հանգիստ եզրակացություն ապացույցի հիման վրա:",
+      "solution_steps": [
+        "Modal Perfect «must have invented»:"
+      ],
+      "options": [
+        "must have invented",
+        "should be invented",
+        "have to invent",
+        "can invent"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 22,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-voynich",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (22).\n\nՀարցեր 21-25-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 21-25 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Կրավորական, նախաանցյալ գործողություն:",
+      "solution_steps": [
+        "Past Perfect Passive՝ «had been written»:"
+      ],
+      "options": [
+        "had written",
+        "had been written",
+        "hasn't been written",
+        "wasn't writing"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 23,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-voynich",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (23).\n\nՀարցեր 21-25-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 21-25 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Անվստահ ենթադրություն անցյալի մասին:",
+      "solution_steps": [
+        "«might have been created» — մոդալ + Perfect Passive Infinitive:"
+      ],
+      "options": [
+        "may create",
+        "may be created",
+        "might have been created",
+        "has to create"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 24,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-voynich",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (24).\n\nՀարցեր 21-25-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 21-25 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "Շարունակվող անորոշություն մինչև հիմա:",
+      "solution_steps": [
+        "Present Perfect Passive, ժխտական՝ «hasn't been deciphered»:"
+      ],
+      "options": [
+        "isn't deciphered",
+        "hadn't been deciphered",
+        "won't be deciphered",
+        "hasn't been deciphered"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 25,
+      "topic": "Քերականական լրացում (ժամանակաձևեր)",
+      "group": "cloze-voynich",
+      "type": "single_choice",
+      "question": "Choose the right option for gap (25).\n\nՀարցեր 21-25-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 21-25 refer to the text above.",
+      "difficulty": "բարձր",
+      "hint": "«Unless» պայմանական նախադասության մեջ Present Simple:",
+      "solution_steps": [
+        "«Unless» պահանջում է Present Simple, ոչ Future:"
+      ],
+      "options": [
+        "is found",
+        "isn't found",
+        "aren't found",
+        "will be found"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 26,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "The committee __________ the sudden delay to the internship.",
+      "difficulty": "միջին",
+      "hint": "«Committee» հավաքական գոյական է, «worried about» կայուն կապակցություն է։",
+      "solution_steps": [
+        "«be worried about» ճիշտ նախդրային կապակցությունն է։"
+      ],
+      "options": [
+        "are worried because",
+        "is worried as",
+        "is worried about",
+        "have worried in"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 27,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "\"Does the referee have any assistants __________ the two interns?\"\n\"Yes, a part-time researcher too.\"",
+      "difficulty": "միջին",
+      "hint": "«Besides» = «ի հավելումն», «beside» = «կողքին»։",
+      "solution_steps": [
+        "Համատեքստը պահանջում է «ի հավելումն» իմաստ՝ «besides»։"
+      ],
+      "options": [
+        "beside",
+        "except",
+        "apart to",
+        "besides"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 28,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "__________ complaints filed at the refinery this quarter has grown steadily.",
+      "difficulty": "միջին",
+      "hint": "«The number of + հոգնակի» ենթարկվում է եզակի բային։",
+      "solution_steps": [
+        "«The number of» համաձայնեցվում է եզակի բայի հետ («has grown»)։"
+      ],
+      "options": [
+        "The number of",
+        "The numbers of",
+        "A number of",
+        "Number of"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 29,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "We need to buy __________ for the atelier.",
+      "difficulty": "միջին",
+      "hint": "«Furniture»-ը անհաշվելի գոյական է։",
+      "solution_steps": [
+        "«furniture» անհաշվելի է, հոգնակի «-s» չի ընդունում։"
+      ],
+      "options": [
+        "many new furnitures",
+        "a great deal of furniture",
+        "several furnitures",
+        "a few furniture"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 30,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "\"__________ is the workshop from here?\"\n\"Just a short walk away.\"",
+      "difficulty": "հեշտ",
+      "hint": "Հեռավորության հարցում՝ «How far»։",
+      "solution_steps": [
+        "Պատասխանը հեռավորության մասին է, ուստի՝ «How far»։"
+      ],
+      "options": [
+        "How long",
+        "How fast",
+        "How far",
+        "How much"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 31,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "The curator arrived late again to the summit __________, frustrating the whole team.",
+      "difficulty": "միջին",
+      "hint": "«As usual» ֆիքսված արտահայտություն է։",
+      "solution_steps": [
+        "«As usual» կայուն է, «usually» չի հետևում «as»-ին։"
+      ],
+      "options": [
+        "usually",
+        "as usually",
+        "like usual",
+        "as usual"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 32,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "I wish I could debate __________ as the analyst does.",
+      "difficulty": "միջին",
+      "hint": "«As + մակբայ + as» պահանջում է մակբայ, ոչ ածական։",
+      "solution_steps": [
+        "Բային բնութագրելու համար պետք է մակբայ՝ «as skillfully as»։"
+      ],
+      "options": [
+        "as skillfully",
+        "as skillful",
+        "more skillful",
+        "much more skillful"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 33,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Deliveries from the theatre __________ depart on time, so arrive early.",
+      "difficulty": "հեշտ",
+      "hint": "«Generally» ինքնուրույն մակբայ է, առանց նախդրի։",
+      "solution_steps": [
+        "Գործածվում է ուղղակիորեն, առանց նախդրի։"
+      ],
+      "options": [
+        "in generally",
+        "generally",
+        "for general",
+        "as general"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 34,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "Before modern science, even trained physicians __________ that the sun orbited the earth.",
+      "difficulty": "միջին",
+      "hint": "«Used to + հիմնական բայ» = անցյալի կրկնվող համոզմունք։",
+      "solution_steps": [
+        "«used to think» ցույց է տալիս անցյալում տարածված համոզմունք։"
+      ],
+      "options": [
+        "were used to think",
+        "got used to think",
+        "used to think",
+        "used to thinking"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 35,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "\"I haven't signed the form yet.\"\n\"__________.\"",
+      "difficulty": "միջին",
+      "hint": "Բացասական համաձայնություն՝ «Neither + auxiliary + subject»։",
+      "solution_steps": [
+        "Ճիշտ կառուցվածքն է «Neither have I»։"
+      ],
+      "options": [
+        "So haven't I",
+        "Neither I have",
+        "Nor haven't I",
+        "Neither have I"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 36,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "\"Did she finish reviewing the treaty?\"\n\"No, she is having __________ understanding it.\"",
+      "difficulty": "միջին",
+      "hint": "«Have a hard time + գերունդ» միշտ անորոշ հոդվածով։",
+      "solution_steps": [
+        "Ֆիքսված արտահայտություն է՝ «a hard time»։"
+      ],
+      "options": [
+        "a hard time",
+        "hard time",
+        "hard times",
+        "the hard time"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 37,
+      "topic": "Քերականական ընտրություն",
+      "group": null,
+      "type": "single_choice",
+      "question": "The old recording is falling apart; it __________.",
+      "difficulty": "միջին",
+      "hint": "«Need + գերունդ» ունի կրավորական իմաստ։",
+      "solution_steps": [
+        "«needs fixing» = «needs to be fixed»; եզակի ենթակայի հետ՝ «needs»։"
+      ],
+      "options": [
+        "needs to fix",
+        "needs fixing",
+        "need fixing",
+        "needs to be fixing"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 38,
+      "topic": "Բառակազմություն",
+      "group": "wordform-4",
+      "type": "single_choice",
+      "question": "Bike-share programs have become common in cities seeking alternatives to car-based commuting. The (38) __________ behind these programs is to give residents short-term access to bicycles without the cost of ownership. Such programs are especially (39) __________ in dense urban neighborhoods with limited parking.\n\nOperators must consider factors like station placement and bicycle maintenance to ensure long-term (40) __________. When programs are managed (41) __________, ridership often grows steadily year after year.\n\nStudies suggest that bike-share programs can improve both (42) __________ health and reduce traffic congestion.\n\nChoose the word form that best fits gap (38).\n\nՀարցեր 38-42-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 38-42 refer to the text above.",
+      "difficulty": "հեշտ",
+      "hint": "Եզակի ենթական պահանջում է եզակի գոյական:",
+      "solution_steps": [
+        "«is»-ից առաջ եզակի գոյական՝ «principle»:"
+      ],
+      "options": [
+        "principles",
+        "principle",
+        "principled",
+        "principally"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 39,
+      "topic": "Բառակազմություն",
+      "group": "wordform-4",
+      "type": "single_choice",
+      "question": "Choose the word form that best fits gap (39).\n\nՀարցեր 38-42-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 38-42 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "«Are especially ___» պահանջում է ածական:",
+      "solution_steps": [
+        "«be + ածական» կառուցվածքում՝ «popular»:"
+      ],
+      "options": [
+        "popularly",
+        "popularity",
+        "popular",
+        "unpopular"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 40,
+      "topic": "Բառակազմություն",
+      "group": "wordform-4",
+      "type": "single_choice",
+      "question": "Choose the word form that best fits gap (40).\n\nՀարցեր 38-42-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 38-42 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "«Long-term ___» պահանջում է գոյական:",
+      "solution_steps": [
+        "«ensure» բային հաջորդում է գոյական՝ «sustainability»:"
+      ],
+      "options": [
+        "sustainable",
+        "sustainably",
+        "unsustainable",
+        "sustainability"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 41,
+      "topic": "Բառակազմություն",
+      "group": "wordform-4",
+      "type": "single_choice",
+      "question": "Choose the word form that best fits gap (41).\n\nՀարցեր 38-42-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 38-42 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "«Are managed ___» պահանջում է մակբայ:",
+      "solution_steps": [
+        "Կրավորական բային բնութագրելու համար՝ մակբայ «efficiently»:"
+      ],
+      "options": [
+        "efficiently",
+        "efficient",
+        "efficiency",
+        "inefficient"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 42,
+      "topic": "Բառակազմություն",
+      "group": "wordform-4",
+      "type": "single_choice",
+      "question": "Choose the word form that best fits gap (42).\n\nՀարցեր 38-42-ը վերաբերում են վերևում նշված տեքստին։\nQuestions 38-42 refer to the text above.",
+      "difficulty": "միջին",
+      "hint": "«___ health» դիրքում գոյականից առաջ անհրաժեշտ է ածական:",
+      "solution_steps": [
+        "«public health» կայուն կապակցություն է:"
+      ],
+      "options": [
+        "publicly",
+        "public",
+        "publicity",
+        "publicize"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 43,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "All __________ about the prototype is that it was delivered late.",
+      "difficulty": "բարձր",
+      "hint": "«All that + ենթակա + բայ» կայուն կառուցվածք է։",
+      "solution_steps": [
+        "«All that I know is that...» ամրագրված կառուցվածք է։"
+      ],
+      "options": [
+        "which I know",
+        "what I don't know",
+        "that I know",
+        "of which I know"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 44,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "__________ organizing the symposium, she also handles the budget.",
+      "difficulty": "միջին",
+      "hint": "«In addition to + գերունդ» կապակցող արտահայտություն է։",
+      "solution_steps": [
+        "«In addition to» ընդունում է գերունդ։"
+      ],
+      "options": [
+        "Furthermore",
+        "Besides from",
+        "Except to",
+        "In addition to"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 45,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "The analyst __________ proposal won the grant will speak at the ceremony.",
+      "difficulty": "միջին",
+      "hint": "Անհրաժեշտ է ստացական հարաբերական դերանուն։",
+      "solution_steps": [
+        "«whose» ցույց է տալիս պատկանելություն։"
+      ],
+      "options": [
+        "whose",
+        "who",
+        "whom",
+        "which"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 46,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "The treaty cannot be finalized __________.",
+      "difficulty": "բարձր",
+      "hint": "«Unless + past participle» կրավորական էլիպսիս է։",
+      "solution_steps": [
+        "«unless approved by the board» = «unless it is approved by the board»։"
+      ],
+      "options": [
+        "while it will be approved by the board",
+        "unless approved by the board",
+        "until the board won't approve it",
+        "if not by the board approved"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 47,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "Only after the surgeon left the room __________ the mistake in the figures.",
+      "difficulty": "միջին",
+      "hint": "«Only after» սկզբում պահանջում է շրջված բառակարգ։",
+      "solution_steps": [
+        "Սահմանափակող դարձվածքով սկսվող նախադասությունը պահանջում է «did we notice»։"
+      ],
+      "options": [
+        "we noticed",
+        "we had noticed",
+        "did we notice",
+        "had noticed we"
+      ],
+      "correct_option": "Գ"
+    },
+    {
+      "number": 48,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "The technician spoke about the plan __________ it had already succeeded.",
+      "difficulty": "միջին",
+      "hint": "«As though» ներմուծում է ենթադրական համեմատություն։",
+      "solution_steps": [
+        "«As though» = «կարծես թե»։"
+      ],
+      "options": [
+        "because of",
+        "so that",
+        "even so",
+        "as though"
+      ],
+      "correct_option": "Դ"
+    },
+    {
+      "number": 49,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "__________ the festival, the theatre remained fully staffed.",
+      "difficulty": "բարձր",
+      "hint": "«Throughout + ժամանակահատված» = «ամբողջ ընթացքում»։",
+      "solution_steps": [
+        "Նախդիր է, հաջորդում է գոյական։"
+      ],
+      "options": [
+        "Throughout",
+        "While",
+        "Since",
+        "Between"
+      ],
+      "correct_option": "Ա"
+    },
+    {
+      "number": 50,
+      "topic": "Բարդ նախադասության կառուցվածք",
+      "group": null,
+      "type": "single_choice",
+      "question": "The curator didn't reject the offer. __________, they expanded it considerably.",
+      "difficulty": "միջին",
+      "hint": "«On the contrary» ընդգծում է ուղիղ հակադրություն։",
+      "solution_steps": [
+        "Օգտագործվում է, երբ երկրորդ նախադասությունն ուղիղ հակառակն է հաստատում։"
+      ],
+      "options": [
+        "However",
+        "On the contrary",
+        "Yet",
+        "Nonetheless"
+      ],
+      "correct_option": "Բ"
+    },
+    {
+      "number": 51,
+      "topic": "Անուղղակի խոսք",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly transformed sentence(s).",
+      "difficulty": "բարձր",
+      "hint": "Ստուգել ժամանակաձևի հետշարժը և բային հաջորդող կառուցվածքը (գերունդ/infinitive):",
+      "solution_steps": [
+        "Ա, Բ, Դ ճիշտ են։ Գ սխալ է՝ «says» ներկա է, մինչդեռ շրջանակն արդեն անցյալում է («asked»)։ Ե սխալ է՝ «suggest» պահանջում է գերունդ, ոչ infinitive։"
+      ],
+      "statements": [
+        "Ա) \"Why did you delay the diagnosis until Thursday?\" the patient asked the doctor.\nThe patient asked the doctor why he had delayed the diagnosis until Thursday.",
+        "Բ) \"Don't assume that the treatment will work immediately,\" the nurse said to me.\nThe nurse warned me not to assume that the treatment would work immediately.",
+        "Գ) Maya asked me to explain the test results.\nMaya says to me: \"Could you possibly explain the test results?\"",
+        "Դ) \"I regret that I didn't schedule the surgery sooner,\" Aram said to me.\nAram told me that he regretted not scheduling the surgery sooner.",
+        "Ե) \"It's quite crowded. Maybe we should book an earlier appointment,\" Lucy said.\nLucy suggested to book an earlier appointment as it was quite crowded."
+      ],
+      "correct_option": "Ա, Բ և Դ"
+    },
+    {
+      "number": 52,
+      "topic": "Անուղղակի խոսք",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly transformed sentence(s).",
+      "difficulty": "բարձր",
+      "hint": "«Tell» պահանջում է ուղղակի խնդիր, գիտական/ընդհանուր փաստերը մնում են ներկա ժամանակով:",
+      "solution_steps": [
+        "Ա սխալ է՝ «told» պահանջում է «told me»։ Բ, Գ, Դ, Ե ճիշտ են։"
+      ],
+      "statements": [
+        "Ա) \"By the time you submitted, we had already graded the essays,\" Professor Lane said.\nProfessor Lane told that by the time I had submitted, they had already graded the essays.",
+        "Բ) \"Can you tell me why the results don't match the hypothesis?\" the student asked the supervisor.\nThe student asked the supervisor if he could tell her why the results didn't match the hypothesis.",
+        "Գ) Nora said to Ken: \"I'm sure the committee will accept your thesis.\"\nNora assured Ken that the committee would accept his thesis.",
+        "Դ) The lecturer said to the class, \"Light travels faster than sound.\"\nThe lecturer told the class that light travels faster than sound.",
+        "Ե) The assistant begged the dean to explain everything about the new policy.\n\"I beg you to explain everything about the new policy,\" said the assistant."
+      ],
+      "correct_option": "Բ, Գ, Դ և Ե"
+    },
+    {
+      "number": 53,
+      "topic": "Անուղղակի խոսք",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly transformed sentence(s).",
+      "difficulty": "բարձր",
+      "hint": "Ստուգել, թե ով է իրականում կատարում խնդրանքի գործողությունը բնօրինակում:",
+      "solution_steps": [
+        "Ա, Բ, Գ, Դ ճիշտ են։ Ե սխալ է՝ բնօրինակում կազմակերպիչն ասում է Միրային, ուստի ճիշտ է «Mira's organizer told Mira to ask Leo...»։"
+      ],
+      "statements": [
+        "Ա) \"I've just finished the inventory. Everything's accounted for,\" Marco said.\nMarco told the owner that he had just finished the inventory and added that everything was accounted for.",
+        "Բ) \"What time will the delivery arrive next Tuesday?\" the chef asked the supplier.\nThe chef asked the supplier what time the delivery would arrive the following Tuesday.",
+        "Գ) \"Once the new menu launches, prices won't be negotiable,\" the manager said.\nThe manager stated that once the new menu launched, prices wouldn't be negotiable.",
+        "Դ) Sofia apologized to the guest for the delay the day before.\n\"I'm sorry for the delay yesterday,\" Sofia said to the guest.",
+        "Ե) \"If you plan to host the event, ask Leo to confirm the guest count,\" the organizer said to Mira.\nMira's organizer asked Leo to confirm the guest count if she planned to host the event."
+      ],
+      "correct_option": "Ա, Բ, Գ և Դ"
+    },
+    {
+      "number": 54,
+      "topic": "Անուղղակի խոսք",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly transformed sentence(s).",
+      "difficulty": "բարձր",
+      "hint": "Առաջին տիպի պայմանական նախադասությունների անուղղակի ձևում «if»-ը հետշարժվում է պարզ անցյալով:",
+      "solution_steps": [
+        "Ա, Գ, Դ, Ե ճիշտ են։ Բ սխալ է՝ ճիշտ է «if she didn't back up», ոչ «hadn't backed up»։"
+      ],
+      "statements": [
+        "Ա) \"I will demo the app at the conference the day after tomorrow,\" Priya said.\nPriya said that she would demo the app at the conference in two days' time.",
+        "Բ) \"If you don't back up the server today, data will be lost,\" Karim said to Ana.\nKarim told Ana that data would be lost if she hadn't backed up the server today.",
+        "Գ) My teammate warned me not to push the update untested as it would break the app.\n\"Don't push the update untested; it will break the app,\" my teammate said to me.",
+        "Դ) Diego said, \"I will use the framework which is recommended to me.\"\nDiego said that he would use the framework which was recommended to him.",
+        "Ե) \"Will either Sam or Alex present the demo tomorrow?\" the founder asked.\nThe founder asked Sam whether he or Alex would present the demo the following day."
+      ],
+      "correct_option": "Ա, Գ, Դ և Ե"
+    },
+    {
+      "number": 55,
+      "topic": "Անուղղակի խոսք",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly transformed sentence(s).",
+      "difficulty": "բարձր",
+      "hint": "Համեմատել բնօրինակի իմաստը («must I» = պարտադրանքի մասին հարց) վերակառուցված ձևի հետ:",
+      "solution_steps": [
+        "Բ, Գ, Ե ճիշտ են։ Ա սխալ է՝ «says» ներկա է, մինչդեռ շրջանակը անցյալում է։ Դ սխալ է՝ ճիշտ է «whether she had to carry»։"
+      ],
+      "statements": [
+        "Ա) The guide didn't allow tourists to leave the group early.\nThe guide says to the tourists, \"Would you mind staying with the group until the end of the tour?\"",
+        "Բ) \"I have been planning the itinerary for two weeks. I need to finalize it today,\" Elena said.\nElena said she had been planning the itinerary for two weeks to finalize it that day.",
+        "Գ) Noah told me that he would like to join the excursion.\nNoah said to me, \"I would like to join the excursion.\"",
+        "Դ) Yuki asked her guide, \"Must I carry my passport tonight?\"\nYuki asked her guide to carry her passport that night.",
+        "Ե) The traveler said to the agent, \"When does the tour begin?\"\nThe traveler asked the agent when the tour began."
+      ],
+      "correct_option": "Բ, Գ և Ե"
+    },
+    {
+      "number": 56,
+      "topic": "Բառապաշարի լրացում",
+      "group": null,
+      "type": "matching",
+      "question": "Workplace mentorship programs has become a subject that draws attention from experts across many fields. Researchers make it a priority to (Ա) __________ accurate data before publishing their conclusions. Interest in the subject is fairly (Բ) __________ among younger audiences in particular. Universities are generally (Գ) __________ to fund studies that explore new angles on the topic.\n\nBefore drawing final conclusions, it is wise to (Դ) __________ existing research carefully, since contradictory findings are not uncommon. Results are typically shared well in (Ե) __________ of any public announcement.\n\nWord bank (two are odd): 1. gather  2. widespread  3. willing  4. review  5. advance  6. dismiss  7. reluctant",
+      "difficulty": "միջին",
+      "hint": "Ամեն բացվածքի համար ստուգել բառի իմաստն ու քերականական դերը:",
+      "solution_steps": [
+        "Յուրաքանչյուր բացվածք համապատասխանում է ուղիղ մեկ բառի իմաստով և ձևով. 2 բառ ավելորդ են:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "blank (Ա)",
+          "target": 1
+        },
+        {
+          "label": "Բ",
+          "text": "blank (Բ)",
+          "target": 2
+        },
+        {
+          "label": "Գ",
+          "text": "blank (Գ)",
+          "target": 3
+        },
+        {
+          "label": "Դ",
+          "text": "blank (Դ)",
+          "target": 4
+        },
+        {
+          "label": "Ե",
+          "text": "blank (Ե)",
+          "target": 5
+        }
+      ],
+      "right": [
+        {
+          "text": "gather"
+        },
+        {
+          "text": "widespread"
+        },
+        {
+          "text": "willing"
+        },
+        {
+          "text": "review"
+        },
+        {
+          "text": "advance"
+        },
+        {
+          "text": "dismiss"
+        },
+        {
+          "text": "reluctant"
+        }
+      ]
+    },
+    {
+      "number": 57,
+      "topic": "Հարցական նախադասություններ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated questions.",
+      "difficulty": "բարձր",
+      "hint": "Ստուգել tag-հարցերի ձևը և «used to»-ի հետ «did»-ի գործածությունը:",
+      "solution_steps": [
+        "Բ, Գ, Ե ճիշտ են։ Ա սխալ է՝ tag-ը պետք է լինի «is there?»։ Դ սխալ է՝ «did»-ից հետո՝ «use to»։"
+      ],
+      "statements": [
+        "Ա) There's no reason to postpone the surgery, was there?",
+        "Բ) I am confident that the diagnosis is correct, aren't I?",
+        "Գ) Which specialist do you consult most often?",
+        "Դ) Did you used to work in the ER when you started?",
+        "Ե) Was it you or the nurse who updated the chart?"
+      ],
+      "correct_option": "Բ, Գ և Ե"
+    },
+    {
+      "number": 58,
+      "topic": "Հարցական նախադասություններ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated questions.",
+      "difficulty": "բարձր",
+      "hint": "Ստուգել հնացած կառուցվածքների բացակայությունը և tag-ի ենթակայի համապատասխանությունը:",
+      "solution_steps": [
+        "Ա, Բ, Դ, Ե ճիշտ են։ Գ սխալ է (հնացած ձև)՝ ճիշտ է «Did you have a word with the specialist...?»։"
+      ],
+      "statements": [
+        "Ա) It is essential to inform the patient immediately, isn't it?",
+        "Բ) Do you know how much the new scanner costs?",
+        "Գ) Had you a word with the specialist about the results?",
+        "Դ) The lab results will be reviewed tomorrow, won't they?",
+        "Ե) Were you and Dara on call at midnight yesterday?"
+      ],
+      "correct_option": "Ա, Բ, Դ և Ե"
+    },
+    {
+      "number": 59,
+      "topic": "Հարցական նախադասություններ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated questions.",
+      "difficulty": "բարձր",
+      "hint": "«Seldom»-ը բացասական մակբայ է, tag-ը դրական։ Ենթակայի հարցերում «did» չի գործածվում:",
+      "solution_steps": [
+        "Ա, Գ, Ե ճիշտ են։ Բ սխալ է՝ ճիշտ է «isn't it?»։ Դ սխալ է՝ ճիշտ է «Who submitted...?»։"
+      ],
+      "statements": [
+        "Ա) We seldom witness such a rapid recovery, do we?",
+        "Բ) This is the first time I have led a seminar, isn't this?",
+        "Գ) How many credits does this course require?",
+        "Դ) Who did submit the proposal first?",
+        "Ե) Can you finally explain what triggered the outage?"
+      ],
+      "correct_option": "Ա, Գ և Ե"
+    },
+    {
+      "number": 60,
+      "topic": "Հարցական նախադասություններ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated questions.",
+      "difficulty": "բարձր",
+      "hint": "Ստուգել բառակարգը և հարցական նախադասություններում օժանդակ բայի առկայությունը:",
+      "solution_steps": [
+        "Ա, Բ, Դ ճիշտ են։ Գ սխալ է՝ ճիշտ է «Will they submit the manifest or the certificate first?»։ Ե սխալ է՝ բացակայում է «did»։"
+      ],
+      "statements": [
+        "Ա) How often do we need to update the software?",
+        "Բ) Please, don't mention the bug to the client, will you?",
+        "Գ) Will they the manifest or the certificate submit first?",
+        "Դ) Do you regret skipping the orientation?",
+        "Ե) Why the intern questioned the results yesterday?"
+      ],
+      "correct_option": "Ա, Բ և Դ"
+    },
+    {
+      "number": 61,
+      "topic": "Հարցական նախադասություններ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated questions.",
+      "difficulty": "բարձր",
+      "hint": "Ներդրված հարցերում բառակարգը մնում է հաստատական, tag-ի դերանունը պետք է համապատասխանի ենթակային:",
+      "solution_steps": [
+        "Ա, Բ, Ե ճիշտ են։ Գ սխալ է՝ ճիշտ է «Do you think we should extend the trip?»։ Դ սխալ է՝ tag-ը՝ «won't he?»։"
+      ],
+      "statements": [
+        "Ա) Why did she say she was worried about the itinerary?",
+        "Բ) Did Marco book fewer excursions than Elena this month?",
+        "Գ) Do you think should we extend the trip?",
+        "Դ) He will surely enjoy the tour, won't it?",
+        "Ե) Has the guide finalized the schedule?"
+      ],
+      "correct_option": "Ա, Բ և Ե"
+    },
+    {
+      "number": 62,
+      "topic": "Բառապաշարի լրացում",
+      "group": null,
+      "type": "matching",
+      "question": "Public library renovation continues to shape how communities plan for the future. Officials try to (Ա) __________ reliable feedback from residents before approving major changes. Support for new proposals is often fairly (Բ) __________ once benefits become clear. Local leaders are usually (Գ) __________ to explain decisions publicly when asked.\n\nBefore finalizing a proposal, planners (Դ) __________ every available report on potential impact. Budgets are typically prepared well in (Ե) __________ of the fiscal year.\n\nWord bank (two are odd): 1. collect  2. strong  3. prepared  4. examine  5. advance  6. postpone  7. hesitant",
+      "difficulty": "միջին",
+      "hint": "Ամեն բացվածքի համար ստուգել բառի իմաստն ու քերականական դերը:",
+      "solution_steps": [
+        "Յուրաքանչյուր բացվածք համապատասխանում է ուղիղ մեկ բառի իմաստով և ձևով. 2 բառ ավելորդ են:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "blank (Ա)",
+          "target": 1
+        },
+        {
+          "label": "Բ",
+          "text": "blank (Բ)",
+          "target": 2
+        },
+        {
+          "label": "Գ",
+          "text": "blank (Գ)",
+          "target": 3
+        },
+        {
+          "label": "Դ",
+          "text": "blank (Դ)",
+          "target": 4
+        },
+        {
+          "label": "Ե",
+          "text": "blank (Ե)",
+          "target": 5
+        }
+      ],
+      "right": [
+        {
+          "text": "collect"
+        },
+        {
+          "text": "strong"
+        },
+        {
+          "text": "prepared"
+        },
+        {
+          "text": "examine"
+        },
+        {
+          "text": "advance"
+        },
+        {
+          "text": "postpone"
+        },
+        {
+          "text": "hesitant"
+        }
+      ]
+    },
+    {
+      "number": 63,
+      "topic": "Ավելորդ բառի հայտնաբերում",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the sentences with an odd word.",
+      "difficulty": "միջին",
+      "hint": "Փնտրել ավելորդ նախդիր, կրկնվող շաղկապ, կրկնակի ժխտում կամ սխալ բայաձև:",
+      "solution_steps": [
+        "Ա. «facts does matter» — ավելորդ է «does»։ Բ. «but also...too» — «too»-ն ավելորդ է։ Ե. «ignore about it» — ավելորդ է «about»։ Գ — առանց սխալի։ Դ — առանց սխալի։"
+      ],
+      "statements": [
+        "Ա) A good auditor knows which facts does matter and which do not.",
+        "Բ) Reviewing the spreadsheet at the quarry not only catches errors early but also saves money too.",
+        "Գ) If a system can process transactions every second, why do errors still happen?",
+        "Դ) Teams that don't review the harvest risk costly mistakes.",
+        "Ե) Tell someone a clear problem exists, and most will ignore about it."
+      ],
+      "correct_option": "Ա, Բ և Ե"
+    },
+    {
+      "number": 64,
+      "topic": "Ավելորդ բառի հայտնաբերում",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the sentences with an odd word.",
+      "difficulty": "միջին",
+      "hint": "Փնտրել ավելորդ նախդիր, կրկնվող շաղկապ, կրկնակի ժխտում կամ սխալ բայաձև:",
+      "solution_steps": [
+        "Բ. «every of second» — ավելորդ է «of»։ Գ. «rely by on» — ավելորդ է «by»։ Դ. «but also...too» — «too»-ն ավելորդ է։ Ա — առանց սխալի։ Ե — առանց սխալի։"
+      ],
+      "statements": [
+        "Ա) A good supervisor offers constructive feedback regularly.",
+        "Բ) If a system can process transactions every of second, why do errors still happen?",
+        "Գ) The technician rely by on preparation as well as instinct.",
+        "Դ) Reviewing the prototype at the foundry not only catches errors early but also saves money too.",
+        "Ե) Tell someone a risk exists, and most will ignore it."
+      ],
+      "correct_option": "Բ, Գ և Դ"
+    },
+    {
+      "number": 65,
+      "topic": "Ավելորդ բառի հայտնաբերում",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the sentences with an odd word.",
+      "difficulty": "միջին",
+      "hint": "Փնտրել ավելորդ նախդիր, կրկնվող շաղկապ, կրկնակի ժխտում կամ սխալ բայաձև:",
+      "solution_steps": [
+        "Ա. «but also...too» — «too»-ն ավելորդ է։ Բ. «make me to sign» — ավելորդ է «to» պատճառական բային հետո։ Գ — առանց սխալի։ Դ — առանց սխալի։ Ե — առանց սխալի։"
+      ],
+      "statements": [
+        "Ա) Reviewing the contract at the foundry not only catches errors early but also saves money too.",
+        "Բ) Policies are like the contract: read them, but don't make me to sign yours.",
+        "Գ) Tell someone a delay exists, and most will ignore it.",
+        "Դ) Delays disrupt the trial run, which interferes with the overall schedule.",
+        "Ե) Every planner on the team deserves recognition for their effort."
+      ],
+      "correct_option": "Ա և Բ"
+    },
+    {
+      "number": 66,
+      "topic": "Ավելորդ բառի հայտնաբերում",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the sentences with an odd word.",
+      "difficulty": "միջին",
+      "hint": "Փնտրել ավելորդ նախդիր, կրկնվող շաղկապ, կրկնակի ժխտում կամ սխալ բայաձև:",
+      "solution_steps": [
+        "Բ. «which interfering» — ճիշտ բայաձևն է «interferes»։ Դ. «ignore about it» — ավելորդ է «about»։ Ա — առանց սխալի։ Գ — առանց սխալի։ Ե — առանց սխալի։"
+      ],
+      "statements": [
+        "Ա) Policies are like the sculpture: read them, but don't make me sign yours.",
+        "Բ) Delays disrupt the seminar, which interfering with the overall schedule.",
+        "Գ) The analyst rely on preparation as well as instinct.",
+        "Դ) Tell someone a risk exists, and most will ignore about it.",
+        "Ե) The biologists thrive when expectations are communicated clearly."
+      ],
+      "correct_option": "Բ և Դ"
+    },
+    {
+      "number": 67,
+      "topic": "Ավելորդ բառի հայտնաբերում",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the sentences with an odd word.",
+      "difficulty": "միջին",
+      "hint": "Փնտրել ավելորդ նախդիր, կրկնվող շաղկապ, կրկնակի ժխտում կամ սխալ բայաձև:",
+      "solution_steps": [
+        "Ա. «rely by on» — ավելորդ է «by»։ Ե. «that although» — երկու շաղկապ, ավելորդ է «although»։ Բ — առանց սխալի։ Գ — առանց սխալի։ Դ — առանց սխալի։"
+      ],
+      "statements": [
+        "Ա) The manager rely by on preparation as well as instinct.",
+        "Բ) Reading reports does not automatically make you a skilled strategist.",
+        "Գ) Many consultants believe changes are happening more rapidly than planned.",
+        "Դ) A good coordinator offers constructive feedback regularly.",
+        "Ե) Many analysts believe that although conditions can shift without warning."
+      ],
+      "correct_option": "Ա և Ե"
+    },
+    {
+      "number": 68,
+      "topic": "Կրավորական սեռ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated Passive constructions.",
+      "difficulty": "միջին",
+      "hint": "Ստուգել՝ առկա է «be» օժանդակ բայը ճիշտ ձևով, և արդյոք նախադասությունն ընդհանրապես կրավորական սեռով է:",
+      "solution_steps": [
+        "Ճիշտ կրավորական կառույցներ են՝ Գ, Դ, Ե. մյուսները կամ ակտիվ սեռով են, կամ բացակայում/կրկնվում է «be»-ն։"
+      ],
+      "statements": [
+        "Ա) All the vaccines had to checked by the geologist.",
+        "Բ) The database is currently reviewing by the diplomat.",
+        "Գ) Why has the database been revised by the editor?",
+        "Դ) Does the equipment have to be certified by the beekeeper?",
+        "Ե) The blueprint could have been damaged before the delivery arrived."
+      ],
+      "correct_option": "Գ, Դ և Ե"
+    },
+    {
+      "number": 69,
+      "topic": "Կրավորական սեռ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated Passive constructions.",
+      "difficulty": "միջին",
+      "hint": "Ստուգել՝ առկա է «be» օժանդակ բայը ճիշտ ձևով, և արդյոք նախադասությունն ընդհանրապես կրավորական սեռով է:",
+      "solution_steps": [
+        "Ճիշտ կրավորական կառույցներ են՝ Բ, Դ, Ե. մյուսները կամ ակտիվ սեռով են, կամ բացակայում/կրկնվում է «be»-ն։"
+      ],
+      "statements": [
+        "Ա) Had you double-checked all the figures in the treaty?",
+        "Բ) Does the equipment have to be certified by the technician?",
+        "Գ) The vaccine is currently reviewing by the journalist.",
+        "Դ) Why has the proposal been revised by the editor?",
+        "Ե) All the vaccines had to be checked by the surgeon."
+      ],
+      "correct_option": "Բ, Դ և Ե"
+    },
+    {
+      "number": 70,
+      "topic": "Կրավորական սեռ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated Passive constructions.",
+      "difficulty": "միջին",
+      "hint": "Ստուգել՝ առկա է «be» օժանդակ բայը ճիշտ ձևով, և արդյոք նախադասությունն ընդհանրապես կրավորական սեռով է:",
+      "solution_steps": [
+        "Ճիշտ կրավորական կառույցներ են՝ Ա, Գ, Դ. մյուսները կամ ակտիվ սեռով են, կամ բացակայում/կրկնվում է «be»-ն։"
+      ],
+      "statements": [
+        "Ա) Does the equipment have to be certified by the accountant?",
+        "Բ) The diplomat had the staff double-check the circuit.",
+        "Գ) The proposal could have been damaged before the delivery arrived.",
+        "Դ) Why has the budget been revised by the architect?",
+        "Ե) The ceremony will held at the studio."
+      ],
+      "correct_option": "Ա, Գ և Դ"
+    },
+    {
+      "number": 71,
+      "topic": "Կրավորական սեռ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated Passive constructions.",
+      "difficulty": "միջին",
+      "hint": "Ստուգել՝ առկա է «be» օժանդակ բայը ճիշտ ձևով, և արդյոք նախադասությունն ընդհանրապես կրավորական սեռով է:",
+      "solution_steps": [
+        "Ճիշտ կրավորական կառույցներ են՝ Ա, Դ. մյուսները կամ ակտիվ սեռով են, կամ բացակայում/կրկնվում է «be»-ն։"
+      ],
+      "statements": [
+        "Ա) All the harvests had to be checked by the choreographer.",
+        "Բ) The depot is a popular destination for specialists.",
+        "Գ) The accountant had the staff double-check the circuit.",
+        "Դ) The ledger is currently being reviewed by the chef.",
+        "Ե) Tapestry tested at the greenhouse every month."
+      ],
+      "correct_option": "Ա և Դ"
+    },
+    {
+      "number": 72,
+      "topic": "Կրավորական սեռ",
+      "group": null,
+      "type": "multi_statement",
+      "question": "Choose the correctly formulated Passive constructions.",
+      "difficulty": "միջին",
+      "hint": "Ստուգել՝ առկա է «be» օժանդակ բայը ճիշտ ձևով, և արդյոք նախադասությունն ընդհանրապես կրավորական սեռով է:",
+      "solution_steps": [
+        "Ճիշտ կրավորական կառույցներ են՝ Ա, Բ, Ե. մյուսները կամ ակտիվ սեռով են, կամ բացակայում/կրկնվում է «be»-ն։"
+      ],
+      "statements": [
+        "Ա) The ledger was reviewed by the manager this morning.",
+        "Բ) All the circuits had to be checked by the librarian.",
+        "Գ) The merger will held at the refinery.",
+        "Դ) Why has the vaccine revised by the translator?",
+        "Ե) Does the equipment have to be certified by the choreographer?"
+      ],
+      "correct_option": "Ա, Բ և Ե"
+    },
+    {
+      "number": 73,
+      "topic": "Բառապաշար (համապատասխանեցում)",
+      "group": null,
+      "type": "matching",
+      "question": "Match the words and their definitions.",
+      "difficulty": "հեշտ",
+      "hint": "Ամեն բառի համար գտնել ճշգրիտ սահմանումը:",
+      "solution_steps": [
+        "Համեմատել յուրաքանչյուր բառի իմաստը տրված սահմանումների հետ. մեկ սահմանում ավելորդ է:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "Symmetry",
+          "target": 5
+        },
+        {
+          "label": "Բ",
+          "text": "Density",
+          "target": 2
+        },
+        {
+          "label": "Գ",
+          "text": "Velocity",
+          "target": 4
+        },
+        {
+          "label": "Դ",
+          "text": "Friction",
+          "target": 3
+        }
+      ],
+      "right": [
+        {
+          "text": "the ability of a material to return to its original shape"
+        },
+        {
+          "text": "the amount of mass contained in a given volume"
+        },
+        {
+          "text": "the resistance one surface encounters when moving over another"
+        },
+        {
+          "text": "the speed of something in a given direction"
+        },
+        {
+          "text": "a balanced arrangement of parts on either side of a line"
+        }
+      ]
+    },
+    {
+      "number": 74,
+      "topic": "Բառապաշար (համապատասխանեցում)",
+      "group": null,
+      "type": "matching",
+      "question": "Match the words and their definitions.",
+      "difficulty": "միջին",
+      "hint": "Ամեն բառի համար գտնել ճշգրիտ սահմանումը:",
+      "solution_steps": [
+        "Համեմատել յուրաքանչյուր բառի իմաստը տրված սահմանումների հետ. մեկ սահմանում ավելորդ է:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "Curriculum",
+          "target": 5
+        },
+        {
+          "label": "Բ",
+          "text": "Literacy",
+          "target": 1
+        },
+        {
+          "label": "Գ",
+          "text": "Tuition",
+          "target": 3
+        },
+        {
+          "label": "Դ",
+          "text": "Scholarship",
+          "target": 4
+        }
+      ],
+      "right": [
+        {
+          "text": "the ability to read and write"
+        },
+        {
+          "text": "a formal test used to measure a student's knowledge"
+        },
+        {
+          "text": "the fee charged for instruction, especially at a university"
+        },
+        {
+          "text": "money awarded to a student to help pay for their education"
+        },
+        {
+          "text": "the subjects that make up a course of study"
+        }
+      ]
+    },
+    {
+      "number": 75,
+      "topic": "Բառապաշար (համապատասխանեցում)",
+      "group": null,
+      "type": "matching",
+      "question": "Match the words and their definitions.",
+      "difficulty": "միջին",
+      "hint": "Ամեն բառի համար գտնել ճշգրիտ սահմանումը:",
+      "solution_steps": [
+        "Համեմատել յուրաքանչյուր բառի իմաստը տրված սահմանումների հետ. մեկ սահմանում ավելորդ է:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "Symptom",
+          "target": 1
+        },
+        {
+          "label": "Բ",
+          "text": "Remedy",
+          "target": 5
+        },
+        {
+          "label": "Գ",
+          "text": "Immunity",
+          "target": 3
+        },
+        {
+          "label": "Դ",
+          "text": "Diagnosis",
+          "target": 2
+        }
+      ],
+      "right": [
+        {
+          "text": "a sign that indicates the presence of an illness"
+        },
+        {
+          "text": "the identification of an illness through examination"
+        },
+        {
+          "text": "the body's ability to resist a particular infection"
+        },
+        {
+          "text": "a substance used to prevent infection in a wound"
+        },
+        {
+          "text": "a medicine or treatment for a disease or injury"
+        }
+      ]
+    },
+    {
+      "number": 76,
+      "topic": "Բառապաշար (համապատասխանեցում)",
+      "group": null,
+      "type": "matching",
+      "question": "Match the words and their definitions.",
+      "difficulty": "միջին",
+      "hint": "Ամեն բառի համար գտնել ճշգրիտ սահմանումը:",
+      "solution_steps": [
+        "Համեմատել յուրաքանչյուր բառի իմաստը տրված սահմանումների հետ. մեկ սահմանում ավելորդ է:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "Improvise",
+          "target": 1
+        },
+        {
+          "label": "Բ",
+          "text": "Rehearse",
+          "target": 2
+        },
+        {
+          "label": "Գ",
+          "text": "Compose",
+          "target": 3
+        },
+        {
+          "label": "Դ",
+          "text": "Critique",
+          "target": 5
+        }
+      ],
+      "right": [
+        {
+          "text": "to create or perform something without preparation"
+        },
+        {
+          "text": "to practice a performance before presenting it publicly"
+        },
+        {
+          "text": "to create a piece of music or writing"
+        },
+        {
+          "text": "to imitate someone's voice or manner for comic effect"
+        },
+        {
+          "text": "to give a detailed analysis and assessment of something"
+        }
+      ]
+    },
+    {
+      "number": 77,
+      "topic": "Նախադասությունների միավորում",
+      "group": null,
+      "type": "matching",
+      "question": "Match the beginning and the end of the sentences.",
+      "difficulty": "միջին",
+      "hint": "Ուշադրություն դարձնել քերականական և իմաստային համապատասխանությանը:",
+      "solution_steps": [
+        "Յուրաքանչյուր սկիզբ ունի ուղիղ մեկ քերականորեն ու իմաստով համապատասխան ավարտ. 2 ավարտ ավելորդ են:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "Orchestras rehearse extensively to",
+          "target": 4
+        },
+        {
+          "label": "Բ",
+          "text": "Because early symphony halls had poor acoustics,",
+          "target": 3
+        },
+        {
+          "label": "Գ",
+          "text": "One reason conductors matter so much is",
+          "target": 2
+        },
+        {
+          "label": "Դ",
+          "text": "I was moved to learn from the program notes",
+          "target": 5
+        }
+      ],
+      "right": [
+        {
+          "text": "it was rediscovered decades after being lost."
+        },
+        {
+          "text": "that they shape tempo and dynamics in real time."
+        },
+        {
+          "text": "architects began designing spaces specifically for sound."
+        },
+        {
+          "text": "ensure every section performs in precise coordination."
+        },
+        {
+          "text": "that the composer wrote the piece while nearly deaf."
+        },
+        {
+          "text": "because audiences demanded shorter performances."
+        }
+      ]
+    },
+    {
+      "number": 78,
+      "topic": "Նախադասությունների միավորում",
+      "group": null,
+      "type": "matching",
+      "question": "Match the beginning and the end of the sentences.",
+      "difficulty": "միջին",
+      "hint": "Ուշադրություն դարձնել քերականական և իմաստային համապատասխանությանը:",
+      "solution_steps": [
+        "Յուրաքանչյուր սկիզբ ունի ուղիղ մեկ քերականորեն ու իմաստով համապատասխան ավարտ. 2 ավարտ ավելորդ են:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "Culinary scientists study food to",
+          "target": 2
+        },
+        {
+          "label": "Բ",
+          "text": "Because fermentation relies on living microorganisms,",
+          "target": 3
+        },
+        {
+          "label": "Գ",
+          "text": "One reason bread rises is",
+          "target": 1
+        },
+        {
+          "label": "Դ",
+          "text": "I was intrigued to learn from the documentary",
+          "target": 4
+        }
+      ],
+      "right": [
+        {
+          "text": "that yeast produces carbon dioxide as it consumes sugars."
+        },
+        {
+          "text": "understand how heat and chemistry transform raw ingredients."
+        },
+        {
+          "text": "temperature control is essential throughout the process."
+        },
+        {
+          "text": "that some flavors only develop after weeks of aging."
+        },
+        {
+          "text": "because chefs hope to reduce food waste entirely."
+        },
+        {
+          "text": "it is studied extensively in food science programs."
+        }
+      ]
+    },
+    {
+      "number": 79,
+      "topic": "Նախադասությունների միավորում",
+      "group": null,
+      "type": "matching",
+      "question": "Match the beginning and the end of the sentences.",
+      "difficulty": "բարձր",
+      "hint": "Ուշադրություն դարձնել քերականական և իմաստային համապատասխանությանը:",
+      "solution_steps": [
+        "Յուրաքանչյուր սկիզբ ունի ուղիղ մեկ քերականորեն ու իմաստով համապատասխան ավարտ. 2 ավարտ ավելորդ են:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "Urban wildlife researchers track animals to",
+          "target": 5
+        },
+        {
+          "label": "Բ",
+          "text": "Because many predators have vanished from cities,",
+          "target": 1
+        },
+        {
+          "label": "Գ",
+          "text": "One challenge of studying urban foxes is",
+          "target": 4
+        },
+        {
+          "label": "Դ",
+          "text": "I was surprised to read in the study",
+          "target": 2
+        }
+      ],
+      "right": [
+        {
+          "text": "certain animal populations have grown rapidly unchecked."
+        },
+        {
+          "text": "that several species now thrive better in cities than in the wild."
+        },
+        {
+          "text": "it is funded primarily through public donations."
+        },
+        {
+          "text": "that they are most active during the night."
+        },
+        {
+          "text": "understand how species adapt to city environments."
+        },
+        {
+          "text": "because they hope to eliminate urban wildlife entirely."
+        }
+      ]
+    },
+    {
+      "number": 80,
+      "topic": "Նախադասությունների միավորում",
+      "group": null,
+      "type": "matching",
+      "question": "Match the beginning and the end of the sentences.",
+      "difficulty": "բարձր",
+      "hint": "Ուշադրություն դարձնել քերականական և իմաստային համապատասխանությանը:",
+      "solution_steps": [
+        "Յուրաքանչյուր սկիզբ ունի ուղիղ մեկ քերականորեն ու իմաստով համապատասխան ավարտ. 2 ավարտ ավելորդ են:"
+      ],
+      "left": [
+        {
+          "label": "Ա",
+          "text": "The invention of the printing press allowed",
+          "target": 5
+        },
+        {
+          "label": "Բ",
+          "text": "Even though early explorers lacked modern instruments,",
+          "target": 1
+        },
+        {
+          "label": "Գ",
+          "text": "The Rosetta Stone is significant because",
+          "target": 3
+        },
+        {
+          "label": "Դ",
+          "text": "Many ancient trade routes that crossed deserts",
+          "target": 4
+        }
+      ],
+      "right": [
+        {
+          "text": "they mapped vast stretches of unfamiliar coastline."
+        },
+        {
+          "text": "which few historians have been able to verify."
+        },
+        {
+          "text": "it allowed scholars to finally decode Egyptian hieroglyphs."
+        },
+        {
+          "text": "connected distant civilizations long before modern transport."
+        },
+        {
+          "text": "books to be produced faster and more cheaply than by hand."
+        },
+        {
+          "text": "that required years of specialized training to master."
+        }
+      ]
+    }
+  ]
+}

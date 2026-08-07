@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from .models import Role, School, University
+from .models import AccountRole, School, University
 
 User = get_user_model()
 
@@ -49,9 +49,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=True, allow_blank=False)
     last_name = serializers.CharField(required=True, allow_blank=False)
     role = serializers.ChoiceField(
-        choices=Role.choices,
+        choices=AccountRole.choices,
         required=True,
-        error_messages={"required": "Խնդրում ենք ընտրել դեր՝ աշակերտ կամ ուսուցիչ։"},
+        error_messages={"required": "Խնդրում ենք ընտրել դեր՝ աշակերտ, ուսուցիչ կամ ծնող։"},
     )
 
     class Meta:
@@ -62,6 +62,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "age", "grade", "sex", "school", "university",
         ]
         extra_kwargs = {
+            "role": {"required": True},
             "age": {"required": False},
             "grade": {"required": False},
             "sex": {"required": False},

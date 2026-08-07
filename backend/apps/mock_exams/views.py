@@ -17,7 +17,12 @@ from .serializers import (
     MockExamAttemptSerializer,
 )
 from apps.profiles.engine import evaluate_achievements
+from apps.profiles.xp import award_xp
 from apps.streaks.services import record_activity
+
+XP_PER_CORRECT_MOCK_ANSWER = 4
+XP_FIRST_COMPLETION_BONUS = 20
+XP_RETAKE_COMPLETION_BONUS = 10
 
 
 class ListMockExamsView(generics.ListAPIView):
@@ -227,6 +232,13 @@ class FinishAttemptView(APIView):
             if defaults["is_correct"]:
                 raw_score += 1
                 tier_correct[question.difficulty] += 1
+            elif question.topic:
+                from apps.practice.models import MistakeSource  # local import: avoids a load-order dependency
+                from apps.practice.services import record_topic_mistake
+                record_topic_mistake(
+                    request.user, source=MistakeSource.MOCK_EXAM,
+                    subject_name=attempt.exam.get_subject_display(), topic_label=question.topic,
+                )
 
         attempt.raw_score = raw_score
         attempt.percent_answered = round(100 * answered_count / len(questions), 2) if questions else 0.0
@@ -239,6 +251,10 @@ class FinishAttemptView(APIView):
             attempt.medium_correct, attempt.medium_total,
             attempt.hard_correct, attempt.hard_total,
         )
+        is_first_completion = not MockExamAttempt.objects.filter(
+            user=request.user, exam=attempt.exam, status=MockExamAttemptStatus.COMPLETED,
+        ).exists()
+
         attempt.status = MockExamAttemptStatus.COMPLETED
         attempt.completed_at = timezone.now()
         attempt.time_remaining_seconds = _remaining_seconds(attempt)
@@ -246,6 +262,15 @@ class FinishAttemptView(APIView):
 
         record_activity(request.user)
         evaluate_achievements(request.user)
+
+        # Full per-question XP only on a user's first clear of a given exam —
+        # MockExamAttempt allows unlimited retakes (unlike PracticeAttempt,
+        # which caps at one row per subtopic+tier), so paying out per-question
+        # XP on every retake would let XP be farmed by replaying the same test.
+        if is_first_completion:
+            award_xp(request.user, raw_score * XP_PER_CORRECT_MOCK_ANSWER + XP_FIRST_COMPLETION_BONUS)
+        else:
+            award_xp(request.user, XP_RETAKE_COMPLETION_BONUS)
 
         return Response(MockExamAttemptSerializer(attempt).data)
 

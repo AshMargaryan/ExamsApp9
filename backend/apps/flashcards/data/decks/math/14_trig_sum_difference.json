@@ -1,0 +1,42 @@
+{
+  "deck_id": "FC-MATH-TRIG5-001",
+  "title": "Եռանկյունաչափություն — գումարման բանաձևեր",
+  "subject": "math",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "Գումարման բանաձևեր",
+      "front": "Ինչպե՞ս ես բացում $\\sin(\\alpha + \\beta)$",
+      "back": "$$\\sin(\\alpha+\\beta) = \\sin\\alpha\\cos\\beta + \\cos\\alpha\\sin\\beta$$",
+      "hint": "Յուրաքանչյուր անդամում $\\sin$-ը փոխարինվում է $\\cos$-ով, $\\cos$-ը՝ $\\sin$-ով, և արտադրյալները գումարվում են"
+    },
+    {
+      "number": 2,
+      "topic": "Գումարման բանաձևեր",
+      "front": "Ինչպե՞ս ես բացում $\\sin(\\alpha - \\beta)$",
+      "back": "$$\\sin(\\alpha-\\beta) = \\sin\\alpha\\cos\\beta - \\cos\\alpha\\sin\\beta$$",
+      "hint": "Նույն բանաձևը՝ $\\beta \\to -\\beta$ փոխարինումով"
+    },
+    {
+      "number": 3,
+      "topic": "Գումարման բանաձևեր",
+      "front": "Ինչպե՞ս ես բացում $\\cos(\\alpha + \\beta)$",
+      "back": "$$\\cos(\\alpha+\\beta) = \\cos\\alpha\\cos\\beta - \\sin\\alpha\\sin\\beta$$",
+      "hint": "Հաճախակի սխալ՝ շփոթում են $\\sin$-ի բանաձևի հետ, նշանները հակառակ են"
+    },
+    {
+      "number": 4,
+      "topic": "Գումարման բանաձևեր",
+      "front": "Ինչպե՞ս ես բացում $\\cos(\\alpha - \\beta)$",
+      "back": "$$\\cos(\\alpha-\\beta) = \\cos\\alpha\\cos\\beta + \\sin\\alpha\\sin\\beta$$",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "Գումարման բանաձևեր",
+      "front": "Ինչպե՞ս ես բացում $\\tan(\\alpha + \\beta)$",
+      "back": "$$\\tan(\\alpha+\\beta) = \\dfrac{\\tan\\alpha + \\tan\\beta}{1 - \\tan\\alpha\\tan\\beta}$$",
+      "hint": "Ստացվում է $\\sin$ և $\\cos$ գումարման բանաձևերից՝ բաժանելով իրար"
+    }
+  ]
+}

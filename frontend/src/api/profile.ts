@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { Role, School, University } from "./auth";
+import type { AccountRole, School, University } from "./auth";
 import type { FriendUser } from "./friends";
 
 export interface LearningStats {
@@ -14,7 +14,7 @@ export interface LearningStats {
 export interface Profile {
   avatar: string | null;
   bio: string;
-  role: Role;
+  role: AccountRole;
   username: string;
   first_name: string;
   last_name: string;
@@ -28,6 +28,8 @@ export interface Profile {
   xp_into_level: number;
   xp_for_next_level: number;
   trophies_count: number;
+  target_exam_date: string | null;
+  days_until_exam: number | null;
   stats: LearningStats;
   total_students: number | null;
   students: FriendUser[] | null;
@@ -67,6 +69,12 @@ export interface UpdateProfilePayload {
   school_id?: number | null;
   university_id?: number | null;
   avatar?: File;
+  target_exam_date?: string | null;
+}
+
+export async function setExamDate(date: string): Promise<Profile> {
+  const { data } = await apiClient.patch("/profile/me/", { target_exam_date: date });
+  return data;
 }
 
 export async function fetchProfile(): Promise<Profile> {

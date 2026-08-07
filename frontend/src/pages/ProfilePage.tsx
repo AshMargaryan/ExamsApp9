@@ -7,6 +7,8 @@ import { PersonBox } from "../components/PersonBox";
 import * as streaksApi from "../api/streaks";
 import type { LearningStreak } from "../api/streaks";
 import * as friendsApi from "../api/friends";
+import * as rankingsApi from "../api/rankings";
+import type { RankingAward } from "../api/rankings";
 import { getHierarchy } from "../api/practice";
 import { searchSchools, searchUniversities } from "../api/schools";
 import { SearchSelect } from "../components/SearchSelect";
@@ -18,6 +20,7 @@ import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
 import { useAuth } from "../auth/AuthContext";
 
 const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
+const RANK_MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 interface Option {
   id: number;
@@ -67,12 +70,14 @@ function ComingSoonCard({ icon, title }: { icon: string; title: string }) {
 }
 
 export function ProfilePage() {
-  const { refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
+  const isParent = user?.role === "parent";
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[] | null>(null);
   const [myAchievements, setMyAchievements] = useState<UserAchievement[] | null>(null);
   const [streak, setStreak] = useState<LearningStreak | null>(null);
+  const [rankingAwards, setRankingAwards] = useState<RankingAward[] | null>(null);
   const [practicePercent, setPracticePercent] = useState<number | null>(null);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [friendsOpen, setFriendsOpen] = useState(false);
@@ -111,16 +116,18 @@ export function ProfilePage() {
       setProfile(p);
       loadFromProfile(p);
     });
+    if (isParent) return;
     profileApi.fetchAchievements().then(setAchievements);
     profileApi.fetchMyAchievements().then(setMyAchievements);
     streaksApi.fetchStreak().then(setStreak);
+    rankingsApi.fetchMyRankingAwards().then(setRankingAwards);
     friendsApi.fetchFriends().then((f) => setFriendCount(f.length));
     getHierarchy().then((subjects) => {
       if (subjects.length === 0) return setPracticePercent(0);
       const avg = subjects.reduce((sum, s) => sum + s.progress.percent, 0) / subjects.length;
       setPracticePercent(Math.round(avg));
     });
-  }, []);
+  }, [isParent]);
 
   function refreshProfile() {
     profileApi.fetchProfile().then(setProfile);
@@ -159,17 +166,21 @@ export function ProfilePage() {
     setError(null);
     setSaving(true);
     try {
-      const updated = await profileApi.updateProfile({
-        username,
-        first_name: firstName,
-        last_name: lastName,
-        bio,
-        grade: grade ? Number(grade) : null,
-        age: age ? Number(age) : null,
-        school_id: school?.id ?? null,
-        university_id: university?.id ?? null,
-        avatar: avatarFile ?? undefined,
-      });
+      const updated = await profileApi.updateProfile(
+        isParent
+          ? { username, first_name: firstName, last_name: lastName, avatar: avatarFile ?? undefined }
+          : {
+              username,
+              first_name: firstName,
+              last_name: lastName,
+              bio,
+              grade: grade ? Number(grade) : null,
+              age: age ? Number(age) : null,
+              school_id: school?.id ?? null,
+              university_id: university?.id ?? null,
+              avatar: avatarFile ?? undefined,
+            }
+      );
       setProfile(updated);
       loadFromProfile(updated);
       setAvatarFile(null);
@@ -201,6 +212,132 @@ export function ProfilePage() {
 
   if (!profile) {
     return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
+  }
+
+  if (isParent) {
+    const parentInputClass =
+      "w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
+    const parentLabelClass = "mb-1 block text-sm text-text-muted";
+    const parentFullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+    return (
+      <div className="min-h-screen bg-bg px-4 py-8">
+        <div className="mx-auto max-w-lg">
+          <div className="mb-6 flex items-center justify-between">
+            <Link to="/family" className="text-sm text-primary hover:underline">
+              ← Ծնողական վահանակ
+            </Link>
+            {!editing ? (
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+                >
+                  Խմբագրել
+                </button>
+                <button type="button" onClick={logout} className="text-sm text-primary hover:underline">
+                  Ելք
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
+                >
+                  Չեղարկել
+                </button>
+                <button
+                  type="submit"
+                  form="profile-form"
+                  disabled={saving}
+                  className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+                >
+                  {saving ? "..." : "Պահպանել"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <form id="profile-form" onSubmit={handleSave}>
+            <div className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-3xl font-semibold text-text-muted ${editing ? "cursor-pointer" : "cursor-default"}`}
+                  >
+                    {avatarPreview || profile.avatar ? (
+                      <img
+                        src={avatarPreview ?? profile.avatar ?? undefined}
+                        alt={profile.username}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      (profile.first_name || profile.username).slice(0, 1).toUpperCase()
+                    )}
+                  </button>
+                  {editing && (
+                    <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm text-primary-contrast">
+                      ✎
+                    </span>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1 text-center sm:text-left">
+                  {!editing ? (
+                    <>
+                      <h1 className="text-2xl font-semibold text-text">{parentFullName || profile.username}</h1>
+                      <p className="text-text-muted">@{profile.username}</p>
+                      {user?.email && <p className="mt-1 text-sm text-text-muted">{user.email}</p>}
+                    </>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className={parentLabelClass}>Օգտանուն</label>
+                        <input
+                          className={parentInputClass}
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className={parentLabelClass}>Անուն</label>
+                        <input
+                          className={parentInputClass}
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className={parentLabelClass}>Ազգանուն</label>
+                        <input
+                          className={parentInputClass}
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      </div>
+    );
   }
 
   const unlockedKeys = new Set((myAchievements ?? []).map((ua) => ua.achievement.key));
@@ -518,7 +655,37 @@ export function ProfilePage() {
         )}
 
         <section className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-text">Ընկերներ</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-text">
+              Դասակարգման մեդալներ {rankingAwards ? `(${rankingAwards.length})` : ""}
+            </h2>
+            <Link to="/rankings" className="text-sm text-primary hover:underline">
+              Դասակարգում →
+            </Link>
+          </div>
+          {rankingAwards === null && <p className="text-text-muted">Բեռնվում է...</p>}
+          {rankingAwards?.length === 0 && (
+            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
+              Դեռ մեդալներ չկան։ Ամսվա վերջում թոփ 3-ի մեջ մտնողները ստանում են 🥇🥈🥉 մեդալ։
+            </p>
+          )}
+          {rankingAwards && rankingAwards.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {rankingAwards.map((award) => (
+                <div
+                  key={award.id}
+                  title={award.title}
+                  className="rounded-[var(--radius)] border border-border bg-surface p-4 text-center"
+                >
+                  <p className="text-2xl">{RANK_MEDALS[award.rank] ?? "🏅"}</p>
+                  <p className="mt-1 truncate text-sm font-medium text-text">{award.title}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="mt-8">
           <button
             type="button"
             onClick={() => setFriendsOpen(true)}
@@ -537,7 +704,6 @@ export function ProfilePage() {
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold text-text">Առաջիկայում</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <ComingSoonCard icon="🏁" title="Մրցարշավային վարկանիշ" />
             <ComingSoonCard icon="🎮" title="Խաղային վիճակագրություն" />
           </div>
         </section>

@@ -184,3 +184,65 @@ class AttemptAnswer(models.Model):
 
     class Meta:
         unique_together = [("attempt", "question")]
+
+
+# ---------------------------------------------------------------------------
+# Daily problem — one deterministically-picked question per calendar day,
+# the same for every user, answered at most once.
+# ---------------------------------------------------------------------------
+
+class DailyProblemAttempt(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="daily_problem_attempts"
+    )
+    date = models.DateField()
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="daily_attempts")
+    is_correct = models.BooleanField()
+
+    selected_choice = models.ForeignKey(Choice, null=True, blank=True, on_delete=models.SET_NULL)
+    answer_text = models.TextField(blank=True, default="")
+    selected_statement_ids = models.JSONField(default=list, blank=True)
+
+    answered_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("user", "date")]
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.user} / {self.date} = {'✓' if self.is_correct else '✗'}"
+
+
+# ---------------------------------------------------------------------------
+# Weakness tracking — running per-student wrong-answer counts per topic, fed
+# by both this app (subtopic-linked) and apps.mock_exams (free-text topic;
+# mock exams use their own subject/topic taxonomy that doesn't map onto the
+# Subject/Subtopic hierarchy above). Drives the "Recommended Exercises" rank.
+# ---------------------------------------------------------------------------
+
+class MistakeSource(models.TextChoices):
+    PRACTICE = "practice", "Practice"
+    MOCK_EXAM = "mock_exam", "Mock Exam"
+
+
+class TopicMistake(models.Model):
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="topic_mistakes"
+    )
+    source = models.CharField(max_length=10, choices=MistakeSource.choices)
+    subject_name = models.CharField(max_length=120)
+    topic_label = models.CharField(max_length=200)
+    # Only set for source=practice, where the topic is an actual Subtopic row.
+    # Mock exam mistakes have no equivalent row to point at (see module docstring).
+    subtopic = models.ForeignKey(
+        Subtopic, null=True, blank=True, on_delete=models.SET_NULL, related_name="mistakes"
+    )
+    incorrect_count = models.PositiveIntegerField(default=0)
+    last_incorrect_at = models.DateTimeField()
+
+    class Meta:
+        unique_together = [("student", "source", "subject_name", "topic_label")]
+        ordering = ["-incorrect_count", "-last_incorrect_at"]
+
+    def __str__(self):
+        return f"{self.student} / {self.topic_label} = {self.incorrect_count}"

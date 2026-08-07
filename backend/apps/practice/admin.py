@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import (
     Subject, Domain, Topic, Subtopic,
     Question, Choice, Statement,
-    PracticeAttempt, AttemptAnswer,
+    PracticeAttempt, AttemptAnswer, TopicMistake,
 )
 
 
@@ -29,6 +29,13 @@ class QuestionAdmin(admin.ModelAdmin):
 class SubtopicAdmin(admin.ModelAdmin):
     list_display = ["id", "name", "topic"]
     search_fields = ["name"]
+
+
+@admin.register(TopicMistake)
+class TopicMistakeAdmin(admin.ModelAdmin):
+    list_display = ["id", "student", "source", "subject_name", "topic_label", "incorrect_count", "last_incorrect_at"]
+    list_filter = ["source", "subject_name"]
+    search_fields = ["student__username", "topic_label"]
 
 
 admin.site.register(Subject)

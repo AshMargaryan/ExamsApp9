@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import * as teachingApi from "../../api/teaching";
 import type { StudentSearchResult, TeacherStudentConnection } from "../../api/teaching";
-import type { Role } from "../../api/auth";
+import type { AccountRole } from "../../api/auth";
 import { PublicProfileModal } from "../profile/PublicProfileModal";
 
 type Tab = "invitations" | "search";
@@ -39,7 +39,7 @@ export function TeachingModal({
   onClose,
   onChange,
 }: {
-  role: Role;
+  role: AccountRole;
   onClose: () => void;
   onChange: () => void;
 }) {

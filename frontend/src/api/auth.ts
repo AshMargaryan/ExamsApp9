@@ -11,7 +11,7 @@ export interface University {
   name: string;
 }
 
-export type Role = "student" | "teacher";
+export type AccountRole = "student" | "teacher" | "parent";
 
 export interface User {
   id: number;
@@ -19,7 +19,7 @@ export interface User {
   email: string;
   date_joined: string;
   is_email_verified: boolean;
-  role: Role;
+  role: AccountRole;
   first_name: string;
   last_name: string;
   age: number | null;
@@ -36,7 +36,7 @@ export interface RegisterPayload {
   confirm_password: string;
   first_name: string;
   last_name: string;
-  role: Role;
+  role: AccountRole;
   age?: number;
   grade?: number;
   sex?: "male" | "female";

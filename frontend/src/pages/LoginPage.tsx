@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { MessageModal } from "../components/MessageModal";
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,8 +17,13 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(username, password);
-      navigate("/");
+      const user = await login(username, password);
+      const redirectTo = (location.state as { from?: Location } | null)?.from;
+      if (redirectTo) {
+        navigate(`${redirectTo.pathname}${redirectTo.search}`);
+      } else {
+        navigate(user.role === "parent" ? "/family" : "/");
+      }
     } catch {
       setError("Սխալ օգտանուն կամ գաղտնաբառ։");
     } finally {

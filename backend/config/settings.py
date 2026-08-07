@@ -38,7 +38,11 @@ INSTALLED_APPS = [
     "apps.streaks",
     "apps.friends",
     "apps.games",
+    "apps.notifications",
     "apps.mock_exams",
+    "apps.flashcards",
+    "apps.rankings",
+    "apps.parents",
     "apps.activity",
     "apps.teaching",
     "apps.chat",
@@ -231,6 +235,10 @@ AI_ASSISTANT_HISTORY_WINDOW = env.int("AI_ASSISTANT_HISTORY_WINDOW", default=20)
 
 # Attachment upload limits.
 AI_ASSISTANT_MAX_ATTACHMENT_SIZE_MB = env.int("AI_ASSISTANT_MAX_ATTACHMENT_SIZE_MB", default=15)
+
+# Flashcard image/audio upload limits.
+FLASHCARDS_MAX_IMAGE_SIZE_MB = env.int("FLASHCARDS_MAX_IMAGE_SIZE_MB", default=5)
+FLASHCARDS_MAX_AUDIO_SIZE_MB = env.int("FLASHCARDS_MAX_AUDIO_SIZE_MB", default=15)
 
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
