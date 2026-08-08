@@ -44,8 +44,42 @@ export interface RegisterPayload {
   university?: number;
 }
 
+export interface OAuthNewUser {
+  is_new: true;
+  ticket: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface CompleteOAuthRegistrationPayload {
+  ticket: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  role: AccountRole;
+  age?: number;
+  grade?: number;
+  sex?: "male" | "female";
+  school?: number;
+  university?: number;
+}
+
 export async function login(username: string, password: string): Promise<void> {
   const { data } = await apiClient.post("/auth/login/", { username, password });
+  tokenStorage.set(data.access, data.refresh);
+}
+
+/** Returns the ticket payload for a brand-new Google account, or null once tokens are stored. */
+export async function googleAuth(idToken: string): Promise<OAuthNewUser | null> {
+  const { data } = await apiClient.post("/auth/google/", { id_token: idToken });
+  if (data.is_new) return data as OAuthNewUser;
+  tokenStorage.set(data.access, data.refresh);
+  return null;
+}
+
+export async function completeOAuthRegistration(payload: CompleteOAuthRegistrationPayload): Promise<void> {
+  const { data } = await apiClient.post("/auth/oauth/complete/", payload);
   tokenStorage.set(data.access, data.refresh);
 }
 

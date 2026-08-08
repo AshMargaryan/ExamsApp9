@@ -5,15 +5,23 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .emails import generate_verification_code, send_password_reset_email, send_verification_email
 from .models import School, University, User
+from .oauth import make_registration_ticket, verify_google_id_token
 from .serializers import (
-    RegisterSerializer, SchoolSerializer, UniversitySerializer, UserSerializer,
+    OAuthCompleteRegisterSerializer, RegisterSerializer, SchoolSerializer,
+    UniversitySerializer, UserSerializer,
 )
 
 password_reset_token = PasswordResetTokenGenerator()
+
+
+def _issue_tokens(user) -> dict:
+    refresh = RefreshToken.for_user(user)
+    return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 
 class RegisterView(generics.CreateAPIView):
@@ -30,6 +38,74 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
+
+
+def _oauth_login_or_ticket(provider: str, provider_field: str, sub: str, email: str, first_name: str, last_name: str, request):
+    """Shared by GoogleAuthView (and future providers): existing linked account ->
+    tokens. Existing account with a matching verified email -> auto-link + tokens.
+    Otherwise -> a signed registration ticket to complete via OAuthCompleteRegisterView."""
+    user = User.objects.filter(**{provider_field: sub}).first()
+    needs_link = False
+    if user is None:
+        user = User.objects.filter(email__iexact=email).first()
+        needs_link = user is not None
+
+    if user is not None:
+        if needs_link:
+            setattr(user, provider_field, sub)
+            user.save(update_fields=[provider_field])
+        return Response(_issue_tokens(user))
+
+    ticket = make_registration_ticket(provider, sub, email, first_name, last_name)
+    return Response({
+        "is_new": True,
+        "ticket": ticket,
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name,
+    })
+
+
+class GoogleAuthView(APIView):
+    """POST /api/auth/google/ — {id_token} from Google Identity Services."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = str(request.data.get("id_token", "")).strip()
+        if not token:
+            return Response({"detail": "id_token-ը պարտադիր է։"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            claims = verify_google_id_token(token)
+        except ValueError:
+            return Response(
+                {"detail": "Google-ով մուտքը ձախողվեց։ Փորձեք կրկին։"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not claims["email_verified"]:
+            return Response(
+                {"detail": "Google-ի էլ. հասցեն հաստատված չէ։"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        email = claims["email"].strip().lower()
+        return _oauth_login_or_ticket(
+            "google", "google_id", claims["sub"], email, claims["first_name"], claims["last_name"], request
+        )
+
+
+class OAuthCompleteRegisterView(generics.CreateAPIView):
+    """POST /api/auth/oauth/complete/ — creates the User for a brand-new
+    Google sign-in once the profile-completion form is submitted."""
+
+    serializer_class = OAuthCompleteRegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(_issue_tokens(user), status=status.HTTP_201_CREATED)
 
 
 class MeView(generics.RetrieveUpdateAPIView):

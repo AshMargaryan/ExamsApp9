@@ -214,6 +214,15 @@ CORS_ALLOWED_ORIGINS = env.list(
     default=["http://localhost:3000", "http://127.0.0.1:3000"],
 )
 
+# ---------------------------------------------------------------------------
+# OAuth (social login)
+# ---------------------------------------------------------------------------
+
+# OAuth client ID from Google Cloud Console (Credentials > OAuth client ID >
+# Web application). Used as the `aud` claim checked when verifying Google ID
+# tokens submitted by the frontend.
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "University Entrance Exam Platform API",
     "DESCRIPTION": (

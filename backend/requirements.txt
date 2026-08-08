@@ -9,6 +9,7 @@ openai==1.35.10
 python-magic==0.4.27
 pillow==10.2.0
 requests==2.34.2
+google-auth==2.32.0
 gunicorn==22.0.0
 whitenoise==6.6.0
 channels==4.3.2

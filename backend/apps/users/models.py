@@ -46,6 +46,8 @@ class User(AbstractUser):
     email_verification_code = models.CharField(max_length=6, blank=True, default="")
     email_verification_expires_at = models.DateTimeField(null=True, blank=True)
 
+    google_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+
     age = models.PositiveSmallIntegerField(null=True, blank=True)
     grade = models.PositiveSmallIntegerField(null=True, blank=True)
     sex = models.CharField(max_length=10, choices=Sex.choices, blank=True, default="")

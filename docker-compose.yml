@@ -63,6 +63,11 @@ services:
         # network entirely and only knows about the port Compose published
         # to the host (8000:8000 above).
         VITE_API_URL: http://localhost:8000/api
+        # Only consumed by the `prod`/`builder` stage (the `dev` target used
+        # here reads frontend/.env directly at Vite dev-server start, so for
+        # local docker compose dev just set VITE_GOOGLE_CLIENT_ID in
+        # frontend/.env — no rebuild needed, restart the container).
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     volumes:
       - ./frontend:/app
       # Anonymous mount over node_modules: without this, the bind mount

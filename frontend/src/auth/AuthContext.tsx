@@ -1,13 +1,19 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import * as authApi from "../api/auth";
 import { tokenStorage } from "../api/client";
-import type { RegisterPayload, User } from "../api/auth";
+import type { CompleteOAuthRegistrationPayload, RegisterPayload, User } from "../api/auth";
+
+type OAuthLoginResult =
+  | { status: "logged_in"; user: User }
+  | { status: "needs_registration"; ticket: string; email: string; first_name: string; last_name: string };
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<User>;
   register: (payload: RegisterPayload) => Promise<User>;
+  loginWithGoogle: (idToken: string) => Promise<OAuthLoginResult>;
+  completeOAuthRegistration: (payload: CompleteOAuthRegistrationPayload) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -42,6 +48,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return login(payload.username, payload.password);
   }
 
+  async function loginWithGoogle(idToken: string): Promise<OAuthLoginResult> {
+    const newUser = await authApi.googleAuth(idToken);
+    if (newUser) {
+      return { status: "needs_registration", ...newUser };
+    }
+    const me = await authApi.fetchMe();
+    setUser(me);
+    return { status: "logged_in", user: me };
+  }
+
+  async function completeOAuthRegistration(payload: CompleteOAuthRegistrationPayload) {
+    await authApi.completeOAuthRegistration(payload);
+    const me = await authApi.fetchMe();
+    setUser(me);
+    return me;
+  }
+
   async function refreshUser() {
     setUser(await authApi.fetchMe());
   }
@@ -52,7 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user, isLoading, login, register,
+        loginWithGoogle, completeOAuthRegistration,
+        logout, refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

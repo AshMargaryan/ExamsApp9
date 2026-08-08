@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { MessageModal } from "../components/MessageModal";
+import { OAuthButtons } from "../components/auth/OAuthButtons";
+import type { User } from "../api/auth";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -12,18 +14,19 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  function redirectPath(user: User): string {
+    const redirectTo = (location.state as { from?: Location } | null)?.from;
+    if (redirectTo) return `${redirectTo.pathname}${redirectTo.search}`;
+    return user.role === "parent" ? "/family" : "/";
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
       const user = await login(username, password);
-      const redirectTo = (location.state as { from?: Location } | null)?.from;
-      if (redirectTo) {
-        navigate(`${redirectTo.pathname}${redirectTo.search}`);
-      } else {
-        navigate(user.role === "parent" ? "/family" : "/");
-      }
+      navigate(redirectPath(user));
     } catch {
       setError("Սխալ օգտանուն կամ գաղտնաբառ։");
     } finally {
@@ -78,6 +81,8 @@ export function LoginPage() {
             Գրանցվել
           </Link>
         </p>
+
+        <OAuthButtons getRedirectPath={redirectPath} />
       </form>
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
     </div>
