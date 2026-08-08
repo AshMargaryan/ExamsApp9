@@ -263,19 +263,19 @@ export function ProfilePage() {
             ) : (
               <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
-                >
-                  Չեղարկել
-                </button>
-                <button
                   type="submit"
                   form="profile-form"
                   disabled={saving}
                   className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   {saving ? "..." : "Պահպանել"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
+                >
+                  Չեղարկել
                 </button>
               </div>
             )}
@@ -397,19 +397,19 @@ export function ProfilePage() {
           ) : (
             <div className="flex gap-2">
               <button
-                type="button"
-                onClick={cancelEdit}
-                className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
-              >
-                Չեղարկել
-              </button>
-              <button
                 type="submit"
                 form="profile-form"
                 disabled={saving}
                 className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {saving ? "..." : "Պահպանել"}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
+              >
+                Չեղարկել
               </button>
             </div>
           )}
