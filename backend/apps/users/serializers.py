@@ -10,7 +10,7 @@ User = get_user_model()
 
 # Maps a registration ticket's `provider` value to the User field that stores
 # that provider's account id. Extend this when adding a new provider.
-PROVIDER_ID_FIELDS = {"google": "google_id"}
+PROVIDER_ID_FIELDS = {"google": "google_id", "apple": "apple_id"}
 
 
 class SchoolSerializer(serializers.ModelSerializer):
@@ -103,7 +103,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class OAuthCompleteRegisterSerializer(serializers.ModelSerializer):
-    """Creates the User for a brand-new Google sign-in, once the user has
+    """Creates the User for a brand-new Google/Apple sign-in, once the user has
     filled in the fields OAuth doesn't supply (username, role, ...). No User
     row exists until this succeeds — see apps/users/oauth.py for the ticket
     that carries the verified provider identity up to this point."""

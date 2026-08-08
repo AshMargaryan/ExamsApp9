@@ -223,6 +223,16 @@ CORS_ALLOWED_ORIGINS = env.list(
 # tokens submitted by the frontend.
 GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
 
+# Sign in with Apple. All blank by default — Apple's flow requires a real
+# HTTPS domain registered with Apple (won't work against localhost at all),
+# so these stay unset until that domain exists. See backend/.env.example
+# for where to get each value.
+APPLE_OAUTH_CLIENT_ID = env("APPLE_OAUTH_CLIENT_ID", default="")  # Services ID, used as the `aud` claim
+APPLE_OAUTH_TEAM_ID = env("APPLE_OAUTH_TEAM_ID", default="")
+APPLE_OAUTH_KEY_ID = env("APPLE_OAUTH_KEY_ID", default="")
+APPLE_OAUTH_PRIVATE_KEY = env("APPLE_OAUTH_PRIVATE_KEY", default="")
+APPLE_OAUTH_REDIRECT_URI = env("APPLE_OAUTH_REDIRECT_URI", default="")
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "University Entrance Exam Platform API",
     "DESCRIPTION": (

@@ -47,6 +47,7 @@ class User(AbstractUser):
     email_verification_expires_at = models.DateTimeField(null=True, blank=True)
 
     google_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    apple_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
 
     age = models.PositiveSmallIntegerField(null=True, blank=True)
     grade = models.PositiveSmallIntegerField(null=True, blank=True)

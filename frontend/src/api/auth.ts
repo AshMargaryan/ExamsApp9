@@ -78,6 +78,18 @@ export async function googleAuth(idToken: string): Promise<OAuthNewUser | null> 
   return null;
 }
 
+/** Returns the ticket payload for a brand-new Apple account, or null once tokens are stored.
+ * firstName/lastName are only meaningful on a user's very first Apple authorization
+ * (Apple never repeats them afterward) — pass through whatever AppleSignInButton captured. */
+export async function appleAuth(idToken: string, firstName: string, lastName: string): Promise<OAuthNewUser | null> {
+  const { data } = await apiClient.post("/auth/apple/", {
+    id_token: idToken, first_name: firstName, last_name: lastName,
+  });
+  if (data.is_new) return data as OAuthNewUser;
+  tokenStorage.set(data.access, data.refresh);
+  return null;
+}
+
 export async function completeOAuthRegistration(payload: CompleteOAuthRegistrationPayload): Promise<void> {
   const { data } = await apiClient.post("/auth/oauth/complete/", payload);
   tokenStorage.set(data.access, data.refresh);

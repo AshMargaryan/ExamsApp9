@@ -65,6 +65,85 @@ class GoogleAuthViewTests(APITestCase):
         self.assertEqual(User.objects.filter(email__iexact="newuser@example.com").count(), 1)
 
 
+APPLE_CLAIMS = {
+    "sub": "apple-sub-456",
+    "email": "newappleuser@example.com",
+    "email_verified": True,
+}
+
+
+def mock_apple_claims(**overrides):
+    return {**APPLE_CLAIMS, **overrides}
+
+
+class AppleAuthViewTests(APITestCase):
+    def test_new_user_returns_ticket_without_creating_a_user(self):
+        with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims()):
+            response = self.client.post("/api/auth/apple/", {
+                "id_token": "fake", "first_name": "Անի", "last_name": "Հակոբյան",
+            })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_new"])
+        self.assertEqual(response.data["first_name"], "Անի")
+        self.assertFalse(User.objects.filter(email="newappleuser@example.com").exists())
+
+    def test_missing_name_on_non_first_authorization_is_tolerated(self):
+        with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims()):
+            response = self.client.post("/api/auth/apple/", {"id_token": "fake"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["first_name"], "")
+        self.assertEqual(response.data["last_name"], "")
+
+    def test_unverified_email_is_rejected(self):
+        with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims(email_verified=False)):
+            response = self.client.post("/api/auth/apple/", {"id_token": "fake"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_existing_apple_id_logs_in_directly(self):
+        User.objects.create_user(
+            username="existingappleuser", email="linked-apple@example.com", password="unused",
+            apple_id="apple-sub-456",
+        )
+        with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims(email="linked-apple@example.com")):
+            response = self.client.post("/api/auth/apple/", {"id_token": "fake"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertNotIn("is_new", response.data)
+
+    def test_verified_email_auto_links_to_existing_password_account_no_duplicate(self):
+        existing = User.objects.create_user(
+            username="applepassworduser", email="newappleuser@example.com", password="StrongPass1",
+        )
+        with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims()):
+            response = self.client.post("/api/auth/apple/", {"id_token": "fake"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        existing.refresh_from_db()
+        self.assertEqual(existing.apple_id, "apple-sub-456")
+        self.assertEqual(User.objects.filter(email__iexact="newappleuser@example.com").count(), 1)
+
+    def test_completes_registration_via_apple_ticket(self):
+        with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims()):
+            init_response = self.client.post("/api/auth/apple/", {
+                "id_token": "fake", "first_name": "Անի", "last_name": "Հակոբյան",
+            })
+        ticket = init_response.data["ticket"]
+
+        response = self.client.post("/api/auth/oauth/complete/", {
+            "ticket": ticket, "username": "anifromapple", "first_name": "Անի",
+            "last_name": "Հակոբյան", "role": "student",
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(username="anifromapple")
+        self.assertEqual(user.apple_id, "apple-sub-456")
+        self.assertFalse(user.has_usable_password())
+
+
 class OAuthCompleteRegisterViewTests(APITestCase):
     def _ticket(self, **overrides):
         data = {

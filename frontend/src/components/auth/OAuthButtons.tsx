@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { MessageModal } from "../MessageModal";
 import { GoogleSignInButton } from "./GoogleSignInButton";
+import { AppleSignInButton } from "./AppleSignInButton";
 import type { User } from "../../api/auth";
 
 interface Props {
@@ -14,7 +15,7 @@ type OAuthLoginResult =
   | { status: "needs_registration"; ticket: string; email: string; first_name: string; last_name: string };
 
 export function OAuthButtons({ getRedirectPath }: Props) {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, loginWithApple } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,18 @@ export function OAuthButtons({ getRedirectPath }: Props) {
     }
   }
 
+  async function handleAppleCredential(idToken: string, firstName: string, lastName: string) {
+    setError(null);
+    setLoading(true);
+    try {
+      handleResult(await loginWithApple(idToken, firstName, lastName));
+    } catch {
+      setError("Apple մուտքը ձախողվեց։ Փորձեք կրկին։");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="mt-6">
       <div className="mb-4 flex items-center gap-3 text-xs text-text-muted">
@@ -55,6 +68,11 @@ export function OAuthButtons({ getRedirectPath }: Props) {
       </div>
       <div className="flex flex-col items-center gap-3">
         <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
+        <AppleSignInButton
+          onCredential={handleAppleCredential}
+          onError={() => setError("Apple մուտքը ձախողվեց։ Փորձեք կրկին։")}
+          disabled={loading}
+        />
       </div>
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
     </div>

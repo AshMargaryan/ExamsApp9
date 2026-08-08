@@ -10,7 +10,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .emails import generate_verification_code, send_password_reset_email, send_verification_email
 from .models import School, University, User
-from .oauth import make_registration_ticket, verify_google_id_token
+from .oauth import make_registration_ticket, verify_apple_id_token, verify_google_id_token
 from .serializers import (
     OAuthCompleteRegisterSerializer, RegisterSerializer, SchoolSerializer,
     UniversitySerializer, UserSerializer,
@@ -41,7 +41,7 @@ class LoginView(TokenObtainPairView):
 
 
 def _oauth_login_or_ticket(provider: str, provider_field: str, sub: str, email: str, first_name: str, last_name: str, request):
-    """Shared by GoogleAuthView (and future providers): existing linked account ->
+    """Shared by GoogleAuthView/AppleAuthView: existing linked account ->
     tokens. Existing account with a matching verified email -> auto-link + tokens.
     Otherwise -> a signed registration ticket to complete via OAuthCompleteRegisterView."""
     user = User.objects.filter(**{provider_field: sub}).first()
@@ -94,9 +94,43 @@ class GoogleAuthView(APIView):
         )
 
 
+class AppleAuthView(APIView):
+    """POST /api/auth/apple/ — {id_token, first_name?, last_name?} from Sign
+    in with Apple. Apple only ever sends the user's name once, as a separate
+    `user` field alongside the token on the very first authorization — the
+    frontend is responsible for capturing that and forwarding it here as
+    first_name/last_name on that same initial request; on every later
+    sign-in these will be absent, which is fine since by then the account
+    already exists."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = str(request.data.get("id_token", "")).strip()
+        if not token:
+            return Response({"detail": "id_token-ը պարտադիր է։"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            claims = verify_apple_id_token(token)
+        except ValueError:
+            return Response(
+                {"detail": "Apple-ով մուտքը ձախողվեց։ Փորձեք կրկին։"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not claims["email_verified"]:
+            return Response(
+                {"detail": "Apple-ի էլ. հասցեն հաստատված չէ։"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        email = claims["email"].strip().lower()
+        first_name = str(request.data.get("first_name", "")).strip()
+        last_name = str(request.data.get("last_name", "")).strip()
+        return _oauth_login_or_ticket("apple", "apple_id", claims["sub"], email, first_name, last_name, request)
+
+
 class OAuthCompleteRegisterView(generics.CreateAPIView):
     """POST /api/auth/oauth/complete/ — creates the User for a brand-new
-    Google sign-in once the profile-completion form is submitted."""
+    Google/Apple sign-in once the profile-completion form is submitted."""
 
     serializer_class = OAuthCompleteRegisterSerializer
     permission_classes = [permissions.AllowAny]
