@@ -14,6 +14,7 @@ import { PracticeSubjectPage } from "./pages/PracticeSubjectPage";
 import { TierPage } from "./pages/TierPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { AccountSessionsPage } from "./pages/AccountSessionsPage";
 import { TeacherDashboardPage } from "./pages/TeacherDashboardPage";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage";
 import { AssignmentReviewPage } from "./pages/AssignmentReviewPage";
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/practice/:subjectId" element={<PracticeSubjectPage />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/account/sessions" element={<AccountSessionsPage />} />
             <Route path="/teacher-dashboard" element={<TeacherDashboardPage />} />
             <Route path="/student-dashboard" element={<StudentDashboardPage />} />
             <Route path="/assignments/:id" element={<AssignmentReviewPage />} />

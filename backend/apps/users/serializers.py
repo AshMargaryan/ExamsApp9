@@ -214,3 +214,20 @@ class UserSerializer(serializers.ModelSerializer):
         if value is not None and not (1 <= value <= 12):
             raise serializers.ValidationError("Դասարանը պետք է լինի 1-ից 12 միջակայքում։")
         return value
+
+
+class UserSessionSerializer(serializers.Serializer):
+    """Read-only device/session info for the account-management UI. Never
+    includes the session_id UUID embedded in JWTs, or any token — `id` (the
+    row's own primary key) is the public identifier used to target a revoke."""
+
+    id = serializers.IntegerField()
+    platform = serializers.CharField()
+    browser = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    last_activity_at = serializers.DateTimeField()
+    is_current = serializers.SerializerMethodField()
+
+    def get_is_current(self, obj):
+        current_session_id = self.context.get("current_session_id")
+        return current_session_id is not None and str(obj.session_id) == str(current_session_id)

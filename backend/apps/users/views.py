@@ -1,27 +1,51 @@
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core import signing
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from .emails import generate_verification_code, send_password_reset_email, send_verification_email
-from .models import School, University, User
+from .models import School, University, User, UserSession
 from .oauth import make_registration_ticket, verify_apple_id_token, verify_google_id_token
 from .serializers import (
     OAuthCompleteRegisterSerializer, RegisterSerializer, SchoolSerializer,
-    UniversitySerializer, UserSerializer,
+    UniversitySerializer, UserSerializer, UserSessionSerializer,
 )
+from .sessions import (
+    DeviceLimitReached, create_session, get_device_limit,
+    make_management_ticket, read_management_ticket,
+)
+from .utils import issue_tokens_for_user
 
 password_reset_token = PasswordResetTokenGenerator()
 
 
-def _issue_tokens(user) -> dict:
-    refresh = RefreshToken.for_user(user)
-    return {"access": str(refresh.access_token), "refresh": str(refresh)}
+def _issue_tokens_or_device_limit_response(user, request, success_status=status.HTTP_200_OK):
+    """Shared by every login path (password, Google, Apple, OAuth completion):
+    creates a device session if under the cap and returns tokens, or a 403
+    with a management_ticket the frontend can use to list/revoke an existing
+    session — see apps/users/sessions.py. Returns (response, granted) so
+    callers with side effects that should only happen on an actual successful
+    login (e.g. auto-linking a Google/Apple id) can gate on `granted`."""
+    try:
+        session = create_session(user, request)
+    except DeviceLimitReached:
+        return Response({
+            "detail": (
+                f"Հասել եք սարքերի առավելագույն թվին ({get_device_limit(user)})։ "
+                "Անջատեք մեկ այլ սարք՝ շարունակելու համար։"
+            ),
+            "code": "device_limit_reached",
+            "management_ticket": make_management_ticket(user.id),
+        }, status=status.HTTP_403_FORBIDDEN), False
+    return Response(issue_tokens_for_user(user, session), status=success_status), True
 
 
 class RegisterView(generics.CreateAPIView):
@@ -36,14 +60,53 @@ class RegisterView(generics.CreateAPIView):
         send_verification_email(user)
 
 
-class LoginView(TokenObtainPairView):
+class LoginView(APIView):
+    """POST /api/auth/login/ — {username, password}. Uses SimpleJWT's own
+    serializer purely to validate credentials (same error/message as before
+    on bad credentials — the frontend already shows a generic message on any
+    failure, so nothing user-visible changes there), then applies the same
+    device-session gate every other login path uses."""
+
     permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = TokenObtainPairSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response, _ = _issue_tokens_or_device_limit_response(serializer.user, request)
+        return response
+
+
+class SessionAwareTokenRefreshSerializer(TokenRefreshSerializer):
+    """Rejects refreshing a token whose session has been revoked, instead of
+    silently minting a fresh access token for a device that should be shut
+    out. Bumps last_activity_at on success."""
+
+    def validate(self, attrs):
+        try:
+            incoming = RefreshToken(attrs["refresh"])
+        except TokenError as exc:
+            raise InvalidToken(str(exc)) from exc
+
+        session_id = incoming.get("session_id")
+        session = UserSession.objects.filter(session_id=session_id).first() if session_id else None
+        if session is None or not session.is_active:
+            raise InvalidToken("Session revoked.")
+
+        data = super().validate(attrs)
+        UserSession.objects.filter(pk=session.pk).update(last_activity_at=timezone.now())
+        return data
+
+
+class SessionAwareTokenRefreshView(TokenRefreshView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = SessionAwareTokenRefreshSerializer
 
 
 def _oauth_login_or_ticket(provider: str, provider_field: str, sub: str, email: str, first_name: str, last_name: str, request):
     """Shared by GoogleAuthView/AppleAuthView: existing linked account ->
-    tokens. Existing account with a matching verified email -> auto-link + tokens.
-    Otherwise -> a signed registration ticket to complete via OAuthCompleteRegisterView."""
+    tokens (subject to the same device limit as password login). Existing
+    account with a matching verified email -> auto-link + tokens. Otherwise
+    -> a signed registration ticket to complete via OAuthCompleteRegisterView."""
     user = User.objects.filter(**{provider_field: sub}).first()
     needs_link = False
     if user is None:
@@ -51,10 +114,14 @@ def _oauth_login_or_ticket(provider: str, provider_field: str, sub: str, email: 
         needs_link = user is not None
 
     if user is not None:
-        if needs_link:
+        response, granted = _issue_tokens_or_device_limit_response(user, request)
+        # Only persist the provider link if the login actually succeeded —
+        # a rejected (device-limit) attempt must not silently link the
+        # account as a side effect.
+        if granted and needs_link:
             setattr(user, provider_field, sub)
             user.save(update_fields=[provider_field])
-        return Response(_issue_tokens(user))
+        return response
 
     ticket = make_registration_ticket(provider, sub, email, first_name, last_name)
     return Response({
@@ -139,7 +206,8 @@ class OAuthCompleteRegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response(_issue_tokens(user), status=status.HTTP_201_CREATED)
+        response, _ = _issue_tokens_or_device_limit_response(user, request, success_status=status.HTTP_201_CREATED)
+        return response
 
 
 class MeView(generics.RetrieveUpdateAPIView):
@@ -148,6 +216,103 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+def _current_session_id(request):
+    return request.auth.get("session_id") if request.auth else None
+
+
+class LogoutView(APIView):
+    """POST /api/auth/logout/ — revokes the session tied to the token used to
+    call this endpoint, freeing its device slot. First time logout has ever
+    done anything server-side (previously purely client-side token clearing)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        session_id = _current_session_id(request)
+        if session_id:
+            UserSession.objects.filter(
+                session_id=session_id, user=request.user, revoked_at__isnull=True
+            ).update(revoked_at=timezone.now())
+        return Response({"detail": "Դուրս եք եկել համակարգից։"})
+
+
+class SessionListView(generics.ListAPIView):
+    """GET /api/auth/sessions/ — the authenticated user's own active devices,
+    for the account-management page."""
+
+    serializer_class = UserSessionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return UserSession.objects.filter(user=self.request.user, revoked_at__isnull=True)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["current_session_id"] = _current_session_id(self.request)
+        return context
+
+
+class SessionRevokeView(APIView):
+    """POST /api/auth/sessions/<pk>/revoke/ — revoke one of the authenticated
+    user's own sessions, freeing its device slot immediately."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        session = UserSession.objects.filter(pk=pk, user=request.user, revoked_at__isnull=True).first()
+        if session is None:
+            return Response({"detail": "Սեսիան չի գտնվել։"}, status=status.HTTP_404_NOT_FOUND)
+        session.revoke()
+        return Response({"detail": "Սարքն անջատված է։"})
+
+
+def _read_ticket_or_error(request):
+    """Shared by the two ticket-based (AllowAny) session-management endpoints
+    below — returns (user_id, None) or (None, error_response)."""
+    ticket = str(request.data.get("ticket", ""))
+    try:
+        return read_management_ticket(ticket), None
+    except signing.BadSignature:
+        return None, Response(
+            {"detail": "Հղումն անվավեր է կամ ժամկետանց։"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class SessionManagementListView(APIView):
+    """POST /api/auth/sessions/manage/list/ — {ticket}. Lets a user who was
+    just rejected for hitting the device limit see their existing sessions
+    without a real access token — the ticket is scoped to nothing but this
+    and the revoke endpoint below (see apps/users/sessions.py)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        user_id, error = _read_ticket_or_error(request)
+        if error:
+            return error
+        sessions = UserSession.objects.filter(user_id=user_id, revoked_at__isnull=True)
+        return Response(UserSessionSerializer(sessions, many=True).data)
+
+
+class SessionManagementRevokeView(APIView):
+    """POST /api/auth/sessions/manage/revoke/ — {ticket, session_id}."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        user_id, error = _read_ticket_or_error(request)
+        if error:
+            return error
+        session = UserSession.objects.filter(
+            pk=request.data.get("session_id"), user_id=user_id, revoked_at__isnull=True
+        ).first()
+        if session is None:
+            return Response({"detail": "Սեսիան չի գտնվել։"}, status=status.HTTP_404_NOT_FOUND)
+        session.revoke()
+        return Response({"detail": "Սարքն անջատված է։"})
 
 
 class SchoolSearchView(generics.ListAPIView):

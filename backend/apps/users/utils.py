@@ -1,8 +1,15 @@
 import random
 
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
+
+
+def issue_tokens_for_user(user, session) -> dict:
+    refresh = RefreshToken.for_user(user)
+    refresh["session_id"] = str(session.session_id)
+    return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 
 def suggest_usernames(base: str, count: int = 4, exclude_user_id: int | None = None) -> list[str]:

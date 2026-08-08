@@ -253,6 +253,9 @@ export function ProfilePage() {
                 >
                   Խմբագրել
                 </button>
+                <Link to="/account/sessions" className="text-sm text-primary hover:underline">
+                  Ակտիվ սարքեր
+                </Link>
                 <button type="button" onClick={logout} className="text-sm text-primary hover:underline">
                   Ելք
                 </button>
@@ -379,13 +382,18 @@ export function ProfilePage() {
             ← Գլխավոր
           </Link>
           {!editing ? (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-            >
-              Խմբագրել
-            </button>
+            <div className="flex items-center gap-4">
+              <Link to="/account/sessions" className="text-sm text-primary hover:underline">
+                Ակտիվ սարքեր
+              </Link>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+              >
+                Խմբագրել
+              </button>
+            </div>
           ) : (
             <div className="flex gap-2">
               <button

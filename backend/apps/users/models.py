@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
@@ -72,3 +74,31 @@ class User(AbstractUser):
     def set_email_verification_code(self, code: str, ttl_minutes: int = 15) -> None:
         self.email_verification_code = code
         self.email_verification_expires_at = timezone.now() + timezone.timedelta(minutes=ttl_minutes)
+
+
+class UserSession(models.Model):
+    """One row per logged-in device. session_id is embedded as a custom claim
+    in that device's JWTs (see apps/users/utils.py:issue_tokens_for_user) so
+    revocation can be checked on every request — see
+    apps/users/authentication.py. Used to cap active devices per account
+    (apps/users/sessions.py) as subscription-sharing protection."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
+    session_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_activity_at = models.DateTimeField(auto_now_add=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    platform = models.CharField(max_length=100, blank=True, default="")
+    browser = models.CharField(max_length=100, blank=True, default="")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-last_activity_at"]
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+    def revoke(self) -> None:
+        self.revoked_at = timezone.now()
+        self.save(update_fields=["revoked_at"])

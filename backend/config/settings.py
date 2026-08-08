@@ -27,6 +27,7 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     "channels",
@@ -190,7 +191,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apps.users.authentication.SessionAwareJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
@@ -207,6 +208,12 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "SIGNING_KEY": env("JWT_SECRET"),
 }
+
+# Max simultaneously active devices/sessions per account (subscription-sharing
+# protection — see apps/users/sessions.py:get_device_limit, the one seam
+# where this becomes subscription-tier-dependent later without touching the
+# session model or any call site).
+MAX_ACTIVE_DEVICES_PER_USER = env.int("MAX_ACTIVE_DEVICES_PER_USER", default=2)
 
 
 CORS_ALLOWED_ORIGINS = env.list(

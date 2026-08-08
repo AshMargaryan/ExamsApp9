@@ -65,6 +65,16 @@ export interface CompleteOAuthRegistrationPayload {
   university?: number;
 }
 
+export interface DeviceLimitReachedError {
+  code: "device_limit_reached";
+  detail: string;
+  management_ticket: string;
+}
+
+export function isDeviceLimitReached(data: unknown): data is DeviceLimitReachedError {
+  return !!data && typeof data === "object" && (data as { code?: string }).code === "device_limit_reached";
+}
+
 export async function login(username: string, password: string): Promise<void> {
   const { data } = await apiClient.post("/auth/login/", { username, password });
   tokenStorage.set(data.access, data.refresh);
@@ -104,8 +114,14 @@ export async function fetchMe(): Promise<User> {
   return data;
 }
 
-export function logout(): void {
-  tokenStorage.clear();
+export async function logout(): Promise<void> {
+  try {
+    await apiClient.post("/auth/logout/");
+  } finally {
+    // Always clear locally, even if the network call fails — a user must
+    // never be stuck unable to log out on their own device.
+    tokenStorage.clear();
+  }
 }
 
 export async function verifyEmail(code: string): Promise<void> {

@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
+import { AxiosError } from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { MessageModal } from "../components/MessageModal";
 import { OAuthButtons } from "../components/auth/OAuthButtons";
-import type { User } from "../api/auth";
+import { DeviceLimitModal } from "../components/auth/DeviceLimitModal";
+import { isDeviceLimitReached, type User } from "../api/auth";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -12,6 +14,7 @@ export function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [deviceLimitTicket, setDeviceLimitTicket] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   function redirectPath(user: User): string {
@@ -20,18 +23,31 @@ export function LoginPage() {
     return user.role === "parent" ? "/family" : "/";
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
+  async function attemptLogin() {
     setSubmitting(true);
     try {
       const user = await login(username, password);
       navigate(redirectPath(user));
-    } catch {
-      setError("Սխալ օգտանուն կամ գաղտնաբառ։");
+    } catch (err) {
+      if (err instanceof AxiosError && isDeviceLimitReached(err.response?.data)) {
+        setDeviceLimitTicket(err.response!.data.management_ticket);
+      } else {
+        setError("Սխալ օգտանուն կամ գաղտնաբառ։");
+      }
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    await attemptLogin();
+  }
+
+  async function handleRevokedRetry() {
+    setDeviceLimitTicket(null);
+    await attemptLogin();
   }
 
   return (
@@ -85,6 +101,13 @@ export function LoginPage() {
         <OAuthButtons getRedirectPath={redirectPath} />
       </form>
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {deviceLimitTicket && (
+        <DeviceLimitModal
+          ticket={deviceLimitTicket}
+          onRevokedRetry={handleRevokedRetry}
+          onClose={() => setDeviceLimitTicket(null)}
+        />
+      )}
     </div>
   );
 }

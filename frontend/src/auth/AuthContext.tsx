@@ -15,7 +15,7 @@ interface AuthContextValue {
   loginWithGoogle: (idToken: string) => Promise<OAuthLoginResult>;
   loginWithApple: (idToken: string, firstName: string, lastName: string) => Promise<OAuthLoginResult>;
   completeOAuthRegistration: (payload: CompleteOAuthRegistrationPayload) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -80,8 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await authApi.fetchMe());
   }
 
-  function logout() {
-    authApi.logout();
+  async function logout() {
+    await authApi.logout();
     setUser(null);
   }
 

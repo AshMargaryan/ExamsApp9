@@ -228,3 +228,214 @@ class OAuthCompleteRegisterViewTests(APITestCase):
         self.assertEqual(User.objects.filter(google_id="google-sub-123").count(), 1)
         self.assertFalse(User.objects.filter(username="secondcompletion").exists())
         self.assertTrue(User.objects.filter(pk=already_created.pk).exists())
+
+
+import threading
+
+from django.db import connection
+from django.test import TransactionTestCase
+from rest_framework.test import APIClient
+
+from .models import UserSession
+
+PASSWORD = "StrongPass1"
+
+
+class DeviceSessionLimitTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="deviceuser", email="deviceuser@example.com", password=PASSWORD)
+
+    def _login(self):
+        return self.client.post("/api/auth/login/", {"username": "deviceuser", "password": PASSWORD})
+
+    def test_first_and_second_device_login_succeed(self):
+        first = self._login()
+        second = self._login()
+
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
+
+    def test_third_device_login_is_rejected(self):
+        self._login()
+        self._login()
+        third = self._login()
+
+        self.assertEqual(third.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(third.data["code"], "device_limit_reached")
+        self.assertIn("management_ticket", third.data)
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
+
+    def test_logout_frees_a_slot(self):
+        first = self._login()
+        self._login()
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {first.data['access']}")
+        logout_response = self.client.post("/api/auth/logout/")
+        self.client.credentials()
+
+        self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 1)
+
+        third = self._login()
+        self.assertEqual(third.status_code, status.HTTP_200_OK)
+
+    def test_revoked_session_immediately_blocks_authenticated_access(self):
+        first = self._login()
+        access_token = first.data["access"]
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        me_before = self.client.get("/api/auth/me/")
+        self.assertEqual(me_before.status_code, status.HTTP_200_OK)
+
+        session = UserSession.objects.get(user=self.user)
+        session.revoke()
+
+        me_after = self.client.get("/api/auth/me/")
+        self.assertEqual(me_after.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_revoked_sessions_do_not_count_toward_the_limit(self):
+        self._login()
+        self._login()
+        UserSession.objects.filter(user=self.user).first().revoke()
+
+        third = self._login()
+        self.assertEqual(third.status_code, status.HTTP_200_OK)
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
+
+    def test_google_login_respects_device_limit_for_existing_account(self):
+        self.user.google_id = "google-sub-device-test"
+        self.user.save(update_fields=["google_id"])
+        self._login()
+        self._login()
+
+        with patch("apps.users.views.verify_google_id_token", return_value=mock_claims(
+            sub="google-sub-device-test", email="deviceuser@example.com",
+        )):
+            response = self.client.post("/api/auth/google/", {"id_token": "fake"})
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data["code"], "device_limit_reached")
+
+    def test_apple_login_respects_device_limit_for_existing_account(self):
+        self.user.apple_id = "apple-sub-device-test"
+        self.user.save(update_fields=["apple_id"])
+        self._login()
+        self._login()
+
+        with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims(
+            sub="apple-sub-device-test", email="deviceuser@example.com",
+        )):
+            response = self.client.post("/api/auth/apple/", {"id_token": "fake"})
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data["code"], "device_limit_reached")
+
+    def test_already_on_two_devices_then_different_provider_still_rejected_as_third(self):
+        # Covers: 2 password-login devices, then a Google login for the same
+        # account (via verified-email auto-link, no prior google_id) must
+        # still be treated as a third session, not bypass the cap.
+        self._login()
+        self._login()
+
+        with patch("apps.users.views.verify_google_id_token", return_value=mock_claims(
+            sub="google-sub-new-link", email="deviceuser@example.com",
+        )):
+            response = self.client.post("/api/auth/google/", {"id_token": "fake"})
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Must not have auto-linked the google_id if the login didn't actually succeed.
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.google_id)
+
+    def test_repeated_requests_with_same_token_do_not_create_new_sessions(self):
+        first = self._login()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {first.data['access']}")
+        for _ in range(5):
+            self.client.get("/api/auth/me/")
+
+        self.assertEqual(UserSession.objects.filter(user=self.user).count(), 1)
+
+    def test_authenticated_session_list_and_revoke(self):
+        first = self._login()
+        second = self._login()
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {first.data['access']}")
+        listing = self.client.get("/api/auth/sessions/")
+        self.assertEqual(listing.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(listing.data), 2)
+        current_flags = sorted(row["is_current"] for row in listing.data)
+        self.assertEqual(current_flags, [False, True])
+
+        other_session_row = next(row for row in listing.data if not row["is_current"])
+        revoke = self.client.post(f"/api/auth/sessions/{other_session_row['id']}/revoke/")
+        self.assertEqual(revoke.status_code, status.HTTP_200_OK)
+
+        # The revoked (second) device's own token must now be rejected.
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {second.data['access']}")
+        blocked = self.client.get("/api/auth/me/")
+        self.assertEqual(blocked.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_management_ticket_list_and_revoke_frees_a_slot(self):
+        self._login()
+        self._login()
+        rejected = self._login()
+        ticket = rejected.data["management_ticket"]
+
+        listing = self.client.post("/api/auth/sessions/manage/list/", {"ticket": ticket})
+        self.assertEqual(listing.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(listing.data), 2)
+
+        revoke = self.client.post("/api/auth/sessions/manage/revoke/", {
+            "ticket": ticket, "session_id": listing.data[0]["id"],
+        })
+        self.assertEqual(revoke.status_code, status.HTTP_200_OK)
+
+        retry = self._login()
+        self.assertEqual(retry.status_code, status.HTTP_200_OK)
+
+    def test_management_ticket_cannot_touch_another_users_sessions(self):
+        other = User.objects.create_user(username="otheruser", email="other@example.com", password=PASSWORD)
+        self.client.post("/api/auth/login/", {"username": "otheruser", "password": PASSWORD})
+        other_session = UserSession.objects.get(user=other)
+
+        self._login()
+        self._login()
+        rejected = self._login()
+        ticket = rejected.data["management_ticket"]
+
+        revoke = self.client.post("/api/auth/sessions/manage/revoke/", {
+            "ticket": ticket, "session_id": other_session.pk,
+        })
+        self.assertEqual(revoke.status_code, status.HTTP_404_NOT_FOUND)
+        other_session.refresh_from_db()
+        self.assertTrue(other_session.is_active)
+
+
+class ConcurrentLoginRaceTests(TransactionTestCase):
+    def test_concurrent_logins_cannot_exceed_device_limit(self):
+        User.objects.create_user(username="raceuser", email="race@example.com", password=PASSWORD)
+        results = []
+        results_lock = threading.Lock()
+
+        def attempt_login():
+            try:
+                client = APIClient()
+                response = client.post("/api/auth/login/", {"username": "raceuser", "password": PASSWORD})
+                with results_lock:
+                    results.append(response.status_code)
+            finally:
+                # Each thread gets its own DB connection; Django never closes
+                # it for non-request threads, which otherwise leaves the test
+                # DB "in use" and breaks teardown at the end of the run.
+                connection.close()
+
+        threads = [threading.Thread(target=attempt_login) for _ in range(8)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        self.assertEqual(results.count(status.HTTP_200_OK), 2)
+        user = User.objects.get(username="raceuser")
+        self.assertEqual(UserSession.objects.filter(user=user, revoked_at__isnull=True).count(), 2)
