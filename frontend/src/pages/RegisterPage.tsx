@@ -62,11 +62,22 @@ export function RegisterPage() {
   const [university, setUniversity] = useState<Option | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function closeError() {
+    setError(null);
+    setUsernameSuggestions(null);
+  }
+
+  function pickSuggestion(suggestion: string) {
+    setUsername(suggestion);
+    closeError();
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    closeError();
 
     if (!role) return;
 
@@ -99,9 +110,16 @@ export function RegisterPage() {
       navigate("/verify-email");
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data as Record<string, string[] | string>;
-        const firstError = Object.values(data).flat()[0];
-        setError((firstError as string) ?? "Գրանցումը ձախողվեց։");
+        const data = err.response.data as Record<string, unknown>;
+        const usernameErr = data.username;
+        if (usernameErr && typeof usernameErr === "object" && !Array.isArray(usernameErr) && "suggestions" in usernameErr) {
+          const { message, suggestions } = usernameErr as { message: string; suggestions: string[] };
+          setError(message);
+          setUsernameSuggestions(suggestions);
+        } else {
+          const firstError = Object.values(data).flat()[0];
+          setError((firstError as string) ?? "Գրանցումը ձախողվեց։");
+        }
       } else {
         setError("Գրանցումը ձախողվեց։");
       }
@@ -176,6 +194,9 @@ export function RegisterPage() {
 
         <label className={labelClass}>Օգտանուն</label>
         <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required />
+        <p className="-mt-3 mb-4 text-xs text-text-muted">
+          Օգտանունը հետագայում կկարողանաք փոխել 14 օրը մեկ անգամ։
+        </p>
 
         <label className={labelClass}>Անուն</label>
         <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
@@ -275,7 +296,14 @@ export function RegisterPage() {
           </Link>
         </p>
       </form>
-      {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {error && (
+        <MessageModal
+          message={error}
+          onClose={closeError}
+          suggestions={usernameSuggestions ?? undefined}
+          onSelectSuggestion={pickSuggestion}
+        />
+      )}
     </div>
   );
 }

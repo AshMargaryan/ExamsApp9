@@ -38,6 +38,7 @@ class AccountRole(models.TextChoices):
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    username_changed_at = models.DateTimeField(null=True, blank=True)
 
     role = models.CharField(max_length=10, choices=AccountRole.choices, default=AccountRole.STUDENT)
 
@@ -59,6 +60,11 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+        super().save(*args, **kwargs)
 
     def set_email_verification_code(self, code: str, ttl_minutes: int = 15) -> None:
         self.email_verification_code = code

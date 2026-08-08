@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 
 from .models import AccountRole, School, University
+from .utils import suggest_usernames
 
 User = get_user_model()
 
@@ -20,22 +20,8 @@ class UniversitySerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
-        validators=[
-            UniqueValidator(
-                queryset=User.objects.all(),
-                message="Այս օգտանունն արդեն զբաղված է։",
-            )
-        ]
-    )
-    email = serializers.EmailField(
-        validators=[
-            UniqueValidator(
-                queryset=User.objects.all(),
-                message="Այս էլ. հասցեով հաշիվ արդեն գոյություն ունի։",
-            )
-        ]
-    )
+    username = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField(
         write_only=True,
         min_length=8,
@@ -69,6 +55,20 @@ class RegisterSerializer(serializers.ModelSerializer):
             "school": {"required": False},
             "university": {"required": False},
         }
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError({
+                "message": "Այս օգտանունն արդեն զբաղված է։",
+                "suggestions": suggest_usernames(value),
+            })
+        return value
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Այս էլ. հասցեով հաշիվ արդեն գոյություն ունի։")
+        return value
 
     def validate_grade(self, value):
         if value is not None and not (1 <= value <= 12):
@@ -114,6 +114,12 @@ class UserSerializer(serializers.ModelSerializer):
             "school", "university", "school_id", "university_id",
         ]
         read_only_fields = ["id", "date_joined", "is_email_verified", "role"]
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(email__iexact=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Այս էլ. հասցեով հաշիվ արդեն գոյություն ունի։")
+        return value
 
     def validate_grade(self, value):
         if value is not None and not (1 <= value <= 12):

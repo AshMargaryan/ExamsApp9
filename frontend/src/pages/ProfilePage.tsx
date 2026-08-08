@@ -84,6 +84,7 @@ export function ProfilePage() {
   const [teachingOpen, setTeachingOpen] = useState(false);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[] | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -161,9 +162,19 @@ export function ProfilePage() {
     setEditing(false);
   }
 
+  function closeError() {
+    setError(null);
+    setUsernameSuggestions(null);
+  }
+
+  function pickUsernameSuggestion(suggestion: string) {
+    setUsername(suggestion);
+    closeError();
+  }
+
   async function handleSave(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    closeError();
     setSaving(true);
     try {
       const updated = await profileApi.updateProfile(
@@ -189,9 +200,16 @@ export function ProfilePage() {
       await refreshUser();
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data as Record<string, string[] | string>;
-        const firstError = Object.values(data).flat()[0];
-        setError((firstError as string) ?? "Պահպանումը ձախողվեց։");
+        const data = err.response.data as Record<string, unknown>;
+        const usernameErr = data.username;
+        if (usernameErr && typeof usernameErr === "object" && !Array.isArray(usernameErr) && "suggestions" in usernameErr) {
+          const { message, suggestions } = usernameErr as { message: string; suggestions: string[] };
+          setError(message);
+          setUsernameSuggestions(suggestions);
+        } else {
+          const firstError = Object.values(data).flat()[0];
+          setError((firstError as string) ?? "Պահպանումը ձախողվեց։");
+        }
       } else {
         setError("Պահպանումը ձախողվեց։");
       }
@@ -335,7 +353,14 @@ export function ProfilePage() {
           </form>
         </div>
 
-        {error && <MessageModal message={error} onClose={() => setError(null)} />}
+        {error && (
+          <MessageModal
+            message={error}
+            onClose={closeError}
+            suggestions={usernameSuggestions ?? undefined}
+            onSelectSuggestion={pickUsernameSuggestion}
+          />
+        )}
       </div>
     );
   }
@@ -709,7 +734,14 @@ export function ProfilePage() {
         </section>
       </div>
 
-      {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {error && (
+          <MessageModal
+            message={error}
+            onClose={closeError}
+            suggestions={usernameSuggestions ?? undefined}
+            onSelectSuggestion={pickUsernameSuggestion}
+          />
+        )}
       {friendsOpen && <FriendsModal onClose={handleFriendsClose} />}
       {teachingOpen && (
         <TeachingModal role={profile.role} onClose={handleTeachingClose} onChange={refreshProfile} />
