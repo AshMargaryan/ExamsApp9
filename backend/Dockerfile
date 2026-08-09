@@ -105,13 +105,32 @@ RUN chmod +x /entrypoint.sh
 # Run as a non-root user — a container escaping to root inside is still
 # worse than one running as an unprivileged UID. Django/Daphne never need
 # root; the only thing that did (apt-get) already ran as root above.
+#
+# mkdir media explicitly: MEDIA_ROOT (config/settings.py) has no
+# corresponding directory in source control (user uploads aren't
+# committed), so nothing would create it before this chown. That matters
+# because docker-compose.prod.yml mounts a named volume at /app/media —
+# if the mount point doesn't already exist with app:app ownership at
+# image-build time, Docker creates it owned by root on first mount, and
+# every upload (avatars, chat/AI-assistant/flashcard attachments) would
+# fail with a permission error under the unprivileged USER app below.
 RUN groupadd --system app && useradd --system --gid app app \
+    && mkdir -p /app/media \
     && chown -R app:app /app
 USER app
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+# start-period is generous (not 15s like the dev stage) because the prod
+# entrypoint runs migrate + all seed_*_if_empty commands + collectstatic
+# before Daphne ever binds the port — on an empty database that's several
+# minutes (verified: ~4 min on a dev machine importing the full mock-exam
+# bank), and slower still on a Raspberry Pi. Subsequent restarts are fast
+# (seed commands are no-ops once the tables aren't empty), but Compose's
+# `depends_on: condition: service_healthy` (see docker-compose.prod.yml)
+# needs to survive that one-time first-boot cost without the container
+# ever hitting a false "unhealthy".
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=3 \
     CMD curl -f http://localhost:8000/admin/login/ || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
