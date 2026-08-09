@@ -21,6 +21,101 @@ type Selected =
   | { kind: "topic"; node: TopicNode }
   | { kind: "subtopic"; node: SubtopicNode };
 
+type MaterialSection = { heading: string; body: string };
+
+// Learning material is authored with "## " headers per section (intro, examples,
+// summary, etc.) and, within the worked-examples section, individual examples
+// marked either with a "### " heading (math) or a bold "**Օրինակ N...**" line
+// (English) — but it's stored as one flat markdown string. Split it here so it
+// can be shown step by step: one step per "##" section, further split into one
+// step per example/subsection where those markers exist.
+// A line that's nothing but a "---"/"***"/"___" thematic break (used as a
+// decorative divider between sections in the source files) carries no content
+// of its own — it shouldn't count toward whether a step has real text.
+function isThematicBreak(line: string): boolean {
+  return /^(-{3,}|\*{3,}|_{3,})\s*$/.test(line.trim());
+}
+
+function meaningfulBody(lines: string[]): string {
+  return lines.filter((l) => !isThematicBreak(l)).join("\n").trim();
+}
+
+// Math material marks each worked example with a "### " heading. English material
+// has no H3s at all — its examples are instead a bold marker line on its own,
+// e.g. "**Օրինակ 1 (...):**". Recognize either as a subsection boundary.
+const EXAMPLE_MARKER = /^\*\*Օրինակ\s+\d+.*\*\*\s*$/;
+
+function subsectionHeading(line: string): string | null {
+  if (/^###\s+/.test(line)) return line.replace(/^###\s+/, "").trim();
+  const trimmed = line.trim();
+  if (EXAMPLE_MARKER.test(trimmed)) {
+    return trimmed.replace(/^\*\*/, "").replace(/\*\*$/, "").replace(/:$/, "").trim();
+  }
+  return null;
+}
+
+function splitByH3(heading: string, lines: string[]): MaterialSection[] {
+  const subsections: { heading: string; lines: string[] }[] = [];
+  let current: { heading: string; lines: string[] } | null = null;
+  const intro: string[] = [];
+
+  for (const line of lines) {
+    const subHeading = subsectionHeading(line);
+    if (subHeading !== null) {
+      if (current) subsections.push(current);
+      current = { heading: subHeading, lines: [line] };
+    } else if (current) {
+      current.lines.push(line);
+    } else {
+      intro.push(line);
+    }
+  }
+  if (current) subsections.push(current);
+
+  if (subsections.length === 0) {
+    return [{ heading, body: meaningfulBody(intro) }];
+  }
+
+  const result: MaterialSection[] = [];
+  const introBody = meaningfulBody(intro);
+  if (introBody) result.push({ heading, body: introBody });
+  for (const sub of subsections) {
+    result.push({ heading: sub.heading, body: sub.lines.join("\n").trim() });
+  }
+  return result;
+}
+
+function splitIntoSections(markdown: string): MaterialSection[] {
+  const lines = markdown.split("\n");
+  const rawSections: { heading: string; lines: string[] }[] = [];
+  let current: { heading: string; lines: string[] } | null = null;
+  const preamble: string[] = [];
+
+  for (const line of lines) {
+    if (/^##\s+/.test(line)) {
+      if (current) rawSections.push(current);
+      // The "## " line itself isn't included in the section's body — its text
+      // becomes the step's heading/pill label instead, via `heading` below.
+      current = { heading: line.replace(/^##\s+/, "").trim(), lines: [] };
+    } else if (current) {
+      current.lines.push(line);
+    } else {
+      preamble.push(line);
+    }
+  }
+  if (current) rawSections.push(current);
+
+  const sections: MaterialSection[] = [];
+  const preambleBody = meaningfulBody(preamble.filter((l) => !/^#\s+/.test(l)));
+  if (preambleBody) sections.push({ heading: "Ներածություն", body: preambleBody });
+
+  for (const raw of rawSections) {
+    sections.push(...splitByH3(raw.heading, raw.lines).filter((s) => s.body.length > 0));
+  }
+
+  return sections.length > 0 ? sections : [{ heading: "", body: markdown }];
+}
+
 function IntroPanel({ name, introText }: { name: string; introText: string }) {
   return (
     <div>
@@ -41,43 +136,36 @@ function SubtopicPanel({
   trackAssignmentId?: number;
 }) {
   const [material, setMaterial] = useState<SubtopicMaterial | null>(null);
+  const [sectionIndex, setSectionIndex] = useState(0);
   const exercisesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMaterial(null);
+    setSectionIndex(0);
     if (subtopic.has_learning_material) {
       getSubtopicMaterial(subtopic.id).then(setMaterial);
     }
   }, [subtopic.id, subtopic.has_learning_material]);
 
+  const sections = material ? splitIntoSections(material.learning_material) : [];
+
   useEffect(() => {
-    if (!trackAssignmentId || !subtopic.has_learning_material) return;
-    const assignmentId = trackAssignmentId;
-    let lastSent = 0;
-    let ticking = false;
+    setSectionIndex(0);
+  }, [material]);
 
-    function report() {
-      ticking = false;
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      // Snap to "fully read" once within 40px of the bottom — scrollY rarely
-      // reaches the exact theoretical max (subpixel rounding, overscroll).
-      const fraction = scrollable <= 0 || scrollable - window.scrollY < 40 ? 1 : window.scrollY / scrollable;
-      if (fraction - lastSent >= 0.05 || (fraction >= 0.95 && lastSent < 0.95)) {
-        lastSent = fraction;
-        teachingApi.updateLearningProgress(assignmentId, fraction).catch(() => {});
-      }
-    }
+  useEffect(() => {
+    if (!trackAssignmentId || !subtopic.has_learning_material || sections.length === 0) return;
+    const fraction = (sectionIndex + 1) / sections.length;
+    teachingApi.updateLearningProgress(trackAssignmentId, fraction).catch(() => {});
+    // sections.length is derived from material, which is already a dep of the effect
+    // that resets sectionIndex — including it here would just duplicate that trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackAssignmentId, subtopic.id, subtopic.has_learning_material, sectionIndex]);
 
-    function onScroll() {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(report);
-      }
-    }
-
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [trackAssignmentId, subtopic.id, subtopic.has_learning_material]);
+  function goToSection(index: number) {
+    setSectionIndex(index);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return (
     <div>
@@ -94,7 +182,52 @@ function SubtopicPanel({
 
       {subtopic.has_learning_material ? (
         material ? (
-          <MarkdownMessage className="text-xl leading-relaxed" content={material.learning_material} />
+          <div>
+            {sections.length > 1 && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {sections.map((section, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => goToSection(index)}
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                      index === sectionIndex
+                        ? "border-primary bg-primary text-primary-contrast"
+                        : "border-border text-text-muted hover:border-primary hover:text-text"
+                    }`}
+                  >
+                    {section.heading || `Մաս ${index + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <MarkdownMessage className="text-xl leading-relaxed" content={sections[sectionIndex].body} />
+
+            {sections.length > 1 && (
+              <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-4">
+                <button
+                  type="button"
+                  disabled={sectionIndex === 0}
+                  onClick={() => goToSection(sectionIndex - 1)}
+                  className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-medium text-text hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
+                >
+                  ← Նախորդ
+                </button>
+                <span className="text-sm text-text-muted">
+                  {sectionIndex + 1} / {sections.length}
+                </span>
+                <button
+                  type="button"
+                  disabled={sectionIndex === sections.length - 1}
+                  onClick={() => goToSection(sectionIndex + 1)}
+                  className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-medium text-text hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
+                >
+                  Հաջորդ →
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <p className="text-lg text-text-muted">Բեռնվում է...</p>
         )

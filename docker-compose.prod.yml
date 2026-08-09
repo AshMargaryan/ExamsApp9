@@ -1,0 +1,113 @@
+# Production-style stack for the Raspberry Pi (or any single-host LAN)
+# deployment. Unlike docker-compose.yml (dev: bind mounts, Vite dev server,
+# services published straight to the host), this file builds the `prod`
+# Dockerfile targets and puts nginx in front as the single public entry
+# point. See Readme.md "Running with Docker" for the commands.
+#
+# Explicit project name: without this, Compose defaults the project name to
+# the directory name ("examsapp9"), which is exactly what docker-compose.yml
+# (the dev file) also resolves to. That collision is real, not theoretical —
+# both files would then share container names (examsapp9-db-1, ...) AND the
+# "postgres_data" volume, so running this file could recreate/replace your
+# dev containers and point a prod backend at your dev database. Pinning a
+# distinct name keeps every resource (containers, network, volumes) in its
+# own namespace no matter which directory this is run from.
+name: examsapp9-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # No host port published — only reachable from other containers on
+    # examsapp-network at db:5432. Unlike the dev compose file, there's no
+    # host-side psql use case here (use `docker compose exec db psql ...`
+    # if you need a shell on the Pi).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - examsapp-network
+
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    env_file:
+      - backend/.env
+    environment:
+      # See docker-compose.yml's backend service for why this override
+      # exists: backend/.env's DB_HOST=localhost is a dev-machine value,
+      # but inside the Docker network Postgres is reachable at the `db`
+      # service name, not localhost.
+      DB_HOST: db
+      # collectstatic must run once at container start so Whitenoise has a
+      # hashed/gzipped bundle to serve in prod (DEBUG=False disables the
+      # dev-only "serve straight from STATICFILES_DIRS" mode).
+      DJANGO_COLLECTSTATIC: "true"
+    volumes:
+      # Shared with nginx (read-only there) so uploaded avatars/attachments
+      # can be served directly instead of proxied through Django — see
+      # nginx/nginx.conf's /media/ location and the comment there on why
+      # that's required, not optional, once DEBUG=False.
+      - backend_media:/app/media
+    # No host port published — nginx is the only public entry point;
+    # backend is reachable from other containers at backend:8000.
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - examsapp-network
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+      args:
+        # Relative, not an absolute host:port URL: this is baked into the
+        # JS bundle at build time and shipped to whatever device's browser
+        # loads the site, so it must resolve against *that device's* view
+        # of the LAN (nginx's origin), not a fixed dev-machine hostname/IP.
+        # useChatSocket/useGameSocket/useNotificationSocket derive their
+        # ws(s):// URL from this same value, so relative also makes the
+        # WebSocket URLs LAN-IP-agnostic for free.
+        VITE_API_URL: /api
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_APPLE_CLIENT_ID: ${VITE_APPLE_CLIENT_ID:-}
+        VITE_APPLE_REDIRECT_URI: ${VITE_APPLE_REDIRECT_URI:-}
+    # No host port published — served through nginx at frontend:80.
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - examsapp-network
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - backend_media:/usr/share/nginx/media:ro
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - examsapp-network
+
+volumes:
+  postgres_data:
+  backend_media:
+
+networks:
+  examsapp-network:
+    driver: bridge
