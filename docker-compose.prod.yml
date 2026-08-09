@@ -1,11 +1,18 @@
-# Explicit project name — without this, Compose derives the project name
-# from the directory ("examsapp9"), which is exactly what docker-compose.yml
-# (dev) also resolves to. Two Compose files sharing a project name share
-# containers, networks AND volumes: `postgres_data` in each file would
-# resolve to the literal same volume, so a fresh prod deploy could recreate
-# containers pointed at (and a `down -v` could destroy) the dev database.
-# This name plus the explicit volume `name:` fields below make that
-# impossible by construction rather than by convention.
+# Production-style stack for the Raspberry Pi (or any single-host LAN)
+# deployment. Unlike docker-compose.yml (dev: bind mounts, Vite dev server,
+# services published straight to the host), this file builds the `prod`
+# Dockerfile targets and puts nginx in front as the single public entry
+# point. See Readme.md "Docker" for the commands.
+#
+# Explicit project name: without this, Compose defaults the project name to
+# the directory name ("examsapp9"), which is exactly what docker-compose.yml
+# (the dev file) also resolves to. That collision is real, not theoretical —
+# both files would then share container names (examsapp9-db-1, ...) AND the
+# "postgres_data" volume, so running this file could recreate/replace your
+# dev containers and point a prod backend at your dev database. Pinning a
+# distinct name, plus the explicit volume `name:` fields below, keeps every
+# resource (containers, network, volumes) in its own namespace no matter
+# which directory this is run from.
 name: examsapp9-prod
 
 services:
@@ -15,10 +22,10 @@ services:
       - backend/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # No "ports:" here on purpose (unlike docker-compose.yml's dev db,
-    # which publishes 5433:5432 so you can psql in from the host). In
-    # production nothing outside the Docker network needs to reach
-    # Postgres directly — backend still reaches it at db:5432 internally.
+    # No host port published — only reachable from other containers on
+    # examsapp-network at db:5432. Unlike the dev compose file, there's no
+    # host-side psql use case here (use `docker compose exec db psql ...`
+    # if you need a shell on the Pi).
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -35,9 +42,10 @@ services:
     env_file:
       - backend/.env
     environment:
-      # Same override docker-compose.yml uses in dev: inside the Docker
-      # network, Postgres is reachable at the service name "db", not
-      # "localhost" (which .env sets for running the backend bare-metal).
+      # See docker-compose.yml's backend service for why this override
+      # exists: backend/.env's DB_HOST=localhost is a dev-machine value,
+      # but inside the Docker network Postgres is reachable at the `db`
+      # service name, not localhost.
       DB_HOST: db
       # Production must run with DEBUG=false regardless of what's left in
       # backend/.env (that file is also used for local/dev runs) — this is
@@ -45,46 +53,48 @@ services:
       # compressed bundle from STATIC_ROOT instead of the raw source tree,
       # and disables Django's own (dev-only) MEDIA_URL route.
       DEBUG: "false"
-      # The prod image has no bind-mounted source to run collectstatic
-      # against ahead of time, so entrypoint.sh does it on every startup.
-      # Idempotent — safe to run again on every restart/redeploy.
+      # collectstatic must run once at container start so Whitenoise has a
+      # hashed/gzipped bundle to serve in prod (DEBUG=False disables the
+      # dev-only "serve straight from STATICFILES_DIRS" mode). Idempotent —
+      # safe to run again on every restart/redeploy.
       DJANGO_COLLECTSTATIC: "true"
     volumes:
-      # Persists user uploads (avatars, chat/AI-assistant attachments,
-      # flashcard images, TTS cache — see backend/apps/*/models.py) across
-      # container recreation, and is the same volume the nginx service
-      # mounts read-only to serve /media/ directly (Django doesn't wire up
-      # MEDIA_URL when DEBUG=False — see backend/config/urls.py).
+      # Shared with nginx (read-only there) so uploaded avatars/attachments
+      # can be served directly instead of proxied through Django — see
+      # nginx/nginx.conf's /media/ location and the comment there on why
+      # that's required, not optional, once DEBUG=False.
       - backend_media:/app/media
+    # No host port published — nginx is the only public entry point;
+    # backend is reachable from other containers at backend:8000.
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
     networks:
       - examsapp-network
-    # No "ports:" — nginx is the public entry point. backend:8000 stays
-    # reachable only from other containers on examsapp-network.
 
   frontend:
     build:
       context: ./frontend
       target: prod
       args:
-        # Relative, not an absolute host:port URL like dev's
-        # http://localhost:8000/api. The browser talks to whatever
-        # host/IP it used to load the page in the first place, and nginx
-        # proxies /api + /ws back to the backend from there — so this
-        # never has to know the Pi's LAN IP (which changes across
-        # networks) at build time. See requirement about not hardcoding
-        # the Pi's IP anywhere in this configuration.
+        # Relative, not an absolute host:port URL: this is baked into the
+        # JS bundle at build time and shipped to whatever device's browser
+        # loads the site, so it must resolve against *that device's* view
+        # of the LAN (nginx's origin), not a fixed dev-machine hostname/IP.
+        # useChatSocket/useGameSocket/useNotificationSocket derive their
+        # ws(s):// URL from this same value, so relative also makes the
+        # WebSocket URLs LAN-IP-agnostic for free.
         VITE_API_URL: /api
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
         VITE_APPLE_CLIENT_ID: ${VITE_APPLE_CLIENT_ID:-}
         VITE_APPLE_REDIRECT_URI: ${VITE_APPLE_REDIRECT_URI:-}
+    # No host port published — served through nginx at frontend:80.
+    depends_on:
+      - backend
     restart: unless-stopped
     networks:
       - examsapp-network
-    # No "ports:" — reached only via nginx's frontend_upstream (frontend:80).
 
   nginx:
     image: nginx:1.27-alpine
@@ -111,9 +121,10 @@ services:
       - examsapp-network
 
 volumes:
-  # Explicit name, distinct from docker-compose.yml's
-  # examsapp9_dev_postgres_data — production and development must never be
-  # able to read or overwrite each other's database, even by accident.
+  # Explicit names, distinct from docker-compose.yml's
+  # examsapp9_dev_postgres_data/examsapp9_dev_frontend_node_modules —
+  # production and development must never be able to read or overwrite
+  # each other's database or files, even by accident.
   postgres_data:
     name: examsapp9_prod_postgres_data
   backend_media:
