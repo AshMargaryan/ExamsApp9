@@ -78,7 +78,11 @@ EXPOSE 80
 
 # wget is already present in nginx:alpine (via busybox), so this costs
 # nothing extra in image size — avoided installing curl just for this.
+# 127.0.0.1, not "localhost": this container's /etc/hosts resolves
+# "localhost" to ::1 first, and busybox wget (unlike curl) doesn't fall
+# back to IPv4 when the first resolved address refuses — nginx here only
+# listens on 0.0.0.0, so the IPv6 attempt would always fail the check.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-    CMD wget -q --spider http://localhost/ || exit 1
+    CMD wget -q --spider http://127.0.0.1/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

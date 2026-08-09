@@ -107,6 +107,15 @@ RUN chmod +x /entrypoint.sh
 # root; the only thing that did (apt-get) already ran as root above.
 RUN groupadd --system app && useradd --system --gid app app \
     && chown -R app:app /app
+
+# media/ is excluded from the build context (see .dockerignore), so it
+# doesn't exist yet at this point — it's only created when the
+# backend_media volume (docker-compose.prod.yml) mounts onto /app/media at
+# container start. Docker seeds a fresh named volume from whatever's
+# already in the image at that path, ownership included, so this has to
+# exist here, owned by app, or the volume comes up root-owned and the
+# non-root app user below can't write uploads to it (MEDIA_ROOT).
+RUN mkdir -p /app/media && chown app:app /app/media
 USER app
 
 EXPOSE 8000

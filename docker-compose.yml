@@ -1,3 +1,11 @@
+# Explicit project name so this file's containers/volumes/network never
+# collide with docker-compose.prod.yml's, regardless of which directory
+# name Compose would otherwise derive the project name from (both files
+# live in the same repo, so without this they'd default to the same
+# "examsapp9" project and literally share volumes — see
+# examsapp9_dev_postgres_data / examsapp9_prod_postgres_data below).
+name: examsapp9-dev
+
 services:
   db:
     image: postgres:16-alpine
@@ -87,10 +95,18 @@ volumes:
   # Named volume for Postgres data directory — survives `docker compose down`
   # (only `down -v` removes it). This is what makes your data durable across
   # container recreations, matching requirement #6.
+  #
+  # Explicit `name:` (rather than letting Compose auto-derive one from the
+  # project name) so this is unambiguously the *dev* database, never
+  # reachable by the same name as examsapp9_prod_postgres_data in
+  # docker-compose.prod.yml — the two must never be able to collide, by
+  # construction, not just by convention.
   postgres_data:
+    name: examsapp9_dev_postgres_data
   # Persists installed npm packages between container restarts so a plain
   # `docker compose up` (no --build) doesn't need to reinstall everything.
   frontend_node_modules:
+    name: examsapp9_dev_frontend_node_modules
 
 networks:
   examsapp-network:
