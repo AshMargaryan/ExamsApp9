@@ -1,9 +1,11 @@
 interface Props {
   message: string;
   onClose: () => void;
+  suggestions?: string[];
+  onSelectSuggestion?: (suggestion: string) => void;
 }
 
-export function MessageModal({ message, onClose }: Props) {
+export function MessageModal({ message, onClose, suggestions, onSelectSuggestion }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -22,7 +24,26 @@ export function MessageModal({ message, onClose }: Props) {
           ✕
         </button>
         <p className="text-4xl">⚠️</p>
-        <p className="mt-4 text-lg text-text">{message}</p>
+        <p className="mt-4 whitespace-pre-line text-lg text-text">{message}</p>
+
+        {suggestions && suggestions.length > 0 && (
+          <div className="mt-5">
+            <p className="mb-2 text-sm text-text-muted">Փորձեք այս ազատ օգտանուններից մեկը՝</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => onSelectSuggestion?.(suggestion)}
+                  className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={onClose}

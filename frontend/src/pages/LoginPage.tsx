@@ -1,7 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
+import { AxiosError } from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { MessageModal } from "../components/MessageModal";
+import { OAuthButtons } from "../components/auth/OAuthButtons";
+import { DeviceLimitModal } from "../components/auth/DeviceLimitModal";
+import { isDeviceLimitReached, type User } from "../api/auth";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -10,25 +14,40 @@ export function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [deviceLimitTicket, setDeviceLimitTicket] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function redirectPath(user: User): string {
+    const redirectTo = (location.state as { from?: Location } | null)?.from;
+    if (redirectTo) return `${redirectTo.pathname}${redirectTo.search}`;
+    return user.role === "parent" ? "/family" : "/";
+  }
+
+  async function attemptLogin() {
+    setSubmitting(true);
+    try {
+      const user = await login(username, password);
+      navigate(redirectPath(user));
+    } catch (err) {
+      if (err instanceof AxiosError && isDeviceLimitReached(err.response?.data)) {
+        setDeviceLimitTicket(err.response!.data.management_ticket);
+      } else {
+        setError("Սխալ օգտանուն կամ գաղտնաբառ։");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
-    try {
-      const user = await login(username, password);
-      const redirectTo = (location.state as { from?: Location } | null)?.from;
-      if (redirectTo) {
-        navigate(`${redirectTo.pathname}${redirectTo.search}`);
-      } else {
-        navigate(user.role === "parent" ? "/family" : "/");
-      }
-    } catch {
-      setError("Սխալ օգտանուն կամ գաղտնաբառ։");
-    } finally {
-      setSubmitting(false);
-    }
+    await attemptLogin();
+  }
+
+  async function handleRevokedRetry() {
+    setDeviceLimitTicket(null);
+    await attemptLogin();
   }
 
   return (
@@ -78,8 +97,17 @@ export function LoginPage() {
             Գրանցվել
           </Link>
         </p>
+
+        <OAuthButtons getRedirectPath={redirectPath} />
       </form>
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {deviceLimitTicket && (
+        <DeviceLimitModal
+          ticket={deviceLimitTicket}
+          onRevokedRetry={handleRevokedRetry}
+          onClose={() => setDeviceLimitTicket(null)}
+        />
+      )}
     </div>
   );
 }

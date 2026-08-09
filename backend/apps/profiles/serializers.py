@@ -10,6 +10,7 @@ from apps.practice.models import AttemptAnswer
 from apps.teaching.models import ConnectionStatus, TeacherProfile, TeacherStudentConnection
 from apps.users.serializers import SchoolSerializer, UniversitySerializer
 from apps.users.models import School, University
+from apps.users.utils import suggest_usernames
 
 from .leveling import xp_progress
 from .models import Achievement, Profile, UserAchievement
@@ -105,10 +106,24 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         qs = User.objects.filter(username=value)
-        if self.instance is not None:
-            qs = qs.exclude(pk=self.instance.user_id)
+        current_user_id = self.instance.user_id if self.instance is not None else None
+        if current_user_id is not None:
+            qs = qs.exclude(pk=current_user_id)
         if qs.exists():
-            raise serializers.ValidationError("Այս օգտանունն արդեն զբաղված է։")
+            raise serializers.ValidationError({
+                "message": "Այս օգտանունն արդեն զբաղված է։",
+                "suggestions": suggest_usernames(value, exclude_user_id=current_user_id),
+            })
+
+        if self.instance is not None and value != self.instance.user.username:
+            changed_at = self.instance.user.username_changed_at
+            if changed_at is not None:
+                days_since = (timezone.now() - changed_at).days
+                if days_since < 14:
+                    remaining = 14 - days_since
+                    raise serializers.ValidationError(
+                        f"Օգտանունը կարող եք փոխել 14 օրը մեկ անգամ։ Կրկին փորձեք {remaining} օր հետո։"
+                    )
         return value
 
     def validate_bio(self, value):
@@ -219,10 +234,16 @@ class ProfileSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", {})
         user = instance.user
+        username_changed = "username" in user_data and user_data["username"] != user.username
         for attr, value in user_data.items():
             setattr(user, attr, value)
+        if username_changed:
+            user.username_changed_at = timezone.now()
         if user_data:
-            user.save(update_fields=list(user_data.keys()))
+            update_fields = list(user_data.keys())
+            if username_changed:
+                update_fields.append("username_changed_at")
+            user.save(update_fields=update_fields)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

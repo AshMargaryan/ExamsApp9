@@ -27,6 +27,7 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     "channels",
@@ -190,7 +191,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apps.users.authentication.SessionAwareJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
@@ -208,11 +209,36 @@ SIMPLE_JWT = {
     "SIGNING_KEY": env("JWT_SECRET"),
 }
 
+# Max simultaneously active devices/sessions per account (subscription-sharing
+# protection — see apps/users/sessions.py:get_device_limit, the one seam
+# where this becomes subscription-tier-dependent later without touching the
+# session model or any call site).
+MAX_ACTIVE_DEVICES_PER_USER = env.int("MAX_ACTIVE_DEVICES_PER_USER", default=2)
+
 
 CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=["http://localhost:3000", "http://127.0.0.1:3000"],
 )
+
+# ---------------------------------------------------------------------------
+# OAuth (social login)
+# ---------------------------------------------------------------------------
+
+# OAuth client ID from Google Cloud Console (Credentials > OAuth client ID >
+# Web application). Used as the `aud` claim checked when verifying Google ID
+# tokens submitted by the frontend.
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
+
+# Sign in with Apple. All blank by default — Apple's flow requires a real
+# HTTPS domain registered with Apple (won't work against localhost at all),
+# so these stay unset until that domain exists. See backend/.env.example
+# for where to get each value.
+APPLE_OAUTH_CLIENT_ID = env("APPLE_OAUTH_CLIENT_ID", default="")  # Services ID, used as the `aud` claim
+APPLE_OAUTH_TEAM_ID = env("APPLE_OAUTH_TEAM_ID", default="")
+APPLE_OAUTH_KEY_ID = env("APPLE_OAUTH_KEY_ID", default="")
+APPLE_OAUTH_PRIVATE_KEY = env("APPLE_OAUTH_PRIVATE_KEY", default="")
+APPLE_OAUTH_REDIRECT_URI = env("APPLE_OAUTH_REDIRECT_URI", default="")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "University Entrance Exam Platform API",

@@ -4,6 +4,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { CompleteRegistrationPage } from "./pages/CompleteRegistrationPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
@@ -13,6 +14,7 @@ import { PracticeSubjectPage } from "./pages/PracticeSubjectPage";
 import { TierPage } from "./pages/TierPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { AccountSessionsPage } from "./pages/AccountSessionsPage";
 import { TeacherDashboardPage } from "./pages/TeacherDashboardPage";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage";
 import { AssignmentReviewPage } from "./pages/AssignmentReviewPage";
@@ -40,6 +42,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/complete-registration" element={<CompleteRegistrationPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
 
@@ -50,6 +53,7 @@ export default function App() {
             <Route path="/practice/:subjectId" element={<PracticeSubjectPage />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/account/sessions" element={<AccountSessionsPage />} />
             <Route path="/teacher-dashboard" element={<TeacherDashboardPage />} />
             <Route path="/student-dashboard" element={<StudentDashboardPage />} />
             <Route path="/assignments/:id" element={<AssignmentReviewPage />} />

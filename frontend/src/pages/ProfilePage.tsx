@@ -84,6 +84,7 @@ export function ProfilePage() {
   const [teachingOpen, setTeachingOpen] = useState(false);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[] | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -161,9 +162,19 @@ export function ProfilePage() {
     setEditing(false);
   }
 
+  function closeError() {
+    setError(null);
+    setUsernameSuggestions(null);
+  }
+
+  function pickUsernameSuggestion(suggestion: string) {
+    setUsername(suggestion);
+    closeError();
+  }
+
   async function handleSave(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    closeError();
     setSaving(true);
     try {
       const updated = await profileApi.updateProfile(
@@ -189,9 +200,16 @@ export function ProfilePage() {
       await refreshUser();
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
-        const data = err.response.data as Record<string, string[] | string>;
-        const firstError = Object.values(data).flat()[0];
-        setError((firstError as string) ?? "Պահպանումը ձախողվեց։");
+        const data = err.response.data as Record<string, unknown>;
+        const usernameErr = data.username;
+        if (usernameErr && typeof usernameErr === "object" && !Array.isArray(usernameErr) && "suggestions" in usernameErr) {
+          const { message, suggestions } = usernameErr as { message: string; suggestions: string[] };
+          setError(message);
+          setUsernameSuggestions(suggestions);
+        } else {
+          const firstError = Object.values(data).flat()[0];
+          setError((firstError as string) ?? "Պահպանումը ձախողվեց։");
+        }
       } else {
         setError("Պահպանումը ձախողվեց։");
       }
@@ -235,6 +253,9 @@ export function ProfilePage() {
                 >
                   Խմբագրել
                 </button>
+                <Link to="/account/sessions" className="text-sm text-primary hover:underline">
+                  Ակտիվ սարքեր
+                </Link>
                 <button type="button" onClick={logout} className="text-sm text-primary hover:underline">
                   Ելք
                 </button>
@@ -242,19 +263,19 @@ export function ProfilePage() {
             ) : (
               <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
-                >
-                  Չեղարկել
-                </button>
-                <button
                   type="submit"
                   form="profile-form"
                   disabled={saving}
                   className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   {saving ? "..." : "Պահպանել"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
+                >
+                  Չեղարկել
                 </button>
               </div>
             )}
@@ -335,7 +356,14 @@ export function ProfilePage() {
           </form>
         </div>
 
-        {error && <MessageModal message={error} onClose={() => setError(null)} />}
+        {error && (
+          <MessageModal
+            message={error}
+            onClose={closeError}
+            suggestions={usernameSuggestions ?? undefined}
+            onSelectSuggestion={pickUsernameSuggestion}
+          />
+        )}
       </div>
     );
   }
@@ -354,22 +382,20 @@ export function ProfilePage() {
             ← Գլխավոր
           </Link>
           {!editing ? (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-            >
-              Խմբագրել
-            </button>
-          ) : (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-4">
+              <Link to="/account/sessions" className="text-sm text-primary hover:underline">
+                Ակտիվ սարքեր
+              </Link>
               <button
                 type="button"
-                onClick={cancelEdit}
-                className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
+                onClick={() => setEditing(true)}
+                className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
               >
-                Չեղարկել
+                Խմբագրել
               </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
               <button
                 type="submit"
                 form="profile-form"
@@ -377,6 +403,13 @@ export function ProfilePage() {
                 className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {saving ? "..." : "Պահպանել"}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
+              >
+                Չեղարկել
               </button>
             </div>
           )}
@@ -709,7 +742,14 @@ export function ProfilePage() {
         </section>
       </div>
 
-      {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {error && (
+          <MessageModal
+            message={error}
+            onClose={closeError}
+            suggestions={usernameSuggestions ?? undefined}
+            onSelectSuggestion={pickUsernameSuggestion}
+          />
+        )}
       {friendsOpen && <FriendsModal onClose={handleFriendsClose} />}
       {teachingOpen && (
         <TeachingModal role={profile.role} onClose={handleTeachingClose} onChange={refreshProfile} />

@@ -39,7 +39,15 @@ async function refreshAccessToken(): Promise<string> {
   const refresh = tokenStorage.getRefresh();
   if (!refresh) throw new Error("No refresh token");
   const { data } = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh });
-  tokenStorage.setAccess(data.access);
+  // SIMPLE_JWT.ROTATE_REFRESH_TOKENS blacklists the refresh token used here
+  // and issues a new one in the response — it must be persisted too, or the
+  // next refresh (after the next access-token expiry) fails and force-logs
+  // the user out.
+  if (data.refresh) {
+    tokenStorage.set(data.access, data.refresh);
+  } else {
+    tokenStorage.setAccess(data.access);
+  }
   return data.access;
 }
 

@@ -1,29 +1,30 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
+import { useAuth } from "../auth/AuthContext";
 import { SearchSelect } from "../components/SearchSelect";
 import { MessageModal } from "../components/MessageModal";
-import { OAuthButtons } from "../components/auth/OAuthButtons";
-import type { AccountRole, User } from "../api/auth";
+import type { AccountRole } from "../api/auth";
 import { GRADES, ROLE_CARDS, ROLE_LABELS, type Option, schoolSearch, universitySearch } from "../lib/registrationFields";
 
-function oauthRedirectPath(user: User): string {
-  return user.role === "parent" ? "/family" : "/";
+interface LocationState {
+  ticket: string;
+  email: string;
+  first_name: string;
+  last_name: string;
 }
 
-export function RegisterPage() {
-  const { register } = useAuth();
+export function CompleteRegistrationPage() {
+  const { completeOAuthRegistration } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as LocationState | null;
 
   const [role, setRole] = useState<AccountRole | null>(null);
 
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState(state?.first_name ?? "");
+  const [lastName, setLastName] = useState(state?.last_name ?? "");
 
   const [age, setAge] = useState("");
   const [grade, setGrade] = useState("");
@@ -34,6 +35,12 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // A hard refresh or direct visit has no ticket in router state — the OAuth
+  // flow has to be restarted from the login/register page.
+  if (!state?.ticket) {
+    return <Navigate to="/register" replace />;
+  }
 
   function closeError() {
     setError(null);
@@ -48,26 +55,13 @@ export function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     closeError();
-
-    if (!role) return;
-
-    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
-      setError("Գաղտնաբառը պետք է լինի առնվազն 8 նիշ և պարունակի տառեր ու թվեր։");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Գաղտնաբառերը չեն համընկնում։");
-      return;
-    }
+    if (!role || !state) return;
 
     setSubmitting(true);
     try {
-      await register({
+      const user = await completeOAuthRegistration({
+        ticket: state.ticket,
         username,
-        email,
-        password,
-        confirm_password: confirmPassword,
         first_name: firstName,
         last_name: lastName,
         role,
@@ -77,7 +71,7 @@ export function RegisterPage() {
         school: role === "student" ? school?.id : undefined,
         university: role === "student" ? university?.id : undefined,
       });
-      navigate("/verify-email");
+      navigate(user.role === "parent" ? "/family" : "/");
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
         const data = err.response.data as Record<string, unknown>;
@@ -106,7 +100,7 @@ export function RegisterPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
         <div className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm">
-          <h1 className="mb-2 text-2xl font-semibold text-text">Գրանցում</h1>
+          <h1 className="mb-2 text-2xl font-semibold text-text">Ավարտել գրանցումը</h1>
           <p className="mb-6 text-sm text-text-muted">Ընտրեք, թե ինչպես եք ցանկանում գրանցվել</p>
 
           {ROLE_CARDS.map((card) => (
@@ -122,15 +116,6 @@ export function RegisterPage() {
               <span className="mt-1 block text-sm text-text-muted">{card.description}</span>
             </button>
           ))}
-
-          <OAuthButtons getRedirectPath={oauthRedirectPath} />
-
-          <p className="mt-6 text-center text-sm text-text-muted">
-            Արդեն հաշիվ ունե՞ք։{" "}
-            <Link to="/login" className="text-primary hover:underline">
-              Մուտք
-            </Link>
-          </p>
         </div>
       </div>
     );
@@ -144,7 +129,7 @@ export function RegisterPage() {
         className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm"
       >
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-text">Գրանցում ({ROLE_LABELS[role]})</h1>
+          <h1 className="text-2xl font-semibold text-text">Ավարտել գրանցումը ({ROLE_LABELS[role]})</h1>
           <button
             type="button"
             onClick={() => setRole(null)}
@@ -153,6 +138,9 @@ export function RegisterPage() {
             Փոխել
           </button>
         </div>
+
+        <label className={labelClass}>Էլ. փոստ</label>
+        <input className={inputClass} value={state.email} disabled />
 
         <label className={labelClass}>Օգտանուն</label>
         <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required />
@@ -165,32 +153,6 @@ export function RegisterPage() {
 
         <label className={labelClass}>Ազգանուն</label>
         <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-
-        <label className={labelClass}>Էլ. փոստ</label>
-        <input type="email" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} required />
-
-        <label className={labelClass}>Գաղտնաբառ</label>
-        <input
-          type="password"
-          minLength={8}
-          className={inputClass}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <p className="-mt-3 mb-4 text-xs text-text-muted">
-          Առնվազն 8 նիշ, պետք է պարունակի տառեր և թվեր։
-        </p>
-
-        <label className={labelClass}>Կրկնել գաղտնաբառը</label>
-        <input
-          type="password"
-          minLength={8}
-          className={inputClass}
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
 
         <div className="mb-4 mt-2 border-t border-border pt-4 text-sm text-text-muted">
           Հետևյալ դաշտերը <span className="font-medium text-text">ընտրովի են</span> և կօգտագործվեն միայն
@@ -248,15 +210,8 @@ export function RegisterPage() {
           disabled={submitting}
           className="w-full rounded-md bg-primary py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
-          {submitting ? "..." : "Գրանցվել"}
+          {submitting ? "..." : "Ավարտել գրանցումը"}
         </button>
-
-        <p className="mt-4 text-center text-sm text-text-muted">
-          Արդեն հաշիվ ունե՞ք։{" "}
-          <Link to="/login" className="text-primary hover:underline">
-            Մուտք
-          </Link>
-        </p>
       </form>
       {error && (
         <MessageModal
