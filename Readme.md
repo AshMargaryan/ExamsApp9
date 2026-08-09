@@ -41,47 +41,84 @@ To be determined.
 
 ## Running with Docker
 
-Two Compose files exist, for two different purposes — use the one matching what you're doing:
+Two **completely separate** Compose stacks exist — different Compose project
+names, different named volumes, on purpose. They must never be able to read
+or overwrite each other's database, and both can run on the same machine at
+the same time without conflict.
 
-| File | Purpose | Frontend | Backend | Public entry point |
-|---|---|---|---|---|
-| `docker-compose.yml` | Local development | Vite dev server (HMR), bind-mounted source | `dev` target, bind-mounted source | `localhost:3000` / `localhost:8000` directly |
-| `docker-compose.prod.yml` | Raspberry Pi / LAN deployment | `prod` target (built static bundle) | `prod` target (no bind mounts, runs as non-root) | `nginx` on port 80 |
+| | `docker-compose.yml` | `docker-compose.prod.yml` |
+|---|---|---|
+| Purpose | Local development | Production (e.g. Raspberry Pi LAN deployment) |
+| Frontend | Vite dev server (HMR), bind-mounted source | `prod` target (built static bundle), served by its own nginx |
+| Backend | `dev` target, bind-mounted source | `prod` target (no bind mounts, runs as non-root) |
+| Compose project name | `examsapp9-dev` | `examsapp9-prod` |
+| Postgres volume | `examsapp9_dev_postgres_data` | `examsapp9_prod_postgres_data` |
+| Other volumes | `examsapp9_dev_frontend_node_modules` | `examsapp9_prod_backend_media` |
+| Public entry point | `localhost:3000` / `localhost:8000` directly | `nginx` on port 80 only — db/backend/frontend are internal-only |
+
+### ⚠️ Data safety
+
+* **`docker compose down -v` deletes the named volumes for whichever file
+  you pass it — including the database.** There is no undo; the `local`
+  volume driver keeps no snapshots. Never run it against
+  `docker-compose.prod.yml` without being certain you want to destroy the
+  production database.
+* Because the two stacks have distinct project names, a `down -v` against
+  one file **cannot** touch the other's volumes — but treat that as a
+  safety net, not permission to run it casually. A plain `docker compose
+  down` (no `-v`) is always safe: it only stops/removes containers, never
+  volumes.
+* Always pass `-f docker-compose.prod.yml` explicitly for production
+  commands. Never run a bare `docker compose up`/`down` from this directory
+  expecting it to mean "production" — the bare form defaults to
+  `docker-compose.yml` (dev).
+* Production deployment must never reuse the development Compose
+  project/volumes — that's exactly what the explicit `name:` and volume
+  `name:` fields in each file prevent.
 
 ### Local development
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml up --build
 ```
 
-Frontend at `http://localhost:3000`, backend/API at `http://localhost:8000`. Edits to `backend/` or `frontend/` are picked up live via bind mounts.
+Frontend at `http://localhost:3000`, backend/API at `http://localhost:8000`, Postgres at `localhost:5433`. Edits to `backend/` or `frontend/` are picked up live via bind mounts.
 
 ### Production-style deployment (Raspberry Pi / LAN)
 
-```bash
-docker compose -f docker-compose.prod.yml up --build -d
-```
+1. Fill in `backend/.env` (see `backend/.env.example`) — it's gitignored and per-machine. A few values need LAN-appropriate settings that differ from the dev defaults:
+   * `DEBUG` — overridden to `false` by `docker-compose.prod.yml` regardless of this file's value, but keep it accurate for other tools.
+   * `ALLOWED_HOSTS` — must include whatever host/IP clients on your LAN will type into the browser (e.g. the Pi's LAN IP, a `.local` hostname, or `*` for a quick LAN-only test). Not baked into any Docker file, so the same image works unchanged across different networks/IPs.
+   * `SECRET_KEY`, `JWT_SECRET`, `DB_*`/`POSTGRES_*`, and any OAuth/email credentials you actually use.
+   * `frontend/.env` is **not** used by the prod build — `VITE_API_URL`/`VITE_GOOGLE_CLIENT_ID`/etc. are instead passed as Docker build args in `docker-compose.prod.yml`, sourced from your shell environment, since Vite bakes them into the JS bundle at build time. `VITE_API_URL` is set to the relative path `/api`, so it (and the WebSocket URLs derived from it) resolve against whatever host/IP the browser used to reach nginx — no LAN IP is hardcoded anywhere.
 
-This builds the `prod` Dockerfile targets, runs an `nginx` reverse proxy as the **only** service published to the host (port 80), and does **not** publish the backend (8000) or Postgres (5432) ports to the host — both are reachable only from other containers on the internal Docker network, by service name (`backend`, `db`).
+2. Build and start the full stack:
 
-Then visit `http://<the-Pi's-LAN-IP>/` from any device on the same network. No IP is hardcoded anywhere in the compose file or the frontend build — the frontend is built with a relative `VITE_API_URL=/api`, so it (and the WebSocket URLs derived from it) resolve against whatever host/IP the browser used to reach nginx.
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d --build
+   ```
 
-**First boot takes several minutes**, not seconds: the backend's entrypoint runs migrations and seeds the full mock-exam/flashcard question bank into an empty database before Daphne starts answering requests (`docker compose -f docker-compose.prod.yml logs -f backend` to watch progress). This is a one-time cost — subsequent restarts skip seeding since the tables are no longer empty.
+   This builds the `prod` Dockerfile targets and starts `db`, `backend`, `frontend`, and `nginx` — the **only** service published to the host (port 80). Backend (8000) and Postgres (5432) are not published; both are reachable only from other containers on the internal Docker network, by service name (`backend`, `db`).
 
-To stop the stack: `docker compose -f docker-compose.prod.yml down` (add `-v` to also delete the Postgres/media volumes — do **not** do this on a real deployment unless you intend to lose all data).
+   **First boot takes several minutes**, not seconds: the backend's entrypoint runs migrations and seeds the full mock-exam/flashcard question bank into an empty database before Daphne starts answering requests. This is a one-time cost — subsequent restarts skip seeding since the tables are no longer empty. Watch progress with:
 
-**Note on Compose project isolation:** `docker-compose.prod.yml` pins an explicit `name: examsapp9-prod` at the top of the file. This keeps its containers, network, and volumes (`examsapp9-prod-*`) completely separate from the dev stack's (`examsapp9-*`) even when both files live in the same directory — without it, both files resolve to the same default project name and would collide on container names and the `postgres_data` volume.
+   ```bash
+   docker compose -f docker-compose.prod.yml logs -f backend
+   ```
 
-#### Required `.env` changes for a LAN deployment
+3. Open `http://<the-Pi's-LAN-IP>/` from any device on the same network.
 
-`backend/.env` and `frontend/.env` are gitignored and per-machine — copy from the `.env.example` files and set real secrets on the Pi. A few values need LAN-appropriate settings that differ from the dev defaults:
+4. To stop the stack without touching its data:
 
-* `backend/.env`: set `DEBUG=False` and `ALLOWED_HOSTS=*` (the Pi's LAN IP isn't known in advance and can change networks — see `docker-compose.prod.yml`'s VITE_API_URL comment for the same reasoning applied on the frontend side). Tighten `ALLOWED_HOSTS` to a real hostname once this moves off a raw LAN test.
-* `frontend/.env` is **not** used by the prod build — `VITE_API_URL`/`VITE_GOOGLE_CLIENT_ID`/etc. are instead passed as Docker build args in `docker-compose.prod.yml`, sourced from your shell environment (`VITE_GOOGLE_CLIENT_ID`, etc.) rather than the `.env` file, since Vite bakes them into the JS bundle at build time.
+   ```bash
+   docker compose -f docker-compose.prod.yml down
+   ```
+
+No HTTPS yet — this is a LAN-only deployment. A real domain, TLS, and public exposure are a separate future step.
 
 ### How requests flow (production compose)
 
-* **HTTP** `http://<pi-ip>/` → `nginx` → `/api/`, `/admin/`, `/static/` go to `backend:8000`; `/media/` is served directly by nginx from a volume shared with the backend; everything else goes to `frontend:80` (the frontend container's own nginx, serving the built React SPA with client-side routing fallback).
+* **HTTP** `http://<pi-ip>/` → `nginx` → `/api/`, `/admin/`, `/static/` go to `backend:8000`; `/media/` is served directly by nginx from the `examsapp9_prod_backend_media` volume shared with the backend (Django doesn't serve `MEDIA_URL` when `DEBUG=False`); everything else goes to `frontend:80` (the frontend container's own nginx, serving the built React SPA with client-side routing fallback).
 * **WebSocket** `ws://<pi-ip>/ws/...` (chat, game rooms, notifications — see `backend/config/asgi.py`) → `nginx` (`/ws/` location, upgrades the connection with generous read/send timeouts for long-lived sockets) → `backend:8000` (Daphne/Channels).
 
 ## License

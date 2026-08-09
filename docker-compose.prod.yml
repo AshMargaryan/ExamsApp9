@@ -2,7 +2,7 @@
 # deployment. Unlike docker-compose.yml (dev: bind mounts, Vite dev server,
 # services published straight to the host), this file builds the `prod`
 # Dockerfile targets and puts nginx in front as the single public entry
-# point. See Readme.md "Running with Docker" for the commands.
+# point. See Readme.md "Docker" for the commands.
 #
 # Explicit project name: without this, Compose defaults the project name to
 # the directory name ("examsapp9"), which is exactly what docker-compose.yml
@@ -10,8 +10,9 @@
 # both files would then share container names (examsapp9-db-1, ...) AND the
 # "postgres_data" volume, so running this file could recreate/replace your
 # dev containers and point a prod backend at your dev database. Pinning a
-# distinct name keeps every resource (containers, network, volumes) in its
-# own namespace no matter which directory this is run from.
+# distinct name, plus the explicit volume `name:` fields below, keeps every
+# resource (containers, network, volumes) in its own namespace no matter
+# which directory this is run from.
 name: examsapp9-prod
 
 services:
@@ -46,9 +47,16 @@ services:
       # but inside the Docker network Postgres is reachable at the `db`
       # service name, not localhost.
       DB_HOST: db
+      # Production must run with DEBUG=false regardless of what's left in
+      # backend/.env (that file is also used for local/dev runs) — this is
+      # what switches Whitenoise to serving the collected, hashed,
+      # compressed bundle from STATIC_ROOT instead of the raw source tree,
+      # and disables Django's own (dev-only) MEDIA_URL route.
+      DEBUG: "false"
       # collectstatic must run once at container start so Whitenoise has a
       # hashed/gzipped bundle to serve in prod (DEBUG=False disables the
-      # dev-only "serve straight from STATICFILES_DIRS" mode).
+      # dev-only "serve straight from STATICFILES_DIRS" mode). Idempotent —
+      # safe to run again on every restart/redeploy.
       DJANGO_COLLECTSTATIC: "true"
     volumes:
       # Shared with nginx (read-only there) so uploaded avatars/attachments
@@ -92,7 +100,7 @@ services:
     image: nginx:1.27-alpine
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - backend_media:/usr/share/nginx/media:ro
+      - backend_media:/var/www/media:ro
     ports:
       - "80:80"
     depends_on:
@@ -100,13 +108,27 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
+    healthcheck:
+      # 127.0.0.1, not "localhost" — same busybox-wget-doesn't-fall-back-to-
+      # IPv4-on-::1 issue fixed in frontend/Dockerfile's HEALTHCHECK.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
     restart: unless-stopped
     networks:
       - examsapp-network
 
 volumes:
+  # Explicit names, distinct from docker-compose.yml's
+  # examsapp9_dev_postgres_data/examsapp9_dev_frontend_node_modules —
+  # production and development must never be able to read or overwrite
+  # each other's database or files, even by accident.
   postgres_data:
+    name: examsapp9_prod_postgres_data
   backend_media:
+    name: examsapp9_prod_backend_media
 
 networks:
   examsapp-network:
