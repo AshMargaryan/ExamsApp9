@@ -26,7 +26,7 @@ export function TrueFalseQuestion({
       {statements.map((s) => {
         const markedTrue = selectedIds.has(s.id);
         let classes = markedTrue
-          ? "border-primary bg-surface-muted"
+          ? "border-primary bg-primary text-primary-contrast"
           : "border-border";
 
         if (revealed) {

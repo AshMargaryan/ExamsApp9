@@ -77,16 +77,18 @@ export function StudentReviewPanel({ studentId, onClose }: { studentId: number; 
 
             <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4 text-center">
               <div>
-                <p className="text-lg font-semibold text-text">{profile.stats.accuracy_percentage}%</p>
+                <p className="text-lg font-semibold text-text">
+                  {profile.stats ? `${profile.stats.accuracy_percentage}%` : "—"}
+                </p>
                 <p className="text-xs text-text-muted">Ճշգրտություն</p>
               </div>
               <div>
-                <p className="text-lg font-semibold text-text">{profile.stats.tests_completed}</p>
+                <p className="text-lg font-semibold text-text">{profile.stats ? profile.stats.tests_completed : "—"}</p>
                 <p className="text-xs text-text-muted">Ավարտված թեստեր</p>
               </div>
               <div>
                 <p className="text-lg font-semibold text-text">
-                  {(profile.stats.weekly_study_seconds / 3600).toFixed(1)}
+                  {profile.stats ? (profile.stats.weekly_study_seconds / 3600).toFixed(1) : "—"}
                 </p>
                 <p className="text-xs text-text-muted">Ժամ այս շաբաթ</p>
               </div>

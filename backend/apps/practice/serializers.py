@@ -152,13 +152,16 @@ class QuestionPracticeSerializer(serializers.ModelSerializer):
     """Sent when serving questions to answer — never includes correct answers."""
     choices = ChoiceSerializer(many=True, read_only=True)
     statements = StatementSerializer(many=True, read_only=True)
+    subtopic_id = serializers.IntegerField(source="subtopic.id", read_only=True)
     subject_name = serializers.CharField(source="subtopic.topic.domain.subject.name", read_only=True)
+    topic_name = serializers.CharField(source="subtopic.topic.name", read_only=True)
+    subtopic_name = serializers.CharField(source="subtopic.name", read_only=True)
 
     class Meta:
         model = Question
         fields = [
             "id", "question_type", "tier", "text", "passage", "hint", "video_url",
-            "choices", "statements", "subject_name",
+            "choices", "statements", "subtopic_id", "subject_name", "topic_name", "subtopic_name",
         ]
 
 
@@ -166,13 +169,17 @@ class QuestionRevealSerializer(serializers.ModelSerializer):
     """Sent when the user clicks 'show answers' — correct answers + explanation."""
     choices = ChoiceRevealSerializer(many=True, read_only=True)
     statements = StatementRevealSerializer(many=True, read_only=True)
+    subtopic_id = serializers.IntegerField(source="subtopic.id", read_only=True)
     subject_name = serializers.CharField(source="subtopic.topic.domain.subject.name", read_only=True)
+    topic_name = serializers.CharField(source="subtopic.topic.name", read_only=True)
+    subtopic_name = serializers.CharField(source="subtopic.name", read_only=True)
 
     class Meta:
         model = Question
         fields = [
             "id", "question_type", "tier", "text", "passage", "explanation", "video_url",
-            "choices", "statements", "correct_answer_text", "subject_name",
+            "choices", "statements", "correct_answer_text",
+            "subtopic_id", "subject_name", "topic_name", "subtopic_name",
         ]
 
 
@@ -232,6 +239,10 @@ class DailyProblemSerializer(serializers.Serializer):
     question = QuestionPracticeSerializer()
     already_answered = serializers.BooleanField()
     result = serializers.SerializerMethodField()
+    reason = serializers.SerializerMethodField()
+
+    def get_reason(self, obj):
+        return obj.get("reason")
 
     def get_result(self, obj):
         attempt = obj.get("attempt")

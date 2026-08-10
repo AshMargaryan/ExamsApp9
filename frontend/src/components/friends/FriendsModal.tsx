@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
+import * as challengesApi from "../../api/challenges";
+import type { ChallengeInvite } from "../../api/challenges";
 import * as friendsApi from "../../api/friends";
 import type { FriendRequest, FriendUser, SearchResultUser } from "../../api/friends";
+import { ChallengeInviteCard } from "../challenges/ChallengeInviteCard";
+import { ChallengeModal } from "../challenges/ChallengeModal";
 import { PublicProfileModal } from "../profile/PublicProfileModal";
 
-type Tab = "friends" | "requests" | "search";
+type Tab = "friends" | "requests" | "challenges" | "search";
 
 function displayName(u: { username: string; first_name: string; last_name: string }) {
   const full = [u.first_name, u.last_name].filter(Boolean).join(" ");
@@ -43,6 +47,9 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
+  const [challengingFriend, setChallengingFriend] = useState<FriendUser | null>(null);
+  const [incomingChallenges, setIncomingChallenges] = useState<ChallengeInvite[] | null>(null);
+  const [outgoingChallenges, setOutgoingChallenges] = useState<ChallengeInvite[] | null>(null);
 
   function loadFriends() {
     friendsApi.fetchFriends().then(setFriends);
@@ -53,9 +60,15 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
     friendsApi.fetchOutgoingRequests().then(setOutgoing);
   }
 
+  function loadChallenges() {
+    challengesApi.listChallenges("incoming").then(setIncomingChallenges);
+    challengesApi.listChallenges("outgoing").then((all) => setOutgoingChallenges(all.filter((c) => c.status === "pending")));
+  }
+
   useEffect(() => {
     loadFriends();
     loadRequests();
+    loadChallenges();
   }, []);
 
   useEffect(() => {
@@ -102,6 +115,11 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
     loadFriends();
   }
 
+  async function handleCancelChallenge(id: number) {
+    await challengesApi.cancelChallenge(id);
+    loadChallenges();
+  }
+
   function tabClass(t: Tab) {
     return `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
       tab === t ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
@@ -133,6 +151,9 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
           <button type="button" className={tabClass("requests")} onClick={() => setTab("requests")}>
             Հարցումներ {incoming && incoming.length > 0 ? `(${incoming.length})` : ""}
           </button>
+          <button type="button" className={tabClass("challenges")} onClick={() => setTab("challenges")}>
+            ⚔️ Մարտահրավերներ {incomingChallenges && incomingChallenges.length > 0 ? `(${incomingChallenges.length})` : ""}
+          </button>
           <button type="button" className={tabClass("search")} onClick={() => setTab("search")}>
             Փնտրել
           </button>
@@ -155,12 +176,57 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
                       <p className="text-xs text-text-muted">@{f.username}</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setChallengingFriend(f)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      ⚔️ Մարտահրավեր
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(f.id)}
+                      className="text-sm text-incorrect hover:underline"
+                    >
+                      Հեռացնել
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {tab === "challenges" && (
+            <>
+              <h3 className="mb-2 text-sm font-semibold text-text-muted">Ստացված</h3>
+              {incomingChallenges === null && <p className="mb-4 text-text-muted">Բեռնվում է...</p>}
+              {incomingChallenges?.length === 0 && (
+                <p className="mb-4 text-sm text-text-muted">Մարտահրավերներ չկան։</p>
+              )}
+              {incomingChallenges?.map((c) => (
+                <ChallengeInviteCard key={c.id} invite={c} onRespond={loadChallenges} />
+              ))}
+
+              <h3 className="mb-2 mt-4 text-sm font-semibold text-text-muted">Ուղարկված</h3>
+              {outgoingChallenges?.length === 0 && <p className="text-sm text-text-muted">Մարտահրավերներ չկան։</p>}
+              {outgoingChallenges?.map((c) => (
+                <div key={c.id} className="flex items-center justify-between border-b border-border py-2.5 last:border-0">
+                  <div>
+                    <p className="text-text">
+                      ⚔️ Մարտահրավեր <span className="font-medium">{c.receiver.username}</span>-ին
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      {c.subject_name}
+                      {c.topic_name ? ` · ${c.topic_name}` : ""}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => handleRemove(f.id)}
-                    className="text-sm text-incorrect hover:underline"
+                    onClick={() => handleCancelChallenge(c.id)}
+                    className="text-sm text-text-muted hover:underline"
                   >
-                    Հեռացնել
+                    Չեղարկել
                   </button>
                 </div>
               ))}
@@ -281,6 +347,18 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
       {viewingUserId !== null && (
         <div onClick={(e) => e.stopPropagation()}>
           <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
+        </div>
+      )}
+
+      {challengingFriend && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ChallengeModal
+            friend={challengingFriend}
+            onClose={() => {
+              setChallengingFriend(null);
+              loadChallenges();
+            }}
+          />
         </div>
       )}
     </div>

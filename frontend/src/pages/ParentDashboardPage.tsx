@@ -10,6 +10,7 @@ import { getHierarchy } from "../api/practice";
 import type { SubjectNode } from "../api/practice";
 import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
 import { WeeklyProgressChart } from "../components/WeeklyProgressChart";
+import { ActivityHeatmap } from "../components/ActivityHeatmap";
 import { useAuth } from "../auth/AuthContext";
 
 const GOAL_TYPES: GoalType[] = ["lessons_per_week", "xp_per_month", "subject_accuracy"];
@@ -156,27 +157,6 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
       >
         ↻ Թարմացնել երեխաների ցուցակը
       </button>
-    </div>
-  );
-}
-
-function ActivityHeatmap({ points }: { points: ChildDashboard["activity_calendar"] }) {
-  function levelClass(count: number) {
-    if (count === 0) return "bg-surface-muted";
-    if (count <= 2) return "bg-primary/30";
-    if (count <= 5) return "bg-primary/60";
-    return "bg-primary";
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {points.map((p) => (
-        <div
-          key={p.date}
-          title={`${p.date}՝ ${p.count} հարց`}
-          className={`h-3.5 w-3.5 rounded-sm ${levelClass(p.count)}`}
-        />
-      ))}
     </div>
   );
 }
@@ -429,7 +409,10 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
         </div>
         <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
           <h2 className="mb-3 text-lg font-semibold text-text">Ակտիվության օրացույց (30 օր)</h2>
-          <ActivityHeatmap points={activity_calendar} />
+          <ActivityHeatmap
+            points={activity_calendar.map((p) => ({ ...p, tooltip: `${p.date}՝ ${p.count} հարց` }))}
+            rangeDays={30}
+          />
         </div>
       </section>
 

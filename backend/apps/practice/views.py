@@ -1,4 +1,5 @@
 import hashlib
+import json
 from pathlib import Path
 
 import requests
@@ -13,12 +14,14 @@ from .models import (
     Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer, DailyProblemAttempt,
     MistakeSource,
 )
+from apps.mistakes.services import record_mistake
+from apps.mistakes.models import MistakeEntrySource
 from .scoring import score_answer
 from .services import (
     progress_by_subtopic as _progress_by_subtopic,
     subtopic_ids_with_questions as _subtopic_ids_with_questions,
     get_recommended_subtopics, get_weekly_progress, get_daily_question,
-    record_topic_mistake,
+    get_daily_question_reason, record_topic_mistake,
 )
 from .serializers import (
     SubjectHierarchySerializer, SubtopicMaterialSerializer,
@@ -28,6 +31,7 @@ from .serializers import (
     DailyProblemSerializer, DailyProblemSubmitSerializer,
 )
 from apps.profiles.engine import evaluate_achievements
+from apps.profiles.subjects import canonical_key_for_practice_subject
 from apps.profiles.xp import award_xp
 from apps.streaks.services import record_activity
 
@@ -139,7 +143,10 @@ class SubmitTierView(APIView):
         if not attempt.revealed_answers:
             record_activity(request.user)
             evaluate_achievements(request.user)
-            award_xp(request.user, newly_correct_count * XP_PER_CORRECT_PRACTICE_ANSWER)
+            award_xp(
+                request.user, newly_correct_count * XP_PER_CORRECT_PRACTICE_ANSWER,
+                subject=canonical_key_for_practice_subject(subtopic.topic.domain.subject),
+            )
 
             from apps.parents.models import NotificationType  # local import: avoids a load-order dependency
             from apps.parents.services import notify_parents
@@ -172,6 +179,12 @@ class SubmitTierView(APIView):
                 attempt.user, source=MistakeSource.PRACTICE,
                 subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
                 subtopic=subtopic,
+            )
+            record_mistake(
+                attempt.user, source=MistakeEntrySource.PRACTICE,
+                subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
+                question=question, question_type=question.question_type, answer_data=a,
+                explanation=question.explanation,
             )
         newly_correct = defaults["is_correct"] and not was_correct_before
         return defaults["is_correct"], newly_correct, ua
@@ -209,7 +222,7 @@ class DailyProblemView(APIView):
 
     def get(self, request):
         today = timezone.localdate()
-        question = get_daily_question(today)
+        question = get_daily_question(request.user, today)
         if question is None:
             return Response({"detail": "Այսօրվա հարցը հասանելի չէ։"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -218,12 +231,13 @@ class DailyProblemView(APIView):
             "date": today, "question": question,
             "already_answered": attempt is not None,
             "attempt": attempt,
+            "reason": get_daily_question_reason(request.user, question),
         }
         return Response(DailyProblemSerializer(data).data)
 
     def post(self, request):
         today = timezone.localdate()
-        question = get_daily_question(today)
+        question = get_daily_question(request.user, today)
         if question is None:
             return Response({"detail": "Այսօրվա հարցը հասանելի չէ։"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -232,6 +246,7 @@ class DailyProblemView(APIView):
             data = {
                 "date": today, "question": question,
                 "already_answered": True, "attempt": existing,
+                "reason": get_daily_question_reason(request.user, question),
             }
             return Response(DailyProblemSerializer(data).data)
 
@@ -250,13 +265,25 @@ class DailyProblemView(APIView):
                 subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
                 subtopic=subtopic,
             )
+            record_mistake(
+                request.user, source=MistakeEntrySource.PRACTICE,
+                subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
+                question=question, question_type=question.question_type,
+                answer_data=serializer.validated_data, explanation=question.explanation,
+            )
 
         record_activity(request.user)
         evaluate_achievements(request.user)
         if attempt.is_correct:
-            award_xp(request.user, XP_PER_CORRECT_DAILY_PROBLEM)
+            award_xp(
+                request.user, XP_PER_CORRECT_DAILY_PROBLEM,
+                subject=canonical_key_for_practice_subject(question.subtopic.topic.domain.subject),
+            )
 
-        data = {"date": today, "question": question, "already_answered": True, "attempt": attempt}
+        data = {
+            "date": today, "question": question, "already_answered": True, "attempt": attempt,
+            "reason": get_daily_question_reason(request.user, question),
+        }
         return Response(DailyProblemSerializer(data).data, status=status.HTTP_201_CREATED)
 
 
@@ -300,3 +327,49 @@ class PronounceView(APIView):
             cache_path.write_bytes(resp.content)
 
         return HttpResponse(cache_path.read_bytes(), content_type="audio/mpeg")
+
+
+TRANSLATE_CACHE_DIR = settings.BASE_DIR / "media" / "translate_cache"
+TRANSLATE_MAX_CHARS = 200
+
+
+class TranslateView(APIView):
+    """
+    GET /api/practice/translate/?text=...
+    English -> Armenian translation for the "select to pronounce" widget's
+    Translate button (reading/practice material, where the selected text
+    isn't tied to any flashcard with a pre-authored translation). Proxies to
+    Google Translate's (unofficial, undocumented) single-translation
+    endpoint — same trust tradeoff as PronounceView above — and caches
+    results on disk by text hash.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        text = request.query_params.get("text", "").strip()[:TRANSLATE_MAX_CHARS]
+        if not text:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        TRANSLATE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache_key = hashlib.sha256(text.lower().encode("utf-8")).hexdigest()[:32]
+        cache_path = TRANSLATE_CACHE_DIR / f"{cache_key}.json"
+
+        if cache_path.exists():
+            return Response(json.loads(cache_path.read_text(encoding="utf-8")))
+
+        try:
+            resp = requests.get(
+                "https://translate.googleapis.com/translate_a/single",
+                params={"client": "gtx", "sl": "en", "tl": "hy", "dt": "t", "q": text},
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=8,
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+            translation = "".join(segment[0] for segment in payload[0])
+        except (requests.RequestException, ValueError, IndexError, KeyError, TypeError):
+            return Response(status=status.HTTP_502_BAD_GATEWAY)
+
+        result = {"text": text, "translation": translation}
+        cache_path.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
+        return Response(result)

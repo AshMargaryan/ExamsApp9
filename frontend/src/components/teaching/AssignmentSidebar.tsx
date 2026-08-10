@@ -66,7 +66,7 @@ export function AssignmentSidebar() {
         onClick={handleToggle}
         aria-label="Առաջադրանքներ"
         title="Առաջադրանքներ"
-        className="fixed right-4 top-20 z-40 flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-2 text-sm font-medium text-text shadow-lg transition-colors hover:border-primary"
+        className="fixed right-4 top-36 z-40 flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-2 text-sm font-medium text-text shadow-lg transition-colors hover:border-primary"
       >
         📋 Առաջադրանքներ
         {openCount > 0 && (
@@ -77,7 +77,7 @@ export function AssignmentSidebar() {
       </button>
 
       {open && (
-        <div className="fixed right-4 top-32 z-40 max-h-[65vh] w-[min(92vw,24rem)] overflow-y-auto rounded-[var(--radius)] border border-border bg-surface p-3 shadow-xl">
+        <div className="fixed right-4 top-48 z-40 max-h-[65vh] w-[min(92vw,24rem)] overflow-y-auto rounded-[var(--radius)] border border-border bg-surface p-3 shadow-xl">
           {assignments === null && <p className="p-3 text-sm text-text-muted">Բեռնվում է...</p>}
           {assignments !== null && sorted.length === 0 && (
             <p className="p-3 text-sm text-text-muted">Ընթացիկ առաջադրանքներ չկան։</p>

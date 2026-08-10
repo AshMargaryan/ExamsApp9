@@ -45,6 +45,9 @@ class GameRoom(models.Model):
     max_players = models.PositiveSmallIntegerField(default=4)
     status = models.CharField(max_length=10, choices=GameRoomStatus.choices, default=GameRoomStatus.WAITING)
     start_time = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(
+        null=True, blank=True, help_text="Set once, at settle time. Used to count a user's games-per-day for XP anti-farming."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     # How the room transitions from waiting -> running. The creator can always
@@ -239,6 +242,31 @@ class GameStats(models.Model):
 
     def __str__(self):
         return f"GameStats({self.user})"
+
+
+class SuspiciousActivityEventType(models.TextChoices):
+    GAME_XP_VOLUME = "game_xp_volume", "Unusually high number of games settled in one day"
+
+
+class SuspiciousActivityLog(models.Model):
+    """Admin-visible flag for volume-based XP-farming patterns — never an
+    additional penalty beyond the diminishing-returns curve _settle_room
+    already applies; purely for admins to review (see apps.games.admin).
+    Conservative by design: only logs well past normal play, so heavy
+    legitimate players don't get flagged."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="suspicious_activity_logs"
+    )
+    event_type = models.CharField(max_length=30, choices=SuspiciousActivityEventType.choices)
+    detail = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_event_type_display()} — {self.user} @ {self.created_at:%Y-%m-%d}"
 
 
 class MatchmakingStartMode(models.TextChoices):

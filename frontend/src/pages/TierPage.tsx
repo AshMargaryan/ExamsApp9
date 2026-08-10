@@ -255,7 +255,7 @@ export function TierPage() {
           type="button"
           onClick={handleNext}
           disabled={busy}
-          className="ml-auto rounded-md bg-accent px-5 py-2 font-medium text-primary-contrast transition-colors disabled:opacity-60"
+          className="ml-auto rounded-md bg-primary px-5 py-2 font-medium text-primary-contrast transition-colors disabled:opacity-60"
         >
           Հաջորդը →
         </button>
