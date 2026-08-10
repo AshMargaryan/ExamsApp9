@@ -1,7 +1,11 @@
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { applyGradient, getStoredGradient } from "./lib/buttonGradient";
+import { applyBackground, getStoredBackground } from "./lib/backgroundGradient";
+import { applyStoredTheme } from "./hooks/useTheme";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { CompleteRegistrationPage } from "./pages/CompleteRegistrationPage";
@@ -34,8 +38,15 @@ import { FlashcardDeckManagePage } from "./pages/FlashcardDeckManagePage";
 import { RankingsPage } from "./pages/RankingsPage";
 import { ParentDashboardPage } from "./pages/ParentDashboardPage";
 import { ChatPage } from "./pages/ChatPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export default function App() {
+  useEffect(() => {
+    applyStoredTheme();
+    applyGradient(getStoredGradient());
+    applyBackground(getStoredBackground());
+  }, []);
+
   return (
     <AuthProvider>
       <ToastProvider>
@@ -75,6 +86,7 @@ export default function App() {
             <Route path="/rankings" element={<RankingsPage />} />
             <Route path="/family" element={<ParentDashboardPage />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </ToastProvider>

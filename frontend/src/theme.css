@@ -4,16 +4,68 @@
   hunting through components.
 */
 :root {
-  --color-bg: #f7f7fb;
+  --color-bg: #1a1a1a;
+  --color-surface: #242424;
+  --color-surface-muted: #2e2e2e;
+  --color-border: #3a3a3a;
+
+  --color-text: #ffffff;
+  --color-text-muted: #a3a3a3;
+
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-contrast: #ffffff;
+
+  --color-accent: #14b8a6;
+
+  --color-purple: #7f24b0;
+  --color-pink: #ff5c8d;
+  --gradient-hero: linear-gradient(226deg, var(--color-primary) 0%, var(--color-purple) 55%, var(--color-pink) 100%);
+
+  --color-correct: #1a9e6d;
+  --color-correct-bg: #e4f7ef;
+  --color-incorrect: #d64545;
+  --color-incorrect-bg: #fbe8e8;
+
+  --color-easy: #1a9e6d;
+  --color-medium: #d69a1a;
+  --color-hard: #d64545;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+
+  --radius: 0.75rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+}
+
+:root[data-theme='light'] {
+  --color-bg: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-muted: #f0f1f7;
-  --color-border: #e3e4ec;
+  --color-surface-muted: #f3f4f6;
+  --color-border: #e5e7eb;
 
-  --color-text: #1c1d2b;
-  --color-text-muted: #6b6d81;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
 
-  --color-primary: #5b5bd6;
-  --color-primary-hover: #4949c2;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
   --color-primary-contrast: #ffffff;
 
   --color-accent: #14b8a6;
@@ -27,21 +79,23 @@
   --color-medium: #d69a1a;
   --color-hard: #d64545;
 
-  --radius: 0.75rem;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
 }
 
 :root[data-theme='dark'] {
-  --color-bg: #15151f;
-  --color-surface: #1d1e2b;
-  --color-surface-muted: #262838;
-  --color-border: #33354a;
+  --color-bg: #1a1a1a;
+  --color-surface: #242424;
+  --color-surface-muted: #2e2e2e;
+  --color-border: #3a3a3a;
 
-  --color-text: #eceefb;
-  --color-text-muted: #9799b3;
+  --color-text: #ffffff;
+  --color-text-muted: #a3a3a3;
 
-  --color-primary: #8785f0;
-  --color-primary-hover: #a3a1f7;
-  --color-primary-contrast: #15151f;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-contrast: #ffffff;
 
   --color-accent: #2dd4c4;
 
@@ -53,21 +107,25 @@
   --color-easy: #4ade9a;
   --color-medium: #f0be5a;
   --color-hard: #f2726e;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --color-bg: #15151f;
-    --color-surface: #1d1e2b;
-    --color-surface-muted: #262838;
-    --color-border: #33354a;
+    --color-bg: #1a1a1a;
+    --color-surface: #242424;
+    --color-surface-muted: #2e2e2e;
+    --color-border: #3a3a3a;
 
-    --color-text: #eceefb;
-    --color-text-muted: #9799b3;
+    --color-text: #ffffff;
+    --color-text-muted: #a3a3a3;
 
-    --color-primary: #8785f0;
-    --color-primary-hover: #a3a1f7;
-    --color-primary-contrast: #15151f;
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-contrast: #ffffff;
 
     --color-accent: #2dd4c4;
 
@@ -79,6 +137,10 @@
     --color-easy: #4ade9a;
     --color-medium: #f0be5a;
     --color-hard: #f2726e;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -93,6 +155,8 @@
   --color-primary-hover: var(--color-primary-hover);
   --color-primary-contrast: var(--color-primary-contrast);
   --color-accent: var(--color-accent);
+  --color-purple: var(--color-purple);
+  --color-pink: var(--color-pink);
   --color-correct: var(--color-correct);
   --color-correct-bg: var(--color-correct-bg);
   --color-incorrect: var(--color-incorrect);
@@ -100,4 +164,22 @@
   --color-easy: var(--color-easy);
   --color-medium: var(--color-medium);
   --color-hard: var(--color-hard);
+}
+
+/*
+  Student-customizable button gradient (Settings page). --gradient-primary is
+  set/cleared at runtime via lib/buttonGradient.ts; painting it as a
+  background-image over every .bg-primary element lets one CSS variable
+  restyle every button site-wide with no per-component changes.
+*/
+.bg-primary {
+  background-image: var(--gradient-primary, none);
+}
+
+/*
+  Student-customizable page background (Settings page). Same technique as
+  the button gradient above, applied to .bg-bg instead of .bg-primary.
+*/
+.bg-bg {
+  background-image: var(--gradient-bg, none);
 }
