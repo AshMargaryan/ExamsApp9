@@ -54,7 +54,7 @@ class FlashcardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flashcard
         fields = [
-            "id", "number", "topic", "front_text", "back_text", "hint",
+            "id", "number", "topic", "front_text", "back_text", "hint", "translation",
             "explanation", "notes", "tags", "difficulty",
             "front_image_url", "back_image_url", "audio_url",
             "created_at", "updated_at",
@@ -93,7 +93,7 @@ class FlashcardWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flashcard
         fields = [
-            "topic", "front_text", "back_text", "hint", "explanation", "notes",
+            "topic", "front_text", "back_text", "hint", "translation", "explanation", "notes",
             "tags", "difficulty", "front_image", "back_image", "audio",
         ]
 

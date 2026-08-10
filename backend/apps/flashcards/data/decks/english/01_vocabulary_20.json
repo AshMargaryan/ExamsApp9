@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-020",
+  "title": "Անգլերեն — Բառապաշար 20",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Recover",
+      "back": "to return to a normal state of health, mind, or strength",
+      "hint": "",
+      "translation": "ապաքինվել"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Hostility",
+      "back": "aggressive or unfriendly behaviour intended to harm",
+      "hint": "",
+      "translation": "թշնամանք"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Shaky",
+      "back": "weak, unstable, or lacking confidence",
+      "hint": "",
+      "translation": "դողդոջուն"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Compact",
+      "back": "closely and neatly packed together in a small space",
+      "hint": "",
+      "translation": "սեղմ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Involve",
+      "back": "to make somebody take part in something",
+      "hint": "",
+      "translation": "ներգրավել"
+    }
+  ]
+}

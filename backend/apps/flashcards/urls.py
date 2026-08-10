@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import (
     CardDetailView, CardDuplicateView, CardFlagView, CardMoveView,
-    DeckCardCreateView, DeckCardsView, DeckDuplicateView,
+    DeckCardCreateView, DeckCardsView, DeckDuplicateView, FavoriteCardsView,
     ListFlashcardDecksView, MarkCardView, MyDeckDetailView, MyDecksListCreateView,
     ResetDeckProgressView,
 )
@@ -12,6 +12,7 @@ urlpatterns = [
     path("decks/", ListFlashcardDecksView.as_view(), name="flashcards-deck-list"),
     path("decks/<int:deck_id>/cards/", DeckCardsView.as_view(), name="flashcards-deck-cards"),
     path("decks/<int:deck_id>/reset/", ResetDeckProgressView.as_view(), name="flashcards-deck-reset"),
+    path("favorites/", FavoriteCardsView.as_view(), name="flashcards-favorites"),
 
     # My decks (private, student-owned)
     path("my-decks/", MyDecksListCreateView.as_view(), name="flashcards-my-decks"),

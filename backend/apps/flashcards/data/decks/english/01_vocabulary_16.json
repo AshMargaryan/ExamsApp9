@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-016",
+  "title": "Անգլերեն — Բառապաշար 16",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Recognize",
+      "back": "to identify someone or something previously encountered",
+      "hint": "",
+      "translation": "ճանաչել"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Predictable",
+      "back": "always behaving or occurring in an expected way",
+      "hint": "",
+      "translation": "կանխատեսելի"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Reliable",
+      "back": "good in quality or performance; able to be trusted",
+      "hint": "",
+      "translation": "հուսալի"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Peace",
+      "back": "the state existing during the absence of war",
+      "hint": "",
+      "translation": "խաղաղություն"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Treaty",
+      "back": "a formal agreement made between countries",
+      "hint": "",
+      "translation": "պայմանագիր"
+    }
+  ]
+}

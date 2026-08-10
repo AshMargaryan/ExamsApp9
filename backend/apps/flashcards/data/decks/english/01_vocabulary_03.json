@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-003",
+  "title": "Անգլերեն — Բառապաշար 3",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Arbitrary",
+      "back": "based on random choice rather than reason or system",
+      "hint": "",
+      "translation": "կամայական"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Meticulous",
+      "back": "showing great attention to detail; extremely careful and precise",
+      "hint": "",
+      "translation": "մանրակրկիտ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Skeptical",
+      "back": "having doubts about whether something is true",
+      "hint": "",
+      "translation": "կասկածամիտ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Versatile",
+      "back": "able to adapt to many different functions or activities",
+      "hint": "",
+      "translation": "բազմակողմանի"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Ambivalent",
+      "back": "having mixed or contradictory feelings about something",
+      "hint": "",
+      "translation": "երկատված (զգացումներով)"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-010",
+  "title": "Անգլերեն — Բառապաշար 10",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Sympathetic",
+      "back": "showing kind feelings or understanding toward others",
+      "hint": "",
+      "translation": "կարեկից"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Glimpse",
+      "back": "a short, quick view of something",
+      "hint": "",
+      "translation": "թռուցիկ հայացք"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Graceful",
+      "back": "having or showing elegance",
+      "hint": "",
+      "translation": "նրբագեղ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Stuffy",
+      "back": "lacking fresh air or ventilation",
+      "hint": "",
+      "translation": "խեղդուկ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Masterpiece",
+      "back": "a work of outstanding creativity and skill",
+      "hint": "",
+      "translation": "գլուխգործոց"
+    }
+  ]
+}

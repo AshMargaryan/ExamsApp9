@@ -9,6 +9,8 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.mistakes.services import record_flashcard_mistake
+
 from .models import (
     Flashcard, FlashcardDeck, FlashcardProgress, FlashcardProgressStatus, FlashcardReview,
 )
@@ -156,6 +158,7 @@ class DeckDuplicateView(APIView):
                 front_text=card.front_text,
                 back_text=card.back_text,
                 hint=card.hint,
+                translation=card.translation,
                 explanation=card.explanation,
                 notes=card.notes,
                 front_image=card.front_image,
@@ -232,7 +235,7 @@ class CardDuplicateView(APIView):
         new_card = Flashcard.objects.create(
             deck=deck, number=next_number, topic=card.topic,
             front_text=card.front_text, back_text=card.back_text, hint=card.hint,
-            explanation=card.explanation, notes=card.notes,
+            translation=card.translation, explanation=card.explanation, notes=card.notes,
             front_image=card.front_image, back_image=card.back_image, audio=card.audio,
             tags=card.tags, difficulty=card.difficulty,
             dataset_id=f"USER-{uuid.uuid4().hex}",
@@ -267,6 +270,31 @@ class CardMoveView(APIView):
         target_deck.save(update_fields=["card_count", "updated_at"])
 
         return Response(FlashcardSerializer(card, context={"request": request}).data)
+
+
+class FavoriteCardsView(APIView):
+    """GET /api/flashcards/favorites/ — every card this user has starred,
+    across every deck (library or owned), with the deck it belongs to."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        progress = (
+            FlashcardProgress.objects
+            .filter(user=request.user, is_favorite=True)
+            .select_related("card__deck")
+            .order_by("card__deck__subject", "card__deck__title", "card__number")
+        )
+        subject = request.query_params.get("subject")
+        if subject:
+            progress = progress.filter(card__deck__subject=subject)
+        results = [
+            {
+                "card": FlashcardSerializer(p.card, context={"request": request}).data,
+                "deck": FlashcardDeckSerializer(p.card.deck).data,
+            }
+            for p in progress
+        ]
+        return Response({"results": results})
 
 
 class CardFlagView(APIView):
@@ -359,6 +387,9 @@ class MarkCardView(APIView):
         progress.save()
 
         FlashcardReview.objects.create(user=request.user, card=card, grade=grade)
+
+        if grade == "again":
+            record_flashcard_mistake(request.user, card)
 
         return Response({
             "status": progress.status,

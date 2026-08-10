@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-013",
+  "title": "Անգլերեն — Բառապաշար 13",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Enrich",
+      "back": "to improve the quality or value of something",
+      "hint": "",
+      "translation": "հարստացնել"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Charity",
+      "back": "an organization that raises money to help those in need",
+      "hint": "",
+      "translation": "բարեգործություն"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Pedestrian",
+      "back": "a person who travels on foot",
+      "hint": "",
+      "translation": "հետիոտն"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Adequate",
+      "back": "satisfactory or acceptable in quality or quantity",
+      "hint": "",
+      "translation": "բավարար"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Frank",
+      "back": "open and honest; not hiding one's opinions",
+      "hint": "",
+      "translation": "անկեղծ"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-024",
+  "title": "Անգլերեն — Բառապաշար 24",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Espionage",
+      "back": "the practice of spying to gain secret information",
+      "hint": "",
+      "translation": "լրտեսություն"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Anecdote",
+      "back": "a short, entertaining story about a real incident",
+      "hint": "",
+      "translation": "կարճ պատմություն"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Diminish",
+      "back": "to make or become smaller or less important",
+      "hint": "",
+      "translation": "նվազեցնել"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Retrieve",
+      "back": "to get or bring something back",
+      "hint": "",
+      "translation": "վերադարձնել"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Sufficient",
+      "back": "enough for a particular purpose",
+      "hint": "",
+      "translation": "բավարար"
+    }
+  ]
+}

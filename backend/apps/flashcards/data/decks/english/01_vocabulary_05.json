@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-005",
+  "title": "Անգլերեն — Բառապաշար 5",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Eloquent",
+      "back": "able to express ideas clearly and persuasively",
+      "hint": "",
+      "translation": "պերճախոս"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Leisure",
+      "back": "free or unoccupied time",
+      "hint": "",
+      "translation": "ազատ ժամանակ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Miniature",
+      "back": "a model or copy of something on a very small scale",
+      "hint": "",
+      "translation": "մանրակերտ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Tornado",
+      "back": "a violent storm with very strong, spinning winds",
+      "hint": "",
+      "translation": "տորնադո"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Flattery",
+      "back": "false, insincere praise",
+      "hint": "",
+      "translation": "շողոքորթություն"
+    }
+  ]
+}

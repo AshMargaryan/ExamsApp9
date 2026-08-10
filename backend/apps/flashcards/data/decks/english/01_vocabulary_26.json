@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-026",
+  "title": "Անգլերեն — Բառապաշար 26",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Ubiquitous",
+      "back": "present, appearing, or found everywhere",
+      "hint": "",
+      "translation": "ամենուրեք տարածված"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Redundant",
+      "back": "no longer needed; superfluous",
+      "hint": "",
+      "translation": "ավելորդ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Feasible",
+      "back": "possible to do easily or conveniently",
+      "hint": "",
+      "translation": "իրագործելի"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Coherent",
+      "back": "logical and consistent; easy to follow",
+      "hint": "",
+      "translation": "համահունչ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Ambiguity",
+      "back": "the quality of having more than one possible meaning",
+      "hint": "",
+      "translation": "երկիմաստություն"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-012",
+  "title": "Անգլերեն — Բառապաշար 12",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Ornament",
+      "back": "an attractive object with no practical purpose",
+      "hint": "",
+      "translation": "զարդ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Wander",
+      "back": "to walk or move in a leisurely, aimless way",
+      "hint": "",
+      "translation": "թափառել"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Gossip",
+      "back": "to talk about others, often spreading rumours",
+      "hint": "",
+      "translation": "բամբասել"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Cunning",
+      "back": "able to achieve things cleverly, often by deceiving others",
+      "hint": "",
+      "translation": "խորամանկ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Compensate",
+      "back": "to pay someone for loss, damage, or injury they suffered",
+      "hint": "",
+      "translation": "փոխհատուցել"
+    }
+  ]
+}

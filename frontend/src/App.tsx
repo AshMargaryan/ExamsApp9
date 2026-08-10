@@ -33,6 +33,7 @@ import { MockExamAttemptPage } from "./pages/MockExamAttemptPage";
 import { MockExamResultsPage } from "./pages/MockExamResultsPage";
 import { MockExamHistoryPage } from "./pages/MockExamHistoryPage";
 import { FlashcardsPage } from "./pages/FlashcardsPage";
+import { FlashcardFavoritesPage } from "./pages/FlashcardFavoritesPage";
 import { FlashcardStudyPage } from "./pages/FlashcardStudyPage";
 import { FlashcardEditorPage } from "./pages/FlashcardEditorPage";
 import { FlashcardDeckManagePage } from "./pages/FlashcardDeckManagePage";
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="/mock-exams/attempt/:attemptId/results" element={<MockExamResultsPage />} />
               <Route path="/mock-exams/:examId/history" element={<MockExamHistoryPage />} />
               <Route path="/flashcards" element={<FlashcardsPage />} />
+              <Route path="/flashcards/favorites" element={<FlashcardFavoritesPage />} />
               <Route path="/flashcards/create" element={<FlashcardEditorPage />} />
               <Route path="/flashcards/cards/:cardId/edit" element={<FlashcardEditorPage />} />
               <Route path="/flashcards/:deckId/manage" element={<FlashcardDeckManagePage />} />

@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-009",
+  "title": "Անգլերեն — Բառապաշար 9",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Verdict",
+      "back": "the formal decision of a jury",
+      "hint": "",
+      "translation": "վճիռ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Lunatic",
+      "back": "a person who behaves in a wild, often dangerous way",
+      "hint": "",
+      "translation": "խելագար"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Awesome",
+      "back": "causing great fear, wonder, or respect",
+      "hint": "",
+      "translation": "հիասքանչ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Absurd",
+      "back": "not logical or sensible; completely ridiculous",
+      "hint": "",
+      "translation": "անհեթեթ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Tactful",
+      "back": "showing skill and sensitivity in dealing with others",
+      "hint": "",
+      "translation": "նրբանկատ"
+    }
+  ]
+}

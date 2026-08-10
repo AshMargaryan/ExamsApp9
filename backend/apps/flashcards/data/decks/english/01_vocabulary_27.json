@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-027",
+  "title": "Անգլերեն — Բառապաշար 27",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Contentious",
+      "back": "likely to cause disagreement or argument",
+      "hint": "",
+      "translation": "վիճելի"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Substantiate",
+      "back": "to provide evidence to support a claim",
+      "hint": "",
+      "translation": "հիմնավորել"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Impartial",
+      "back": "not favouring one side more than another; fair",
+      "hint": "",
+      "translation": "անկողմնակալ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Volatile",
+      "back": "likely to change suddenly and unpredictably",
+      "hint": "",
+      "translation": "անկայուն (հանկարծակի փոփոխվող)"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Punctilious",
+      "back": "showing great attention to detail or correct behaviour",
+      "hint": "",
+      "translation": "մանրակրկիտ"
+    }
+  ]
+}

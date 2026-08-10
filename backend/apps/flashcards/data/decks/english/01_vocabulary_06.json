@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-006",
+  "title": "Անգլերեն — Բառապաշար 6",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Utterance",
+      "back": "the act or process of speaking or expressing in words",
+      "hint": "",
+      "translation": "արտաբերում"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Hostile",
+      "back": "showing strong dislike or opposition",
+      "hint": "",
+      "translation": "թշնամական"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Equivalence",
+      "back": "equality in value, amount, or meaning",
+      "hint": "",
+      "translation": "համարժեքություն"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Dilemma",
+      "back": "a situation requiring a difficult choice between options",
+      "hint": "",
+      "translation": "երկընտրանք"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Fortnight",
+      "back": "a period of two weeks",
+      "hint": "",
+      "translation": "երկու շաբաթ"
+    }
+  ]
+}

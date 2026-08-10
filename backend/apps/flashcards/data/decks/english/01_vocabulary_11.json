@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-011",
+  "title": "Անգլերեն — Բառապաշար 11",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Prosperous",
+      "back": "successful, especially financially",
+      "hint": "",
+      "translation": "բարգավաճ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Genuine",
+      "back": "real and true; not false",
+      "hint": "",
+      "translation": "իսկական"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Complicated",
+      "back": "difficult to understand",
+      "hint": "",
+      "translation": "բարդ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Amateur",
+      "back": "someone who does an activity as a hobby, not a profession",
+      "hint": "",
+      "translation": "սիրողական"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Illiterate",
+      "back": "unable to read or write",
+      "hint": "",
+      "translation": "անգրագետ"
+    }
+  ]
+}
