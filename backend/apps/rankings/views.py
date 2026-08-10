@@ -4,11 +4,32 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import MonthlyXP, RankingAward
-from .serializers import RankingAwardSerializer, RankingEntrySerializer, SchoolComparisonEntrySerializer
-from .services import close_previous_month_if_needed
+from apps.friends.models import Friendship
+from apps.profiles.subjects import SUBJECT_LABELS
+
+from .models import MonthlyXP, RankHistory, RankingAward, RankingScope, SubjectXP
+from .serializers import (
+    RankingAwardSerializer,
+    RankingEntrySerializer,
+    RankHistorySerializer,
+    SchoolComparisonEntrySerializer,
+)
+from .services import (
+    close_previous_month_if_needed,
+    leaderboard_visible,
+    maybe_notify_season_ending,
+    maybe_snapshot_rank_history,
+    month_label,
+)
 
 TOP_N = 50
+NEARBY_RADIUS = 3
+MIN_SUBJECT_PARTICIPANTS = 3
+
+
+def _friend_ids(user) -> set:
+    pairs = Friendship.objects.filter(Q(user1=user) | Q(user2=user))
+    return {f.user2_id if f.user1_id == user.id else f.user1_id for f in pairs}
 
 
 class BaseRankingView(APIView):
@@ -21,41 +42,78 @@ class BaseRankingView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    RANK_HISTORY_SCOPE = None  # set on subclasses that should snapshot daily rank history
+
     def get_queryset(self):
         raise NotImplementedError
+
+    def _rank_history_kwargs(self):
+        return {}
 
     def get(self, request):
         close_previous_month_if_needed()
 
-        base_qs = self.get_queryset()
+        base_qs = leaderboard_visible(self.get_queryset(), request.user)
+        if self.RANK_HISTORY_SCOPE:
+            maybe_snapshot_rank_history(
+                request.user, self.RANK_HISTORY_SCOPE, base_qs, **self._rank_history_kwargs()
+            )
         rows = list(base_qs.select_related("user", "user__school", "user__profile")[:TOP_N])
         entries = [{"rank": i, "row": row} for i, row in enumerate(rows, start=1)]
         data = RankingEntrySerializer(entries, many=True, context={"request": request}).data
 
         my_row = next((e for e in entries if e["row"].user_id == request.user.id), None)
-        my_rank = my_row["rank"] if my_row else self._rank_outside_top(base_qs, request.user)
+        if my_row:
+            my_rank = my_row["rank"]
+            my_xp = my_row["row"].xp
+        else:
+            my_rank, my_xp = self._rank_outside_top(base_qs, request.user)
 
+        if self.RANK_HISTORY_SCOPE and my_rank is not None and my_rank <= TOP_N:
+            maybe_notify_season_ending(request.user, self.RANK_HISTORY_SCOPE)
+
+        today = timezone.localdate()
         return Response({
-            "year": timezone.localdate().year,
-            "month": timezone.localdate().month,
+            "year": today.year,
+            "month": today.month,
+            "month_label": month_label(today.year, today.month),
             "results": data,
             "my_rank": my_rank,
+            "my_xp": my_xp,
+            "nearby": self._nearby_entries(base_qs, entries, my_rank, request),
         })
 
     def _rank_outside_top(self, base_qs, user):
-        """1-based rank for a user who didn't make the visible TOP_N, or None
+        """(rank, xp) for a user who didn't make the visible TOP_N, or (None, None)
         if they have no XP this month at all (base_qs already excludes xp=0)."""
         my_row = base_qs.filter(user_id=user.id).first()
         if my_row is None:
-            return None
+            return None, None
         better_count = base_qs.filter(
             Q(xp__gt=my_row.xp) | (Q(xp=my_row.xp) & Q(user_id__lt=my_row.user_id))
         ).count()
-        return better_count + 1
+        return better_count + 1, my_row.xp
+
+    def _nearby_entries(self, base_qs, entries, my_rank, request):
+        """A small window of ranks around the caller (e.g. #84-#89, "you" at
+        #87) for a compact "monthly challenge" card — free when the caller
+        is already inside the visible TOP_N list, one bounded extra query
+        otherwise."""
+        if my_rank is None:
+            return []
+        start = max(0, my_rank - 1 - NEARBY_RADIUS)
+        end = my_rank + NEARBY_RADIUS
+        if my_rank <= TOP_N:
+            return RankingEntrySerializer(entries[start:end], many=True, context={"request": request}).data
+        rows = list(base_qs.select_related("user", "user__school", "user__profile")[start:end])
+        window_entries = [{"rank": start + i + 1, "row": row} for i, row in enumerate(rows)]
+        return RankingEntrySerializer(window_entries, many=True, context={"request": request}).data
 
 
 class GlobalRankingView(BaseRankingView):
     """GET /api/rankings/global/ — top 50 students app-wide for the current month."""
+
+    RANK_HISTORY_SCOPE = RankingScope.GLOBAL
 
     def get_queryset(self):
         today = timezone.localdate()
@@ -64,6 +122,11 @@ class GlobalRankingView(BaseRankingView):
 
 class SchoolRankingView(BaseRankingView):
     """GET /api/rankings/school/ — top 50 students at the caller's own school, this month."""
+
+    RANK_HISTORY_SCOPE = RankingScope.SCHOOL
+
+    def _rank_history_kwargs(self):
+        return {"school": self.request.user.school}
 
     def get_queryset(self):
         today = timezone.localdate()
@@ -76,9 +139,11 @@ class SchoolRankingView(BaseRankingView):
 
     def get(self, request):
         if not request.user.school_id:
+            today = timezone.localdate()
             return Response({
-                "year": timezone.localdate().year,
-                "month": timezone.localdate().month,
+                "year": today.year,
+                "month": today.month,
+                "month_label": month_label(today.year, today.month),
                 "results": [],
                 "my_rank": None,
                 "no_school": True,
@@ -88,6 +153,11 @@ class SchoolRankingView(BaseRankingView):
 
 class ClassRankingView(BaseRankingView):
     """GET /api/rankings/class/ — top 50 students in the caller's own grade at their own school, this month."""
+
+    RANK_HISTORY_SCOPE = RankingScope.CLASS
+
+    def _rank_history_kwargs(self):
+        return {"school": self.request.user.school, "grade": self.request.user.grade}
 
     def get_queryset(self):
         today = timezone.localdate()
@@ -100,23 +170,89 @@ class ClassRankingView(BaseRankingView):
         ).order_by("-xp", "user_id")
 
     def get(self, request):
+        today = timezone.localdate()
         if not request.user.school_id:
             return Response({
-                "year": timezone.localdate().year,
-                "month": timezone.localdate().month,
+                "year": today.year,
+                "month": today.month,
+                "month_label": month_label(today.year, today.month),
                 "results": [],
                 "my_rank": None,
                 "no_school": True,
             })
         if not request.user.grade:
             return Response({
-                "year": timezone.localdate().year,
-                "month": timezone.localdate().month,
+                "year": today.year,
+                "month": today.month,
+                "month_label": month_label(today.year, today.month),
                 "results": [],
                 "my_rank": None,
                 "no_grade": True,
             })
         return super().get(request)
+
+
+class FriendsRankingView(BaseRankingView):
+    """GET /api/rankings/friends/ — the caller plus their accepted friends,
+    ranked by this month's XP. apps.friends.Friendship was deliberately kept
+    standalone (see its docstring) specifically so this could be built as a
+    plain join, with no changes needed to the friends app itself."""
+
+    def get_queryset(self):
+        today = timezone.localdate()
+        ids = _friend_ids(self.request.user) | {self.request.user.id}
+        return MonthlyXP.objects.filter(
+            year=today.year, month=today.month, xp__gt=0, user_id__in=ids
+        ).order_by("-xp", "user_id")
+
+
+class SubjectRankingView(BaseRankingView):
+    """GET /api/rankings/subject/<subject_key>/ — top 50 students for one
+    subject's XP this month. A subject with too little real participation
+    this month (see apps.profiles.subjects.SUBJECT_LABELS — only math/
+    english have real practice content today) returns still_growing=True
+    with an empty list instead of a near-empty, misleading board."""
+
+    def get_queryset(self):
+        today = timezone.localdate()
+        subject_key = self.kwargs["subject_key"]
+        return SubjectXP.objects.filter(
+            subject_key=subject_key, year=today.year, month=today.month, xp__gt=0
+        ).order_by("-xp", "user_id")
+
+    def get(self, request, subject_key):
+        if subject_key not in SUBJECT_LABELS:
+            return Response({"detail": "Անհայտ առարկա։"}, status=404)
+        visible_count = leaderboard_visible(self.get_queryset(), request.user).count()
+        if visible_count < MIN_SUBJECT_PARTICIPANTS:
+            today = timezone.localdate()
+            return Response({
+                "year": today.year,
+                "month": today.month,
+                "month_label": month_label(today.year, today.month),
+                "results": [],
+                "my_rank": None,
+                "still_growing": True,
+            })
+        return super().get(request)
+
+
+class RankHistoryView(APIView):
+    """GET /api/rankings/history/?scope=global — the caller's own last 30
+    days of rank/xp snapshots for the requested scope, oldest first. Powers
+    the season progress chart. Snapshots are written lazily by the scope
+    views themselves (see BaseRankingView.get) — this endpoint only reads."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    HISTORY_DAYS = 30
+
+    def get(self, request):
+        scope = request.query_params.get("scope", RankingScope.GLOBAL)
+        if scope not in RankingScope.values:
+            return Response({"detail": "Անվավեր scope։"}, status=400)
+        cutoff = timezone.localdate() - timezone.timedelta(days=self.HISTORY_DAYS)
+        rows = RankHistory.objects.filter(user=request.user, scope=scope, date__gte=cutoff).order_by("date")
+        return Response(RankHistorySerializer(rows, many=True).data)
 
 
 class SchoolComparisonView(APIView):
@@ -160,6 +296,7 @@ class SchoolComparisonView(APIView):
         return Response({
             "year": today.year,
             "month": today.month,
+            "month_label": month_label(today.year, today.month),
             "results": data,
             "my_school_rank": my_entry["rank"] if my_entry else None,
         })
@@ -184,4 +321,11 @@ class UserRankingAwardsView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        return RankingAward.objects.filter(user_id=self.kwargs["user_id"]).select_related("school")
+        target_id = self.kwargs["user_id"]
+        if target_id != self.request.user.id:
+            from apps.profiles.models import ProfilePrivacySettings  # local import: avoids a load-order dependency
+
+            privacy, _ = ProfilePrivacySettings.objects.get_or_create(user_id=target_id)
+            if not privacy.show_ranking:
+                return RankingAward.objects.none()
+        return RankingAward.objects.filter(user_id=target_id).select_related("school")

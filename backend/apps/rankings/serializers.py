@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.users.serializers import SchoolSerializer
 
-from .models import RankingAward
+from .models import RankHistory, RankingAward
 
 
 class RankingEntrySerializer(serializers.Serializer):
@@ -74,3 +74,9 @@ class RankingAwardSerializer(serializers.ModelSerializer):
     class Meta:
         model = RankingAward
         fields = ["id", "scope", "school", "grade", "year", "month", "rank", "xp", "title", "awarded_at"]
+
+
+class RankHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RankHistory
+        fields = ["date", "xp", "rank"]
