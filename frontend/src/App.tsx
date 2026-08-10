@@ -36,6 +36,7 @@ import { FlashcardsPage } from "./pages/FlashcardsPage";
 import { FlashcardStudyPage } from "./pages/FlashcardStudyPage";
 import { FlashcardEditorPage } from "./pages/FlashcardEditorPage";
 import { FlashcardDeckManagePage } from "./pages/FlashcardDeckManagePage";
+import { MistakeNotebookPage } from "./pages/MistakeNotebookPage";
 import { RankingsPage } from "./pages/RankingsPage";
 import { ParentDashboardPage } from "./pages/ParentDashboardPage";
 import { ChatPage } from "./pages/ChatPage";
@@ -85,6 +86,7 @@ export default function App() {
               <Route path="/flashcards/cards/:cardId/edit" element={<FlashcardEditorPage />} />
               <Route path="/flashcards/:deckId/manage" element={<FlashcardDeckManagePage />} />
               <Route path="/flashcards/:deckId" element={<FlashcardStudyPage />} />
+              <Route path="/mistake-notebook" element={<MistakeNotebookPage />} />
               <Route path="/rankings" element={<RankingsPage />} />
               <Route path="/family" element={<ParentDashboardPage />} />
               <Route path="/chat" element={<ChatPage />} />

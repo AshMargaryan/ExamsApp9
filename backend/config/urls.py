@@ -19,6 +19,7 @@ urlpatterns = [
     path("api/activity/", include("apps.activity.urls")),
     path("api/teaching/", include("apps.teaching.urls")),
     path("api/chat/", include("apps.chat.urls")),
+    path("api/mistakes/", include("apps.mistakes.urls")),
 ]
 
 if settings.DEBUG:

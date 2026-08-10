@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.activity",
     "apps.teaching",
     "apps.chat",
+    "apps.mistakes",
 ]
 
 MIDDLEWARE = [
