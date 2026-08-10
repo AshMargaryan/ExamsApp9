@@ -197,7 +197,7 @@ export function MockExamAttemptPage() {
             type="button"
             onClick={handleFinishClick}
             disabled={busy}
-            className="rounded-md bg-accent px-6 py-3 text-lg font-medium text-primary-contrast transition-colors disabled:opacity-60"
+            className="rounded-md bg-primary px-6 py-3 text-lg font-medium text-primary-contrast transition-colors disabled:opacity-60"
           >
             Ավարտել
           </button>

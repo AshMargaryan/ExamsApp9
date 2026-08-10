@@ -9,6 +9,8 @@ from .models import (
     MockExam, MockExamQuestion, MockExamAttempt, MockExamAnswer,
     MockExamAttemptStatus, MockExamDifficulty,
 )
+from apps.mistakes.services import record_mistake
+from apps.mistakes.models import MistakeEntrySource
 from .scoring import score_answer, compute_scaled_score
 from .serializers import (
     MockExamListSerializer,
@@ -49,6 +51,7 @@ class ListMockExamsView(generics.ListAPIView):
         drafts = {}
         completed_counts = {}
         best_scores = {}
+        last_attempt_at = {}
         for a in attempts:
             if a.status == MockExamAttemptStatus.IN_PROGRESS and a.exam_id not in drafts:
                 drafts[a.exam_id] = a.id
@@ -56,6 +59,9 @@ class ListMockExamsView(generics.ListAPIView):
                 completed_counts[a.exam_id] = completed_counts.get(a.exam_id, 0) + 1
                 if a.scaled_score is not None:
                     best_scores[a.exam_id] = max(best_scores.get(a.exam_id, 0.0), a.scaled_score)
+            # attempts is ordered by -started_at, so the first row seen per exam is the latest.
+            if a.exam_id not in last_attempt_at:
+                last_attempt_at[a.exam_id] = a.started_at
 
         results = []
         for e in exams:
@@ -64,9 +70,40 @@ class ListMockExamsView(generics.ListAPIView):
             row["draft_attempt_id"] = drafts.get(e.id)
             row["completed_attempts_count"] = completed_counts.get(e.id, 0)
             row["best_scaled_score"] = best_scores.get(e.id)
+            row["last_attempt_at"] = last_attempt_at.get(e.id)
             results.append(row)
 
         return Response({"results": results})
+
+
+class OverviewView(APIView):
+    """GET /api/mock-exams/overview/ — aggregate personal stats across all
+    subjects, for the exam library's personal-overview stat row."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        completed = MockExamAttempt.objects.filter(
+            user=request.user, status=MockExamAttemptStatus.COMPLETED,
+        ).values_list("scaled_score", "started_at", "completed_at")
+
+        completed_count = 0
+        score_sum = 0.0
+        best_score = None
+        total_seconds = 0.0
+        for scaled_score, started_at, completed_at in completed:
+            completed_count += 1
+            if scaled_score is not None:
+                score_sum += scaled_score
+                best_score = scaled_score if best_score is None else max(best_score, scaled_score)
+            if started_at and completed_at:
+                total_seconds += (completed_at - started_at).total_seconds()
+
+        return Response({
+            "completed_count": completed_count,
+            "average_scaled_score": round(score_sum / completed_count, 2) if completed_count else None,
+            "best_scaled_score": best_score,
+            "total_time_seconds": int(total_seconds),
+        })
 
 
 class ExamAttemptHistoryView(generics.ListAPIView):
@@ -126,9 +163,15 @@ def _remaining_seconds(attempt: MockExamAttempt):
         return None
     if attempt.status == MockExamAttemptStatus.COMPLETED:
         return attempt.time_remaining_seconds
-    elapsed = (timezone.now() - attempt.started_at).total_seconds()
-    total = attempt.duration_minutes * 60
-    return max(0, int(total - elapsed))
+    # time_remaining_seconds is a snapshot as of `updated_at` (set on start and
+    # on every draft save) — anchoring elapsed time there, rather than at
+    # started_at, means time spent away from the attempt (exited, backgrounded,
+    # phone locked) doesn't get counted against the clock. Anchoring at
+    # started_at instead would make a resumed attempt appear to have already
+    # expired, auto-submitting it the instant the countdown effect next ticks.
+    elapsed = (timezone.now() - attempt.updated_at).total_seconds()
+    base = attempt.time_remaining_seconds if attempt.time_remaining_seconds is not None else attempt.duration_minutes * 60
+    return max(0, int(base - elapsed))
 
 
 class AttemptDetailView(APIView):
@@ -232,13 +275,20 @@ class FinishAttemptView(APIView):
             if defaults["is_correct"]:
                 raw_score += 1
                 tier_correct[question.difficulty] += 1
-            elif question.topic:
-                from apps.practice.models import MistakeSource  # local import: avoids a load-order dependency
-                from apps.practice.services import record_topic_mistake
-                record_topic_mistake(
-                    request.user, source=MistakeSource.MOCK_EXAM,
+            else:
+                record_mistake(
+                    request.user, source=MistakeEntrySource.MOCK_EXAM,
                     subject_name=attempt.exam.get_subject_display(), topic_label=question.topic,
+                    question=question, question_type=question.question_type, answer_data=a,
+                    explanation="\n".join(question.solution_steps) if question.solution_steps else "",
                 )
+                if question.topic:
+                    from apps.practice.models import MistakeSource  # local import: avoids a load-order dependency
+                    from apps.practice.services import record_topic_mistake
+                    record_topic_mistake(
+                        request.user, source=MistakeSource.MOCK_EXAM,
+                        subject_name=attempt.exam.get_subject_display(), topic_label=question.topic,
+                    )
 
         attempt.raw_score = raw_score
         attempt.percent_answered = round(100 * answered_count / len(questions), 2) if questions else 0.0
@@ -268,9 +318,12 @@ class FinishAttemptView(APIView):
         # which caps at one row per subtopic+tier), so paying out per-question
         # XP on every retake would let XP be farmed by replaying the same test.
         if is_first_completion:
-            award_xp(request.user, raw_score * XP_PER_CORRECT_MOCK_ANSWER + XP_FIRST_COMPLETION_BONUS)
+            award_xp(
+                request.user, raw_score * XP_PER_CORRECT_MOCK_ANSWER + XP_FIRST_COMPLETION_BONUS,
+                subject=attempt.exam.subject,
+            )
         else:
-            award_xp(request.user, XP_RETAKE_COMPLETION_BONUS)
+            award_xp(request.user, XP_RETAKE_COMPLETION_BONUS, subject=attempt.exam.subject)
 
         return Response(MockExamAttemptSerializer(attempt).data)
 

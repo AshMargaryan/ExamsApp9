@@ -29,6 +29,7 @@ import { MatchmakingPage } from "./pages/MatchmakingPage";
 import { GameplayPage } from "./pages/GameplayPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { MockExamsPage } from "./pages/MockExamsPage";
+import { MockExamDetailPage } from "./pages/MockExamDetailPage";
 import { MockExamAttemptPage } from "./pages/MockExamAttemptPage";
 import { MockExamResultsPage } from "./pages/MockExamResultsPage";
 import { MockExamHistoryPage } from "./pages/MockExamHistoryPage";
@@ -79,6 +80,7 @@ export default function App() {
               <Route path="/games/:roomCode/results" element={<ResultsPage />} />
               <Route path="/practice/subtopic/:subtopicId/:tier" element={<TierPage />} />
               <Route path="/mock-exams" element={<MockExamsPage />} />
+              <Route path="/mock-exams/:examId" element={<MockExamDetailPage />} />
               <Route path="/mock-exams/attempt/:attemptId" element={<MockExamAttemptPage />} />
               <Route path="/mock-exams/attempt/:attemptId/results" element={<MockExamResultsPage />} />
               <Route path="/mock-exams/:examId/history" element={<MockExamHistoryPage />} />

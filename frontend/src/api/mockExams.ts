@@ -47,6 +47,14 @@ export interface MockExamSummary {
   draft_attempt_id: number | null;
   completed_attempts_count: number;
   best_scaled_score: number | null;
+  last_attempt_at: string | null;
+}
+
+export interface MockExamOverview {
+  completed_count: number;
+  average_scaled_score: number | null;
+  best_scaled_score: number | null;
+  total_time_seconds: number;
 }
 
 export interface MockExamAttempt {
@@ -103,6 +111,11 @@ export async function listMockExams(subject?: MockExamSubject): Promise<MockExam
     params: subject ? { subject } : undefined,
   });
   return data.results;
+}
+
+export async function getOverview(): Promise<MockExamOverview> {
+  const { data } = await apiClient.get("/mock-exams/overview/");
+  return data;
 }
 
 export async function getExamAttemptHistory(examId: number): Promise<MockExamAttempt[]> {
@@ -173,4 +186,13 @@ export function formatSeconds(totalSeconds: number): string {
   const sec = s % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
   return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
+}
+
+/** "18ժ 42ր" style — for cumulative time totals, distinct from formatSeconds' countdown format. */
+export function formatHoursMinutes(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h === 0) return `${m}ր`;
+  return `${h}ժ ${m}ր`;
 }

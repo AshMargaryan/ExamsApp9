@@ -1,12 +1,13 @@
 from django.urls import path
 
 from .views import (
-    ListMockExamsView, ExamAttemptHistoryView, StartAttemptView,
+    ListMockExamsView, OverviewView, ExamAttemptHistoryView, StartAttemptView,
     AttemptDetailView, SaveDraftView, FinishAttemptView, AttemptResultsView,
 )
 
 urlpatterns = [
     path("exams/", ListMockExamsView.as_view(), name="mock-exams-list"),
+    path("overview/", OverviewView.as_view(), name="mock-exams-overview"),
     path("exams/<int:exam_id>/attempts/", ExamAttemptHistoryView.as_view(), name="mock-exam-attempt-history"),
     path("exams/<int:exam_id>/start/", StartAttemptView.as_view(), name="mock-exam-start"),
     path("attempts/<int:pk>/", AttemptDetailView.as_view(), name="mock-exam-attempt-detail"),
