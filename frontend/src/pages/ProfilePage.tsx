@@ -2,164 +2,64 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { AxiosError } from "axios";
 import * as profileApi from "../api/profile";
-import type { Achievement, Profile, UserAchievement } from "../api/profile";
-import { PersonBox } from "../components/PersonBox";
-import * as streaksApi from "../api/streaks";
-import type { LearningStreak } from "../api/streaks";
-import * as friendsApi from "../api/friends";
+import type { Achievement, ActivityDay, Profile, ProfileAnalytics, UserAchievement } from "../api/profile";
 import * as rankingsApi from "../api/rankings";
 import type { RankingAward } from "../api/rankings";
-import { getHierarchy } from "../api/practice";
-import { searchSchools, searchUniversities } from "../api/schools";
-import { SearchSelect } from "../components/SearchSelect";
-import { MessageModal } from "../components/MessageModal";
-import { FriendsModal } from "../components/friends/FriendsModal";
-import { TeachingModal } from "../components/teaching/TeachingModal";
-import { PublicProfileModal } from "../components/profile/PublicProfileModal";
-import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
 import { useAuth } from "../auth/AuthContext";
 
-const GRADES = Array.from({ length: 12 }, (_, i) => 12 - i);
+import { ProfileHero } from "../components/profile/ProfileHero";
+import { ProfileCompletionCard } from "../components/profile/ProfileCompletionCard";
+import { AcademicIdentityCard } from "../components/profile/AcademicIdentityCard";
+import { LearningDnaCard } from "../components/profile/LearningDnaCard";
+import { AiCoachCard } from "../components/profile/AiCoachCard";
+import { NextMissionCard } from "../components/profile/NextMissionCard";
+import { AcademicPowerCard } from "../components/profile/AcademicPowerCard";
+import { PerformanceOverview } from "../components/profile/PerformanceOverview";
+import { PerformanceTrends } from "../components/profile/PerformanceTrends";
+import { SubjectMasteryCard } from "../components/profile/SubjectMasteryCard";
+import { StreakCard } from "../components/profile/StreakCard";
+import { PersonalRecordsCard } from "../components/profile/PersonalRecordsCard";
+import { GrowthCard } from "../components/profile/GrowthCard";
+import { GoalsCard } from "../components/profile/GoalsCard";
+import { AchievementsSection } from "../components/profile/AchievementsSection";
+import { MonthlyRankingCard } from "../components/profile/MonthlyRankingCard";
+import { FriendsSection } from "../components/profile/FriendsSection";
+import { TeachersSection } from "../components/profile/TeachersSection";
+import { ActivityHeatmapSection } from "../components/profile/ActivityHeatmapSection";
+import { ActivityTimeline } from "../components/profile/ActivityTimeline";
+import { PrivacySettingsModal } from "../components/profile/PrivacySettingsModal";
+import { ShareProfileCard } from "../components/profile/ShareProfileCard";
+import { StatTile } from "../components/ui/StatTile";
+
 const RANK_MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
-interface Option {
-  id: number;
-  label: string;
-  sublabel?: string;
+function daysUntil(dateStr: string): number {
+  const diffMs = new Date(dateStr).getTime() - Date.now();
+  return diffMs > 0 ? Math.ceil(diffMs / (1000 * 60 * 60 * 24)) : 0;
 }
 
-function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-center">
-      <p className="text-2xl font-semibold text-text">{value}</p>
-      <p className="mt-1 text-sm text-text-muted">{label}</p>
-      {hint && <p className="mt-0.5 text-xs text-text-muted">{hint}</p>}
-    </div>
-  );
-}
-
-function StreakCard({ streak }: { streak: LearningStreak | null }) {
-  if (!streak) {
-    return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-        Բեռնվում է...
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-between rounded-[var(--radius)] border border-border bg-surface p-5">
-      <div>
-        <p className="text-2xl font-semibold text-text">
-          🔥 {streak.current_streak}-օրյա շարք
-        </p>
-        <p className="mt-1 text-sm text-text-muted">Լավագույն շարք՝ {streak.longest_streak} օր</p>
-      </div>
-    </div>
-  );
-}
-
-function ComingSoonCard({ icon, title }: { icon: string; title: string }) {
-  return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-center opacity-60">
-      <p className="text-2xl">{icon}</p>
-      <p className="mt-1 text-sm font-medium text-text">{title}</p>
-      <p className="text-xs text-text-muted">Շուտով...</p>
-    </div>
-  );
-}
-
-export function ProfilePage() {
-  const { user, refreshUser, logout } = useAuth();
-  const isParent = user?.role === "parent";
-
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [achievements, setAchievements] = useState<Achievement[] | null>(null);
-  const [myAchievements, setMyAchievements] = useState<UserAchievement[] | null>(null);
-  const [streak, setStreak] = useState<LearningStreak | null>(null);
-  const [rankingAwards, setRankingAwards] = useState<RankingAward[] | null>(null);
-  const [practicePercent, setPracticePercent] = useState<number | null>(null);
-  const [friendCount, setFriendCount] = useState<number | null>(null);
-  const [friendsOpen, setFriendsOpen] = useState(false);
-  const [teachingOpen, setTeachingOpen] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [usernameSuggestions, setUsernameSuggestions] = useState<string[] | null>(null);
-
+/** Parent accounts have a much smaller, bespoke identity card — not the
+ * student/teacher gamification hero (no XP, streak, achievements, bio apply
+ * to how a parent uses Gitus). Kept separate rather than forced into
+ * ProfileHero's generic shape. */
+function ParentProfileCard({ profile, onProfileUpdated }: { profile: Profile; onProfileUpdated: (p: Profile) => void }) {
+  const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[] | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [username, setUsername] = useState(profile.username);
+  const [firstName, setFirstName] = useState(profile.first_name);
+  const [lastName, setLastName] = useState(profile.last_name);
 
-  const [username, setUsername] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [bio, setBio] = useState("");
-  const [grade, setGrade] = useState("");
-  const [age, setAge] = useState("");
-  const [school, setSchool] = useState<Option | null>(null);
-  const [university, setUniversity] = useState<Option | null>(null);
-
-  function loadFromProfile(p: Profile) {
-    setUsername(p.username);
-    setFirstName(p.first_name);
-    setLastName(p.last_name);
-    setBio(p.bio);
-    setGrade(p.grade ? String(p.grade) : "");
-    setAge(p.age ? String(p.age) : "");
-    setSchool(p.school ? { id: p.school.id, label: p.school.name, sublabel: p.school.marz } : null);
-    setUniversity(p.university ? { id: p.university.id, label: p.university.name } : null);
-  }
-
-  useEffect(() => {
-    profileApi.fetchProfile().then((p) => {
-      setProfile(p);
-      loadFromProfile(p);
-    });
-    if (isParent) return;
-    profileApi.fetchAchievements().then(setAchievements);
-    profileApi.fetchMyAchievements().then(setMyAchievements);
-    streaksApi.fetchStreak().then(setStreak);
-    rankingsApi.fetchMyRankingAwards().then(setRankingAwards);
-    friendsApi.fetchFriends().then((f) => setFriendCount(f.length));
-    getHierarchy().then((subjects) => {
-      if (subjects.length === 0) return setPracticePercent(0);
-      const avg = subjects.reduce((sum, s) => sum + s.progress.percent, 0) / subjects.length;
-      setPracticePercent(Math.round(avg));
-    });
-  }, [isParent]);
-
-  function refreshProfile() {
-    profileApi.fetchProfile().then(setProfile);
-  }
-
-  function handleTeachingClose() {
-    setTeachingOpen(false);
-    refreshProfile();
-  }
-
-  function handleFriendsClose() {
-    setFriendsOpen(false);
-    friendsApi.fetchFriends().then((f) => setFriendCount(f.length));
-  }
-
-  function handleAvatarClick() {
-    if (editing) fileInputRef.current?.click();
-  }
-
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
-  }
-
-  function cancelEdit() {
-    if (profile) loadFromProfile(profile);
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    setEditing(false);
+  function startEdit() {
+    setUsername(profile.username);
+    setFirstName(profile.first_name);
+    setLastName(profile.last_name);
+    setEditing(true);
   }
 
   function closeError() {
@@ -177,23 +77,10 @@ export function ProfilePage() {
     closeError();
     setSaving(true);
     try {
-      const updated = await profileApi.updateProfile(
-        isParent
-          ? { username, first_name: firstName, last_name: lastName, avatar: avatarFile ?? undefined }
-          : {
-              username,
-              first_name: firstName,
-              last_name: lastName,
-              bio,
-              grade: grade ? Number(grade) : null,
-              age: age ? Number(age) : null,
-              school_id: school?.id ?? null,
-              university_id: university?.id ?? null,
-              avatar: avatarFile ?? undefined,
-            }
-      );
-      setProfile(updated);
-      loadFromProfile(updated);
+      const updated = await profileApi.updateProfile({
+        username, first_name: firstName, last_name: lastName, avatar: avatarFile ?? undefined,
+      });
+      onProfileUpdated(updated);
       setAvatarFile(null);
       setAvatarPreview(null);
       setEditing(false);
@@ -218,25 +105,145 @@ export function ProfilePage() {
     }
   }
 
-  async function schoolSearch(q: string): Promise<Option[]> {
-    const results = await searchSchools(q);
-    return results.map((s) => ({ id: s.id, label: s.name, sublabel: s.marz }));
+  const usernameDaysLeft = daysUntil(profile.username_change_available_at);
+  const usernameLocked = usernameDaysLeft > 0;
+  const inputClass = "w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
+  const labelClass = "mb-1 block text-sm text-text-muted";
+  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+
+  return (
+    <form onSubmit={handleSave} className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-end">
+        {!editing ? (
+          <button type="button" onClick={startEdit} className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary hover:bg-surface-muted">
+            Խմբագրել
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setEditing(false)} className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted hover:bg-surface-muted">
+              Չեղարկել
+            </button>
+            <button type="submit" disabled={saving} className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60">
+              {saving ? "..." : "Պահպանել"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => editing && fileInputRef.current?.click()}
+            className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-3xl font-semibold text-text-muted ${editing ? "cursor-pointer" : "cursor-default"}`}
+          >
+            {avatarPreview || profile.avatar ? (
+              <img src={avatarPreview ?? profile.avatar ?? undefined} alt={profile.username} className="h-full w-full object-cover" />
+            ) : (
+              (profile.first_name || profile.username).slice(0, 1).toUpperCase()
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setAvatarFile(file);
+              setAvatarPreview(URL.createObjectURL(file));
+            }}
+          />
+        </div>
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          {!editing ? (
+            <>
+              <h1 className="text-2xl font-semibold text-text">{fullName || profile.username}</h1>
+              <p className="text-text-muted">@{profile.username}</p>
+              {user?.email && <p className="mt-1 text-sm text-text-muted">{user.email}</p>}
+            </>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>Օգտանուն</label>
+                <input className={`${inputClass} ${usernameLocked ? "cursor-not-allowed opacity-60" : ""}`} value={username} onChange={(e) => setUsername(e.target.value)} disabled={usernameLocked} required />
+                {usernameLocked && <p className="mt-1 text-xs text-text-muted">Օգտանունը կրկին կարող եք փոխել {usernameDaysLeft} օրից։</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Անուն</label>
+                <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
+              <div>
+                <label className={labelClass}>Ազգանուն</label>
+                <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {error && (
+        <div className="mt-3 text-sm text-incorrect">
+          <p>{error}</p>
+          {usernameSuggestions && usernameSuggestions.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {usernameSuggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => pickUsernameSuggestion(s)}
+                  className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-text hover:border-primary hover:text-primary"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </form>
+  );
+}
+
+export function ProfilePage() {
+  const { logout } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [analytics, setAnalytics] = useState<ProfileAnalytics | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[] | null>(null);
+  const [myAchievements, setMyAchievements] = useState<UserAchievement[] | null>(null);
+  const [activityDays, setActivityDays] = useState<ActivityDay[] | null>(null);
+  const [rankingAwards, setRankingAwards] = useState<RankingAward[] | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    profileApi.fetchProfile().then(setProfile);
+  }, []);
+
+  useEffect(() => {
+    if (!profile || profile.role !== "student") return;
+    profileApi.fetchAnalytics().then(setAnalytics);
+    profileApi.fetchAchievements().then(setAchievements);
+    profileApi.fetchMyAchievements().then(setMyAchievements);
+    profileApi.fetchActivityHeatmap().then(setActivityDays);
+    rankingsApi.fetchMyRankingAwards().then(setRankingAwards);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.role]);
+
+  function refreshProfile() {
+    profileApi.fetchProfile().then(setProfile);
   }
 
-  async function universitySearch(q: string): Promise<Option[]> {
-    const results = await searchUniversities(q);
-    return results.map((u) => ({ id: u.id, label: u.name }));
+  function scrollToHero() {
+    heroRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   if (!profile) {
     return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
   }
 
-  if (isParent) {
-    const parentInputClass =
-      "w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
-    const parentLabelClass = "mb-1 block text-sm text-text-muted";
-    const parentFullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+  if (profile.role === "parent") {
     return (
       <div className="min-h-screen bg-bg px-4 py-8">
         <div className="mx-auto max-w-lg">
@@ -244,518 +251,148 @@ export function ProfilePage() {
             <Link to="/family" className="text-sm text-primary hover:underline">
               ← Ծնողական վահանակ
             </Link>
-            {!editing ? (
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => setEditing(true)}
-                  className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-                >
-                  Խմբագրել
-                </button>
-                <Link to="/account/sessions" className="text-sm text-primary hover:underline">
-                  Ակտիվ սարքեր
-                </Link>
-                <button type="button" onClick={logout} className="text-sm text-primary hover:underline">
-                  Ելք
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  form="profile-form"
-                  disabled={saving}
-                  className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-                >
-                  {saving ? "..." : "Պահպանել"}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
-                >
-                  Չեղարկել
-                </button>
-              </div>
-            )}
-          </div>
-
-          <form id="profile-form" onSubmit={handleSave}>
-            <div className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm">
-              <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleAvatarClick}
-                    className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-3xl font-semibold text-text-muted ${editing ? "cursor-pointer" : "cursor-default"}`}
-                  >
-                    {avatarPreview || profile.avatar ? (
-                      <img
-                        src={avatarPreview ?? profile.avatar ?? undefined}
-                        alt={profile.username}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      (profile.first_name || profile.username).slice(0, 1).toUpperCase()
-                    )}
-                  </button>
-                  {editing && (
-                    <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm text-primary-contrast">
-                      ✎
-                    </span>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1 text-center sm:text-left">
-                  {!editing ? (
-                    <>
-                      <h1 className="text-2xl font-semibold text-text">{parentFullName || profile.username}</h1>
-                      <p className="text-text-muted">@{profile.username}</p>
-                      {user?.email && <p className="mt-1 text-sm text-text-muted">{user.email}</p>}
-                    </>
-                  ) : (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className={parentLabelClass}>Օգտանուն</label>
-                        <input
-                          className={parentInputClass}
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className={parentLabelClass}>Անուն</label>
-                        <input
-                          className={parentInputClass}
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className={parentLabelClass}>Ազգանուն</label>
-                        <input
-                          className={parentInputClass}
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        {error && (
-          <MessageModal
-            message={error}
-            onClose={closeError}
-            suggestions={usernameSuggestions ?? undefined}
-            onSelectSuggestion={pickUsernameSuggestion}
-          />
-        )}
-      </div>
-    );
-  }
-
-  const unlockedKeys = new Set((myAchievements ?? []).map((ua) => ua.achievement.key));
-  const inputClass =
-    "w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
-  const labelClass = "mb-1 block text-sm text-text-muted";
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
-
-  return (
-    <div className="min-h-screen bg-bg px-4 py-8">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Link to="/" className="text-sm text-primary hover:underline">
-            ← Գլխավոր
-          </Link>
-          {!editing ? (
             <div className="flex items-center gap-4">
               <Link to="/account/sessions" className="text-sm text-primary hover:underline">
                 Ակտիվ սարքեր
               </Link>
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-              >
-                Խմբագրել
+              <button type="button" onClick={logout} className="text-sm text-primary hover:underline">
+                Ելք
               </button>
             </div>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                form="profile-form"
-                disabled={saving}
-                className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-              >
-                {saving ? "..." : "Պահպանել"}
+          </div>
+          <ParentProfileCard profile={profile} onProfileUpdated={setProfile} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-bg px-4 py-8">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 flex items-center justify-between">
+          <Link to="/" className="text-sm text-primary hover:underline">
+            ← Գլխավոր
+          </Link>
+          <div className="flex items-center gap-3">
+            {profile.role === "student" && (
+              <button type="button" onClick={() => setShareOpen(true)} className="text-sm text-text-muted hover:text-primary">
+                Կիսվել
               </button>
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
-              >
-                Չեղարկել
-              </button>
-            </div>
-          )}
+            )}
+            <Link to="/account/sessions" className="text-sm text-text-muted hover:text-primary">
+              Ակտիվ սարքեր
+            </Link>
+            <button type="button" onClick={() => setPrivacyOpen(true)} className="text-sm text-text-muted hover:text-primary">
+              🔒 Գաղտնիություն
+            </button>
+          </div>
         </div>
 
-        <form id="profile-form" onSubmit={handleSave}>
-          <div className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm">
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={handleAvatarClick}
-                  className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-3xl font-semibold text-text-muted ${editing ? "cursor-pointer" : "cursor-default"}`}
-                >
-                  {avatarPreview || profile.avatar ? (
-                    <img
-                      src={avatarPreview ?? profile.avatar ?? undefined}
-                      alt={profile.username}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    (profile.first_name || profile.username).slice(0, 1).toUpperCase()
-                  )}
-                </button>
-                {editing && (
-                  <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm text-primary-contrast">
-                    ✎
-                  </span>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
-              </div>
-
-              <div className="min-w-0 flex-1 text-center sm:text-left">
-                {!editing ? (
-                  <>
-                    <h1 className="text-2xl font-semibold text-text">{fullName || profile.username}</h1>
-                    <p className="text-text-muted">@{profile.username}</p>
-                    {profile.role === "teacher" && (
-                      <p className="mt-1 text-sm text-text-muted">🧑‍🏫 Ուսուցիչ</p>
-                    )}
-                    {profile.role === "student" && (
-                      <p className="mt-1 text-sm text-text-muted">
-                        Մակարդակ {profile.level} · {profile.total_xp} XP
-                      </p>
-                    )}
-                    {profile.role === "student" && (profile.grade || profile.age) && (
-                      <p className="mt-1 text-sm text-text-muted">
-                        {[profile.grade ? `${profile.grade}-րդ դասարան` : null, profile.age ? `${profile.age} տարեկան` : null]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Օգտանուն</label>
-                      <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} required />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Անուն</label>
-                      <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Ազգանուն</label>
-                      <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Տարիք</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={120}
-                        className={inputClass}
-                        value={age}
-                        onChange={(e) => setAge(e.target.value)}
-                      />
-                    </div>
-                    {profile.role === "student" && (
-                      <div>
-                        <label className={labelClass}>Դասարան</label>
-                        <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
-                          <option value="">Չընտրված</option>
-                          {GRADES.map((g) => (
-                            <option key={g} value={g}>
-                              {g}-րդ դասարան
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-5 border-t border-border pt-5">
-              {!editing ? (
-                <p className="whitespace-pre-wrap text-text">{profile.bio || "Բիո դեռ ավելացված չէ։"}</p>
-              ) : (
-                <>
-                  <label className={labelClass}>Բիո</label>
-                  <textarea
-                    className={`${inputClass} min-h-24 resize-y`}
-                    maxLength={500}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                  />
-                </>
-              )}
-            </div>
-
-            {profile.role === "student" && (
-              <div className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
-                <div>
-                  <p className={labelClass}>Դպրոց</p>
-                  {!editing ? (
-                    <p className="text-text">
-                      {profile.school ? `${profile.school.name}${profile.school.marz ? ` (${profile.school.marz})` : ""}` : "Չնշված"}
-                    </p>
-                  ) : (
-                    <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
-                  )}
-                </div>
-                <div>
-                  <p className={labelClass}>Ցանկալի բուհ</p>
-                  {!editing ? (
-                    <p className="text-text">{profile.university ? profile.university.name : "Չնշված"}</p>
-                  ) : (
-                    <SearchSelect
-                      placeholder="Փնտրեք բուհ..."
-                      value={university}
-                      onChange={setUniversity}
-                      search={universitySearch}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </form>
+        <div ref={heroRef}>
+          <ProfileHero profile={profile} achievements={achievements} myAchievements={myAchievements} onProfileUpdated={setProfile} />
+        </div>
 
         {profile.role === "student" && (
-          <section className="mt-8">
-            <StreakCard streak={streak} />
-          </section>
+          <>
+            {profile.profile_completion.percent < 100 && (
+              <div className="mt-4">
+                <ProfileCompletionCard completion={profile.profile_completion} onEdit={scrollToHero} />
+              </div>
+            )}
+
+            <div className="mt-6 grid gap-6 lg:grid-flow-row-dense lg:grid-cols-[1fr_360px]">
+              <div className="min-w-0 lg:col-start-1">{analytics && <NextMissionCard mission={analytics.next_mission} />}</div>
+              <div className="min-w-0 lg:col-start-1">{analytics && <AiCoachCard coach={analytics.coach} />}</div>
+              <div className="min-w-0 lg:col-start-1">{analytics && <LearningDnaCard dna={analytics.learning_dna} />}</div>
+
+              <div className="min-w-0 lg:col-start-2">
+                {profile.streak && <StreakCard currentStreak={profile.streak.current_streak} longestStreak={profile.streak.longest_streak} />}
+              </div>
+              <div className="min-w-0 lg:col-start-2">{analytics && <AcademicPowerCard power={analytics.academic_power} />}</div>
+
+              <div className="min-w-0 lg:col-start-1">{profile.stats && <PerformanceOverview stats={profile.stats} growth={analytics?.growth ?? null} />}</div>
+              <div className="min-w-0 lg:col-start-1">
+                <PerformanceTrends activityDays={activityDays} />
+              </div>
+              <div className="min-w-0 lg:col-start-1">{analytics && <SubjectMasteryCard subjects={analytics.subject_mastery} />}</div>
+              <div className="min-w-0 lg:col-start-1">
+                <AchievementsSection achievements={achievements} myAchievements={myAchievements} trophiesCount={profile.trophies_count} />
+              </div>
+
+              <div className="min-w-0 lg:col-start-2">
+                <GoalsCard />
+              </div>
+
+              <div className="min-w-0 lg:col-start-1">
+                {analytics && (
+                  <AcademicIdentityCard profile={profile} subjectMastery={analytics.subject_mastery} academicPower={analytics.academic_power} onSetGoal={scrollToHero} />
+                )}
+              </div>
+              <div className="min-w-0 lg:col-start-1">{analytics && <GrowthCard growth={analytics.growth} />}</div>
+
+              <div className="min-w-0 lg:col-start-2">
+                <MonthlyRankingCard />
+              </div>
+              <div className="min-w-0 lg:col-start-2">{analytics && <PersonalRecordsCard records={analytics.personal_records} />}</div>
+              <div className="min-w-0 lg:col-start-2">
+                <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
+                  <p className="mb-3 text-sm font-semibold text-text">🥇 Դասակարգման մեդալներ {rankingAwards ? `(${rankingAwards.length})` : ""}</p>
+                  {rankingAwards === null && <p className="text-sm text-text-muted">Բեռնվում է...</p>}
+                  {rankingAwards?.length === 0 && (
+                    <p className="text-sm text-text-muted">Դեռ մեդալներ չկան։ Ամսվա վերջում թոփ 3-ի մեջ մտնողները ստանում են 🥇🥈🥉 մեդալ։</p>
+                  )}
+                  {rankingAwards && rankingAwards.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {rankingAwards.map((award) => (
+                        <div key={award.id} title={award.title} className="rounded-[var(--radius)] border border-border bg-bg p-2 text-center">
+                          <p className="text-xl">{RANK_MEDALS[award.rank] ?? "🏅"}</p>
+                          <p className="mt-1 truncate text-xs font-medium text-text">{award.title}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="min-w-0 lg:col-start-1">
+                <ActivityHeatmapSection activityDays={activityDays} />
+              </div>
+              <div className="min-w-0 lg:col-start-1">
+                <ActivityTimeline />
+              </div>
+              <div className="min-w-0 lg:col-start-1">
+                <FriendsSection />
+              </div>
+              <div className="min-w-0 lg:col-start-1">
+                <TeachersSection profile={profile} onProfileChange={refreshProfile} />
+              </div>
+            </div>
+          </>
         )}
 
         {profile.role === "teacher" && (
-          <section className="mt-8">
-            <h2 className="mb-3 text-lg font-semibold text-text">Վիճակագրություն</h2>
+          <div className="mt-6 flex flex-col gap-6">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <StatCard label="Աշակերտներ" value={String(profile.total_students ?? 0)} />
-              <StatCard
+              <StatTile label="Աշակերտներ" value={String(profile.total_students ?? 0)} />
+              <StatTile
                 label="Ճշգրտության միջին առաջընթաց"
                 value={profile.avg_student_accuracy_improvement !== null ? `${profile.avg_student_accuracy_improvement}%` : "—"}
                 hint="Շուտով"
               />
-              <StatCard
+              <StatTile
                 label="Թեստերի միջին առաջընթաց"
                 value={profile.avg_student_test_improvement !== null ? `${profile.avg_student_test_improvement}%` : "—"}
                 hint="Շուտով"
               />
             </div>
-          </section>
-        )}
-
-        {profile.role === "student" && (
-        <>
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-text">Վիճակագրություն</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatCard
-              label="Պարապունքի առաջընթաց"
-              value={practicePercent !== null ? `${practicePercent}%` : "..."}
-            />
-            <StatCard label="Ճշգրտություն" value={`${profile.stats.accuracy_percentage}%`} />
-            <StatCard label="Ավարտված թեստեր" value={String(profile.stats.tests_completed)} />
-            <StatCard
-              label="Պարապանք վերջին շաբաթում"
-              value={`${(profile.stats.weekly_study_seconds / 3600).toFixed(1)} ժ`}
-            />
+            <TeachersSection profile={profile} onProfileChange={refreshProfile} />
           </div>
-        </section>
-
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-text">
-            Նվաճումներ {achievements ? `(${profile.trophies_count}/${achievements.length})` : ""}
-          </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {achievements === null && <p className="text-text-muted">Բեռնվում է...</p>}
-            {achievements?.map((a) => {
-              const unlocked = unlockedKeys.has(a.key);
-              return (
-                <div
-                  key={a.id}
-                  title={a.description}
-                  className={`rounded-[var(--radius)] border border-border bg-surface p-4 text-center ${unlocked ? "" : "opacity-40 grayscale"}`}
-                >
-                  <p className="text-2xl">{unlocked ? a.icon || "🏆" : "🔒"}</p>
-                  <p className="mt-1 text-sm font-medium text-text">{a.name}</p>
-                  <p className="mt-1 text-xs font-medium" style={{ color: RARITY_COLORS[a.rarity] }}>
-                    {RARITY_LABELS[a.rarity]}
-                  </p>
-                </div>
-              );
-            })}
-            {achievements?.length === 0 && (
-              <p className="col-span-full text-text-muted">Նվաճումներ դեռ չկան։</p>
-            )}
-          </div>
-        </section>
-        </>
         )}
-
-        {profile.role === "teacher" && (
-          <section className="mt-8">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-text">
-                Աշակերտներ {profile.total_students !== null ? `(${profile.total_students})` : ""}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setTeachingOpen(true)}
-                className="rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-              >
-                Հրավիրել / Հրավերներ
-              </button>
-            </div>
-            {profile.students && profile.students.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {profile.students.map((s) => (
-                  <PersonBox key={s.id} person={s} onClick={() => setViewingUserId(s.id)} />
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-                Դեռ կապակցված աշակերտներ չկան։
-              </p>
-            )}
-          </section>
-        )}
-
-        {profile.role === "student" && (
-          <section className="mt-8">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-text">
-                Ուսուցիչներ {profile.teachers !== null ? `(${profile.teachers.length})` : ""}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setTeachingOpen(true)}
-                className="rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-              >
-                Հրավերներ
-              </button>
-            </div>
-            {profile.teachers && profile.teachers.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {profile.teachers.map((t) => (
-                  <PersonBox key={t.id} person={t} onClick={() => setViewingUserId(t.id)} />
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-                Դեռ կապակցված ուսուցիչներ չկան։
-              </p>
-            )}
-          </section>
-        )}
-
-        <section className="mt-8">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-text">
-              Դասակարգման մեդալներ {rankingAwards ? `(${rankingAwards.length})` : ""}
-            </h2>
-            <Link to="/rankings" className="text-sm text-primary hover:underline">
-              Դասակարգում →
-            </Link>
-          </div>
-          {rankingAwards === null && <p className="text-text-muted">Բեռնվում է...</p>}
-          {rankingAwards?.length === 0 && (
-            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-              Դեռ մեդալներ չկան։ Ամսվա վերջում թոփ 3-ի մեջ մտնողները ստանում են 🥇🥈🥉 մեդալ։
-            </p>
-          )}
-          {rankingAwards && rankingAwards.length > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {rankingAwards.map((award) => (
-                <div
-                  key={award.id}
-                  title={award.title}
-                  className="rounded-[var(--radius)] border border-border bg-surface p-4 text-center"
-                >
-                  <p className="text-2xl">{RANK_MEDALS[award.rank] ?? "🏅"}</p>
-                  <p className="mt-1 truncate text-sm font-medium text-text">{award.title}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="mt-8">
-          <button
-            type="button"
-            onClick={() => setFriendsOpen(true)}
-            className="flex w-full items-center justify-between rounded-[var(--radius)] border border-border bg-surface p-5 text-left transition-colors hover:border-primary"
-          >
-            <span className="flex items-center gap-2 text-text">
-              <span className="text-2xl">👥</span>
-              <span className="font-medium">
-                Ընկերներ {friendCount !== null ? `(${friendCount})` : ""}
-              </span>
-            </span>
-            <span className="text-sm text-primary">Բացել →</span>
-          </button>
-        </section>
-
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-text">Առաջիկայում</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <ComingSoonCard icon="🎮" title="Խաղային վիճակագրություն" />
-          </div>
-        </section>
       </div>
 
-      {error && (
-          <MessageModal
-            message={error}
-            onClose={closeError}
-            suggestions={usernameSuggestions ?? undefined}
-            onSelectSuggestion={pickUsernameSuggestion}
-          />
-        )}
-      {friendsOpen && <FriendsModal onClose={handleFriendsClose} />}
-      {teachingOpen && (
-        <TeachingModal role={profile.role} onClose={handleTeachingClose} onChange={refreshProfile} />
-      )}
-      {viewingUserId !== null && (
-        <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
+      {privacyOpen && <PrivacySettingsModal onClose={() => setPrivacyOpen(false)} />}
+      {shareOpen && profile.role === "student" && (
+        <ShareProfileCard profile={profile} academicPower={analytics?.academic_power ?? null} onClose={() => setShareOpen(false)} />
       )}
     </div>
   );

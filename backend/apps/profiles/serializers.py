@@ -5,18 +5,34 @@ from rest_framework import serializers
 
 from apps.activity.services import total_seconds_since, weekly_seconds
 from apps.friends.serializers import MiniUserSerializer
+from apps.games.models import GameStats
+from apps.games.serializers import GameStatsSerializer
 from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus
 from apps.practice.models import AttemptAnswer
+from apps.streaks.models import LearningStreak
+from apps.streaks.serializers import LearningStreakSerializer
 from apps.teaching.models import ConnectionStatus, TeacherProfile, TeacherStudentConnection
 from apps.users.serializers import SchoolSerializer, UniversitySerializer
 from apps.users.models import School, University
 from apps.users.utils import suggest_usernames
 
+from . import analytics
 from .leveling import xp_progress
-from .models import Achievement, Profile, UserAchievement
+from .models import (
+    Achievement,
+    GoalType,
+    PersonalGoal,
+    Profile,
+    ProfilePrivacySettings,
+    Rarity,
+    ShowcaseSlot,
+    UserAchievement,
+)
 from .validators import validate_avatar_file
 
 User = get_user_model()
+
+_RARITY_RANK = {Rarity.LEGENDARY: 0, Rarity.EPIC: 1, Rarity.RARE: 2, Rarity.COMMON: 3}
 
 
 class AchievementSerializer(serializers.ModelSerializer):
@@ -76,8 +92,13 @@ class ProfileSerializer(serializers.ModelSerializer):
     xp_for_next_level = serializers.SerializerMethodField()
     trophies_count = serializers.SerializerMethodField()
     days_until_exam = serializers.SerializerMethodField()
+    username_change_available_at = serializers.SerializerMethodField()
 
     stats = serializers.SerializerMethodField()
+    streak = serializers.SerializerMethodField()
+    game_stats = serializers.SerializerMethodField()
+    showcase_achievements = serializers.SerializerMethodField()
+    profile_completion = serializers.SerializerMethodField()
 
     # Teacher-only — null for students, populated from apps.teaching data.
     total_students = serializers.SerializerMethodField()
@@ -94,9 +115,10 @@ class ProfileSerializer(serializers.ModelSerializer):
             "avatar", "bio", "role",
             "username", "first_name", "last_name",
             "school", "school_id", "grade", "age", "marz", "university", "university_id",
+            "target_major",
             "total_xp", "level", "xp_into_level", "xp_for_next_level", "trophies_count",
-            "target_exam_date", "days_until_exam",
-            "stats",
+            "target_exam_date", "days_until_exam", "username_change_available_at",
+            "stats", "streak", "game_stats", "showcase_achievements", "profile_completion",
             "total_students", "students",
             "avg_student_accuracy_improvement", "avg_student_test_improvement",
             "teachers",
@@ -114,16 +136,13 @@ class ProfileSerializer(serializers.ModelSerializer):
                 "message": "Այս օգտանունն արդեն զբաղված է։",
                 "suggestions": suggest_usernames(value, exclude_user_id=current_user_id),
             })
-
         if self.instance is not None and value != self.instance.user.username:
-            changed_at = self.instance.user.username_changed_at
-            if changed_at is not None:
-                days_since = (timezone.now() - changed_at).days
-                if days_since < 14:
-                    remaining = 14 - days_since
-                    raise serializers.ValidationError(
-                        f"Օգտանունը կարող եք փոխել 14 օրը մեկ անգամ։ Կրկին փորձեք {remaining} օր հետո։"
-                    )
+            user = self.instance.user
+            if not user.can_change_username():
+                days_left = user.days_until_username_change()
+                raise serializers.ValidationError(
+                    f"Օգտանունը կրկին կարող եք փոխել {days_left} օրից։"
+                )
         return value
 
     def validate_bio(self, value):
@@ -166,6 +185,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             return None
         return (obj.target_exam_date - timezone.localdate()).days
 
+    def get_username_change_available_at(self, obj):
+        return obj.user.next_username_change_at()
+
     def get_stats(self, obj):
         answers = AttemptAnswer.objects.filter(
             attempt__user=obj.user,
@@ -188,6 +210,45 @@ class ProfileSerializer(serializers.ModelSerializer):
             "weekly_study_seconds": weekly_seconds(obj.user),
         }
         return LearningStatsSerializer(data).data
+
+    def get_streak(self, obj):
+        streak, _ = LearningStreak.objects.get_or_create(user=obj.user)
+        return LearningStreakSerializer(streak).data
+
+    def get_game_stats(self, obj):
+        stats, _ = GameStats.objects.get_or_create(user=obj.user)
+        return GameStatsSerializer(stats).data
+
+    def get_showcase_achievements(self, obj):
+        """Uses the student's own 3 pinned ShowcaseSlot rows when set;
+        otherwise auto-picks the rarest unlocked achievements (rarest first,
+        most-recently-unlocked as tiebreaker) as a sensible default."""
+        slots = list(
+            ShowcaseSlot.objects.filter(user=obj.user).select_related("achievement").order_by("position")
+        )
+        if slots:
+            unlocked_ats = {
+                ua.achievement_id: ua.unlocked_at
+                for ua in UserAchievement.objects.filter(
+                    user=obj.user, achievement_id__in=[s.achievement_id for s in slots]
+                )
+            }
+            return [
+                {"id": s.achievement_id, "achievement": AchievementSerializer(s.achievement).data,
+                 "unlocked_at": unlocked_ats.get(s.achievement_id)}
+                for s in slots
+            ]
+
+        unlocks = (
+            UserAchievement.objects.filter(user=obj.user)
+            .select_related("achievement")
+            .order_by("-unlocked_at")
+        )
+        top = sorted(unlocks, key=lambda ua: (_RARITY_RANK[ua.achievement.rarity], -ua.unlocked_at.timestamp()))[:3]
+        return UserAchievementSerializer(top, many=True).data
+
+    def get_profile_completion(self, obj):
+        return analytics.profile_completion(obj.user)
 
     def _accepted_connections_as_teacher(self, obj):
         return TeacherStudentConnection.objects.filter(
@@ -230,22 +291,136 @@ class ProfileSerializer(serializers.ModelSerializer):
             return None
         return self._teacher_profile(obj).avg_student_test_improvement
 
+    def _viewer_is_teacher_of(self, viewer, student) -> bool:
+        return TeacherStudentConnection.objects.filter(
+            teacher=viewer, student=student, status=ConnectionStatus.ACCEPTED, active=True
+        ).exists()
+
+    def to_representation(self, instance):
+        """When rendering someone ELSE's profile (never the owner's own),
+        mask fields per that person's ProfilePrivacySettings. Owner always
+        sees their own full profile — this only ever narrows the other-user
+        view (UserProfileDetailView), never the self view (ProfileMeView).
+        Exception: a student's own connected teacher always sees full stats —
+        that's the existing StudentReviewPanel feature, not a stranger view."""
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        viewer = getattr(request, "user", None) if request else None
+        if (
+            viewer is not None
+            and getattr(viewer, "id", None) != instance.user_id
+            and not self._viewer_is_teacher_of(viewer, instance.user)
+        ):
+            privacy, _ = ProfilePrivacySettings.objects.get_or_create(user=instance.user)
+            if not privacy.show_age:
+                data["age"] = None
+            if not privacy.show_school:
+                data["school"] = None
+            if not privacy.show_university:
+                data["university"] = None
+            if not privacy.show_stats:
+                data["stats"] = None
+                data["streak"] = None
+            if not privacy.show_achievements:
+                data["showcase_achievements"] = []
+        return data
+
     @transaction.atomic
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", {})
         user = instance.user
-        username_changed = "username" in user_data and user_data["username"] != user.username
+        update_fields = list(user_data.keys())
+        if "username" in user_data and user_data["username"] != user.username:
+            user.username_changed_at = timezone.now()
+            update_fields.append("username_changed_at")
         for attr, value in user_data.items():
             setattr(user, attr, value)
-        if username_changed:
-            user.username_changed_at = timezone.now()
-        if user_data:
-            update_fields = list(user_data.keys())
-            if username_changed:
-                update_fields.append("username_changed_at")
+        if update_fields:
             user.save(update_fields=update_fields)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+
+class PersonalGoalSerializer(serializers.ModelSerializer):
+    """Progress is never stored — always computed live via
+    analytics.goal_progress, same "can't go stale" philosophy as the rest
+    of this module."""
+
+    subject_name = serializers.CharField(source="subject.name", read_only=True, default=None)
+    progress = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PersonalGoal
+        fields = [
+            "id", "goal_type", "target_value", "subject", "subject_name", "custom_title",
+            "deadline", "created_at", "completed_at", "progress",
+        ]
+        read_only_fields = ["created_at"]
+
+    def get_progress(self, obj):
+        return analytics.goal_progress(obj)
+
+    def validate(self, attrs):
+        goal_type = attrs.get("goal_type", getattr(self.instance, "goal_type", None))
+        subject = attrs.get("subject", getattr(self.instance, "subject", None))
+        custom_title = attrs.get("custom_title", getattr(self.instance, "custom_title", ""))
+        if goal_type == GoalType.SUBJECT_ACCURACY and subject is None:
+            raise serializers.ValidationError({"subject": "Այս նպատակի համար պետք է ընտրել առարկա։"})
+        if goal_type == GoalType.CUSTOM and not custom_title:
+            raise serializers.ValidationError({"custom_title": "Անհատական նպատակի համար պետք է վերնագիր նշել։"})
+        if goal_type != GoalType.SUBJECT_ACCURACY and goal_type != GoalType.CUSTOM and not attrs.get(
+            "target_value", getattr(self.instance, "target_value", None)
+        ):
+            raise serializers.ValidationError({"target_value": "Պետք է նշել նպատակային արժեք։"})
+        return attrs
+
+
+class PersonalGoalCompleteSerializer(serializers.Serializer):
+    """POST-only action serializer for marking a CUSTOM goal done."""
+
+    completed = serializers.BooleanField()
+
+
+class ProfilePrivacySettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProfilePrivacySettings
+        fields = [
+            "show_school", "show_age", "show_university", "show_stats",
+            "show_ranking", "show_achievements", "show_friends", "show_activity",
+            "show_on_leaderboard",
+        ]
+
+
+class ShowcaseUpdateSerializer(serializers.Serializer):
+    """PATCH /profile/showcase/ body: an ordered list of up to 3 achievement
+    ids the caller has actually unlocked. An empty list clears the pins and
+    reverts to the auto-picked default."""
+
+    achievement_ids = serializers.ListField(
+        child=serializers.IntegerField(), max_length=3, allow_empty=True
+    )
+
+    def validate_achievement_ids(self, value):
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError("Կրկնվող նվաճում։")
+        user = self.context["request"].user
+        unlocked_ids = set(
+            UserAchievement.objects.filter(user=user, achievement_id__in=value).values_list(
+                "achievement_id", flat=True
+            )
+        )
+        missing = set(value) - unlocked_ids
+        if missing:
+            raise serializers.ValidationError("Ցուցադրության մեջ կարող եք դնել միայն ապակողպված նվաճումներ։")
+        return value
+
+    def save(self):
+        user = self.context["request"].user
+        ShowcaseSlot.objects.filter(user=user).delete()
+        ShowcaseSlot.objects.bulk_create([
+            ShowcaseSlot(user=user, achievement_id=aid, position=i)
+            for i, aid in enumerate(self.validated_data["achievement_ids"])
+        ])

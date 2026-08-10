@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Achievement, Profile, UserAchievement
+from .models import Achievement, PersonalGoal, Profile, ProfilePrivacySettings, ShowcaseSlot, UserAchievement
 
 
 @admin.register(Profile)
@@ -20,3 +20,22 @@ class AchievementAdmin(admin.ModelAdmin):
 class UserAchievementAdmin(admin.ModelAdmin):
     list_display = ["user", "achievement", "unlocked_at"]
     search_fields = ["user__username", "achievement__key"]
+
+
+@admin.register(ShowcaseSlot)
+class ShowcaseSlotAdmin(admin.ModelAdmin):
+    list_display = ["user", "position", "achievement"]
+    search_fields = ["user__username"]
+
+
+@admin.register(PersonalGoal)
+class PersonalGoalAdmin(admin.ModelAdmin):
+    list_display = ["user", "goal_type", "target_value", "deadline", "completed_at"]
+    list_filter = ["goal_type"]
+    search_fields = ["user__username"]
+
+
+@admin.register(ProfilePrivacySettings)
+class ProfilePrivacySettingsAdmin(admin.ModelAdmin):
+    list_display = ["user", "show_school", "show_age", "show_stats", "show_ranking"]
+    search_fields = ["user__username"]
