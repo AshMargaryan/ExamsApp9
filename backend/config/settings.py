@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.mock_exams",
     "apps.flashcards",
     "apps.rankings",
+    "apps.challenges",
     "apps.parents",
     "apps.activity",
     "apps.teaching",
