@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apps.teaching",
     "apps.chat",
     "apps.mistakes",
+    "apps.study_plan",
 ]
 
 MIDDLEWARE = [
