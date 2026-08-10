@@ -31,6 +31,7 @@ export interface Profile {
   target_exam_date: string | null;
   days_until_exam: number | null;
   stats: LearningStats;
+  streak: { current_streak: number; longest_streak: number; last_activity_date: string | null } | null;
   total_students: number | null;
   students: FriendUser[] | null;
   avg_student_accuracy_improvement: number | null;

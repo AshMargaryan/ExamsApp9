@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./theme.css";
+@import "./motion.css";
 @import "katex/dist/katex.min.css";
 
 * {
@@ -10,7 +11,16 @@ body {
   margin: 0;
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  font-family: "Noto Sans Armenian", "Noto Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Minimal markdown spacing for AI assistant chat messages. */
@@ -125,17 +135,24 @@ body {
 }
 
 /* Flashcard 3D flip — front/back faces stacked in the same box, rotated
-   around the Y axis so the flip reveals depth instead of just swapping text. */
+   around the Y axis so the flip reveals depth instead of just swapping text.
+   `--tilt-x`/`--tilt-y` are written by a pointermove handler (study page) for
+   a subtle hover parallax; they default to 0deg so the card sits flat when
+   idle, on touch devices, and for prefers-reduced-motion users (who never
+   get the handler attached at all). */
 .flashcard-scene {
   perspective: 1600px;
 }
 .flashcard-flip-inner {
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.45s cubic-bezier(0.4, 0.15, 0.2, 1);
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition: transform var(--motion-emphasis, 0.45s) var(--ease-out, cubic-bezier(0.4, 0.15, 0.2, 1));
 }
 .flashcard-flip-inner.is-flipped {
-  transform: rotateY(180deg);
+  transform: rotateX(var(--tilt-x)) rotateY(calc(180deg + var(--tilt-y)));
 }
 .flashcard-face {
   backface-visibility: hidden;
@@ -145,4 +162,92 @@ body {
   position: absolute;
   inset: 0;
   transform: rotateY(180deg);
+}
+
+/* Tiny 3-bar "now playing" equalizer next to an active pronunciation
+   button — purely decorative, so it's fine to keep looping. */
+@keyframes eq-bar {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+.eq-bar {
+  animation: eq-bar 0.8s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+/* "Insane" button interaction layer — shine sweep + big lift + spring press.
+   `.btn-fx` goes on any button for the base treatment; stack `.btn-fx-glow`
+   on top for the single most important CTA per screen to get a flowing
+   brand-gradient fill and an ambient breathing glow too. The gradient falls
+   back to `--gradient-primary` first, so a student's custom button gradient
+   from Settings still wins when set — this only supplies its own fallback
+   instead of chasing that feature away. */
+.btn-fx {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 200ms var(--ease-spring),
+    box-shadow 200ms var(--ease-out),
+    filter 200ms var(--ease-out),
+    background-color 200ms var(--ease-out),
+    border-color 200ms var(--ease-out),
+    color 200ms var(--ease-out);
+}
+.btn-fx::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.75) 48%, rgba(255, 255, 255, 0.75) 52%, transparent 80%);
+  transform: translateX(-160%) skewX(-12deg);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.btn-fx:hover::after {
+  transform: translateX(160%) skewX(-12deg);
+  transition: transform 550ms ease;
+}
+.btn-fx:hover {
+  transform: translateY(-4px) scale(1.045);
+  filter: brightness(1.08);
+  box-shadow: var(--shadow-md);
+}
+.btn-fx:active {
+  transform: translateY(-1px) scale(0.9);
+  transition-duration: 80ms;
+  filter: brightness(0.96);
+}
+.btn-fx:disabled {
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+@keyframes cta-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 55%, transparent), var(--shadow-lg); }
+  50% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--color-primary) 0%, transparent), var(--shadow-lg); }
+}
+.btn-fx-glow {
+  animation: cta-breathe 2s ease-in-out infinite;
+}
+.btn-fx-glow:hover {
+  transform: translateY(-5px) scale(1.06);
+  box-shadow: 0 18px 38px -8px color-mix(in srgb, var(--color-primary) 65%, transparent), var(--shadow-lg);
+}
+
+/* Small icon-only controls (favorite/flag/play buttons) get a livelier
+   wiggle+pop instead of the shine sweep, which reads oddly on a circle. */
+@keyframes icon-wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-10deg) scale(1.12); }
+  75% { transform: rotate(10deg) scale(1.12); }
+}
+.btn-icon-fx {
+  transition: transform 200ms var(--ease-spring);
+}
+.btn-icon-fx:hover {
+  animation: icon-wiggle 0.4s ease-in-out;
+}
+.btn-icon-fx:active {
+  transform: scale(0.82);
+  transition-duration: 90ms;
 }
