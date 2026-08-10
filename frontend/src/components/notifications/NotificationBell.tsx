@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as friendsApi from "../../api/friends";
 import type { FriendRequest } from "../../api/friends";
+import * as notificationsApi from "../../api/notifications";
+import type { StudentNotification, StudentNotificationType } from "../../api/notifications";
 import * as parentsApi from "../../api/parents";
 import type { ParentChildRequest } from "../../api/parents";
 import { useNotificationSocket } from "../../hooks/useNotificationSocket";
@@ -16,6 +18,15 @@ function displayName(u: { username: string; first_name: string; last_name: strin
   const full = [u.first_name, u.last_name].filter(Boolean).join(" ");
   return full || u.username;
 }
+
+const STUDENT_NOTIFICATION_ICONS: Record<StudentNotificationType, string> = {
+  rank_up: "🔥",
+  overtaken: "⚠️",
+  season_ending: "⏳",
+  season_result: "🏆",
+  challenge_received: "⚔️",
+  challenge_result: "🎮",
+};
 
 function assignmentNotificationText(a: Assignment, isStudent: boolean): string {
   if (isStudent) {
@@ -32,6 +43,7 @@ export function NotificationBell() {
   const [incomingFriends, setIncomingFriends] = useState<FriendRequest[] | null>(null);
   const [incomingParents, setIncomingParents] = useState<ParentChildRequest[] | null>(null);
   const [teachingInvitations, setTeachingInvitations] = useState<TeacherStudentConnection[] | null>(null);
+  const [studentNotifications, setStudentNotifications] = useState<StudentNotification[] | null>(null);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +53,7 @@ export function NotificationBell() {
   function loadIncoming() {
     friendsApi.fetchIncomingRequests().then(setIncomingFriends);
     parentsApi.fetchIncomingChildRequests().then(setIncomingParents);
+    notificationsApi.listNotifications().then(setStudentNotifications);
     // Only a student has invitations waiting on *their* response — a
     // teacher's own pending invitations are outgoing, not actionable here.
     if (isStudent) teachingApi.fetchInvitations().then(setTeachingInvitations);
@@ -87,11 +100,22 @@ export function NotificationBell() {
     setOpen(false);
   }
 
+  async function handleStudentNotificationClick(n: StudentNotification) {
+    if (!n.is_read) {
+      setStudentNotifications((prev) => prev?.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)) ?? prev);
+      notificationsApi.markNotificationRead(n.id);
+    }
+    setOpen(false);
+  }
+
+  const unreadStudentNotifications = studentNotifications?.filter((n) => !n.is_read) ?? [];
+
   const count =
     (incomingFriends?.length ?? 0) +
     (incomingParents?.length ?? 0) +
     (teachingInvitations?.length ?? 0) +
-    (assignmentNotifications?.length ?? 0);
+    (assignmentNotifications?.length ?? 0) +
+    unreadStudentNotifications.length;
   const loading = incomingFriends === null || incomingParents === null;
   const isEmpty = !loading && count === 0;
 
@@ -120,6 +144,18 @@ export function NotificationBell() {
 
           {loading && <p className="p-4 text-sm text-text-muted">Բեռնվում է...</p>}
           {isEmpty && <p className="p-4 text-sm text-text-muted">Նոր ծանուցումներ չկան։</p>}
+
+          {unreadStudentNotifications.map((n) => (
+            <Link
+              key={`student-notification-${n.id}`}
+              to={n.link || "/rankings"}
+              onClick={() => handleStudentNotificationClick(n)}
+              className="flex items-start gap-3 border-b border-border p-3 transition-colors last:border-0 hover:bg-surface-muted"
+            >
+              <span className="text-lg leading-none">{STUDENT_NOTIFICATION_ICONS[n.notification_type]}</span>
+              <p className="min-w-0 flex-1 text-sm text-text">{n.message}</p>
+            </Link>
+          ))}
 
           {incomingParents?.map((r) => (
             <div key={`parent-${r.id}`} className="flex items-center gap-3 border-b border-border p-3 last:border-0">

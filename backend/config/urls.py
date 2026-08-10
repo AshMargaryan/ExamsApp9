@@ -15,6 +15,7 @@ urlpatterns = [
     path("api/mock-exams/", include("apps.mock_exams.urls")),
     path("api/flashcards/", include("apps.flashcards.urls")),
     path("api/rankings/", include("apps.rankings.urls")),
+    path("api/notifications/", include("apps.notifications.urls")),
     path("api/parents/", include("apps.parents.urls")),
     path("api/activity/", include("apps.activity.urls")),
     path("api/teaching/", include("apps.teaching.urls")),
