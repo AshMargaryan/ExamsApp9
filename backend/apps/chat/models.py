@@ -127,6 +127,7 @@ class MessageType(models.TextChoices):
     TEXT = "text", "Text"
     IMAGE = "image", "Image"
     FILE = "file", "File"
+    VOICE = "voice", "Voice"
 
 
 class Message(models.Model):
@@ -200,6 +201,7 @@ class AttachmentType(models.TextChoices):
     PDF = "pdf", "PDF"
     DOCUMENT = "document", "Document"
     TEXT = "text", "Text"
+    AUDIO = "audio", "Audio"
     OTHER = "other", "Other"
 
 

@@ -6,6 +6,24 @@ import { EmojiPicker } from "./EmojiPicker";
 
 const ACCEPT = ".png,.jpg,.jpeg,.webp,.gif,.pdf,.docx,.xlsx,.txt,.md,.csv";
 
+// Chrome/Firefox record audio/webm; Safari only supports audio/mp4. Picking
+// whatever MediaRecorder actually supports beats hardcoding one mime type
+// that silently fails to record on half of desktop browsers.
+const VOICE_MIME_CANDIDATES = ["audio/webm", "audio/mp4", "audio/ogg"];
+
+function pickVoiceMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return undefined;
+  return VOICE_MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type));
+}
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+const MIN_VOICE_MESSAGE_SECONDS = 1;
+
 export function MessageInput({
   conversationId,
   disabled,
@@ -28,9 +46,111 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [sendingVoice, setSendingVoice] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartRef = useRef(0);
+  const cancelledRef = useRef(false);
+
   useEffect(() => {
     if (replyingTo) textareaRef.current?.focus();
   }, [replyingTo]);
+
+  useEffect(() => {
+    return () => {
+      recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    };
+  }, []);
+
+  async function startRecording() {
+    setVoiceError(null);
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setVoiceError("Ձայնագրումն այս սարքում հասանելի չէ։");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      cancelledRef.current = false;
+      recordedChunksRef.current = [];
+
+      const mimeType = pickVoiceMimeType();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        recordingStreamRef.current = null;
+      };
+
+      recorder.start();
+      recordingStartRef.current = Date.now();
+      setRecordingSeconds(0);
+      setRecording(true);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((Date.now() - recordingStartRef.current) / 1000);
+      }, 200);
+    } catch {
+      setVoiceError("Խնդրում ենք թույլատրել մուտք դեպի խոսափողը։");
+    }
+  }
+
+  function cancelRecording() {
+    cancelledRef.current = true;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
+    setRecording(false);
+    setRecordingSeconds(0);
+  }
+
+  function stopAndSendRecording() {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+    const finalDuration = (Date.now() - recordingStartRef.current) / 1000;
+    recorder.onstop = async () => {
+      recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
+      recordingStreamRef.current = null;
+      mediaRecorderRef.current = null;
+
+      if (cancelledRef.current) return;
+      if (finalDuration < MIN_VOICE_MESSAGE_SECONDS || recordedChunksRef.current.length === 0) {
+        setVoiceError("Ձայնագրությունը չափազանց կարճ է։");
+        return;
+      }
+
+      const mimeType = recorder.mimeType || "audio/webm";
+      const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+      const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
+      const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
+
+      setSendingVoice(true);
+      setVoiceError(null);
+      try {
+        const attachment = await uploadAttachment(conversationId, file, finalDuration);
+        onSend("", [attachment.id]);
+      } catch {
+        setVoiceError("Ձայնագրությունը չհաջողվեց ուղարկել։");
+      } finally {
+        setSendingVoice(false);
+      }
+    };
+
+    recorder.stop();
+    setRecording(false);
+    setRecordingSeconds(0);
+  }
 
   async function handleFiles(files: FileList | File[]) {
     setUploadError(null);
@@ -115,67 +235,101 @@ export function MessageInput({
       )}
 
       {uploadError && <p className="mb-2 text-sm text-incorrect">{uploadError}</p>}
+      {voiceError && <p className="mb-2 text-sm text-incorrect">{voiceError}</p>}
 
-      <div className="flex items-end gap-2">
-        <button
-          type="button"
-          title="Կցել ֆայլ"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || uploading}
-          className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
-        >
-          📎
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPT}
-          multiple
-          hidden
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
-        />
-
-        <div className="relative shrink-0">
-          {emojiOpen && (
-            <EmojiPicker
-              onSelect={(emoji) => {
-                setText((prev) => prev + emoji);
-                setEmojiOpen(false);
-              }}
-              onClose={() => setEmojiOpen(false)}
-            />
-          )}
+      {recording ? (
+        <div className="flex items-center gap-3 rounded-md border border-border bg-bg px-3 py-2">
+          <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-incorrect" />
+          <span className="flex-1 text-sm text-text-muted">Ձայնագրվում է... {formatDuration(recordingSeconds)}</span>
           <button
             type="button"
-            title="Էմոջի"
-            onClick={() => setEmojiOpen((v) => !v)}
-            disabled={disabled}
-            className="rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+            onClick={cancelRecording}
+            title="Չեղարկել ձայնագրումը"
+            className="shrink-0 rounded-md border border-border px-3 py-1.5 text-text-muted hover:text-text"
           >
-            🙂
+            ✕
+          </button>
+          <button
+            type="button"
+            onClick={stopAndSendRecording}
+            title="Ուղարկել"
+            className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-contrast hover:bg-primary-hover"
+          >
+            ➤
           </button>
         </div>
+      ) : (
+        <div className="flex items-end gap-2">
+          <button
+            type="button"
+            title="Կցել ֆայլ"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled || uploading || sendingVoice}
+            className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+          >
+            📎
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPT}
+            multiple
+            hidden
+            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          />
 
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Գրեք հաղորդագրություն..."
-          rows={1}
-          disabled={disabled}
-          className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary disabled:opacity-50"
-        />
+          <div className="relative shrink-0">
+            {emojiOpen && (
+              <EmojiPicker
+                onSelect={(emoji) => {
+                  setText((prev) => prev + emoji);
+                  setEmojiOpen(false);
+                }}
+                onClose={() => setEmojiOpen(false)}
+              />
+            )}
+            <button
+              type="button"
+              title="Էմոջի"
+              onClick={() => setEmojiOpen((v) => !v)}
+              disabled={disabled}
+              className="rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+            >
+              🙂
+            </button>
+          </div>
 
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={disabled || uploading || (!text.trim() && attachments.length === 0)}
-          className="shrink-0 rounded-md bg-primary px-4 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-        >
-          Ուղարկել
-        </button>
-      </div>
+          <button
+            type="button"
+            title="Ձայնային հաղորդագրություն"
+            onClick={startRecording}
+            disabled={disabled || uploading || sendingVoice}
+            className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+          >
+            {sendingVoice ? "…" : "🎤"}
+          </button>
+
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Գրեք հաղորդագրություն..."
+            rows={1}
+            disabled={disabled}
+            className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary disabled:opacity-50"
+          />
+
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={disabled || uploading || (!text.trim() && attachments.length === 0)}
+            className="shrink-0 rounded-md bg-primary px-4 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+          >
+            Ուղարկել
+          </button>
+        </div>
+      )}
     </div>
   );
 }

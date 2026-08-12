@@ -26,12 +26,20 @@ class AttachmentSerializer(serializers.ModelSerializer):
     # disk today, S3/R2 later) and lets us enforce "participants only" on
     # every download instead of relying on an unguessable path.
     download_url = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()
 
     class Meta:
         model = Attachment
         fields = [
-            "id", "file_type", "original_filename", "mime_type", "file_size", "download_url", "uploaded_at",
+            "id", "file_type", "original_filename", "mime_type", "file_size", "download_url", "duration",
+            "uploaded_at",
         ]
+
+    def get_duration(self, obj) -> float | None:
+        # Voice-message playback length in seconds, captured client-side at
+        # recording time (see AttachmentUploadSerializer) — stored in the
+        # existing `metadata` JSON field rather than a dedicated column.
+        return (obj.metadata or {}).get("duration")
 
     def get_download_url(self, obj) -> str:
         # No request in context when this serializer runs inside a
@@ -47,6 +55,10 @@ class AttachmentSerializer(serializers.ModelSerializer):
 class AttachmentUploadSerializer(serializers.Serializer):
     conversation = serializers.PrimaryKeyRelatedField(queryset=Conversation.objects.all())
     file = serializers.FileField()
+    # Voice-message length in seconds, timed client-side while recording.
+    # Irrelevant for every other attachment type; the view only persists it
+    # onto Attachment.metadata when the upload actually sniffs as audio.
+    duration = serializers.FloatField(required=False, allow_null=True, default=None, min_value=0)
 
     def validate(self, attrs):
         attachment_type, mime_type = validate_attachment_file(attrs["file"])

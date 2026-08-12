@@ -25,6 +25,12 @@ ALLOWED_ATTACHMENTS = {
     "txt": (AttachmentType.TEXT, {"text/plain"}),
     "md": (AttachmentType.TEXT, {"text/plain", "text/markdown"}),
     "csv": (AttachmentType.TEXT, {"text/plain", "text/csv"}),
+    # Browser-recorded voice messages: MediaRecorder outputs audio/webm on
+    # Chrome/Firefox and audio/mp4 (aac) on Safari — no other source
+    # produces these extensions in the chat upload flow.
+    "webm": (AttachmentType.AUDIO, {"audio/webm", "video/webm"}),
+    "m4a": (AttachmentType.AUDIO, {"audio/mp4", "audio/x-m4a"}),
+    "ogg": (AttachmentType.AUDIO, {"audio/ogg", "application/ogg"}),
 }
 
 
