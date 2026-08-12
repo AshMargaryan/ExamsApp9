@@ -1,6 +1,8 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { ChatWidgetProvider } from "../context/ChatWidgetContext";
 import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
+import { FloatingChatWidget } from "./chat/FloatingChatWidget";
 import { NotificationBell } from "./notifications/NotificationBell";
 import { ReloadButton } from "./ReloadButton";
 import { AssignmentSidebar } from "./teaching/AssignmentSidebar";
@@ -22,12 +24,13 @@ export function ProtectedRoute() {
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
 
   return (
-    <>
+    <ChatWidgetProvider>
       <Outlet />
       <ReloadButton />
       <NotificationBell />
       {user.role === "student" && <AssignmentSidebar />}
+      <FloatingChatWidget />
       <FloatingAssistantWidget />
-    </>
+    </ChatWidgetProvider>
   );
 }
