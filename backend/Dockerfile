@@ -23,12 +23,20 @@ WORKDIR /app
 #    attachment type sniffing) at import time, not just build time.
 #  - libpq5: the PostgreSQL client library psycopg2 links against at runtime.
 #  - curl: used by the container HEALTHCHECK to hit Daphne's HTTP port.
+#  - ffmpeg: remuxes chat voice-message WebM blobs on upload (see
+#    apps.chat.validators.finalize_webm_container) — Firefox's MediaRecorder
+#    leaves the Matroska Segment size unknown/unfinalized (a live-stream
+#    marker), which Chrome's own <audio> element can't reliably play back
+#    even though the audio bytes are valid; `ffmpeg -c copy` losslessly
+#    rewrites the container with a known size, matching what Chrome's own
+#    recorder already produces.
 # --no-install-recommends keeps this layer small; we don't need suggested
 # extras (docs, man pages) inside a container.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     libpq5 \
     curl \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------------

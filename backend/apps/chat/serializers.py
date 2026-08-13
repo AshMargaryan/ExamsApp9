@@ -61,7 +61,8 @@ class AttachmentUploadSerializer(serializers.Serializer):
     duration = serializers.FloatField(required=False, allow_null=True, default=None, min_value=0)
 
     def validate(self, attrs):
-        attachment_type, mime_type = validate_attachment_file(attrs["file"])
+        attachment_type, mime_type, file = validate_attachment_file(attrs["file"])
+        attrs["file"] = file
         attrs["file_type"] = attachment_type
         attrs["mime_type"] = mime_type
         return attrs

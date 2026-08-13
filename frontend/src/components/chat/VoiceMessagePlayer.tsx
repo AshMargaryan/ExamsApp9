@@ -23,20 +23,51 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
     const audio = audioRef.current;
     if (!audio) return;
     const onTime = () => setCurrentTime(audio.currentTime);
-    const onLoaded = () => {
-      if (Number.isFinite(audio.duration)) setDuration(audio.duration);
-    };
     const onEnded = () => {
       setPlaying(false);
       setCurrentTime(0);
     };
+    // Duration comes from the server-finalized WebM container (see
+    // apps.chat.validators._finalize_webm_container — every voice message
+    // is remuxed with ffmpeg on upload, which writes a real Segment
+    // Duration), so audio.duration is reliably finite here. Deliberately
+    // NOT seeking to force a duration calculation if it somehow isn't
+    // (Chrome bug workaround that used to live here): on a blob: URL,
+    // Chrome's FFmpegDemuxer can throw a fatal, unrecoverable
+    // "demuxer seek failed" read error on an out-of-range seek, which
+    // permanently breaks playback for that element. attachment.duration
+    // (captured client-side while recording, used as this state's initial
+    // value) is a perfectly good fallback if audio.duration is ever
+    // unavailable — no seek gymnastics needed.
+    const onLoaded = () => {
+      if (Number.isFinite(audio.duration)) setDuration(audio.duration);
+    };
+    // TEMPORARY diagnostic, round 2 — the seek-hack that caused the fatal
+    // "demuxer seek failed" MediaError is gone, but playback is reportedly
+    // still silent, so something else is wrong. This surfaces whatever
+    // MediaError Chrome raises now (or confirms there isn't one, which
+    // would point at something outside this component, e.g. actual bytes
+    // being served, not decode failure).
+    const onError = () => {
+      const err = audio.error;
+      console.error("[voice-message] audio error", {
+        src: audio.currentSrc,
+        code: err?.code,
+        message: err?.message,
+        networkState: audio.networkState,
+        readyState: audio.readyState,
+        duration: audio.duration,
+      });
+    };
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onLoaded);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
     return () => {
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onLoaded);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
     };
   }, [src]);
 
@@ -47,8 +78,17 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
       audio.pause();
       setPlaying(false);
     } else {
-      audio.play();
       setPlaying(true);
+      // play() rejects (AbortError) if something else — a re-render tearing
+      // down this element, another pause() racing in — interrupts it before
+      // it resolves. That's a real possibility here because the surrounding
+      // page reconnects two WebSockets on mount; without this catch it's an
+      // unhandled promise rejection that also leaves `playing` stuck true
+      // with audio actually paused (button shows ⏸ but nothing is playing).
+      audio.play().catch((err) => {
+        console.error("[voice-message] play() rejected", err);
+        setPlaying(false);
+      });
     }
   }
 
