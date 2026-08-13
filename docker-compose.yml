@@ -45,6 +45,16 @@ services:
       # Compose's `environment:` takes precedence over `env_file:`, so this
       # one key wins without editing the shared .env file.
       DB_HOST: db
+      # The Armenian voice sidecar (voice_benchmark/) runs directly on the
+      # host, not in this Compose network — it's a standalone dev tool with
+      # its own heavy ML deps (torch/ctranslate2), deliberately not
+      # containerized here. host.docker.internal below is what lets this
+      # container reach back out to it.
+      VOICE_SERVICE_URL: http://host.docker.internal:8100
+    extra_hosts:
+      # Linux Docker doesn't resolve host.docker.internal by default (only
+      # Docker Desktop on Mac/Windows does); this maps it to the host gateway.
+      - "host.docker.internal:host-gateway"
     volumes:
       # Bind mount: the container sees your live source tree. Editing a .py
       # file on the host is visible inside the container immediately — no

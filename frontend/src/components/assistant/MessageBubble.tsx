@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { Message } from "../../api/assistant";
+import { useRef, useState } from "react";
+import { synthesizeVoice, type Message } from "../../api/assistant";
 import { AttachmentChip } from "./AttachmentChip";
 import { MarkdownMessage } from "./MarkdownMessage";
 import { TypingIndicator } from "./TypingIndicator";
@@ -24,6 +24,9 @@ export function MessageBubble({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
   const [copied, setCopied] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [speakError, setSpeakError] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const isUser = message.role === "user";
 
@@ -31,6 +34,28 @@ export function MessageBubble({
     await navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function handleListen() {
+    if (audioRef.current) {
+      // Toggle: a second click while already-generated audio is loaded just
+      // replays it, no need to hit Azure TTS again for the same text.
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+      return;
+    }
+    setSpeakError(false);
+    setSpeaking(true);
+    try {
+      const blob = await synthesizeVoice(message.content, "hy-AM-AnahitNeural");
+      const audio = new Audio(URL.createObjectURL(blob));
+      audioRef.current = audio;
+      audio.play().catch(() => {});
+    } catch {
+      setSpeakError(true);
+    } finally {
+      setSpeaking(false);
+    }
   }
 
   function handleSaveEdit() {
@@ -114,6 +139,11 @@ export function MessageBubble({
         {isUser && !editing && onEdit && (
           <button type="button" onClick={() => setEditing(true)} className="hover:text-text">
             Խմբագրել
+          </button>
+        )}
+        {!isUser && !pending && message.status === "sent" && (
+          <button type="button" onClick={handleListen} disabled={speaking} className="hover:text-text disabled:opacity-50">
+            {speaking ? "…" : speakError ? "⚠️ Կրկին" : "🔊 Լսել"}
           </button>
         )}
         {!isUser && !pending && message.status === "sent" && onRegenerate && (
