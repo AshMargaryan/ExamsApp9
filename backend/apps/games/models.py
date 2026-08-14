@@ -18,6 +18,12 @@ class GameRoomType(models.TextChoices):
 
 class GameRoomStatus(models.TextChoices):
     WAITING = "waiting", "Waiting"
+    # Brief countdown between the creator pressing Start and the room
+    # actually going RUNNING — see services.start_room /
+    # services.COUNTDOWN_SECONDS. GameRoom.scheduled_start_at holds when it
+    # ends; every client polls/watches the same field so they all flip to
+    # RUNNING together, no client-side trigger needed.
+    STARTING = "starting", "Starting"
     RUNNING = "running", "Running"
     FINISHED = "finished", "Finished"
 
@@ -63,12 +69,17 @@ class GameRoom(models.Model):
         "MatchmakingQueue", null=True, blank=True, on_delete=models.SET_NULL, related_name="rooms"
     )
 
-    # Server-authoritative round state. Every player is on the same question
-    # at the same time — there is no per-participant pacing. The WebSocket
-    # game loop (realtime.py) is the only thing that ever advances this;
-    # clients only ever display it, never control it. See gameplay.py.
-    current_question_index = models.PositiveSmallIntegerField(default=0)
-    current_question_started_at = models.DateTimeField(null=True, blank=True)
+    # Frozen the instant this room transitions to RUNNING (see
+    # services._force_start) — the number of participants who were actually
+    # locked into the game. Trophy rewards (see trophies.py) are scaled off
+    # THIS, never off max_players or a later/lower participants.count(),
+    # since nothing currently removes a participant after the game starts.
+    participant_count_at_start = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    # Set once trophies have been credited for this room (see
+    # services._settle_room / trophies.award_trophies) so a duplicate
+    # finish/advance race can never award them twice.
+    trophies_awarded = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-created_at"]
@@ -109,6 +120,21 @@ class GameParticipant(models.Model):
     # score + which GameAnswers already exist, both already persisted.
     last_seen_at = models.DateTimeField(null=True, blank=True)
 
+    # Independent per-player pacing (see gameplay.py): each participant
+    # advances through the room's fixed GameQuestion order at their own
+    # speed, bounded only by each question's own tier time limit — nobody
+    # waits on anyone else mid-game. Set to 0 / room.start_time when the
+    # room transitions to RUNNING (see services._start_participants).
+    current_question_index = models.PositiveSmallIntegerField(default=0)
+    current_question_started_at = models.DateTimeField(null=True, blank=True)
+
+    # Set once this participant has answered (or timed out on) every
+    # question, or the room's total_game_time cap force-closed them early —
+    # see services._finalize_participant_stats / _force_finish_all. Null
+    # while still playing. The room only settles once every participant has
+    # this set (or the time cap fires) — see services.check_room_completion.
+    finished_at = models.DateTimeField(null=True, blank=True)
+
     # Set once, at settle time (services._settle_room), so the results page
     # can show "what you earned from THIS game" correctly even if it's
     # loaded long after achievements have already been marked unlocked.
@@ -123,6 +149,24 @@ class GameParticipant(models.Model):
     incorrect_answers = models.PositiveIntegerField(default=0)
     unanswered_questions = models.PositiveIntegerField(default=0)
     average_response_time_seconds = models.FloatField(null=True, blank=True)
+
+    # Wall-clock time from room.start_time to this participant's finished_at
+    # — how long THEY personally took, independent of anyone else. Null if
+    # they were force-finished by the total_game_time cap without answering
+    # every question (see services._force_finish_all) — that's "ran out of
+    # time", not "finished fast", so it never counts for the speed bonus.
+    time_taken_to_finish_seconds = models.FloatField(null=True, blank=True)
+
+    # Trophies credited from THIS game (public/competitive rooms only — see
+    # trophies.award_trophies). Always 0 for private/local rooms and for
+    # anyone outside the top 3, mirroring rankings.RankingAward's top-3 shape.
+    trophies_earned = models.PositiveIntegerField(default=0)
+
+    # Bonus XP for being among the fastest to answer every question
+    # correctly-attempted-in-time (see trophies.speed_bonus_xp_for_rank).
+    # Already folded into xp_earned; kept separate too so the results page
+    # can show "+N XP (արագություն)" as its own line.
+    speed_bonus_xp = models.PositiveIntegerField(default=0)
 
     class Meta:
         unique_together = [("game", "user")]
@@ -154,9 +198,25 @@ class GameSettings(models.Model):
     medium_count = models.PositiveSmallIntegerField(default=0)
     hard_count = models.PositiveSmallIntegerField(default=0)
 
-    time_limit_per_question = models.PositiveIntegerField(help_text="Seconds")
+    # Per-tier time limits (seconds) — harder questions reasonably get more
+    # time than easy ones, so this is no longer a single shared value. Each
+    # participant's personal deadline for a question is
+    # room.start-independent: current_question_started_at + the time limit
+    # for THAT question's tier (see gameplay.participant_deadline).
+    easy_time_limit = models.PositiveIntegerField(help_text="Seconds")
+    medium_time_limit = models.PositiveIntegerField(help_text="Seconds")
+    hard_time_limit = models.PositiveIntegerField(help_text="Seconds")
+
     total_game_time = models.PositiveIntegerField(
-        null=True, blank=True, help_text="Seconds; optional overall cap"
+        null=True, blank=True,
+        help_text=(
+            "Seconds; optional overall cap from room start after which any "
+            "still-in-progress participant is force-finished. If unset, an "
+            "implicit cap (sum of every question's own tier time limit) is "
+            "used instead — see services.effective_total_game_time — so a "
+            "vanished/AFK participant can never block the room from ever "
+            "settling for everyone else."
+        ),
     )
 
     allow_mixed_question_types = models.BooleanField(default=True)
@@ -173,6 +233,13 @@ class GameSettings(models.Model):
 
     def __str__(self):
         return f"Settings({self.room})"
+
+    def time_limit_for_tier(self, tier: str) -> int:
+        return {
+            "easy": self.easy_time_limit,
+            "medium": self.medium_time_limit,
+            "hard": self.hard_time_limit,
+        }[tier]
 
 
 class GameQuestion(models.Model):
@@ -236,6 +303,12 @@ class GameStats(models.Model):
     wins = models.PositiveIntegerField(default=0)
     losses = models.PositiveIntegerField(default=0)
     points_earned = models.PositiveIntegerField(default=0)
+
+    # Lifetime competitive trophies — public/random games only, see
+    # trophies.award_trophies. Distinct from profiles.Achievement's
+    # "trophies_count" (badge unlocks); this is the participant-count-scaled
+    # per-game reward.
+    trophies = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"GameStats({self.user})"

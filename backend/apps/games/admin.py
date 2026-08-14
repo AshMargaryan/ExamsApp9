@@ -26,7 +26,8 @@ class GameSettingsInline(admin.StackedInline):
 class GameRoomAdmin(admin.ModelAdmin):
     list_display = [
         "name", "room_code", "creator", "type", "status",
-        "start_condition", "max_players", "created_at",
+        "start_condition", "max_players", "participant_count_at_start",
+        "trophies_awarded", "created_at",
     ]
     list_filter = ["type", "status", "start_condition"]
     search_fields = ["name", "room_code", "creator__username"]
@@ -48,7 +49,7 @@ class GameAnswerAdmin(admin.ModelAdmin):
 
 @admin.register(GameStats)
 class GameStatsAdmin(admin.ModelAdmin):
-    list_display = ["user", "games_played", "wins", "losses", "points_earned"]
+    list_display = ["user", "games_played", "wins", "losses", "points_earned", "trophies"]
     search_fields = ["user__username"]
 
 
