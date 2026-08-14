@@ -1,263 +1,39 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { getHierarchy, MATH_SUBJECT_NAME, type SubjectNode } from "../api/practice";
+import { AmbientBackground } from "../components/hierarchy/AmbientBackground";
+import { ConnectionLines } from "../components/hierarchy/ConnectionLines";
+import { HierarchyNode } from "../components/hierarchy/HierarchyNode";
+import { IntroOverlay } from "../components/hierarchy/IntroOverlay";
+import "../components/hierarchy/hierarchy.css";
 import {
-  getHierarchy, getSubtopicMaterial, TIER_LABELS, MATH_SUBJECT_NAME,
-  type SubjectNode, type DomainNode, type TopicNode, type SubtopicNode,
-  type SubtopicMaterial, type Tier,
-} from "../api/practice";
-import * as teachingApi from "../api/teaching";
-import { Battery } from "../components/Battery";
-import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
-import { SpeakOnSelect } from "../components/SpeakOnSelect";
+  accentFor,
+  computeLayout,
+  INTRO_GLYPH,
+  type NodeVisual,
+} from "../components/hierarchy/hierarchyLayout";
 import { ToolsDock } from "../components/ToolsDock";
 import { NotepadProvider } from "../context/NotepadContext";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
-import { useAuth } from "../auth/AuthContext";
 
-const TIERS: Tier[] = ["easy", "medium", "hard"];
+// Re-settles the entrance animation on every level change: briefly drop to
+// the "just about to arrive" transform (draw=0), then a tick later ease
+// back to draw=1 — same trick the design uses so newly-revealed nodes
+// always animate in, even though React would otherwise just jump straight
+// to their final position.
+const REDRAW_DELAY_MS = 70;
+const SUBTOPIC_TRANSITION_MS = 420;
 
-type Selected =
-  | { kind: "domain"; node: DomainNode }
-  | { kind: "topic"; node: TopicNode }
-  | { kind: "subtopic"; node: SubtopicNode };
-
-type MaterialSection = { heading: string; body: string };
-
-// Learning material is authored with "## " headers per section (intro, examples,
-// summary, etc.) and, within the worked-examples section, individual examples
-// marked either with a "### " heading (math) or a bold "**Օրինակ N...**" line
-// (English) — but it's stored as one flat markdown string. Split it here so it
-// can be shown step by step: one step per "##" section, further split into one
-// step per example/subsection where those markers exist.
-// A line that's nothing but a "---"/"***"/"___" thematic break (used as a
-// decorative divider between sections in the source files) carries no content
-// of its own — it shouldn't count toward whether a step has real text.
-function isThematicBreak(line: string): boolean {
-  return /^(-{3,}|\*{3,}|_{3,})\s*$/.test(line.trim());
-}
-
-function meaningfulBody(lines: string[]): string {
-  return lines.filter((l) => !isThematicBreak(l)).join("\n").trim();
-}
-
-// Math material marks each worked example with a "### " heading. English material
-// has no H3s at all — its examples are instead a bold marker line on its own,
-// e.g. "**Օրինակ 1 (...):**". Recognize either as a subsection boundary.
-const EXAMPLE_MARKER = /^\*\*Օրինակ\s+\d+.*\*\*\s*$/;
-
-function subsectionHeading(line: string): string | null {
-  if (/^###\s+/.test(line)) return line.replace(/^###\s+/, "").trim();
-  const trimmed = line.trim();
-  if (EXAMPLE_MARKER.test(trimmed)) {
-    return trimmed.replace(/^\*\*/, "").replace(/\*\*$/, "").replace(/:$/, "").trim();
-  }
-  return null;
-}
-
-function splitByH3(heading: string, lines: string[]): MaterialSection[] {
-  const subsections: { heading: string; lines: string[] }[] = [];
-  let current: { heading: string; lines: string[] } | null = null;
-  const intro: string[] = [];
-
-  for (const line of lines) {
-    const subHeading = subsectionHeading(line);
-    if (subHeading !== null) {
-      if (current) subsections.push(current);
-      current = { heading: subHeading, lines: [line] };
-    } else if (current) {
-      current.lines.push(line);
-    } else {
-      intro.push(line);
-    }
-  }
-  if (current) subsections.push(current);
-
-  if (subsections.length === 0) {
-    return [{ heading, body: meaningfulBody(intro) }];
-  }
-
-  const result: MaterialSection[] = [];
-  const introBody = meaningfulBody(intro);
-  if (introBody) result.push({ heading, body: introBody });
-  for (const sub of subsections) {
-    result.push({ heading: sub.heading, body: sub.lines.join("\n").trim() });
-  }
-  return result;
-}
-
-function splitIntoSections(markdown: string): MaterialSection[] {
-  const lines = markdown.split("\n");
-  const rawSections: { heading: string; lines: string[] }[] = [];
-  let current: { heading: string; lines: string[] } | null = null;
-  const preamble: string[] = [];
-
-  for (const line of lines) {
-    if (/^##\s+/.test(line)) {
-      if (current) rawSections.push(current);
-      // The "## " line itself isn't included in the section's body — its text
-      // becomes the step's heading/pill label instead, via `heading` below.
-      current = { heading: line.replace(/^##\s+/, "").trim(), lines: [] };
-    } else if (current) {
-      current.lines.push(line);
-    } else {
-      preamble.push(line);
-    }
-  }
-  if (current) rawSections.push(current);
-
-  const sections: MaterialSection[] = [];
-  const preambleBody = meaningfulBody(preamble.filter((l) => !/^#\s+/.test(l)));
-  if (preambleBody) sections.push({ heading: "Ներածություն", body: preambleBody });
-
-  for (const raw of rawSections) {
-    sections.push(...splitByH3(raw.heading, raw.lines).filter((s) => s.body.length > 0));
-  }
-
-  return sections.length > 0 ? sections : [{ heading: "", body: markdown }];
-}
-
-function IntroPanel({ name, introText }: { name: string; introText: string }) {
-  return (
-    <div>
-      <h1 className="mb-4 text-3xl font-semibold text-text">{name}</h1>
-      <MarkdownMessage
-        className="text-lg leading-relaxed"
-        content={introText || "Ներածական տեքստը կավելացվի ավելի ուշ։"}
-      />
-    </div>
-  );
-}
-
-function SubtopicPanel({
-  subtopic, subjectId, trackAssignmentId,
-}: {
-  subtopic: SubtopicNode;
-  subjectId: number;
-  trackAssignmentId?: number;
-}) {
-  const [material, setMaterial] = useState<SubtopicMaterial | null>(null);
-  const [sectionIndex, setSectionIndex] = useState(0);
-  const exercisesRef = useRef<HTMLDivElement>(null);
-
+function useViewportSize() {
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
-    setMaterial(null);
-    setSectionIndex(0);
-    if (subtopic.has_learning_material) {
-      getSubtopicMaterial(subtopic.id).then(setMaterial);
+    function onResize() {
+      setSize({ w: window.innerWidth, h: window.innerHeight });
     }
-  }, [subtopic.id, subtopic.has_learning_material]);
-
-  const sections = material ? splitIntoSections(material.learning_material) : [];
-
-  useEffect(() => {
-    setSectionIndex(0);
-  }, [material]);
-
-  useEffect(() => {
-    if (!trackAssignmentId || !subtopic.has_learning_material || sections.length === 0) return;
-    const fraction = (sectionIndex + 1) / sections.length;
-    teachingApi.updateLearningProgress(trackAssignmentId, fraction).catch(() => {});
-    // sections.length is derived from material, which is already a dep of the effect
-    // that resets sectionIndex — including it here would just duplicate that trigger.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackAssignmentId, subtopic.id, subtopic.has_learning_material, sectionIndex]);
-
-  function goToSection(index: number) {
-    setSectionIndex(index);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  return (
-    <div>
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold text-text">{subtopic.name}</h1>
-        <button
-          type="button"
-          onClick={() => exercisesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          className="shrink-0 rounded-[var(--radius)] border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary hover:text-primary-contrast"
-        >
-          Անցնել վարժություններին
-        </button>
-      </div>
-
-      {subtopic.has_learning_material ? (
-        material ? (
-          <div>
-            {sections.length > 1 && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {sections.map((section, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => goToSection(index)}
-                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                      index === sectionIndex
-                        ? "border-primary bg-primary text-primary-contrast"
-                        : "border-border text-text-muted hover:border-primary hover:text-text"
-                    }`}
-                  >
-                    {section.heading || `Մաս ${index + 1}`}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <MarkdownMessage className="text-xl leading-relaxed" content={sections[sectionIndex].body} />
-
-            {sections.length > 1 && (
-              <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-4">
-                <button
-                  type="button"
-                  disabled={sectionIndex === 0}
-                  onClick={() => goToSection(sectionIndex - 1)}
-                  className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-medium text-text hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
-                >
-                  ← Նախորդ
-                </button>
-                <span className="text-sm text-text-muted">
-                  {sectionIndex + 1} / {sections.length}
-                </span>
-                <button
-                  type="button"
-                  disabled={sectionIndex === sections.length - 1}
-                  onClick={() => goToSection(sectionIndex + 1)}
-                  className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-medium text-text hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
-                >
-                  Հաջորդ →
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-lg text-text-muted">Բեռնվում է...</p>
-        )
-      ) : (
-        <p className="text-lg text-text-muted">Ուսումնական նյութը կավելացվի ավելի ուշ։</p>
-      )}
-
-      <div ref={exercisesRef} className="mt-8 grid scroll-mt-8 gap-4 pt-2 sm:grid-cols-3">
-        {TIERS.map((tier) => {
-          const score = subtopic.tier_scores[tier];
-          const done = score !== null;
-          return (
-            <Link
-              key={tier}
-              to={`/practice/subtopic/${subtopic.id}/${tier}`}
-              state={{ subtopicName: subtopic.name, subjectId }}
-              className="rounded-[var(--radius)] border border-border bg-surface p-6 text-center transition-colors hover:border-primary"
-            >
-              <div
-                className="mx-auto mb-3 h-2 w-12 rounded-full"
-                style={{ backgroundColor: `var(--color-${tier})` }}
-              />
-              <p className="text-lg font-medium text-text">{TIER_LABELS[tier]}</p>
-              <p className="text-text-muted">{done ? `Ավարտված ✓ (${score}%)` : "Չսկսված"}</p>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return size;
 }
 
 export function PracticeSubjectPage() {
@@ -265,21 +41,20 @@ export function PracticeSubjectPage() {
 
   const { subjectId } = useParams<{ subjectId: string }>();
   const id = Number(subjectId);
-
+  const navigate = useNavigate();
   const location = useLocation();
   const navState = location.state as { subtopicId?: number; topicId?: number } | null;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { w, h } = useViewportSize();
 
-  const { user } = useAuth();
   const [subject, setSubject] = useState<SubjectNode | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [selected, setSelected] = useState<Selected | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  // subtopic id -> the open (assigned/in_progress) assignment id targeting it, for scroll tracking.
-  const [openSubtopicAssignments, setOpenSubtopicAssignments] = useState<Map<number, number>>(new Map());
+  const [draw, setDraw] = useState(1);
+  const [introOpen, setIntroOpen] = useState<"domain" | "topic" | null>(null);
+  const [leavingSubtopicId, setLeavingSubtopicId] = useState<number | null>(null);
 
   useEffect(() => {
     setSubject(null);
-    setSelected(null);
     setNotFound(false);
     getHierarchy().then((subjects) => {
       const found = subjects.find((s) => s.id === id) ?? null;
@@ -288,53 +63,77 @@ export function PracticeSubjectPage() {
     });
   }, [id]);
 
-  useEffect(() => {
-    if (user?.role !== "student") return;
-    teachingApi.fetchAssignments().then((list) => {
-      const map = new Map<number, number>();
-      for (const a of list) {
-        if (
-          a.assignment_type === "subtopic" &&
-          (a.status === "assigned" || a.status === "in_progress") &&
-          a.subtopic
-        ) {
-          map.set(a.subtopic.id, a.id);
-        }
-      }
-      setOpenSubtopicAssignments(map);
-    });
-  }, [user]);
+  const domainParam = searchParams.get("domain");
+  const topicParam = searchParams.get("topic");
+  const domainIndex = subject && domainParam
+    ? subject.domains.findIndex((d) => String(d.id) === domainParam)
+    : -1;
+  const selectedDomain = domainIndex >= 0 ? subject!.domains[domainIndex] : null;
+  const topicIndex = selectedDomain && topicParam
+    ? selectedDomain.topics.findIndex((t) => String(t.id) === topicParam)
+    : -1;
+  const selectedTopic = topicIndex >= 0 ? selectedDomain!.topics[topicIndex] : null;
 
+  // Deep-link support for "topic" assignments (subtopic assignments now go
+  // straight to /practice/subtopic/:id — see lib/assignmentLabels.ts).
+  // Only ever runs once the hierarchy actually needs resolving, and only
+  // from nav state, so it never fights the user's own navigation.
   useEffect(() => {
-    if (!subject || !navState) return;
+    if (!subject || !navState?.topicId) return;
     for (const domain of subject.domains) {
-      for (const topic of domain.topics) {
-        if (navState.topicId === topic.id) {
-          setSelected({ kind: "topic", node: topic });
-          return;
-        }
-        for (const subtopic of topic.subtopics) {
-          if (navState.subtopicId === subtopic.id) {
-            setSelected({ kind: "subtopic", node: subtopic });
-            return;
-          }
-        }
+      const topic = domain.topics.find((t) => t.id === navState.topicId);
+      if (topic) {
+        setSearchParams({ domain: String(domain.id), topic: String(topic.id) }, { replace: true });
+        return;
       }
     }
-    // location.key changes on every navigation (even to the same path), so
-    // clicking "Կատարել" again while already on this page still re-selects —
-    // depending on navState alone wouldn't since its identity is stable
-    // when the object shape repeats.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject, location.key]);
+
+  // Replays the entrance transition on every level change, whichever
+  // direction it came from (a click, a browser back/forward, or a direct
+  // URL visit) — search params are the single source of truth here.
+  useEffect(() => {
+    setIntroOpen(null);
+    setDraw(0);
+    const t = setTimeout(() => setDraw(1), REDRAW_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [domainParam, topicParam]);
+
+  function selectDomain(domainId: number | null) {
+    if (domainId === null) {
+      setSearchParams({});
+    } else {
+      setSearchParams({ domain: String(domainId) });
+    }
+  }
+
+  function selectTopic(topicId: number | null) {
+    if (!selectedDomain) return;
+    if (topicId === null) {
+      setSearchParams({ domain: String(selectedDomain.id) });
+    } else {
+      setSearchParams({ domain: String(selectedDomain.id), topic: String(topicId) });
+    }
+  }
+
+  function selectSubtopic(subtopicId: number) {
+    if (leavingSubtopicId !== null) return;
+    setLeavingSubtopicId(subtopicId);
+    setTimeout(() => navigate(`/practice/subtopic/${subtopicId}`), SUBTOPIC_TRANSITION_MS);
+  }
 
   if (notFound) {
     return (
       <div className="p-8">
         <p className="text-lg text-text-muted">Առարկան չի գտնվել։</p>
-        <Link to="/practice" className="text-sm text-primary hover:underline">
+        <button
+          type="button"
+          onClick={() => navigate("/practice")}
+          className="text-sm text-primary hover:underline"
+        >
           ← Առարկաներ
-        </Link>
+        </button>
       </div>
     );
   }
@@ -345,121 +144,309 @@ export function PracticeSubjectPage() {
 
   const isMath = subject.name === MATH_SUBJECT_NAME;
 
+  const layout = computeLayout({
+    domains: subject.domains,
+    domainIndex: domainIndex >= 0 ? domainIndex : null,
+    topicIndex: topicIndex >= 0 ? topicIndex : null,
+    width: w,
+    height: h,
+    draw,
+    onSelectDomain: selectDomain,
+    onSelectTopic: selectTopic,
+    onSelectSubtopic: (_topic, subtopic) => selectSubtopic(subtopic.id),
+  });
+
+  const level = selectedTopic ? "subtopic" : selectedDomain ? "topic" : "domain";
+  const small = Math.min(w, h) < 720;
+
+  // Small satellite "Ներածություն" node(s) — deliberately NOT part of the
+  // radial layout math (hierarchyLayout.computeLayout only places
+  // domain/topic/subtopic nodes): fixed near the top corners so they never
+  // collide with the ring of nodes or the focal center node, per the
+  // design not specifying a location for this (it doesn't exist in the
+  // uploaded design at all — see the written plan).
+  const introNodes: NodeVisual[] = [];
+  if (selectedDomain && level === "topic") {
+    introNodes.push({
+      key: "intro-domain",
+      kind: "intro",
+      name: "Ներածություն",
+      glyph: INTRO_GLYPH,
+      accent: accentFor(domainIndex),
+      x: small ? 64 : 96,
+      y: small ? 96 : 120,
+      size: small ? 64 : 78,
+      scale: draw,
+      opacity: draw,
+      z: 25,
+      delayMs: 260,
+      active: false,
+      interactive: draw >= 0.6,
+      pct: null,
+      onSelect: () => setIntroOpen("domain"),
+    });
+  }
+  if (selectedDomain && selectedTopic && level === "subtopic") {
+    introNodes.push({
+      key: "intro-topic",
+      kind: "intro",
+      name: "Ներածություն",
+      glyph: INTRO_GLYPH,
+      accent: accentFor(domainIndex),
+      x: w - (small ? 64 : 96),
+      y: small ? 96 : 120,
+      size: small ? 64 : 78,
+      scale: draw,
+      opacity: draw,
+      z: 25,
+      delayMs: 260,
+      active: false,
+      interactive: draw >= 0.6,
+      pct: null,
+      onSelect: () => setIntroOpen("topic"),
+    });
+  }
+
+  const leavingSubtopicName = leavingSubtopicId
+    ? selectedTopic?.subtopics.find((s) => s.id === leavingSubtopicId)?.name
+    : null;
+
+  const hint = leavingSubtopicId
+    ? ""
+    : level === "domain"
+      ? "Ընտրեք ոլորտ՝ դրա կառուցվածքը տեսնելու համար"
+      : level === "topic"
+        ? "Ընտրեք թեմա · սեղմեք կենտրոնական հանգույցը՝ դուրս գալու համար"
+        : "Ընտրեք ենթաթեմա՝ դասը բացելու համար · սեղմեք կենտրոնական հանգույցը՝ հետ գնալու համար";
+
   return (
     <NotepadProvider>
-    <div className="flex min-h-screen bg-bg">
-      {sidebarOpen ? (
-        <aside className="w-[26rem] shrink-0 overflow-y-auto border-r border-border bg-surface p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <Link to="/practice" className="text-sm text-primary hover:underline">
-              ← Առարկաներ
-            </Link>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "#06070b",
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          color: "#e8ecf4",
+          overflow: "hidden",
+        }}
+      >
+        <AmbientBackground accent={layout.ambientAccent} />
+
+        <ConnectionLines links={layout.links} />
+
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%,-50%)",
+            opacity: layout.coreOpacity,
+            transition: "opacity 900ms ease",
+            pointerEvents: "none",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 18,
+          }}
+        >
+          <div
+            style={{
+              width: 78,
+              height: 78,
+              borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,.07)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,.11)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,.5)",
+                  boxShadow: "0 0 18px 4px rgba(160,190,255,.35)",
+                }}
+              />
+            </div>
+          </div>
+          <div
+            style={{
+              fontFamily: "'JetBrains Mono', system-ui, monospace",
+              fontSize: 10,
+              letterSpacing: ".34em",
+              textTransform: "uppercase",
+              color: "rgba(232,236,244,.38)",
+            }}
+          >
+            {subject.name}
+          </div>
+        </div>
+
+        <div style={{ position: "absolute", inset: 0 }}>
+          {layout.nodes.map((n) => (
+            <HierarchyNode
+              key={n.key}
+              node={
+                n.kind === "subtopic" && n.key === `subtopic-${leavingSubtopicId}`
+                  ? { ...n, scale: n.scale * 1.35, opacity: 1, z: 50 }
+                  : n
+              }
+            />
+          ))}
+          {introNodes.map((n) => (
+            <HierarchyNode key={n.key} node={n} />
+          ))}
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            padding: small ? "20px 20px" : "30px 40px",
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 24,
+            pointerEvents: "none",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, pointerEvents: "auto", flexWrap: "wrap" }}>
             <button
               type="button"
-              title="Փակել ցանկը"
-              onClick={() => setSidebarOpen(false)}
-              className="rounded px-2 py-1 text-text-muted hover:bg-surface-muted hover:text-text"
+              onClick={() => navigate("/practice")}
+              style={{
+                fontFamily: "'JetBrains Mono', system-ui, monospace",
+                fontSize: 10,
+                letterSpacing: ".26em",
+                textTransform: "uppercase",
+                color: "rgba(232,236,244,.5)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
             >
-              ‹‹
+              ← Առարկաներ
             </button>
+            <Crumb label="Ոլորտներ" active={!selectedDomain} onClick={() => selectDomain(null)} />
+            {selectedDomain && (
+              <Crumb label={selectedDomain.name} active={!selectedTopic} onClick={() => selectTopic(null)} />
+            )}
+            {selectedTopic && <Crumb label={selectedTopic.name} active clickable={false} />}
           </div>
-
-          <div className="mb-4 flex items-center justify-between text-xl font-semibold text-text">
-            <span>{subject.name}</span>
-            <Battery percent={subject.progress.percent} avgScore={subject.progress.avg_score} />
-          </div>
-
-          {subject.domains.map((domain) => (
-            <details key={domain.id} className="mb-1" open>
-              <summary
-                onClick={() => setSelected({ kind: "domain", node: domain })}
-                className="flex cursor-pointer items-center justify-between rounded px-1.5 py-1.5 text-base text-text hover:bg-surface-muted"
-              >
-                <span>{domain.name}</span>
-                <Battery percent={domain.progress.percent} avgScore={domain.progress.avg_score} />
-              </summary>
-
-              {domain.topics.map((topic) => (
-                <details key={topic.id} className="mb-1 ml-4" open>
-                  <summary
-                    onClick={() => setSelected({ kind: "topic", node: topic })}
-                    className="flex cursor-pointer items-center justify-between rounded px-1.5 py-1 text-sm text-text-muted hover:bg-surface-muted"
-                  >
-                    <span>{topic.name}</span>
-                    <Battery percent={topic.progress.percent} avgScore={topic.progress.avg_score} />
-                  </summary>
-
-                  <ul className="ml-4">
-                    {topic.subtopics.map((subtopic) => (
-                      <li key={subtopic.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelected({ kind: "subtopic", node: subtopic })}
-                          className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors ${
-                            selected?.kind === "subtopic" && selected.node.id === subtopic.id
-                              ? "bg-primary text-primary-contrast"
-                              : "text-text hover:bg-surface-muted"
-                          }`}
-                        >
-                          {subtopic.name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              ))}
-            </details>
-          ))}
-        </aside>
-      ) : (
-        <aside className="flex w-12 shrink-0 flex-col items-center border-r border-border bg-surface py-5">
-          <button
-            type="button"
-            title="Բացել ցանկը"
-            onClick={() => setSidebarOpen(true)}
-            className="rounded px-2 py-1 text-text-muted hover:bg-surface-muted hover:text-text"
+          <div
+            style={{
+              fontFamily: "'JetBrains Mono', system-ui, monospace",
+              fontSize: 10,
+              letterSpacing: ".26em",
+              textTransform: "uppercase",
+              color: "rgba(232,236,244,.3)",
+              whiteSpace: "nowrap",
+            }}
           >
-            ››
-          </button>
-        </aside>
-      )}
+            {layout.levelLabel}
+          </div>
+        </div>
 
-      <main className={`flex-1 px-8 py-8 ${sidebarOpen ? "" : "mx-auto w-full max-w-4xl"}`}>
-        {!selected && (
-          <p className="text-lg text-text-muted">Ընտրեք ոլորտ, թեմա կամ ենթաթեմա ձախ կողմի ցանկից՝ սկսելու համար։</p>
-        )}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 34,
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontWeight: 300,
+              fontSize: 13,
+              letterSpacing: ".04em",
+              color: "rgba(232,236,244,.34)",
+              transition: "color 400ms ease",
+              textAlign: "center",
+              padding: "0 16px",
+            }}
+          >
+            {leavingSubtopicId ? `Բացվում է՝ ${leavingSubtopicName ?? ""}...` : hint}
+          </div>
+        </div>
 
-        {selected?.kind === "subtopic" && (
-          isMath ? (
-            <SubtopicPanel
-              subtopic={selected.node}
-              subjectId={subject.id}
-              trackAssignmentId={openSubtopicAssignments.get(selected.node.id)}
-            />
-          ) : (
-            <SpeakOnSelect>
-              <SubtopicPanel
-                subtopic={selected.node}
-                subjectId={subject.id}
-                trackAssignmentId={openSubtopicAssignments.get(selected.node.id)}
-              />
-            </SpeakOnSelect>
-          )
+        {introOpen === "domain" && selectedDomain && (
+          <IntroOverlay
+            pathLabel={subject.name}
+            title={selectedDomain.name}
+            introText={selectedDomain.intro_text}
+            accent={accentFor(domainIndex)}
+            onClose={() => setIntroOpen(null)}
+          />
         )}
-
-        {(selected?.kind === "domain" || selected?.kind === "topic") && (
-          isMath ? (
-            <IntroPanel name={selected.node.name} introText={selected.node.intro_text} />
-          ) : (
-            <SpeakOnSelect>
-              <IntroPanel name={selected.node.name} introText={selected.node.intro_text} />
-            </SpeakOnSelect>
-          )
+        {introOpen === "topic" && selectedDomain && selectedTopic && (
+          <IntroOverlay
+            pathLabel={[subject.name, selectedDomain.name].join("  /  ")}
+            title={selectedTopic.name}
+            introText={selectedTopic.intro_text}
+            accent={accentFor(domainIndex)}
+            onClose={() => setIntroOpen(null)}
+          />
         )}
-      </main>
+      </div>
 
       {isMath && <ToolsDock />}
-    </div>
     </NotepadProvider>
+  );
+}
+
+function Crumb({
+  label,
+  active,
+  onClick,
+  clickable = true,
+}: {
+  label: string;
+  active: boolean;
+  onClick?: () => void;
+  clickable?: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+      <div style={{ fontFamily: "'JetBrains Mono', system-ui, monospace", fontSize: 10, color: "rgba(232,236,244,.22)" }}>
+        /
+      </div>
+      <div
+        onClick={clickable ? onClick : undefined}
+        role={clickable ? "button" : undefined}
+        style={{
+          fontFamily: "'JetBrains Mono', system-ui, monospace",
+          fontSize: 10,
+          letterSpacing: ".26em",
+          textTransform: "uppercase",
+          color: active ? "rgba(255,255,255,.9)" : "rgba(232,236,244,.42)",
+          cursor: clickable ? "pointer" : "default",
+          transition: "color 300ms ease",
+        }}
+      >
+        {label}
+      </div>
+    </div>
   );
 }

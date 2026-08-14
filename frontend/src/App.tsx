@@ -11,6 +11,7 @@ import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { HomePage } from "./pages/HomePage";
 import { PracticeSubjectsPage } from "./pages/PracticeSubjectsPage";
 import { PracticeSubjectPage } from "./pages/PracticeSubjectPage";
+import { SubtopicPage } from "./pages/SubtopicPage";
 import { TierPage } from "./pages/TierPage";
 import { AssistantPage } from "./pages/AssistantPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/practice" element={<PracticeSubjectsPage />} />
             <Route path="/practice/:subjectId" element={<PracticeSubjectPage />} />
+            <Route path="/practice/subtopic/:subtopicId" element={<SubtopicPage />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/account/sessions" element={<AccountSessionsPage />} />
