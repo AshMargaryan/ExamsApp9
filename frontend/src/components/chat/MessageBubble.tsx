@@ -6,6 +6,7 @@ import { messagePreviewText } from "../../lib/chatLabels";
 import { downloadAuthenticatedFile, saveBlobUrl } from "../../lib/authenticatedFile";
 import { EmojiPicker } from "./EmojiPicker";
 import { ImageLightbox } from "./ImageLightbox";
+import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} Բ`;
@@ -79,6 +80,7 @@ function FileAttachment({ attachment, own }: { attachment: Attachment; own: bool
 
 function AttachmentView({ attachment, own }: { attachment: Attachment; own: boolean }) {
   if (attachment.file_type === "image") return <ImageAttachment attachment={attachment} />;
+  if (attachment.file_type === "audio") return <VoiceMessagePlayer attachment={attachment} own={own} />;
   return <FileAttachment attachment={attachment} own={own} />;
 }
 

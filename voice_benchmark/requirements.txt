@@ -1,0 +1,29 @@
+# Standalone dependency set for the Armenian voice benchmark tool.
+# Deliberately NOT merged into backend/requirements.txt: torch/ctranslate2/
+# transformers are heavy and irrelevant to the production Django app, and
+# this tool is not meant to run inside the existing Docker images.
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+python-dotenv==1.0.1
+
+# STT: faster-whisper runs CTranslate2-format models (fast CPU int8 inference).
+# transformers+torch+huggingface_hub are needed once, to download the original
+# HF models and convert them to CTranslate2 via ct2-transformers-converter.
+faster-whisper==1.0.3
+ctranslate2==4.4.0
+transformers==4.44.2
+torch==2.4.1
+huggingface_hub==0.24.6
+accelerate==0.33.0
+
+# Audio handling
+soundfile==0.12.1
+pydub==0.25.1
+
+# TTS
+azure-cognitiveservices-speech==1.40.0
+
+# Resource usage reporting in the benchmark UI
+psutil==6.0.0

@@ -41,6 +41,8 @@ def _resolve_message_type(attachments: list[Attachment]) -> str:
         return MessageType.TEXT
     if all(a.file_type == AttachmentType.IMAGE for a in attachments):
         return MessageType.IMAGE
+    if all(a.file_type == AttachmentType.AUDIO for a in attachments):
+        return MessageType.VOICE
     return MessageType.FILE
 
 

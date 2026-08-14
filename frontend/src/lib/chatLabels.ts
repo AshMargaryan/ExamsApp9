@@ -20,6 +20,7 @@ export function conversationInitial(conversation: Conversation): string {
 const MESSAGE_TYPE_PREVIEW: Record<string, string> = {
   image: "📷 Նկար",
   file: "📎 Ֆայլ",
+  voice: "🎤 Ձայնային հաղորդագրություն",
 };
 
 /** Text/image/file preview label for anything shaped like a message (last-message preview, reply bar, in-bubble quote). */

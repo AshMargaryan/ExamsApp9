@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as chatApi from "../api/chat";
 import type { Conversation } from "../api/chat";
 import { ConversationList } from "../components/chat/ConversationList";
 import { ConversationView } from "../components/chat/ConversationView";
 import { NewConversationModal } from "../components/chat/NewConversationModal";
+import { useChatWidget } from "../context/ChatWidgetContext";
 import { conversationTitle } from "../lib/chatLabels";
 
 export function ChatPage() {
+  const { openFloatingChat } = useChatWidget();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -122,6 +125,22 @@ export function ChatPage() {
           <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-text">
             {selectedConversation ? conversationTitle(selectedConversation) : "Հաղորդագրություններ"}
           </h1>
+          <button
+            type="button"
+            onClick={() => {
+              // FloatingChatWidget deliberately hides itself while we're on
+              // /chat (no point floating a duplicate of the page you're
+              // already looking at) — so opening it here has to also
+              // navigate away, or the button would silently do nothing.
+              openFloatingChat(selectedId);
+              navigate("/");
+            }}
+            title="Բացել լողացող պատուհանում"
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm text-text-muted hover:border-primary hover:text-text"
+          >
+            <span aria-hidden>⧉</span>
+            <span className="hidden sm:inline">Լողացող</span>
+          </button>
         </header>
 
         {selectedConversation ? (

@@ -3,8 +3,8 @@ import type { FriendUser } from "./friends";
 
 export type ConversationType = "private" | "group";
 export type ParticipantRole = "owner" | "admin" | "member";
-export type MessageType = "text" | "image" | "file";
-export type AttachmentType = "image" | "pdf" | "document" | "text" | "other";
+export type MessageType = "text" | "image" | "file" | "voice";
+export type AttachmentType = "image" | "pdf" | "document" | "text" | "audio" | "other";
 
 export interface ConversationParticipant {
   id: number;
@@ -21,6 +21,7 @@ export interface Attachment {
   mime_type: string;
   file_size: number;
   download_url: string;
+  duration: number | null;
   uploaded_at: string;
 }
 
@@ -152,10 +153,13 @@ export async function setReaction(messageId: number, emoji: string): Promise<Mes
   return data;
 }
 
-export async function uploadAttachment(conversationId: number, file: File): Promise<Attachment> {
+export async function uploadAttachment(
+  conversationId: number, file: File, duration?: number,
+): Promise<Attachment> {
   const form = new FormData();
   form.append("conversation", String(conversationId));
   form.append("file", file);
+  if (duration !== undefined) form.append("duration", String(duration));
   const { data } = await apiClient.post("/chat/attachments/", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
