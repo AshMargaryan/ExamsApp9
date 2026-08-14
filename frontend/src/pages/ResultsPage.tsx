@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import * as gamesApi from "../api/games";
 import type { GameResults, LeaderboardEntry } from "../api/games";
@@ -13,6 +13,30 @@ const REVEAL_DELAYS_MS = [500, 1300, 1300, 900]; // 3rd, 2nd, 1st, then leaderbo
 
 const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
+// The staged reveal (podium pop-ins, confetti, fanfare) is a one-time
+// "ta-da" moment for THIS browser tab. Without this, navigating back to
+// /games/<code>/results (e.g. via the browser's back button after leaving
+// the page) remounts the component and replays the whole animation from
+// scratch every time. sessionStorage (not localStorage) is deliberate: it
+// clears itself when the tab closes, so this is a "don't replay within
+// this visit" flag, not permanent history state.
+function alreadySeenResults(roomCode: string): boolean {
+  try {
+    return sessionStorage.getItem(`gameResultsSeen:${roomCode}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markResultsSeen(roomCode: string): void {
+  try {
+    sessionStorage.setItem(`gameResultsSeen:${roomCode}`, "1");
+  } catch {
+    // Private browsing / storage disabled — worst case the animation
+    // replays on a later visit, not worth failing the page over.
+  }
+}
+
 function displayName(u: { username: string; first_name: string; last_name: string }) {
   const full = [u.first_name, u.last_name].filter(Boolean).join(" ");
   return full || u.username;
@@ -21,10 +45,12 @@ function displayName(u: { username: string; first_name: string; last_name: strin
 function PodiumStand({
   entry,
   revealed,
+  animate,
   heightClass,
 }: {
   entry: LeaderboardEntry | undefined;
   revealed: boolean;
+  animate: boolean;
   heightClass: string;
 }) {
   if (!entry) return <div className="w-24 sm:w-32" />;
@@ -32,8 +58,11 @@ function PodiumStand({
   return (
     <div className="flex w-24 flex-col items-center sm:w-32">
       {revealed && (
-        <div className="mb-2 flex flex-col items-center" style={{ animation: "pop-in 0.4s ease-out" }}>
-          <span className="text-4xl" style={{ animation: "medal-pop 0.5s ease-out" }}>
+        <div
+          className="mb-2 flex flex-col items-center"
+          style={animate ? { animation: "pop-in 0.4s ease-out" } : undefined}
+        >
+          <span className="text-4xl" style={animate ? { animation: "medal-pop 0.5s ease-out" } : undefined}>
             {MEDALS[entry.rank]}
           </span>
           <p className="mt-1 max-w-[6rem] truncate text-center font-medium text-text sm:max-w-[7rem]">
@@ -46,7 +75,11 @@ function PodiumStand({
         className={`w-full rounded-t-[var(--radius)] border border-border bg-surface ${heightClass} ${
           revealed ? "opacity-100" : "opacity-0"
         }`}
-        style={revealed ? { animation: "podium-rise 0.5s ease-out", transformOrigin: "bottom" } : undefined}
+        style={
+          revealed && animate
+            ? { animation: "podium-rise 0.5s ease-out", transformOrigin: "bottom" }
+            : undefined
+        }
       >
         <p className="pt-2 text-center text-2xl font-bold text-text-muted">{entry.rank}</p>
       </div>
@@ -56,20 +89,33 @@ function PodiumStand({
 
 export function ResultsPage() {
   const { roomCode } = useParams<{ roomCode: string }>();
+  // Captured once, at mount, via a ref — NOT recomputed on every render.
+  // markResultsSeen() below flips this same sessionStorage key almost
+  // immediately after the first successful fetch; if this were a plain
+  // const (recomputed every render) or state derived fresh from
+  // sessionStorage, the re-render triggered by setResults() would read it
+  // back as "already seen" on the very first visit too, before the reveal
+  // effect ever got a chance to run — which is exactly why the animation
+  // stopped playing at all.
+  const alreadySeenRef = useRef(roomCode ? alreadySeenResults(roomCode) : false);
+  const alreadySeen = alreadySeenRef.current;
   const [results, setResults] = useState<GameResults | null>(null);
-  const [phase, setPhase] = useState<Phase>(0);
+  const [phase, setPhase] = useState<Phase>(alreadySeen ? 4 : 0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roomCode) return;
     gamesApi
       .fetchGameResults(roomCode)
-      .then(setResults)
+      .then((data) => {
+        setResults(data);
+        markResultsSeen(roomCode);
+      })
       .catch(() => setError("Արդյունքները բեռնելիս սխալ տեղի ունեցավ։"));
   }, [roomCode]);
 
   useEffect(() => {
-    if (!results) return;
+    if (!results || alreadySeen) return;
     const timeouts: ReturnType<typeof setTimeout>[] = [];
     let elapsed = 0;
     ([1, 2, 3, 4] as Phase[]).forEach((nextPhase, i) => {
@@ -87,6 +133,7 @@ export function ResultsPage() {
       );
     });
     return () => timeouts.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [results]);
 
   if (error) {
@@ -114,32 +161,45 @@ export function ResultsPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg px-4 py-10">
-      {phase >= 3 && <Confetti />}
-      {phase >= 3 && <Fireworks />}
+      {!alreadySeen && phase >= 3 && <Confetti />}
+      {!alreadySeen && phase >= 3 && <Fireworks />}
 
       <div className="mx-auto max-w-3xl">
         <h1 className="mb-2 text-center text-3xl font-semibold text-text">Խաղն ավարտված է 🏁</h1>
         <p className="mb-8 text-center text-text-muted">Ձեր տեղը՝ {results.my_rank}</p>
 
         <div className="mb-10 flex items-end justify-center gap-3 sm:gap-6">
-          <PodiumStand entry={second} revealed={phase >= 2} heightClass="h-28" />
+          <PodiumStand entry={second} revealed={phase >= 2} animate={!alreadySeen} heightClass="h-28" />
           <div className="flex flex-col items-center">
             {phase >= 3 && (
-              <p className="mb-1 text-4xl" style={{ animation: "trophy-bounce 0.6s ease-out" }}>
+              <p
+                className="mb-1 text-4xl"
+                style={alreadySeen ? undefined : { animation: "trophy-bounce 0.6s ease-out" }}
+              >
                 🏆
               </p>
             )}
-            <PodiumStand entry={first} revealed={phase >= 3} heightClass="h-40" />
+            <PodiumStand entry={first} revealed={phase >= 3} animate={!alreadySeen} heightClass="h-40" />
           </div>
-          <PodiumStand entry={third} revealed={phase >= 1} heightClass="h-20" />
+          <PodiumStand entry={third} revealed={phase >= 1} animate={!alreadySeen} heightClass="h-20" />
         </div>
 
         {phase >= 4 && (
-          <div style={{ animation: "pop-in 0.5s ease-out" }}>
-            {(results.xp_earned > 0 || results.newly_unlocked_achievements.length > 0) && (
+          <div style={alreadySeen ? undefined : { animation: "pop-in 0.5s ease-out" }}>
+            {(results.xp_earned > 0 ||
+              results.trophies_earned > 0 ||
+              results.newly_unlocked_achievements.length > 0) && (
               <div className="mb-6 rounded-[var(--radius)] border border-primary bg-surface p-5 text-center">
                 {results.xp_earned > 0 && (
                   <p className="text-lg font-medium text-text">+{results.xp_earned} XP</p>
+                )}
+                {results.is_competitive && results.trophies_earned > 0 && (
+                  <p className="text-lg font-medium text-text">🏆 +{results.trophies_earned} գավաթ</p>
+                )}
+                {results.speed_bonus_xp > 0 && (
+                  <p className="text-sm text-text-muted">
+                    ⚡ +{results.speed_bonus_xp} XP արագության համար
+                  </p>
                 )}
                 {results.newly_unlocked_achievements.length > 0 && (
                   <div className="mt-3">
@@ -173,7 +233,7 @@ export function ResultsPage() {
                     <th className="px-4 py-3 text-right font-medium">Միավոր</th>
                     <th className="px-4 py-3 text-right font-medium">Ճիշտ</th>
                     <th className="px-4 py-3 text-right font-medium">Ճշգրտություն</th>
-                    <th className="px-4 py-3 text-right font-medium">Միջին ժամանակ</th>
+                    <th className="px-4 py-3 text-right font-medium">Ընդհանուր ժամանակ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,7 +251,9 @@ export function ResultsPage() {
                         {entry.accuracy_percentage}%
                       </td>
                       <td className="px-4 py-3 text-right text-text-muted">
-                        {entry.average_time_seconds !== null ? `${entry.average_time_seconds}վ` : "—"}
+                        {entry.time_taken_to_finish_seconds !== null
+                          ? `${Math.round(entry.time_taken_to_finish_seconds)}վ`
+                          : "—"}
                       </td>
                     </tr>
                   ))}

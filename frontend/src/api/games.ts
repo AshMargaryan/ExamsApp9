@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 import type { Question } from "./practice";
 import type { Achievement } from "./profile";
 
-export type GameRoomStatus = "waiting" | "running" | "finished";
+export type GameRoomStatus = "waiting" | "starting" | "running" | "finished";
 export type StartCondition = "manual" | "timer" | "player_count";
 
 export interface GameUser {
@@ -18,6 +18,22 @@ export interface GameParticipant {
   score: number;
   rank: number | null;
   joined_at: string;
+  finished_at: string | null;
+}
+
+export interface GameSettings {
+  subject: number;
+  subject_name?: string;
+  topic?: number | null;
+  topic_name?: string | null;
+  question_count: number;
+  easy_count: number;
+  medium_count: number;
+  hard_count: number;
+  easy_time_limit: number;
+  medium_time_limit: number;
+  hard_time_limit: number;
+  total_game_time?: number | null;
 }
 
 export interface GameRoom {
@@ -36,6 +52,7 @@ export interface GameRoom {
   timer_seconds: number | null;
   min_players_to_start: number | null;
   scheduled_start_at: string | null;
+  settings: GameSettings | null;
 }
 
 export interface CreateRoomPayload {
@@ -44,6 +61,7 @@ export interface CreateRoomPayload {
   start_condition: StartCondition;
   timer_seconds?: number;
   min_players_to_start?: number;
+  settings: GameSettings;
 }
 
 export interface GameStats {
@@ -51,6 +69,7 @@ export interface GameStats {
   wins: number;
   losses: number;
   points_earned: number;
+  trophies: number;
 }
 
 export async function createRoom(payload: CreateRoomPayload): Promise<GameRoom> {
@@ -116,6 +135,7 @@ export interface MatchmakingTicket {
   players_waiting: number;
   scheduled_start_at: string | null;
   created_at: string;
+  subject_name: string | null;
 }
 
 export async function fetchMatchmakingQueues(): Promise<MatchmakingQueue[]> {
@@ -123,8 +143,11 @@ export async function fetchMatchmakingQueues(): Promise<MatchmakingQueue[]> {
   return data;
 }
 
-export async function findGame(queueId: number): Promise<MatchmakingTicket> {
-  const { data } = await apiClient.post("/games/matchmaking/find/", { queue_id: queueId });
+export async function findGame(queueId: number, subjectId: number): Promise<MatchmakingTicket> {
+  const { data } = await apiClient.post("/games/matchmaking/find/", {
+    queue_id: queueId,
+    subject_id: subjectId,
+  });
   return data;
 }
 
@@ -144,7 +167,7 @@ export interface CurrentQuestionResponse {
   question_number?: number;
   total_questions: number;
   seconds_remaining?: number;
-  time_limit_per_question?: number;
+  time_limit_seconds?: number;
   score: number;
   rank?: number | null;
 }
@@ -183,12 +206,18 @@ export interface LeaderboardEntry {
   total_questions: number;
   accuracy_percentage: number;
   average_time_seconds: number | null;
+  time_taken_to_finish_seconds: number | null;
+  trophies_earned: number;
+  speed_bonus_xp: number;
 }
 
 export interface GameResults {
   leaderboard: LeaderboardEntry[];
   my_rank: number;
   xp_earned: number;
+  speed_bonus_xp: number;
+  trophies_earned: number;
+  is_competitive: boolean;
   newly_unlocked_achievements: Achievement[];
 }
 

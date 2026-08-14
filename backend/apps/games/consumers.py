@@ -1,12 +1,12 @@
+import asyncio
+
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.utils import timezone
 
-from . import realtime
-from .gameplay import get_room_state, has_answered, record_answer
+from .gameplay import get_room_questions, has_answered, participant_deadline, record_answer
 from .models import GameParticipant, GameRoom, GameRoomStatus
-from .realtime import group_name, signal_advance
-from .services import maybe_advance_room
+from .services import sync_participant_progress
 
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
@@ -16,10 +16,17 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     database already agrees on; it never trusts a client-reported timer or
     "I'm done" claim without re-validating server-side (see gameplay.py).
 
+    Independent per-player pacing (see gameplay.py docstring): this
+    connection only ever cares about ITS OWN participant's progress, never
+    the room's — there's no shared "everyone's on question 3" broadcast
+    anymore. A personal asyncio watchdog task fires at this participant's
+    own deadline to auto-advance them if they never answer in time; nothing
+    is shared with other connections.
+
     Reconnection: nothing client-side needs to be preserved. Score and
-    "have I answered this question" are both derived fresh from the
-    database on connect, so a reconnecting client is instantly back in
-    the correct state.
+    "which question am I on" are both derived fresh from the database on
+    connect, so a reconnecting client is instantly back in the correct
+    state.
     """
 
     async def connect(self):
@@ -35,17 +42,15 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4003)
             return
 
-        self.group_name = group_name(self.room_code)
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        self.watchdog_task: asyncio.Task | None = None
         await self.accept()
 
         await self._mark_seen()
-        realtime.ensure_loop_running(self.room_code)
         await self._send_personal_state()
 
     async def disconnect(self, close_code):
-        if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if getattr(self, "watchdog_task", None):
+            self.watchdog_task.cancel()
 
     async def receive_json(self, content, **kwargs):
         action = content.get("action")
@@ -66,21 +71,23 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             "is_correct": result["is_correct"],
             "score": await self._current_score(),
         })
+        await self._send_personal_state()
 
-        if result["all_answered"]:
-            signal_advance(self.room_code)
-        await self._maybe_advance()
+    # -- personal deadline watchdog --------------------------------------
 
-    # -- group event handlers (invoked via channel_layer.group_send) --------
+    def _schedule_watchdog(self, delay_seconds: float, question_index: int):
+        if self.watchdog_task:
+            self.watchdog_task.cancel()
+        self.watchdog_task = asyncio.create_task(self._watchdog(delay_seconds, question_index))
 
-    async def game_update(self, event):
-        realtime.ensure_loop_running(self.room_code)
-        payload = event["payload"]
-        if payload.get("type") == "finished":
-            # The room-wide broadcast has no per-player score/rank — swap in
-            # this connection's own personalized view instead of relaying it.
-            payload = await self._build_personal_state()
-        await self.send_json(payload)
+    async def _watchdog(self, delay_seconds: float, question_index: int):
+        try:
+            await asyncio.sleep(max(0.0, delay_seconds))
+        except asyncio.CancelledError:
+            return
+        moved = await self._advance_if_still_on(question_index)
+        if moved:
+            await self._send_personal_state()
 
     # -- DB helpers -----------------------------------------------------
 
@@ -107,51 +114,56 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         return record_answer(room, participant, content.get("question_id"), content)
 
     @database_sync_to_async
-    def _maybe_advance(self):
+    def _advance_if_still_on(self, expected_index: int) -> bool:
         room = GameRoom.objects.select_related("settings").get(room_code=self.room_code)
-        maybe_advance_room(room)
+        participant = GameParticipant.objects.get(id=self.participant_id)
+        if participant.current_question_index != expected_index or participant.finished_at is not None:
+            return False
+        sync_participant_progress(room, participant)
+        return True
 
     @database_sync_to_async
     def _build_personal_state(self):
-        room = GameRoom.objects.select_related("settings").prefetch_related("participants").get(
-            room_code=self.room_code
-        )
+        room = GameRoom.objects.select_related("settings").get(room_code=self.room_code)
         participant = GameParticipant.objects.get(id=self.participant_id)
 
         if room.status == GameRoomStatus.WAITING:
-            return {"type": "waiting"}
+            return {"type": "waiting"}, None
 
-        maybe_advance_room(room)
+        participant = sync_participant_progress(room, participant)
         room.refresh_from_db()
+        participant.refresh_from_db()
 
-        if room.status == GameRoomStatus.FINISHED:
-            participant.refresh_from_db(fields=["rank"])
+        if participant.finished_at is not None or room.status == GameRoomStatus.FINISHED:
             return {
                 "type": "finished",
                 "score": participant.score,
                 "rank": participant.rank,
                 "total_questions": room.game_questions.count(),
-            }
+            }, None
 
-        state = get_room_state(room)
-        if state["finished"]:
-            return {"type": "finished", "score": participant.score, "rank": None,
-                    "total_questions": state["total_questions"]}
+        questions = get_room_questions(room)
+        game_question = questions[participant.current_question_index]
+        deadline = participant_deadline(participant, room, questions)
+        remaining = max(0, round((deadline - timezone.now()).total_seconds())) if deadline else 0
 
-        game_question = state["game_question"]
         from apps.practice.serializers import QuestionPracticeSerializer
 
-        return {
+        payload = {
             "type": "question",
             "question": QuestionPracticeSerializer(game_question.question).data,
-            "question_number": state["question_number"],
-            "total_questions": state["total_questions"],
-            "seconds_remaining": state["seconds_remaining"],
-            "deadline": state["deadline"].isoformat() if state["deadline"] else None,
+            "question_number": participant.current_question_index + 1,
+            "total_questions": len(questions),
+            "seconds_remaining": remaining,
+            "deadline": deadline.isoformat() if deadline else None,
             "score": participant.score,
             "answered": has_answered(participant, game_question),
         }
+        watchdog = (max(0.0, remaining), participant.current_question_index)
+        return payload, watchdog
 
     async def _send_personal_state(self):
-        payload = await self._build_personal_state()
+        payload, watchdog = await self._build_personal_state()
         await self.send_json(payload)
+        if watchdog:
+            self._schedule_watchdog(*watchdog)

@@ -4,12 +4,12 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.practice.models import Subject
 from apps.practice.serializers import QuestionPracticeSerializer
 from apps.profiles.models import Achievement
 from apps.profiles.serializers import AchievementSerializer
 
-from .gameplay import get_room_state, has_answered, record_answer
-from .realtime import signal_advance
+from .gameplay import get_participant_state, has_answered, record_answer, time_limit_for_question
 from .models import (
     GameParticipant,
     GameRoom,
@@ -34,10 +34,10 @@ from .services import (
     join_room,
     kick_participant,
     leave_room,
-    maybe_advance_room,
     maybe_auto_start,
     refresh_ticket,
     start_room,
+    sync_participant_progress,
 )
 
 
@@ -228,6 +228,9 @@ class GameResultsView(APIView):
                 "total_questions": total_questions,
                 "accuracy_percentage": round(100 * p.correct_answers / answered, 1) if answered else 0,
                 "average_time_seconds": p.average_response_time_seconds,
+                "time_taken_to_finish_seconds": p.time_taken_to_finish_seconds,
+                "trophies_earned": p.trophies_earned,
+                "speed_bonus_xp": p.speed_bonus_xp,
             })
 
         achievements = Achievement.objects.filter(key__in=participant.newly_unlocked_achievement_keys)
@@ -236,17 +239,21 @@ class GameResultsView(APIView):
             "leaderboard": leaderboard,
             "my_rank": participant.rank,
             "xp_earned": participant.xp_earned,
+            "speed_bonus_xp": participant.speed_bonus_xp,
+            "trophies_earned": participant.trophies_earned,
+            "is_competitive": room.type == GameRoomType.PUBLIC,
             "newly_unlocked_achievements": AchievementSerializer(achievements, many=True).data,
         })
 
 
 class CurrentQuestionView(APIView):
     """
-    GET /api/games/rooms/<room_code>/play/current/ — the room's current
-    question (HTTP fallback/resync; the WebSocket connection at
+    GET /api/games/rooms/<room_code>/play/current/ — THIS participant's
+    current question (HTTP fallback/resync; the WebSocket connection at
     ws/games/<room_code>/ is the primary, lower-latency channel — see
-    realtime.py). Every participant sees the exact same question/timing;
-    this endpoint never varies by who's asking.
+    consumers.py). Independent per-player pacing (see gameplay.py): two
+    different participants asking this at the same moment can get two
+    different questions — nobody is gated on anyone else.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -259,9 +266,10 @@ class CurrentQuestionView(APIView):
             return Response({"detail": "Խաղը դեռ չի սկսվել։"}, status=status.HTTP_400_BAD_REQUEST)
 
         if room.status == GameRoomStatus.RUNNING:
-            maybe_advance_room(room)
+            participant = sync_participant_progress(room, participant)
+            room.refresh_from_db()
 
-        if room.status == GameRoomStatus.FINISHED:
+        if room.status == GameRoomStatus.FINISHED or participant.finished_at is not None:
             return Response({
                 "finished": True,
                 "room_status": room.status,
@@ -270,16 +278,7 @@ class CurrentQuestionView(APIView):
                 "total_questions": room.game_questions.count(),
             })
 
-        state = get_room_state(room)
-        if state["finished"]:
-            return Response({
-                "finished": True,
-                "room_status": room.status,
-                "score": participant.score,
-                "rank": None,
-                "total_questions": state["total_questions"],
-            })
-
+        state = get_participant_state(participant, room)
         game_question = state["game_question"]
         return Response({
             "finished": False,
@@ -288,7 +287,7 @@ class CurrentQuestionView(APIView):
             "question_number": state["question_number"],
             "total_questions": state["total_questions"],
             "seconds_remaining": state["seconds_remaining"],
-            "time_limit_per_question": room.settings.time_limit_per_question,
+            "time_limit_seconds": time_limit_for_question(room, game_question),
             "score": participant.score,
             "answered": has_answered(participant, game_question),
         })
@@ -298,9 +297,9 @@ class SubmitAnswerView(APIView):
     """
     POST /api/games/rooms/<room_code>/play/answer/ {question_id, ...answer}
     HTTP fallback for the WebSocket "answer" message — same server-side
-    validation either way (see gameplay.record_answer). Answering doesn't
-    move you to the next question by itself; you wait until everyone has
-    answered or the server-side deadline passes.
+    validation either way (see gameplay.record_answer). Answering
+    immediately advances THIS participant to their next question (or
+    finishes them) — nobody waits on anyone else.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -313,13 +312,6 @@ class SubmitAnswerView(APIView):
             result = record_answer(room, participant, request.data.get("question_id"), request.data)
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        if result["all_answered"]:
-            # Wakes the realtime loop to advance immediately, if one is
-            # running for this room; otherwise the deadline-based fallback
-            # below still guarantees forward progress.
-            signal_advance(room_code)
-        maybe_advance_room(room)
 
         return Response({"is_correct": result["is_correct"]})
 
@@ -345,13 +337,23 @@ class MatchmakingQueueListView(generics.ListAPIView):
 
 
 class FindGameView(APIView):
-    """POST /api/games/matchmaking/find/ {queue_id} — 'Find Game' button."""
+    """
+    POST /api/games/matchmaking/find/ {queue_id, subject_id} — 'Find Game'
+    button. subject_id is required: public games must draw questions from
+    one specific subject just like private rooms do (see
+    question_engine.build_default_settings) — matchmaking never mixes
+    questions from unrelated subjects.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         queue = get_object_or_404(MatchmakingQueue, pk=request.data.get("queue_id"), is_active=True)
-        ticket = find_game(request.user, queue)
+        subject = get_object_or_404(Subject, pk=request.data.get("subject_id"))
+        try:
+            ticket = find_game(request.user, queue, subject)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(MatchmakingTicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
 
 

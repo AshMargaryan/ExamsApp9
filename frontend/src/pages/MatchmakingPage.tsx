@@ -3,6 +3,8 @@ import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import * as gamesApi from "../api/games";
 import type { MatchmakingQueue, MatchmakingTicket } from "../api/games";
+import { getHierarchy } from "../api/practice";
+import type { SubjectNode } from "../api/practice";
 import { MessageModal } from "../components/MessageModal";
 
 function extractError(err: unknown, fallback: string): string {
@@ -39,6 +41,9 @@ export function MatchmakingPage() {
   const [starting, setStarting] = useState(false);
   const cancellingRef = useRef(false);
 
+  const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
+  const [subjectId, setSubjectId] = useState<string>("");
+
   const refreshStatus = useCallback(async () => {
     const tickets = await gamesApi.fetchMatchmakingStatus();
     const active = tickets[0] ?? null;
@@ -52,6 +57,10 @@ export function MatchmakingPage() {
 
   useEffect(() => {
     gamesApi.fetchMatchmakingQueues().then(setQueues);
+    getHierarchy().then((data) => {
+      setSubjects(data);
+      if (data.length > 0) setSubjectId(String(data[0].id));
+    });
     refreshStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -77,10 +86,14 @@ export function MatchmakingPage() {
   }, [ticket?.scheduled_start_at]);
 
   async function handleFindGame(queueId: number) {
+    if (!subjectId) {
+      setError("Ընտրեք առարկան։");
+      return;
+    }
     setError(null);
     setStarting(true);
     try {
-      const newTicket = await gamesApi.findGame(queueId);
+      const newTicket = await gamesApi.findGame(queueId, Number(subjectId));
       if (newTicket.status === "matched" && newTicket.room_code) {
         navigate(`/games/${newTicket.room_code}`);
         return;
@@ -117,6 +130,22 @@ export function MatchmakingPage() {
 
         {!ticket && (
           <div className="flex flex-col gap-4">
+            <div className="rounded-[var(--radius)] border border-border bg-surface p-4">
+              <label className="mb-1 block text-sm text-text-muted">Առարկա</label>
+              <select
+                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+                value={subjectId}
+                onChange={(e) => setSubjectId(e.target.value)}
+              >
+                {subjects === null && <option value="">Բեռնվում է...</option>}
+                {subjects?.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {queues === null && <p className="text-text-muted">Բեռնվում է...</p>}
             {queues?.map((queue) => (
               <div
@@ -144,6 +173,9 @@ export function MatchmakingPage() {
         {ticket && (
           <div className="rounded-[var(--radius)] border border-border bg-surface p-8 text-center shadow-sm">
             <p className="text-lg font-medium text-text">{ticket.queue.name}</p>
+            {ticket.subject_name && (
+              <p className="text-sm text-text-muted">{ticket.subject_name}</p>
+            )}
             <div className="my-6 flex items-center justify-center gap-3">
               <span className="h-3 w-3 animate-pulse rounded-full bg-primary" />
               <p className="text-text-muted">Որոնում է հակառակորդներ...</p>
