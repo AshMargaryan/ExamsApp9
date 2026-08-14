@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="hy">
+<head>
+<meta charset="utf-8" />
+<title>Armenian Voice Benchmark</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: .3rem; }
+  section { margin-bottom: 2rem; }
+  button { padding: .5rem 1rem; margin-right: .5rem; cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: .5; }
+  #healthBox, .result-card { background: #f6f6f6; border: 1px solid #ddd; border-radius: 6px; padding: .8rem 1rem; margin-top: .8rem; }
+  .result-card.error { background: #fdeaea; border-color: #e2a0a0; }
+  .result-card h3 { margin: 0 0 .4rem 0; font-size: 1rem; }
+  .result-card .transcript { font-size: 1.1rem; margin: .5rem 0; }
+  .result-card .meta { font-size: .85rem; color: #555; }
+  textarea { width: 100%; box-sizing: border-box; font-size: 1rem; padding: .5rem; }
+  .status { font-size: .9rem; color: #666; }
+  audio { width: 100%; margin-top: .5rem; }
+  .rec-dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; background: red; margin-right: .4rem; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+</style>
+</head>
+<body>
+  <h1>Armenian Voice Benchmark (dev tool)</h1>
+  <p class="status">Standalone STT/TTS evaluation tool. Not part of the production app.</p>
+
+  <section id="health">
+    <h2>System / config</h2>
+    <div id="healthBox">Loading...</div>
+  </section>
+
+  <section id="stt">
+    <h2>1. Speech-to-text</h2>
+    <p class="status">Record or upload Armenian audio. Runs both models sequentially (large-v3-turbo, then small-v2).</p>
+    <button id="recordBtn">Record</button>
+    <input type="file" id="fileInput" accept="audio/*" />
+    <button id="sttSubmit" disabled>Run STT benchmark</button>
+    <div id="sttStatus" class="status"></div>
+    <audio id="sttPreview" controls style="display:none"></audio>
+    <div id="sttResults"></div>
+  </section>
+
+  <section id="tts">
+    <h2>2. Text-to-speech (Azure)</h2>
+    <p class="status">Pick a sample sentence (or write your own), then generate it with both voices and compare.</p>
+    <select id="ttsPreset"></select>
+    <textarea id="ttsText" rows="4" style="margin-top:.5rem;"></textarea>
+    <div style="margin-top:.5rem;">
+      <label>Voice: <select id="ttsVoice"></select></label>
+      <button id="ttsSubmit">Synthesize</button>
+      <button id="ttsSubmitBoth">Synthesize with both voices</button>
+      <span id="ttsStatus" class="status"></span>
+    </div>
+    <div id="ttsResults"></div>
+  </section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+async function loadHealth() {
+  const res = await fetch('/api/health');
+  const data = await res.json();
+  $('healthBox').innerHTML = `
+    <div>GPU: ${data.gpu_available ? data.gpu_name : 'not available (CPU mode)'}</div>
+    <div>CPU cores: ${data.cpu_count}</div>
+    <div>RAM: ${data.ram_available_gb} / ${data.ram_total_gb} GB available</div>
+    <div>Azure TTS configured: ${data.azure_tts_configured ? 'yes' : 'no (set AZURE_SPEECH_KEY / AZURE_SPEECH_REGION in .env)'}</div>
+  `;
+  (data.azure_tts_voices || []).forEach((v) => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    $('ttsVoice').appendChild(opt);
+  });
+}
+loadHealth();
+
+// --- TTS preset test sentences ---
+// Covers: general conversation, math, physics, a longer AI-tutor-style
+// explanation, and Armenian mixed with common English technical terms —
+// the point is to hear how the voice sounds on what the AI tutor will
+// actually say, not just isolated word pronunciation.
+const TTS_PRESETS = {
+  'Ընդհանուր խոսակցություն': 'Բարև ձեզ։ Ինչպե՞ս կարող եմ օգնել ձեզ այսօր։ Ուրախ կլինեմ պատասխանել ձեր հարցերին։',
+  'Մաթեմատիկա': 'Դիտարկենք հետևյալ հավասարումը՝ երկու անգամ x գումարած հինգ հավասար է տասնյոթի։ Հանելով հինգը երկու կողմից՝ ստանում ենք երկու անգամ x հավասար է տասներկուի, հետևաբար x-ը հավասար է վեցի։',
+  'Ֆիզիկա': 'Նյուտոնի երկրորդ օրենքի համաձայն՝ ուժը հավասար է մարմնի զանգվածի և արագացման արտադրյալին։ Այսինքն՝ որքան մեծ է զանգվածը, այնքան ավելի մեծ ուժ է անհրաժեշտ նույն արագացումն ապահովելու համար։',
+  'Երկար բացատրություն (AI-ուսուցիչ)': 'Եկեք քայլ առ քայլ վերլուծենք այս խնդիրը։ Նախ՝ պետք է հասկանանք, թե ինչ է մեզանից պահանջվում։ Հետո՝ կգրենք հայտնի տվյալները և կփորձենք գտնել դրանց միջև կապը։ Վերջում՝ կստուգենք ստացված պատասխանը՝ համոզվելու համար, որ այն տրամաբանական է և համապատասխանում է խնդրի պայմաններին։',
+  'Հայերեն + անգլերեն տերմիններ': 'Այս խնդիրը լուծելու համար մենք կօգտագործենք machine learning մոդել, որը կկանխատեսի արդյունքը՝ հիմնվելով training data-ի վրա։ Կարևոր է ճիշտ ընտրել accuracy-ի և loss function-ի հարաբերակցությունը։',
+};
+
+function loadTtsPresets() {
+  const select = $('ttsPreset');
+  Object.keys(TTS_PRESETS).forEach((label) => {
+    const opt = document.createElement('option');
+    opt.value = label;
+    opt.textContent = label;
+    select.appendChild(opt);
+  });
+  select.addEventListener('change', () => {
+    $('ttsText').value = TTS_PRESETS[select.value] || '';
+  });
+  select.dispatchEvent(new Event('change'));
+}
+loadTtsPresets();
+
+// --- STT: recording ---
+let mediaRecorder, chunks = [], recordedBlob = null;
+
+$('recordBtn').addEventListener('click', async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  chunks = [];
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+  mediaRecorder.onstop = () => {
+    recordedBlob = new Blob(chunks, { type: 'audio/webm' });
+    $('sttPreview').src = URL.createObjectURL(recordedBlob);
+    $('sttPreview').style.display = 'block';
+    $('sttSubmit').disabled = false;
+    $('recordBtn').textContent = 'Record';
+    stream.getTracks().forEach((t) => t.stop());
+  };
+  mediaRecorder.start();
+  $('recordBtn').innerHTML = '<span class="rec-dot"></span>Stop';
+});
+
+$('fileInput').addEventListener('change', () => {
+  const f = $('fileInput').files[0];
+  if (!f) return;
+  recordedBlob = f;
+  $('sttPreview').src = URL.createObjectURL(f);
+  $('sttPreview').style.display = 'block';
+  $('sttSubmit').disabled = false;
+});
+
+$('sttSubmit').addEventListener('click', async () => {
+  if (!recordedBlob) return;
+  $('sttSubmit').disabled = true;
+  $('sttStatus').textContent = 'Running both models sequentially — first run per model converts + downloads weights, can take a while...';
+  $('sttResults').innerHTML = '';
+
+  const form = new FormData();
+  const ext = recordedBlob.name ? recordedBlob.name.split('.').pop() : 'webm';
+  form.append('audio', recordedBlob, `sample.${ext}`);
+
+  try {
+    const res = await fetch('/api/stt/benchmark', { method: 'POST', body: form });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderSttResults(data.results);
+    $('sttStatus').textContent = 'Done.';
+  } catch (err) {
+    $('sttStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    $('sttSubmit').disabled = false;
+  }
+});
+
+function renderSttResults(results) {
+  $('sttResults').innerHTML = results.map((r) => `
+    <div class="result-card ${r.ok ? '' : 'error'}">
+      <h3>${r.model_key} <span class="status">(${r.hf_id})</span></h3>
+      ${r.ok ? `
+        <div class="transcript">${r.transcript || '(empty transcript)'}</div>
+        <div class="meta">
+          device: ${r.device}/${r.compute_type}${r.gpu_name ? ' — ' + r.gpu_name : ''} ·
+          audio: ${r.audio_duration_sec.toFixed(2)}s ·
+          processing: ${r.processing_time_sec.toFixed(2)}s ·
+          RTF: ${r.real_time_factor !== null ? r.real_time_factor.toFixed(3) : 'n/a'}
+        </div>
+      ` : `<div class="meta">Error: ${r.error}</div>`}
+    </div>
+  `).join('');
+}
+
+// --- TTS ---
+async function synthesizeOne(text, voice) {
+  const form = new FormData();
+  form.append('text', text);
+  form.append('voice', voice);
+  const res = await fetch('/api/tts/synthesize', { method: 'POST', body: form });
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`;
+    throw new Error(detail);
+  }
+  const blob = await res.blob();
+  return {
+    url: URL.createObjectURL(blob),
+    time: res.headers.get('X-Processing-Time-Sec'),
+    voice: res.headers.get('X-Voice'),
+  };
+}
+
+function addTtsResultCard(voice, outcome) {
+  const card = document.createElement('div');
+  card.className = `result-card${outcome.error ? ' error' : ''}`;
+  card.innerHTML = outcome.error
+    ? `<h3>${voice}</h3><div class="meta">Error: ${outcome.error}</div>`
+    : `<h3>${outcome.voice}</h3><audio controls src="${outcome.url}"></audio><div class="meta">generated in ${outcome.time}s</div>`;
+  $('ttsResults').prepend(card);
+}
+
+async function runTts(voices) {
+  const text = $('ttsText').value.trim();
+  if (!text) return;
+  $('ttsSubmit').disabled = true;
+  $('ttsSubmitBoth').disabled = true;
+  $('ttsStatus').textContent = 'Synthesizing...';
+  for (const voice of voices) {
+    try {
+      const outcome = await synthesizeOne(text, voice);
+      addTtsResultCard(voice, outcome);
+    } catch (err) {
+      addTtsResultCard(voice, { error: err.message });
+    }
+  }
+  $('ttsStatus').textContent = 'Done.';
+  $('ttsSubmit').disabled = false;
+  $('ttsSubmitBoth').disabled = false;
+}
+
+$('ttsSubmit').addEventListener('click', () => runTts([$('ttsVoice').value]));
+$('ttsSubmitBoth').addEventListener('click', () => runTts(['hy-AM-AnahitNeural', 'hy-AM-HaykNeural']));
+</script>
+</body>
+</html>

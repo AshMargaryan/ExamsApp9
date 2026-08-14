@@ -144,3 +144,23 @@ export async function uploadAttachment(conversationId: number, file: File): Prom
 export async function deleteAttachment(id: number): Promise<void> {
   await apiClient.delete(`/assistant/attachments/${id}/`);
 }
+
+export type ArmenianVoice = "hy-AM-AnahitNeural" | "hy-AM-HaykNeural";
+
+export async function transcribeVoice(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("audio", file);
+  const { data } = await apiClient.post("/assistant/voice/transcribe/", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.text as string;
+}
+
+export async function synthesizeVoice(text: string, voice: ArmenianVoice): Promise<Blob> {
+  const { data } = await apiClient.post(
+    "/assistant/voice/synthesize/",
+    { text, voice },
+    { responseType: "blob" },
+  );
+  return data as Blob;
+}
