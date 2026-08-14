@@ -124,6 +124,18 @@ body {
   100% { transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.2); opacity: 0; }
 }
 
+/* Knowledge-hierarchy ambient background (components/hierarchy) — slow,
+   continuous, low-amplitude drift for the floating particle field. */
+@keyframes hierarchy-drift {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(14px, -22px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+@keyframes hierarchy-breathe {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.5; }
+}
+
 /* Flashcard 3D flip — front/back faces stacked in the same box, rotated
    around the Y axis so the flip reveals depth instead of just swapping text. */
 .flashcard-scene {
