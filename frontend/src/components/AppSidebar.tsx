@@ -1,5 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
+import {
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  ClipboardCheck,
+  Gamepad2,
+  Home,
+  Layers,
+  ListTodo,
+  MessageCircle,
+  NotebookPen,
+  NotebookText,
+  Sparkles,
+  StickyNote,
+  Target,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import type { AccountRole } from "../api/auth";
 import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
@@ -7,10 +25,13 @@ import { useChatUnreadCount } from "../hooks/useChatUnreadCount";
 
 interface NavItem {
   to: string;
-  icon: string;
+  icon: ReactNode;
   label: string;
   badge?: number;
 }
+
+const ICON_SIZE = 19;
+const ICON_STROKE = 1.75;
 
 function dashboardPathFor(role: AccountRole) {
   if (role === "teacher") return "/teacher-dashboard";
@@ -19,25 +40,40 @@ function dashboardPathFor(role: AccountRole) {
 }
 
 function useNavItems(role: AccountRole, assignmentBadge: number, chatBadge: number): NavItem[] {
-  const items: NavItem[] = [{ to: "/", icon: "🏠", label: "Գլխավոր" }];
+  const items: NavItem[] = [{ to: "/", icon: <Home size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Գլխավոր" }];
 
   if (role === "student") {
     items.push(
-      { to: "/study-plan", icon: "🗓️", label: "Ուսումնական պլան" },
-      { to: "/subjects", icon: "📚", label: "Առարկաներ" },
-      { to: "/mock-exams", icon: "📝", label: "Ամբողջական թեստեր" },
-      { to: "/flashcards", icon: "🗂️", label: "Բառաքարտեր" },
-      { to: "/mistake-notebook", icon: "📓", label: "Սխալների տետր" },
-      { to: "/assistant", icon: "🤖", label: "AI Օգնական" },
-      { to: "/games", icon: "🎮", label: "Խաղասենյակներ" },
-      { to: "/rankings", icon: "🏆", label: "Դասակարգում" },
-      { to: dashboardPathFor(role), icon: "📊", label: "Առաջադրանքներ", badge: assignmentBadge },
+      { to: "/todo", icon: <ListTodo size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Իմ խնդիրները" },
+      { to: "/learning-profile", icon: <Target size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Իմ ուսումնական պրոֆիլը" },
+      { to: "/study-plan", icon: <CalendarDays size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Ուսումնական պլան" },
+      { to: "/subjects", icon: <BookOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Առարկաներ" },
+      { to: "/mock-exams", icon: <ClipboardCheck size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Ամբողջական թեստեր" },
+      { to: "/flashcards", icon: <Layers size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Բառաքարտեր" },
+      { to: "/mistake-notebook", icon: <NotebookText size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Սխալների տետր" },
+      { to: "/assistant", icon: <Sparkles size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "AI Օգնական" },
+      { to: "/games", icon: <Gamepad2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Խաղասենյակներ" },
+      { to: "/rankings", icon: <Trophy size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Դասակարգում" },
+      { to: "/groups", icon: <Users size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Ուսումնական խմբեր" },
+      {
+        to: dashboardPathFor(role),
+        icon: <BarChart3 size={ICON_SIZE} strokeWidth={ICON_STROKE} />,
+        label: "Առաջադրանքներ",
+        badge: assignmentBadge,
+      },
     );
   } else if (role === "teacher") {
-    items.push({ to: dashboardPathFor(role), icon: "📊", label: "Վահանակ" });
+    items.push({ to: dashboardPathFor(role), icon: <BarChart3 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Վահանակ" });
   }
 
-  items.push({ to: "/chat", icon: "💬", label: "Հաղորդագրություններ", badge: chatBadge });
+  items.push({ to: "/notepad", icon: <StickyNote size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Նշումներ" });
+  items.push({ to: "/notes", icon: <NotebookPen size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Նշումների տարածք" });
+  items.push({
+    to: "/chat",
+    icon: <MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />,
+    label: "Հաղորդագրություններ",
+    badge: chatBadge,
+  });
   return items;
 }
 
@@ -106,7 +142,7 @@ export function AppSidebar() {
                   active ? "bg-primary/10 text-primary" : "text-text hover:bg-surface-muted"
                 }`}
               >
-                <span className="flex-none text-lg">{item.icon}</span>
+                <span className="flex-none">{item.icon}</span>
                 <span>{item.label}</span>
                 {!!item.badge && (
                   <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-incorrect px-1 text-xs font-semibold text-white">

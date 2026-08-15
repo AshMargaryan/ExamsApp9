@@ -1,11 +1,101 @@
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { useToast } from "../context/ToastContext";
+import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { useAuth } from "../auth/AuthContext";
+import { changePassword } from "../api/auth";
 import { ColorMixPicker, type ColorMix } from "../components/ColorMixPicker";
 import { clearGradient, getStoredGradient, saveGradient } from "../lib/buttonGradient";
 import { clearBackground, getStoredBackground, saveBackground } from "../lib/backgroundGradient";
 
 const BUTTON_DEFAULTS: ColorMix = { colors: ["#2563eb", "#1d4ed8"], angle: 90 };
 const BACKGROUND_DEFAULTS: ColorMix = { colors: ["#2563EB", "#7F24B0", "#FF5C8D"], angle: 226 };
+
+function ChangePasswordCard() {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
+  const hasPassword = user?.has_usable_password ?? true;
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      showError("Նոր գաղտնաբառը պետք է լինի առնվազն 8 նիշ և պարունակի տառեր ու թվեր։");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      showError("Գաղտնաբառերը չեն համընկնում։");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await changePassword(currentPassword, newPassword, confirmNewPassword);
+      showSuccess(hasPassword ? "Գաղտնաբառը հաջողությամբ փոփոխվեց։" : "Գաղտնաբառը սահմանվեց։");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err) {
+      showError(extractErrorMessage(err, "Չհաջողվեց փոխել գաղտնաբառը։"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-[var(--radius)] border border-border bg-surface p-5">
+      <h2 className="font-medium text-text">{hasPassword ? "Փոխել գաղտնաբառը" : "Սահմանել գաղտնաբառ"}</h2>
+      <p className="mt-1 text-sm text-text-muted">
+        {hasPassword
+          ? "Մուտքագրեք ձեր ընթացիկ գաղտնաբառը և նոր գաղտնաբառը։"
+          : "Ձեր հաշիվը մուտք է գործել Google/Apple-ով և դեռ գաղտնաբառ չունի։ Սահմանեք մեկը՝ նաև գաղտնաբառով մուտք գործելու համար։"}
+      </p>
+
+      <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-3">
+        {hasPassword && (
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Ընթացիկ գաղտնաբառ"
+            autoComplete="current-password"
+            required
+            className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
+          />
+        )}
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="Նոր գաղտնաբառ"
+          autoComplete="new-password"
+          required
+          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
+        />
+        <input
+          type="password"
+          value={confirmNewPassword}
+          onChange={(e) => setConfirmNewPassword(e.target.value)}
+          placeholder="Կրկնել նոր գաղտնաբառը"
+          autoComplete="new-password"
+          required
+          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="self-start rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-50"
+        >
+          {submitting ? "Ուղարկվում է…" : hasPassword ? "Փոխել գաղտնաբառը" : "Սահմանել գաղտնաբառ"}
+        </button>
+      </form>
+    </section>
+  );
+}
 
 export function SettingsPage() {
   const { showSuccess } = useToast();
@@ -24,6 +114,8 @@ export function SettingsPage() {
           </Link>
           ։
         </p>
+
+        <ChangePasswordCard />
 
         <ColorMixPicker
           title="Կոճակների գույնը"

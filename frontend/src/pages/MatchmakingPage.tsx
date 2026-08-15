@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AxiosError } from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import * as gamesApi from "../api/games";
 import type { MatchmakingQueue, MatchmakingTicket } from "../api/games";
 import { MessageModal } from "../components/MessageModal";
+import { LinkButton } from "../components/ui/LinkButton";
 
 function extractError(err: unknown, fallback: string): string {
   if (err instanceof AxiosError && err.response?.data) {
@@ -109,9 +110,7 @@ export function MatchmakingPage() {
   return (
     <div className="min-h-screen bg-bg px-4 py-8">
       <div className="mx-auto max-w-xl">
-        <Link to="/games" className="mb-6 inline-block text-sm text-primary hover:underline">
-          ← Խաղասենյակներ
-        </Link>
+        <LinkButton to="/games" className="mb-6">← Խաղասենյակներ</LinkButton>
 
         <h1 className="mb-6 text-3xl font-semibold text-text">Գտնել խաղ</h1>
 

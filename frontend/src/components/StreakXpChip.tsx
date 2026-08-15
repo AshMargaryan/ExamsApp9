@@ -14,13 +14,13 @@ export function StreakXpChip({ streak, level, xpIntoLevel, xpForNextLevel }: Str
   return (
     <Tooltip label={`${xpIntoLevel} / ${xpForNextLevel} XP`}>
       <div className="flex items-center gap-1 rounded-full border border-border bg-surface-muted p-1 text-sm font-semibold text-text">
-        <span className="flex items-center gap-1 px-2 py-1" aria-label={`${streak} օր շարունակ`}>
+        <span className="flex items-center gap-1 px-1.5 py-1 sm:px-2" aria-label={`${streak} օր շարունակ`}>
           <span aria-hidden="true">🔥</span>
           <span>{streak}</span>
         </span>
-        <span className="h-4 w-px bg-border" aria-hidden="true" />
+        <span className="hidden h-4 w-px bg-border sm:block" aria-hidden="true" />
         <span
-          className="flex items-center gap-1 rounded-full px-2 py-1 text-white"
+          className="hidden items-center gap-1 rounded-full px-2 py-1 text-white sm:flex"
           style={{ background: "var(--gradient-hero)" }}
           aria-label={`Level ${level}`}
         >

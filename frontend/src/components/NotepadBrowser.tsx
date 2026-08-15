@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNotepad } from "../context/NotepadContext";
 import { MathText } from "./MathText";
+import { Button } from "./ui/Button";
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleString("hy-AM", {
@@ -104,12 +105,14 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
         {sorted.map((n) => (
           <div
             key={n.id}
-            className={`mb-1 flex items-center justify-between rounded-md border px-2 py-2 ${
-              n.id === activeNoteId ? "border-primary bg-primary/5" : "border-border"
+            className={`flex items-center justify-between rounded-md border px-2.5 py-2 shadow-sm transition-colors ${
+              n.id === activeNoteId
+                ? "border-primary bg-primary/5"
+                : "border-border bg-surface hover:border-primary/50"
             }`}
           >
             {editingId === n.id ? (
@@ -142,30 +145,32 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
                 onClick={() => startRename(n.id, n.name)}
                 aria-label="Rename"
                 title="Վերանվանել"
-                className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
+                className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-primary"
               >
                 ✎
               </button>
               {confirmDeleteId === n.id ? (
                 <>
-                  <button
-                    type="button"
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => {
                       deleteNote(n.id);
                       setConfirmDeleteId(null);
                     }}
                     title="Հաստատել ջնջումը"
-                    className="text-xs font-medium text-primary hover:underline"
+                    className="h-6 px-2 text-xs"
                   >
                     Ջնջե՞լ
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setConfirmDeleteId(null)}
-                    className="text-xs text-text-muted hover:underline"
+                    className="h-6 px-2 text-xs"
                   >
                     Ոչ
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <button
@@ -173,7 +178,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
                   onClick={() => setConfirmDeleteId(n.id)}
                   aria-label="Delete"
                   title="Ջնջել"
-                  className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
+                  className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-primary"
                 >
                   🗑️
                 </button>

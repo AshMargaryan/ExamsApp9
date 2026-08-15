@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
+
 interface Option<T extends string> {
   value: T;
-  label: string;
+  label: ReactNode;
 }
 
 interface Props<T extends string> {
@@ -33,7 +35,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, c
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
-          className={`btn-fx relative z-10 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+          className={`btn-fx relative z-10 flex items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
             value === o.value ? "text-primary-contrast" : "text-text hover:text-primary"
           }`}
         >

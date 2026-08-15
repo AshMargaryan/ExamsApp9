@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import * as sessionsApi from "../api/sessions";
 import type { DeviceSession } from "../api/sessions";
 import { SessionsList } from "../components/auth/SessionsList";
 import { MessageModal } from "../components/MessageModal";
+import { LinkButton } from "../components/ui/LinkButton";
 
 export function AccountSessionsPage() {
   const [sessions, setSessions] = useState<DeviceSession[] | null>(null);
@@ -31,9 +31,7 @@ export function AccountSessionsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link to="/profile" className="text-sm text-primary hover:underline">
-        ← Հետ դեպի պրոֆիլ
-      </Link>
+      <LinkButton to="/profile">← Հետ դեպի պրոֆիլ</LinkButton>
 
       <div className="mt-4 rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm">
         <h1 className="mb-2 text-2xl font-semibold text-text">Ակտիվ սարքեր</h1>

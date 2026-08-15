@@ -8,6 +8,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { DeckFormModal } from "../components/flashcards/DeckFormModal";
 import { DeckProgressRing } from "../components/flashcards/DeckProgressRing";
+import { LinkButton } from "../components/ui/LinkButton";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { SUBJECTS, subjectMeta } from "../lib/subjects";
 
@@ -179,9 +180,9 @@ export function FlashcardsPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-4 flex items-center justify-between">
-        <Link to="/" className="inline-block text-sm text-primary hover:underline">
+        <LinkButton to="/">
           ← Գլխավոր
-        </Link>
+        </LinkButton>
         <Link
           to={`/flashcards/favorites?subject=${subject}`}
           className="btn-fx inline-block rounded-full border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"

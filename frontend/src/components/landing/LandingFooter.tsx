@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Logo } from "../Logo";
 
 const PRODUCT_LINKS = [
   { href: "#product", label: "Ապրանք" },
@@ -15,7 +16,7 @@ export function LandingFooter() {
         <div className="grid gap-10 sm:grid-cols-[1.3fr_1fr_1fr]">
           <div>
             <a href="#top" className="flex items-center gap-2">
-              <img src="/favicon.svg" alt="" className="h-7 w-7" aria-hidden />
+              <Logo className="h-7 w-7 text-text" />
               <span className="text-lg font-bold tracking-tight text-text">Gitus</span>
             </a>
             <p className="mt-3 max-w-xs text-sm text-text-muted">

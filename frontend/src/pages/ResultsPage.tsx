@@ -6,6 +6,7 @@ import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
 import { playFanfare, playMedalReveal } from "../lib/sound";
 import { Confetti } from "../components/games/Confetti";
 import { Fireworks } from "../components/games/Fireworks";
+import { LinkButton } from "../components/ui/LinkButton";
 
 type Phase = 0 | 1 | 2 | 3 | 4;
 
@@ -93,9 +94,7 @@ export function ResultsPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg px-4 text-center">
         <p className="text-lg text-text-muted">{error}</p>
-        <Link to="/games" className="text-primary hover:underline">
-          ← Խաղասենյակներ
-        </Link>
+        <LinkButton to="/games">← Խաղասենյակներ</LinkButton>
       </div>
     );
   }

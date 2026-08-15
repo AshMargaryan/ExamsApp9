@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Eraser } from "lucide-react";
 import { useNotepad, type Stroke, type TextNote } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 
@@ -275,63 +276,62 @@ export function Notepad() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            aria-label={`Գույն ${c}`}
-            onClick={() => {
-              setColor(c);
-              setErase(false);
-            }}
-            className="h-6 w-6 rounded-full border-2 transition-transform"
-            style={{
-              backgroundColor: c,
-              borderColor: !erase && color === c ? "var(--color-primary)" : "transparent",
-              transform: !erase && color === c ? "scale(1.15)" : undefined,
-            }}
-          />
-        ))}
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-1.5 rounded-md bg-surface-muted p-1.5">
+          {COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-label={`Գույն ${c}`}
+              onClick={() => {
+                setColor(c);
+                setErase(false);
+              }}
+              className="h-6 w-6 rounded-full border-2 transition-transform"
+              style={{
+                backgroundColor: c,
+                borderColor: !erase && color === c ? "var(--color-primary)" : "transparent",
+                transform: !erase && color === c ? "scale(1.15)" : undefined,
+              }}
+            />
+          ))}
+        </div>
 
-        <div className="mx-1 h-5 w-px bg-border" />
-
-        {(erase ? ERASER_WIDTHS : WIDTHS).map((w) => (
+        <div className="flex items-center gap-1.5 rounded-md bg-surface-muted p-1.5">
+          {(erase ? ERASER_WIDTHS : WIDTHS).map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => (erase ? setEraserWidth(w) : setPenWidth(w))}
+              className={`flex h-6 w-6 items-center justify-center rounded-md border transition-colors ${
+                width === w ? "border-primary bg-surface" : "border-transparent hover:border-border"
+              }`}
+            >
+              <span
+                className="rounded-full bg-text"
+                style={{ width: Math.min(w, 20), height: Math.min(w, 20) }}
+              />
+            </button>
+          ))}
           <button
-            key={w}
             type="button"
-            onClick={() => (erase ? setEraserWidth(w) : setPenWidth(w))}
-            className={`flex h-6 w-6 items-center justify-center rounded-md border ${
-              width === w ? "border-primary" : "border-border"
+            onClick={() => setErase((v) => !v)}
+            aria-label="Eraser"
+            title="Eraser"
+            className={`flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${
+              erase ? "border-primary bg-surface" : "border-transparent hover:border-border"
             }`}
           >
-            <span
-              className="rounded-full bg-text"
-              style={{ width: Math.min(w, 20), height: Math.min(w, 20) }}
-            />
+            <Eraser size={16} strokeWidth={1.75} />
           </button>
-        ))}
-
-        <div className="mx-1 h-5 w-px bg-border" />
-
-        <button
-          type="button"
-          onClick={() => setErase((v) => !v)}
-          aria-label="Eraser"
-          title="Eraser"
-          className={`flex h-7 w-7 items-center justify-center rounded-md border text-base ${
-            erase ? "border-primary bg-primary/10" : "border-border"
-          }`}
-        >
-          🧹
-        </button>
+        </div>
 
         <button
           type="button"
           onClick={handleAddText}
           aria-label="Ավելացնել տեքստ"
           title="Ավելացնել տեքստ"
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-sm font-semibold hover:border-primary"
+          className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
         >
           T
         </button>
@@ -340,8 +340,8 @@ export function Notepad() {
           type="button"
           onClick={clearAll}
           aria-label="Clear"
-          title="Clear"
-          className="ml-auto flex h-7 w-7 items-center justify-center rounded-md border border-border text-base hover:border-primary"
+          title="Մաքրել ամեն ինչ"
+          className="ml-auto flex h-9 w-9 items-center justify-center rounded-md border border-border text-base transition-colors hover:border-primary"
         >
           🗑️
         </button>

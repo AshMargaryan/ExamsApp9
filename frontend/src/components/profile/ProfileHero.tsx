@@ -1,10 +1,12 @@
 import { useRef, useState, type FormEvent } from "react";
 import { AxiosError } from "axios";
+import { Award, Camera, Flame, GraduationCap } from "lucide-react";
 import * as profileApi from "../../api/profile";
 import type { Achievement, Profile, UserAchievement } from "../../api/profile";
 import { searchSchools, searchUniversities } from "../../api/schools";
 import { SearchSelect } from "../SearchSelect";
 import { ProgressBar } from "../ui/ProgressBar";
+import { RARITY_COLORS } from "../../lib/achievementRarity";
 import { ShowcasePickerModal } from "./ShowcasePickerModal";
 import { useAuth } from "../../auth/AuthContext";
 
@@ -136,222 +138,266 @@ export function ProfileHero({
 
   const usernameDaysLeft = daysUntil(profile.username_change_available_at);
   const usernameLocked = usernameDaysLeft > 0;
-  const inputClass = "w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
-  const labelClass = "mb-1 block text-sm text-text-muted";
+  const glassInputClass =
+    "w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-white placeholder-white/50 outline-none backdrop-blur-md focus:border-white/60 focus:bg-white/15";
+  const glassLabelClass = "mb-1 block text-xs font-medium uppercase tracking-wide text-white/60";
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
   const xpPercent = profile.xp_for_next_level > 0 ? (profile.xp_into_level / profile.xp_for_next_level) * 100 : 100;
+  const isStudent = profile.role === "student";
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm">
-      <div className="flex items-center justify-end">
-        {!editing ? (
-          <button
-            type="button"
-            onClick={startEdit}
-            className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-          >
-            Խմբագրել
-          </button>
-        ) : (
-          <div className="flex gap-2">
+    <div className="relative isolate w-full overflow-hidden">
+      {/* Full-bleed gradient canvas — deliberately saturated in both themes so white
+          text/glass panels always read cleanly regardless of light/dark mode. */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 55%, var(--color-primary-hover) 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -right-24 -top-32 -z-10 h-96 w-96 rounded-full opacity-40 blur-3xl"
+        style={{ background: "radial-gradient(circle, var(--color-medium) 0%, transparent 70%)" }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-32 -left-16 -z-10 h-80 w-80 rounded-full opacity-30 blur-3xl"
+        style={{ background: "radial-gradient(circle, #ffffff 0%, transparent 70%)" }}
+      />
+
+      <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+        <div className="flex items-center justify-end">
+          {!editing ? (
             <button
               type="button"
-              onClick={cancelEdit}
-              className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-muted"
+              onClick={startEdit}
+              className="rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
             >
-              Չեղարկել
+              Խմբագրել
             </button>
-            <button
-              type="submit"
-              form="hero-form"
-              disabled={saving}
-              className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-            >
-              {saving ? "..." : "Պահպանել"}
-            </button>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="rounded-full border border-white/25 px-4 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10"
+              >
+                Չեղարկել
+              </button>
+              <button
+                type="submit"
+                form="hero-form"
+                disabled={saving}
+                className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-[var(--color-primary)] shadow-lg shadow-black/10 transition-transform hover:scale-105 disabled:opacity-60"
+              >
+                {saving ? "..." : "Պահպանել"}
+              </button>
+            </div>
+          )}
+        </div>
 
-      <form id="hero-form" onSubmit={handleSave}>
-        <div className="mt-2 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={handleAvatarClick}
-              className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-3xl font-semibold text-text-muted ${editing ? "cursor-pointer" : "cursor-default"}`}
-            >
-              {avatarPreview || profile.avatar ? (
-                <img src={avatarPreview ?? profile.avatar ?? undefined} alt={profile.username} className="h-full w-full object-cover" />
-              ) : (
-                (profile.first_name || profile.username).slice(0, 1).toUpperCase()
-              )}
-            </button>
-            {editing && (
-              <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm text-primary-contrast">
-                ✎
-              </span>
-            )}
-            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarChange} />
-          </div>
-
-          <div className="min-w-0 flex-1 text-center sm:text-left">
-            {!editing ? (
-              <>
-                <h1 className="text-2xl font-bold text-text">{fullName || profile.username}</h1>
-                <p className="text-text-muted">@{profile.username}</p>
-                {profile.role === "teacher" && <p className="mt-1 text-sm text-text-muted">🧑‍🏫 Ուսուցիչ</p>}
-                {profile.role === "student" && (profile.grade || profile.age) && (
-                  <p className="mt-1 text-sm text-text-muted">
-                    {[
-                      profile.grade ? `${profile.grade}-րդ դասարան` : null,
-                      profile.school ? profile.school.name : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
+        <form id="hero-form" onSubmit={handleSave}>
+          <div className="mt-4 flex flex-col items-center gap-6 text-center sm:flex-row sm:items-center sm:text-left">
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={handleAvatarClick}
+                className={`flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 bg-white/15 text-4xl font-bold text-white shadow-[0_0_40px_rgba(255,255,255,0.25)] backdrop-blur-md sm:h-32 sm:w-32 ${editing ? "cursor-pointer" : "cursor-default"}`}
+              >
+                {avatarPreview || profile.avatar ? (
+                  <img src={avatarPreview ?? profile.avatar ?? undefined} alt={profile.username} className="h-full w-full object-cover" />
+                ) : (
+                  (profile.first_name || profile.username).slice(0, 1).toUpperCase()
                 )}
-              </>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Օգտանուն</label>
-                  <input
-                    className={`${inputClass} ${usernameLocked ? "cursor-not-allowed opacity-60" : ""}`}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={usernameLocked}
-                    required
-                  />
-                  {usernameLocked && (
-                    <p className="mt-1 text-xs text-text-muted">Օգտանունը կրկին կարող եք փոխել {usernameDaysLeft} օրից։</p>
+              </button>
+              {editing && (
+                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white text-[var(--color-primary)] shadow-md">
+                  <Camera size={15} strokeWidth={1.75} />
+                </span>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarChange} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              {!editing ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                    <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{fullName || profile.username}</h1>
+                    {isStudent && (
+                      <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white backdrop-blur-md">
+                        Մակարդակ {profile.level}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-lg text-white/70">@{profile.username}</p>
+                  {profile.role === "teacher" && (
+                    <p className="mt-1 flex items-center justify-center gap-1 text-sm text-white/70 sm:justify-start">
+                      <GraduationCap size={14} strokeWidth={1.75} /> Ուսուցիչ
+                    </p>
+                  )}
+                  {isStudent && (profile.grade || profile.school) && (
+                    <p className="mt-1 text-sm text-white/70">
+                      {[profile.grade ? `${profile.grade}-րդ դասարան` : null, profile.school ? profile.school.name : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md sm:grid-cols-2">
+                  <div>
+                    <label className={glassLabelClass}>Օգտանուն</label>
+                    <input
+                      className={`${glassInputClass} ${usernameLocked ? "cursor-not-allowed opacity-60" : ""}`}
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      disabled={usernameLocked}
+                      required
+                    />
+                    {usernameLocked && <p className="mt-1 text-xs text-white/60">Օգտանունը կրկին կարող եք փոխել {usernameDaysLeft} օրից։</p>}
+                  </div>
+                  <div>
+                    <label className={glassLabelClass}>Անուն</label>
+                    <input className={glassInputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={glassLabelClass}>Ազգանուն</label>
+                    <input className={glassInputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={glassLabelClass}>Տարիք</label>
+                    <input type="number" min={1} max={120} className={glassInputClass} value={age} onChange={(e) => setAge(e.target.value)} />
+                  </div>
+                  {isStudent && (
+                    <div>
+                      <label className={glassLabelClass}>Դասարան</label>
+                      <select className={glassInputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
+                        <option className="text-black" value="">
+                          Չընտրված
+                        </option>
+                        {GRADES.map((g) => (
+                          <option className="text-black" key={g} value={g}>
+                            {g}-րդ դասարան
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <label className={labelClass}>Անուն</label>
-                  <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                </div>
-                <div>
-                  <label className={labelClass}>Ազգանուն</label>
-                  <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                </div>
-                <div>
-                  <label className={labelClass}>Տարիք</label>
-                  <input type="number" min={1} max={120} className={inputClass} value={age} onChange={(e) => setAge(e.target.value)} />
-                </div>
-                {profile.role === "student" && (
-                  <div>
-                    <label className={labelClass}>Դասարան</label>
-                    <select className={inputClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
-                      <option value="">Չընտրված</option>
-                      {GRADES.map((g) => (
-                        <option key={g} value={g}>
-                          {g}-րդ դասարան
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              )}
+            </div>
+          </div>
+
+          {isStudent && (
+            <div className="mt-8 max-w-xl">
+              <div className="flex items-baseline justify-between text-sm text-white/80">
+                <span className="font-semibold text-white">{profile.total_xp} XP</span>
+                <span>
+                  {profile.xp_for_next_level > 0
+                    ? `${profile.xp_for_next_level - profile.xp_into_level} XP մինչև ${profile.level + 1}-րդ մակարդակ`
+                    : "Առավելագույն մակարդակ"}
+                </span>
+              </div>
+              <div className="mt-2 drop-shadow-[0_0_12px_rgba(255,255,255,0.35)]">
+                <ProgressBar percent={xpPercent} colorClassName="bg-white" trackClassName="bg-white/20" heightClassName="h-2.5" label="Մակարդակի առաջընթաց" />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+            {isStudent && profile.streak && profile.streak.current_streak > 0 && (
+              <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-md">
+                <Flame size={15} strokeWidth={1.75} /> {profile.streak.current_streak} օրյա շարք
+                <span className="font-normal text-white/60">· լավագույնը {profile.streak.longest_streak}</span>
+              </span>
+            )}
+          </div>
+
+          <div className="mt-8 border-t border-white/15 pt-6">
+            {!editing ? (
+              <p className="max-w-2xl whitespace-pre-wrap text-lg italic text-white/90">
+                {profile.bio ? `„${profile.bio}“` : "Բիո դեռ ավելացված չէ։"}
+              </p>
+            ) : (
+              <>
+                <label className={glassLabelClass}>Բիո</label>
+                <textarea className={`${glassInputClass} min-h-24 resize-y`} maxLength={500} value={bio} onChange={(e) => setBio(e.target.value)} />
+              </>
+            )}
+          </div>
+
+          {isStudent && (
+            <div className="mt-6 grid gap-4 border-t border-white/15 pt-6 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+                <p className={glassLabelClass}>Դպրոց</p>
+                {!editing ? (
+                  <p className="mt-1 font-medium text-white">
+                    {profile.school ? `${profile.school.name}${profile.school.marz ? ` (${profile.school.marz})` : ""}` : "Չնշված"}
+                  </p>
+                ) : (
+                  <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
                 )}
+              </div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+                <p className={glassLabelClass}>Ցանկալի բուհ</p>
+                {!editing ? (
+                  <p className="mt-1 font-medium text-white">{profile.university ? profile.university.name : "Չնշված"}</p>
+                ) : (
+                  <SearchSelect placeholder="Փնտրեք բուհ..." value={university} onChange={setUniversity} search={universitySearch} />
+                )}
+              </div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+                <p className={glassLabelClass}>Մասնագիտություն</p>
+                {!editing ? (
+                  <p className="mt-1 font-medium text-white">{profile.target_major || "Չնշված"}</p>
+                ) : (
+                  <input
+                    className={glassInputClass}
+                    placeholder="օր.՝ Ինֆորմատիկա"
+                    value={targetMajor}
+                    onChange={(e) => setTargetMajor(e.target.value)}
+                    maxLength={200}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </form>
+
+        {isStudent && (
+          <div className="mt-6 border-t border-white/15 pt-6">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold uppercase tracking-wide text-white/60">Ցուցադրվող նվաճումներ</p>
+              <button
+                type="button"
+                onClick={() => setShowcaseOpen(true)}
+                className="rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+              >
+                Փոփոխել
+              </button>
+            </div>
+            {showcase.length === 0 ? (
+              <p className="text-sm text-white/60">Դեռ նվաճումներ չկան։</p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {showcase.map((ua) => (
+                  <div
+                    key={ua.id}
+                    title={ua.achievement.description}
+                    className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur-md"
+                    style={{ boxShadow: `0 0 16px 0 ${RARITY_COLORS[ua.achievement.rarity]}55` }}
+                  >
+                    <span className="text-lg">{ua.achievement.icon || <Award size={18} strokeWidth={1.75} />}</span>
+                    <span className="text-sm font-medium text-white">{ua.achievement.name}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
-
-        {profile.role === "student" && (
-          <div className="mt-4">
-            <div className="flex items-baseline justify-between text-sm">
-              <span className="font-semibold text-text">Մակարդակ {profile.level}</span>
-              <span className="text-text-muted">
-                {profile.xp_for_next_level > 0
-                  ? `${profile.xp_for_next_level - profile.xp_into_level} XP մինչև ${profile.level + 1}-րդ մակարդակ`
-                  : `${profile.total_xp} XP`}
-              </span>
-            </div>
-            <div className="mt-1.5">
-              <ProgressBar percent={xpPercent} label="Մակարդակի առաջընթաց" />
-            </div>
-          </div>
         )}
 
-        {profile.role === "student" && profile.streak && profile.streak.current_streak > 0 && (
-          <p className="mt-3 text-sm text-text-muted">
-            🔥 {profile.streak.current_streak} օրյա շարք · Լավագույնը՝ {profile.streak.longest_streak} օր
-          </p>
-        )}
-
-        <div className="mt-5 border-t border-border pt-5">
-          {!editing ? (
-            <p className="whitespace-pre-wrap text-text">{profile.bio || "Բիո դեռ ավելացված չէ։"}</p>
-          ) : (
-            <>
-              <label className={labelClass}>Բիո</label>
-              <textarea className={`${inputClass} min-h-24 resize-y`} maxLength={500} value={bio} onChange={(e) => setBio(e.target.value)} />
-            </>
-          )}
-        </div>
-
-        {profile.role === "student" && (
-          <div className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-3">
-            <div>
-              <p className={labelClass}>Դպրոց</p>
-              {!editing ? (
-                <p className="text-text">
-                  {profile.school ? `${profile.school.name}${profile.school.marz ? ` (${profile.school.marz})` : ""}` : "Չնշված"}
-                </p>
-              ) : (
-                <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
-              )}
-            </div>
-            <div>
-              <p className={labelClass}>Ցանկալի բուհ</p>
-              {!editing ? (
-                <p className="text-text">{profile.university ? profile.university.name : "Չնշված"}</p>
-              ) : (
-                <SearchSelect placeholder="Փնտրեք բուհ..." value={university} onChange={setUniversity} search={universitySearch} />
-              )}
-            </div>
-            <div>
-              <p className={labelClass}>Մասնագիտություն</p>
-              {!editing ? (
-                <p className="text-text">{profile.target_major || "Չնշված"}</p>
-              ) : (
-                <input
-                  className={inputClass}
-                  placeholder="օր.՝ Ինֆորմատիկա"
-                  value={targetMajor}
-                  onChange={(e) => setTargetMajor(e.target.value)}
-                  maxLength={200}
-                />
-              )}
-            </div>
-          </div>
-        )}
-      </form>
-
-      {profile.role === "student" && (
-        <div className="mt-5 border-t border-border pt-5">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-semibold text-text-muted">Ցուցադրվող նվաճումներ</p>
-            <button type="button" onClick={() => setShowcaseOpen(true)} className="text-xs text-primary hover:underline">
-              Փոփոխել
-            </button>
-          </div>
-          {showcase.length === 0 ? (
-            <p className="text-sm text-text-muted">Դեռ նվաճումներ չկան։</p>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              {showcase.map((ua) => (
-                <div key={ua.id} title={ua.achievement.description} className="flex items-center gap-2 rounded-full border border-border bg-bg px-3 py-1.5">
-                  <span className="text-lg">{ua.achievement.icon || "🏆"}</span>
-                  <span className="text-sm text-text">{ua.achievement.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {error && <p className="mt-3 text-sm text-incorrect">{error}</p>}
+        {error && <p className="mt-4 text-sm font-medium text-white">{error}</p>}
+      </div>
 
       {showcaseOpen && achievements && myAchievements && (
         <ShowcasePickerModal

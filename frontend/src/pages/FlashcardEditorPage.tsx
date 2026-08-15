@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   createCard, createDeck, getCard, listMyDecks, updateCard,
   type CardFormInput, type DeckFormInput, type FlashcardDeckSummary, type FlashcardDifficulty,
@@ -7,6 +7,8 @@ import {
 import { ImageDropzone } from "../components/flashcards/ImageDropzone";
 import { DeckFormModal } from "../components/flashcards/DeckFormModal";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { Button } from "../components/ui/Button";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const DIFFICULTIES: { key: FlashcardDifficulty; label: string }[] = [
   { key: "easy", label: "Հեշտ" },
@@ -189,9 +191,7 @@ export function FlashcardEditorPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <Link to="/flashcards" className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← Բառաքարտեր
-      </Link>
+      <LinkButton to="/flashcards" className="mb-4">← Բառաքարտեր</LinkButton>
       <h1 className="mb-6 text-2xl font-semibold text-text">
         {isEdit ? "Խմբագրել քարտը" : "Ստեղծել բառաքարտ"}
       </h1>
@@ -301,17 +301,18 @@ export function FlashcardEditorPage() {
           {(existingAudioUrl && !removeAudio) || audio ? (
             <div className="mb-4 flex items-center gap-3 rounded-md border border-border bg-bg p-3">
               <audio controls src={audio ? URL.createObjectURL(audio) : existingAudioUrl ?? undefined} className="h-9 flex-1" />
-              <button
-                type="button"
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={() => {
                   setAudio(null);
                   setExistingAudioUrl(null);
                   setRemoveAudio(true);
                 }}
-                className="shrink-0 text-sm text-incorrect hover:underline"
+                className="shrink-0"
               >
                 Հեռացնել
-              </button>
+              </Button>
             </div>
           ) : (
             <input

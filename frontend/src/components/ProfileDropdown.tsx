@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Gem, HelpCircle, LogOut, Settings, User } from "lucide-react";
 import { cn } from "../lib/cn";
 import { Avatar } from "./ui/Avatar";
 import { Dropdown } from "./ui/Dropdown";
 import { LogoutConfirmModal } from "./LogoutConfirmModal";
+
+const MENU_ICON_SIZE = 17;
+const MENU_ICON_STROKE = 1.75;
 
 interface ProfileDropdownProps {
   avatar: string | null;
@@ -23,7 +27,7 @@ export function ProfileDropdown({ avatar, name }: ProfileDropdownProps) {
             type="button"
             onClick={onClick}
             {...triggerProps}
-            className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition-colors duration-[var(--motion-fast)] hover:bg-surface-muted"
+            className="flex items-center gap-2 rounded-full py-1 pl-1 pr-1 transition-colors duration-[var(--motion-fast)] hover:bg-surface-muted sm:pr-2.5"
           >
             <Avatar src={avatar} name={name} size="sm" />
             <span className="hidden max-w-[8rem] truncate text-sm font-medium text-text sm:inline">{name}</span>
@@ -31,7 +35,7 @@ export function ProfileDropdown({ avatar, name }: ProfileDropdownProps) {
               viewBox="0 0 20 20"
               fill="none"
               className={cn(
-                "h-4 w-4 text-text-muted transition-transform duration-[var(--motion-fast)]",
+                "hidden h-4 w-4 text-text-muted transition-transform duration-[var(--motion-fast)] sm:block",
                 triggerProps["aria-expanded"] && "rotate-180",
               )}
               aria-hidden="true"
@@ -41,11 +45,37 @@ export function ProfileDropdown({ avatar, name }: ProfileDropdownProps) {
           </button>
         )}
         items={[
-          { key: "profile", label: "Իմ պրոֆիլը", icon: "👤", onSelect: () => navigate("/profile") },
-          { key: "subscription", label: "Բաժանորդագրություն", icon: "💎", onSelect: () => navigate("/subscription") },
-          { key: "settings", label: "Կարգավորումներ", icon: "⚙️", onSelect: () => navigate("/settings") },
-          { key: "help", label: "Օգնության կենտրոն", icon: "❓", onSelect: () => navigate("/help") },
-          { key: "logout", label: "Ելք", icon: "🚪", tone: "danger", onSelect: () => setLogoutOpen(true) },
+          {
+            key: "profile",
+            label: "Իմ պրոֆիլը",
+            icon: <User size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
+            onSelect: () => navigate("/profile"),
+          },
+          {
+            key: "subscription",
+            label: "Բաժանորդագրություն",
+            icon: <Gem size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
+            onSelect: () => navigate("/subscription"),
+          },
+          {
+            key: "settings",
+            label: "Կարգավորումներ",
+            icon: <Settings size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
+            onSelect: () => navigate("/settings"),
+          },
+          {
+            key: "help",
+            label: "Օգնության կենտրոն",
+            icon: <HelpCircle size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
+            onSelect: () => navigate("/help"),
+          },
+          {
+            key: "logout",
+            label: "Ելք",
+            icon: <LogOut size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
+            tone: "danger",
+            onSelect: () => setLogoutOpen(true),
+          },
         ]}
       />
       <LogoutConfirmModal open={logoutOpen} onOpenChange={setLogoutOpen} />

@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
 import type { Coach, NextMission } from "../api/profile";
 import { Card } from "./ui/Card";
+import { LinkButton } from "./ui/LinkButton";
 
 function missionCtaHref(mission: NextMission) {
   if (!mission.available) return null;
@@ -66,9 +66,9 @@ export function HaygitInsightCard({
           </>
         )}
         {href && (
-          <Link to={href} className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
+          <LinkButton to={href} className="mt-3">
             Սկսել →
-          </Link>
+          </LinkButton>
         )}
       </div>
     </div>

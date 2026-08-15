@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
+import { RotateCcw, Sparkles } from "lucide-react";
 import {
-  listMockExams, getExamAttemptHistory, startAttempt, formatSeconds,
+  listMockExams, getExamAttemptHistory, startAttempt, abandonAttempt, formatSeconds,
   type MockExamSummary, type MockExamAttempt,
 } from "../api/mockExams";
 import { TimeSelector } from "../components/exams/TimeSelector";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { StatTile } from "../components/ui/StatTile";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { subjectMeta } from "../lib/subjects";
 import { parseExamTitle } from "../lib/examTitle";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const RECOMMENDED_MINUTES = 120;
+
+// Remembers, per attempt, whether the student wants the floating AI
+// assistant available while taking that specific test.
+const aiChoiceKey = (attemptId: number) => `mockexam_ai_choice_${attemptId}`;
 
 const RULES = [
   "Պատասխանները ավտոմատ պահպանվում են",
@@ -29,7 +37,10 @@ export function MockExamDetailPage() {
   const [history, setHistory] = useState<MockExamAttempt[] | null>(null);
   const [duration, setDuration] = useState<number | null>(RECOMMENDED_MINUTES);
   const [hintsEnabled, setHintsEnabled] = useState(true);
+  const [aiEnabled, setAiEnabled] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     listMockExams().then((all) => setExam(all.find((e) => e.id === id) ?? null));
@@ -38,11 +49,36 @@ export function MockExamDetailPage() {
 
   async function handleStart() {
     setBusy(true);
+    setStartError(null);
     try {
       const attempt = await startAttempt(id, duration, hintsEnabled);
+      localStorage.setItem(aiChoiceKey(attempt.id), aiEnabled ? "yes" : "no");
       navigate(`/mock-exams/attempt/${attempt.id}`);
+    } catch (err) {
+      // A stale page (opened before an earlier attempt at this exam was
+      // started elsewhere) can race into "already has an in-progress
+      // attempt" — recover by jumping straight to that draft instead of
+      // just failing silently.
+      const draftAttemptId = axios.isAxiosError(err) ? err.response?.data?.draft_attempt_id : undefined;
+      if (draftAttemptId) {
+        navigate(`/mock-exams/attempt/${draftAttemptId}`);
+        return;
+      }
+      setStartError("Չհաջողվեց սկսել թեստը։ Փորձիր կրկին։");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleResetDraft() {
+    if (!exam?.draft_attempt_id) return;
+    setBusy(true);
+    try {
+      await abandonAttempt(exam.draft_attempt_id);
+      setExam({ ...exam, has_draft: false, draft_attempt_id: null });
+    } finally {
+      setBusy(false);
+      setShowResetConfirm(false);
     }
   }
 
@@ -53,7 +89,7 @@ export function MockExamDetailPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <p className="mb-4 text-lg text-text-muted">Չկարողացանք գտնել այս թեստը։</p>
-        <Link to="/mock-exams" className="text-primary hover:underline">← Ամբողջական թեստեր</Link>
+        <LinkButton to="/mock-exams">← Ամբողջական թեստեր</LinkButton>
       </div>
     );
   }
@@ -73,9 +109,7 @@ export function MockExamDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/mock-exams" className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← Ամբողջական թեստեր
-      </Link>
+      <LinkButton to="/mock-exams" className="mb-4">← Ամբողջական թեստեր</LinkButton>
       <div className="mb-1 flex items-center gap-2 text-lg font-medium text-text-muted">
         <span aria-hidden="true">{subject?.icon}</span>
         <span>{main}</span>
@@ -84,7 +118,7 @@ export function MockExamDetailPage() {
 
       <div className="mb-8 grid grid-cols-3 gap-3">
         <StatTile label="ՀԱՐՑ" value={String(exam.question_count)} />
-        <StatTile label="ԺԱՄԱՆԱԿ" value={formatSeconds(RECOMMENDED_MINUTES * 60)} />
+        <StatTile label="ԺԱՄԱՆԱԿ" value={duration === null ? "Անժամկետ" : formatSeconds(duration * 60)} />
         <StatTile label="ՄԻԱՎՈՐ" value="20" />
       </div>
 
@@ -121,9 +155,22 @@ export function MockExamDetailPage() {
       {exam.has_draft && exam.draft_attempt_id ? (
         <Card className="mb-8 border-primary/40">
           <p className="mb-3 text-text">Դու ունես անավարտ փորձ այս թեստից։</p>
-          <Button variant="primary" onClick={() => navigate(`/mock-exams/attempt/${exam.draft_attempt_id}`)}>
-            ▶ Շարունակել
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="primary" onClick={() => navigate(`/mock-exams/attempt/${exam.draft_attempt_id}`)}>
+              ▶ Շարունակել
+            </Button>
+            <Button variant="secondary" loading={busy} onClick={() => setShowResetConfirm(true)}>
+              <RotateCcw size={15} strokeWidth={1.75} /> Սկսել նորից
+            </Button>
+          </div>
+          {showResetConfirm && (
+            <ConfirmModal
+              message="Անավարտ փորձը կջնջվի և կկարողանաս սկսել այս թեստը զրոյից։ Շարունակե՞լ։"
+              confirmLabel="Այո, սկսել նորից"
+              onConfirm={handleResetDraft}
+              onCancel={() => setShowResetConfirm(false)}
+            />
+          )}
         </Card>
       ) : (
         <>
@@ -143,6 +190,19 @@ export function MockExamDetailPage() {
             />
           </Card>
 
+          <Card className="mb-8 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-base font-medium text-text">
+              <Sparkles size={16} strokeWidth={1.75} /> AI Օգնական
+            </span>
+            <input
+              type="checkbox"
+              checked={aiEnabled}
+              onChange={(e) => setAiEnabled(e.target.checked)}
+              className="h-5 w-5"
+              aria-label="Ակտիվացնել AI Օգնականը"
+            />
+          </Card>
+
           <Card className="mb-8">
             <h2 className="mb-3 text-base font-semibold text-text">Պատրա՞ստ ես</h2>
             <ul className="flex flex-col gap-2 text-sm text-text-muted">
@@ -155,6 +215,7 @@ export function MockExamDetailPage() {
             </ul>
           </Card>
 
+          {startError && <p className="mb-3 text-sm text-incorrect">{startError}</p>}
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="primary" size="lg" loading={busy} onClick={handleStart} className="flex-1">
               🚀 Սկսել թեստը

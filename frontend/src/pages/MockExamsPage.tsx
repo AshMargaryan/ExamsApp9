@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   listMockExams, getOverview, formatHoursMinutes,
   type MockExamSummary, type MockExamOverview,
@@ -10,6 +10,7 @@ import { StatTile } from "../components/ui/StatTile";
 import { EmptyState } from "../components/ui/EmptyState";
 import { SUBJECTS, type SubjectKey } from "../lib/subjects";
 import { extractExamNumber } from "../lib/examTitle";
+import { LinkButton } from "../components/ui/LinkButton";
 
 type StatusFilter = "all" | "not_started" | "in_progress" | "completed";
 type SortKey = "number" | "recent" | "best_score";
@@ -90,9 +91,7 @@ export function MockExamsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <Link to="/" className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← Գլխավոր
-      </Link>
+      <LinkButton to="/" className="mb-4">← Գլխավոր</LinkButton>
       <div className="mt-10 sm:mt-0">
         <h1 className="mb-1 text-2xl font-semibold text-text sm:text-3xl">📝 Ամբողջական թեստեր</h1>
         <p className="mb-6 text-text-muted">Փորձիր քեզ իրական քննության պայմաններում</p>

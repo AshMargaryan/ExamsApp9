@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import * as profileApi from "../../api/profile";
-import type { GoalType, PersonalGoal } from "../../api/profile";
+import type { GoalPriority, GoalType, PersonalGoal } from "../../api/profile";
 import { getHierarchy } from "../../api/practice";
 import type { SubjectNode } from "../../api/practice";
+import { extractErrorMessage, useToast } from "../../context/ToastContext";
+import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 import { ProgressBar } from "../ui/ProgressBar";
 
@@ -13,6 +15,18 @@ const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   study_hours_month: "Ուսումնական ժամեր այս ամիս",
   xp_this_month: "XP այս ամիս",
   custom: "Անհատական նպատակ",
+};
+
+const PRIORITY_LABELS: Record<GoalPriority, string> = {
+  low: "Ցածր",
+  medium: "Միջին",
+  high: "Բարձր",
+};
+
+const PRIORITY_CLASSES: Record<GoalPriority, string> = {
+  low: "border-border bg-surface-muted text-text-muted",
+  medium: "border-primary/40 bg-primary/10 text-primary",
+  high: "border-incorrect/40 bg-incorrect/10 text-incorrect",
 };
 
 const GOAL_TYPE_UNIT_HINT: Partial<Record<GoalType, string>> = {
@@ -36,6 +50,7 @@ function GoalForm({
   const [targetValue, setTargetValue] = useState("14");
   const [subjectId, setSubjectId] = useState<number | "">("");
   const [customTitle, setCustomTitle] = useState("");
+  const [priority, setPriority] = useState<GoalPriority>("medium");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -48,6 +63,7 @@ function GoalForm({
         target_value: goalType === "custom" ? undefined : Number(targetValue) || 0,
         subject: goalType === "subject_accuracy" && subjectId ? Number(subjectId) : undefined,
         custom_title: goalType === "custom" ? customTitle : undefined,
+        priority,
       });
       onCreated(goal);
     } catch {
@@ -98,6 +114,17 @@ function GoalForm({
             </select>
           </div>
         )}
+
+        <div>
+          <label className="mb-1 block text-xs text-text-muted">Առաջնահերթություն</label>
+          <select className={inputClass} value={priority} onChange={(e) => setPriority(e.target.value as GoalPriority)}>
+            {(Object.keys(PRIORITY_LABELS) as GoalPriority[]).map((p) => (
+              <option key={p} value={p}>
+                {PRIORITY_LABELS[p]}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error && <p className="mt-2 text-xs text-incorrect">{error}</p>}
@@ -120,13 +147,15 @@ function GoalForm({
 }
 
 export function GoalsCard() {
+  const { showError } = useToast();
   const [goals, setGoals] = useState<PersonalGoal[] | null>(null);
   const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
   useEffect(() => {
-    profileApi.fetchGoals().then(setGoals);
-    getHierarchy().then(setSubjects);
+    profileApi.fetchGoals().then(setGoals).catch((err) => showError(extractErrorMessage(err)));
+    getHierarchy().then(setSubjects).catch((err) => showError(extractErrorMessage(err)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleCreated(goal: PersonalGoal) {
@@ -135,13 +164,30 @@ export function GoalsCard() {
   }
 
   async function handleDelete(id: number) {
-    await profileApi.deleteGoal(id);
-    setGoals((prev) => (prev ?? []).filter((g) => g.id !== id));
+    try {
+      await profileApi.deleteGoal(id);
+      setGoals((prev) => (prev ?? []).filter((g) => g.id !== id));
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    }
   }
 
   async function handleToggleCustom(goal: PersonalGoal) {
-    const updated = await profileApi.completeCustomGoal(goal.id, !goal.completed_at);
-    setGoals((prev) => (prev ?? []).map((g) => (g.id === goal.id ? updated : g)));
+    try {
+      const updated = await profileApi.completeCustomGoal(goal.id, !goal.completed_at);
+      setGoals((prev) => (prev ?? []).map((g) => (g.id === goal.id ? updated : g)));
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    }
+  }
+
+  async function handlePriorityChange(goal: PersonalGoal, priority: GoalPriority) {
+    try {
+      const updated = await profileApi.updateGoalPriority(goal.id, priority);
+      setGoals((prev) => (prev ?? []).map((g) => (g.id === goal.id ? updated : g)));
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    }
   }
 
   return (
@@ -149,9 +195,9 @@ export function GoalsCard() {
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-text">🎯 Իմ նպատակները</p>
         {!formOpen && (
-          <button type="button" onClick={() => setFormOpen(true)} className="text-sm text-primary hover:underline">
+          <Button variant="secondary" size="sm" onClick={() => setFormOpen(true)}>
             + Ավելացնել
-          </button>
+          </Button>
         )}
       </div>
 
@@ -185,14 +231,28 @@ export function GoalsCard() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {goal.goal_type === "custom" && (
-                      <button type="button" onClick={() => handleToggleCustom(goal)} className="text-xs text-primary hover:underline">
+                      <Button variant="ghost" size="sm" onClick={() => handleToggleCustom(goal)} className="h-7 px-2 text-xs">
                         {goal.completed_at ? "Չեղարկել" : "Նշել կատարված"}
-                      </button>
+                      </Button>
                     )}
                     <button type="button" onClick={() => handleDelete(goal.id)} aria-label="Ջնջել" className="text-xs text-text-muted hover:text-incorrect">
                       ✕
                     </button>
                   </div>
+                </div>
+                <div className="mt-2">
+                  <select
+                    value={goal.priority}
+                    onChange={(e) => handlePriorityChange(goal, e.target.value as GoalPriority)}
+                    aria-label="Առաջնահերթություն"
+                    className={`rounded-full border px-2 py-0.5 text-xs font-medium outline-none ${PRIORITY_CLASSES[goal.priority]}`}
+                  >
+                    {(Object.keys(PRIORITY_LABELS) as GoalPriority[]).map((p) => (
+                      <option key={p} value={p}>
+                        {PRIORITY_LABELS[p]}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 {goal.goal_type !== "custom" && (
                   <div className="mt-2">

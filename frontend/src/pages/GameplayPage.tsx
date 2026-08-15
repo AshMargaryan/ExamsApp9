@@ -6,6 +6,7 @@ import { MathText } from "../components/MathText";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
+import { ExternalLinkButton, LinkButton } from "../components/ui/LinkButton";
 import {
   isSoundMuted,
   playCorrect,
@@ -190,9 +191,9 @@ export function GameplayPage() {
           {status === "closed" && "Կապը փակված է։"}
         </p>
         {error && <p className="text-incorrect">{error}</p>}
-        <Link to={`/games/${roomCode}`} className="text-primary hover:underline">
+        <LinkButton to={`/games/${roomCode}`}>
           ← Վերադառնալ սենյակ
-        </Link>
+        </LinkButton>
       </div>
     );
   }
@@ -249,14 +250,9 @@ export function GameplayPage() {
 
           {q.video_url && (
             <div className="mb-6 text-center">
-              <a
-                href={q.video_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-primary hover:underline"
-              >
+              <ExternalLinkButton href={q.video_url} target="_blank" rel="noreferrer">
                 🎬 Տեսանյութ
-              </a>
+              </ExternalLinkButton>
             </div>
           )}
 

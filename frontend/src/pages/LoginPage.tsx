@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 import { MessageModal } from "../components/MessageModal";
 import { OAuthButtons } from "../components/auth/OAuthButtons";
 import { DeviceLimitModal } from "../components/auth/DeviceLimitModal";
+import { LinkButton } from "../components/ui/LinkButton";
 import { isDeviceLimitReached, type User } from "../api/auth";
 
 export function LoginPage() {
@@ -85,10 +86,8 @@ export function LoginPage() {
           {submitting ? "..." : "Մուտք գործել"}
         </button>
 
-        <p className="mt-3 text-center text-sm">
-          <Link to="/forgot-password" className="text-primary hover:underline">
-            Մոռացե՞լ եք գաղտնաբառը
-          </Link>
+        <p className="mt-3 flex justify-center">
+          <LinkButton to="/forgot-password">Մոռացե՞լ եք գաղտնաբառը</LinkButton>
         </p>
 
         <p className="mt-4 text-center text-sm text-text-muted">

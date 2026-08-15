@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   flagCard, getDeckCards, isDue, markCard, resetDeckProgress,
   type CardProgress, type DeckCards, type Flashcard, type FlashcardGrade,
@@ -7,6 +7,7 @@ import {
 import { MathText } from "../components/MathText";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { WordPronounce } from "../components/flashcards/WordPronounce";
+import { LinkButton } from "../components/ui/LinkButton";
 
 type StudyMode = "due" | "all";
 type TransitionPhase = "idle" | "exiting" | "entering";
@@ -463,15 +464,15 @@ export function FlashcardStudyPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-4 flex items-center justify-between">
-        <Link to="/flashcards" className="btn-fx inline-block rounded-full px-1.5 py-0.5 text-sm text-primary hover:underline">
+        <LinkButton to="/flashcards" className="btn-fx rounded-full">
           ← Բառաքարտեր
-        </Link>
-        <Link
+        </LinkButton>
+        <LinkButton
           to={`/flashcards/favorites?subject=${deck.subject}`}
-          className="btn-fx inline-block rounded-full px-1.5 py-0.5 text-sm text-primary hover:underline"
+          className="btn-fx rounded-full"
         >
           ⭐ Ընտրյալներ
-        </Link>
+        </LinkButton>
       </div>
       <h1 className="mb-3 text-2xl font-semibold text-text">{deck.title}</h1>
 

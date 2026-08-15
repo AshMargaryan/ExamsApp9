@@ -4,6 +4,7 @@ import { AxiosError } from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { SearchSelect } from "../components/SearchSelect";
 import { MessageModal } from "../components/MessageModal";
+import { Button } from "../components/ui/Button";
 import type { AccountRole } from "../api/auth";
 import { GRADES, ROLE_CARDS, ROLE_LABELS, type Option, schoolSearch, universitySearch } from "../lib/registrationFields";
 
@@ -130,13 +131,9 @@ export function CompleteRegistrationPage() {
       >
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-text">Ավարտել գրանցումը ({ROLE_LABELS[role]})</h1>
-          <button
-            type="button"
-            onClick={() => setRole(null)}
-            className="text-sm text-primary hover:underline"
-          >
+          <Button variant="secondary" size="sm" onClick={() => setRole(null)}>
             Փոխել
-          </button>
+          </Button>
         </div>
 
         <label className={labelClass}>Էլ. փոստ</label>

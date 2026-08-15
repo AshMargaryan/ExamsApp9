@@ -1,4 +1,5 @@
 import type { ProfileCompletion } from "../../api/profile";
+import { Button } from "../ui/Button";
 import { ProgressBar } from "../ui/ProgressBar";
 
 export function ProfileCompletionCard({
@@ -22,9 +23,9 @@ export function ProfileCompletionCard({
       <p className="mt-3 text-xs text-text-muted">
         Մնացել է՝ {completion.missing.join(", ")}
       </p>
-      <button type="button" onClick={onEdit} className="mt-3 text-sm font-medium text-primary hover:underline">
+      <Button variant="secondary" size="sm" onClick={onEdit} className="mt-3">
         Լրացնել հիմա →
-      </button>
+      </Button>
     </div>
   );
 }

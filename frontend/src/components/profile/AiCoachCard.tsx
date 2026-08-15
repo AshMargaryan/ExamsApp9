@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Coach } from "../../api/profile";
+import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 
 export function AiCoachCard({ coach }: { coach: Coach }) {
@@ -24,13 +25,9 @@ export function AiCoachCard({ coach }: { coach: Coach }) {
         <p className="font-medium">{coach.recommendation}</p>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setShowEvidence((v) => !v)}
-        className="mt-3 text-xs font-medium text-primary hover:underline"
-      >
+      <Button variant="ghost" size="sm" onClick={() => setShowEvidence((v) => !v)} className="mt-3">
         {showEvidence ? "Թաքցնել հիմնավորումը" : "Ինչու՞ եմ սա տեսնում"}
-      </button>
+      </Button>
 
       {showEvidence && (
         <div className="mt-2 rounded-md border border-border bg-bg p-3 text-xs text-text-muted">

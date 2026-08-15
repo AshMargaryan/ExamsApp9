@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import {
-  getTierQuestions, submitTier, revealTier,
+  getTierQuestions, submitTier, revealTier, markHintViewed,
   TIER_LABELS, MATH_SUBJECT_NAME,
   type Question, type Tier, type AnswerInput, type SubmitResult,
 } from "../api/practice";
 import { HintButton } from "../components/HintButton";
+import { Button } from "../components/ui/Button";
 import { MathText } from "../components/MathText";
 import { ScoreModal } from "../components/ScoreModal";
 import { SpeakOnSelect } from "../components/SpeakOnSelect";
@@ -13,8 +15,8 @@ import { ClozeChoiceQuestion } from "../components/questions/ClozeChoiceQuestion
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
-import { ToolsDock } from "../components/ToolsDock";
-import { NotepadProvider } from "../context/NotepadContext";
+import { useAssistantLaunch } from "../contexts/AssistantLaunchContext";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const TIER_ORDER: Tier[] = ["easy", "medium", "hard"];
 
@@ -42,6 +44,7 @@ export function TierPage() {
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { askAboutQuestion } = useAssistantLaunch();
 
   useEffect(() => {
     setQuestions(null);
@@ -97,6 +100,20 @@ export function TierPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleAskAi(q: Question) {
+    askAboutQuestion({
+      message: `Բացատրիր ինձ այս հարցը. «${q.text}»`,
+      educationalContext: {
+        question_id: q.id,
+        subject: q.subject_name,
+        topic: q.topic_name,
+        subtopic: q.subtopic_name,
+        difficulty: q.tier,
+        conversation_mode: "solving_question",
+      },
+    });
   }
 
   function handleModalContinue() {
@@ -190,11 +207,22 @@ export function TierPage() {
                       };
                     })
                   }
+                  onHintOpen={() => markHintViewed(q.id)}
                 />
               )}
 
-              <div className="mt-3">
-                <HintButton hint={q.hint ?? ""} />
+              <div className="mt-3 flex items-center gap-4">
+                <HintButton hint={q.hint ?? ""} onOpen={() => markHintViewed(q.id)} />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleAskAi(q)}
+                  iconLeft={<Sparkles size={15} strokeWidth={1.75} />}
+                  className="border-primary/30 text-primary hover:border-primary hover:bg-primary/10"
+                >
+                  Հարցնել AI-ից
+                </Button>
               </div>
 
               {revealed && showExplanations && revealedQ?.explanation && (
@@ -209,11 +237,8 @@ export function TierPage() {
   );
 
   return (
-    <NotepadProvider>
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to={practiceHref} className="text-sm text-primary hover:underline">
-        ← Վերադառնալ ցանկին
-      </Link>
+      <LinkButton to={practiceHref}>← Վերադառնալ ցանկին</LinkButton>
 
       <h1 className="mt-2 mb-1 text-3xl font-semibold text-text">
         {subtopicName ?? `Ենթաթեմա #${id}`}
@@ -270,9 +295,6 @@ export function TierPage() {
           onClose={() => setShowScoreModal(false)}
         />
       )}
-
-      {isMath && <ToolsDock />}
     </div>
-    </NotepadProvider>
   );
 }

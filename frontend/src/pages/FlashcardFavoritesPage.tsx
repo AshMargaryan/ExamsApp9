@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   flagCard, listFavoriteCards, type FavoriteCardEntry, type FlashcardSubject,
 } from "../api/flashcards";
 import { MathText } from "../components/MathText";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { SUBJECTS } from "../lib/subjects";
+import { LinkButton } from "../components/ui/LinkButton";
 
 export function FlashcardFavoritesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,9 +39,7 @@ export function FlashcardFavoritesPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/flashcards" className="btn-fx mb-4 inline-block rounded-full px-1.5 py-0.5 text-sm text-primary hover:underline">
-        ← Բառաքարտեր
-      </Link>
+      <LinkButton to="/flashcards" className="btn-fx mb-4 rounded-full px-1.5 py-0.5">← Բառաքարտեր</LinkButton>
       <h1 className="mb-1 text-3xl font-semibold text-text">
         ⭐ Ընտրյալներ · {activeSubject.icon} {activeSubject.label}
       </h1>
@@ -87,12 +86,13 @@ export function FlashcardFavoritesPage() {
             >
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <Link
+                  <LinkButton
                     to={`/flashcards/${deck.id}`}
-                    className="text-xs font-medium tracking-wide text-primary uppercase hover:underline"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs tracking-wide uppercase"
                   >
                     {deck.title}
-                  </Link>
+                  </LinkButton>
                 </div>
                 <div className="flex items-baseline gap-2">
                   <MathText text={card.front_text} className="text-lg font-medium text-text" />

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import * as rankingsApi from "../../api/rankings";
 import type { RankingBoard, RankingEntry, RankingScope } from "../../api/rankings";
 import { useAuth } from "../../auth/AuthContext";
 import { EmptyState } from "../ui/EmptyState";
+import { LinkButton } from "../ui/LinkButton";
 
 const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 const TAB_LABELS: Record<RankingScope, string> = { global: "Համաշխարհային", school: "Դպրոց", class: "Դասարան", friends: "Ընկերներ" };
@@ -50,9 +50,9 @@ export function MonthlyRankingCard() {
     <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-text">🏆 Ամսվա մրցույթ</p>
-        <Link to="/rankings" className="text-xs text-primary hover:underline">
+        <LinkButton to="/rankings">
           Ամբողջը →
-        </Link>
+        </LinkButton>
       </div>
 
       <div className="mb-3 flex gap-1">

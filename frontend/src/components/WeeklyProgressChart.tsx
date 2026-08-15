@@ -33,7 +33,7 @@ export function WeeklyProgressChart({ points }: { points: WeeklyProgressPoint[] 
             >
               <div className="w-full bg-accent" style={{ height: correctHeight }} />
               <div
-                className="w-full bg-primary"
+                className="w-full bg-border"
                 style={{ height: Math.max(barHeight - correctHeight, 0) }}
               />
             </div>

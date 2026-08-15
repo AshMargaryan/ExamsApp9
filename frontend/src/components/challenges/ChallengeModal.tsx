@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import * as challengesApi from "../../api/challenges";
+import type { ChallengeInvite } from "../../api/challenges";
 import * as practiceApi from "../../api/practice";
 import type { SubjectNode } from "../../api/practice";
 import type { FriendUser } from "../../api/friends";
 
-export function ChallengeModal({ friend, onClose }: { friend: FriendUser; onClose: () => void }) {
+export function ChallengeModal({
+  friend, onClose, onSent,
+}: {
+  friend: FriendUser;
+  onClose: () => void;
+  onSent?: (invite: ChallengeInvite) => void;
+}) {
   const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
   const [subjectId, setSubjectId] = useState<number | null>(null);
   const [topicId, setTopicId] = useState<number | null>(null);
@@ -27,8 +34,9 @@ export function ChallengeModal({ friend, onClose }: { friend: FriendUser; onClos
     setSending(true);
     setError(null);
     try {
-      await challengesApi.sendChallenge(friend.id, subjectId, topicId);
+      const invite = await challengesApi.sendChallenge(friend.id, subjectId, topicId);
       setSent(true);
+      onSent?.(invite);
     } catch {
       setError("Մարտահրավերն ուղարկելիս սխալ տեղի ունեցավ։");
     } finally {

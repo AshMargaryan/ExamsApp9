@@ -8,6 +8,7 @@ import {
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeckFormModal } from "../components/flashcards/DeckFormModal";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { LinkButton } from "../components/ui/LinkButton";
 
 type LearnedFilter = "all" | "learned" | "unlearned";
 
@@ -162,9 +163,7 @@ export function FlashcardDeckManagePage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <Link to="/flashcards" className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← Բառաքարտեր
-      </Link>
+      <LinkButton to="/flashcards" className="mb-4">← Բառաքարտեր</LinkButton>
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>

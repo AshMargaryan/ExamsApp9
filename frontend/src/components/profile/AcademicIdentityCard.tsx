@@ -1,3 +1,4 @@
+import { GraduationCap } from "lucide-react";
 import type { AcademicPower, Profile, SubjectMastery } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
 
@@ -21,7 +22,9 @@ export function AcademicIdentityCard({
   if (!profile.university && !profile.target_major) {
     return (
       <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-        <p className="mb-3 text-sm font-semibold text-text">🎓 Ակադեմիական ինքնություն</p>
+        <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-text">
+          <GraduationCap size={16} strokeWidth={1.75} /> Ակադեմիական ինքնություն
+        </p>
         <EmptyState
           icon="🎯"
           title="Ընտրեք ձեր նպատակային բուհը"
@@ -34,7 +37,9 @@ export function AcademicIdentityCard({
 
   return (
     <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-3 text-sm font-semibold text-text">🎓 Ակադեմիական ինքնություն</p>
+      <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-text">
+        <GraduationCap size={16} strokeWidth={1.75} /> Ակադեմիական ինքնություն
+      </p>
       <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
         {profile.target_major && (
           <div>

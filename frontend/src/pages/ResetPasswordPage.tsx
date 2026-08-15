@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { confirmPasswordReset } from "../api/auth";
 import { MessageModal } from "../components/MessageModal";
+import { LinkButton } from "../components/ui/LinkButton";
 
 export function ResetPasswordPage() {
   const { uid, token } = useParams<{ uid: string; token: string }>();
@@ -102,10 +103,8 @@ export function ResetPasswordPage() {
           </form>
         )}
 
-        <p className="mt-4 text-center text-sm text-text-muted">
-          <Link to="/login" className="text-primary hover:underline">
-            Վերադառնալ մուտք էջ
-          </Link>
+        <p className="mt-4 flex justify-center">
+          <LinkButton to="/login">Վերադառնալ մուտք էջ</LinkButton>
         </p>
       </div>
       {error && <MessageModal message={error} onClose={() => setError(null)} />}

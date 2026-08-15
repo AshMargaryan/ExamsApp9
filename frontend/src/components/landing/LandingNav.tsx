@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
+import { Logo } from "../Logo";
 
 const NAV_LINKS = [
   { href: "#product", label: "Ապրանք" },
@@ -40,7 +41,7 @@ export function LandingNav() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <a href="#top" className="flex items-center gap-2">
-          <img src="/favicon.svg" alt="" className="h-7 w-7" aria-hidden />
+          <Logo className="h-7 w-7 text-text" />
           <span className="text-lg font-bold tracking-tight text-text">Gitus</span>
         </a>
 
