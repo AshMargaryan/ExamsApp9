@@ -60,6 +60,10 @@ class User(AbstractUser):
         University, on_delete=models.SET_NULL, null=True, blank=True, related_name="applicants"
     )
 
+    # Subjects (apps.mock_exams.MockExamSubject keys) this user is willing to
+    # tutor others in — empty by default, opted into via profile settings.
+    tutor_subjects = models.JSONField(default=list, blank=True)
+
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email"]
 
