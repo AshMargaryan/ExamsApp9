@@ -347,6 +347,8 @@ export type GoalType =
   | "xp_this_month"
   | "custom";
 
+export type GoalPriority = "low" | "medium" | "high";
+
 export interface GoalProgress {
   current: number | null;
   target: number | null;
@@ -363,6 +365,8 @@ export interface PersonalGoal {
   subject: number | null;
   subject_name: string | null;
   custom_title: string;
+  priority: GoalPriority;
+  metadata: Record<string, unknown>;
   deadline: string | null;
   created_at: string;
   completed_at: string | null;
@@ -374,6 +378,7 @@ export interface CreateGoalPayload {
   target_value?: number;
   subject?: number | null;
   custom_title?: string;
+  priority?: GoalPriority;
   deadline?: string | null;
 }
 
@@ -389,6 +394,11 @@ export async function createGoal(payload: CreateGoalPayload): Promise<PersonalGo
 
 export async function completeCustomGoal(goalId: number, completed: boolean): Promise<PersonalGoal> {
   const { data } = await apiClient.patch(`/profile/goals/${goalId}/`, { completed });
+  return data;
+}
+
+export async function updateGoalPriority(goalId: number, priority: GoalPriority): Promise<PersonalGoal> {
+  const { data } = await apiClient.patch(`/profile/goals/${goalId}/`, { priority });
   return data;
 }
 
@@ -428,5 +438,154 @@ export async function fetchPrivacySettings(): Promise<PrivacySettings> {
 
 export async function updatePrivacySettings(payload: Partial<PrivacySettings>): Promise<PrivacySettings> {
   const { data } = await apiClient.patch("/profile/privacy/", payload);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Upcoming exams
+// ---------------------------------------------------------------------------
+
+export type ExamImportance = "low" | "medium" | "high";
+export type ExamStatus = "upcoming" | "completed" | "cancelled";
+
+export interface StudentExam {
+  id: number;
+  name: string;
+  subject_key: string;
+  exam_date: string;
+  target_score: number | null;
+  importance: ExamImportance;
+  status: ExamStatus;
+  topics_note: string;
+  notes: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface CreateExamPayload {
+  name: string;
+  subject_key?: string;
+  exam_date: string;
+  target_score?: number | null;
+  importance?: ExamImportance;
+  status?: ExamStatus;
+  topics_note?: string;
+  notes?: string;
+}
+
+export async function fetchExams(): Promise<StudentExam[]> {
+  const { data } = await apiClient.get("/profile/exams/");
+  return data;
+}
+
+export async function createExam(payload: CreateExamPayload): Promise<StudentExam> {
+  const { data } = await apiClient.post("/profile/exams/", payload);
+  return data;
+}
+
+export async function updateExam(examId: number, payload: Partial<CreateExamPayload>): Promise<StudentExam> {
+  const { data } = await apiClient.patch(`/profile/exams/${examId}/`, payload);
+  return data;
+}
+
+export async function deleteExam(examId: number): Promise<void> {
+  await apiClient.delete(`/profile/exams/${examId}/`);
+}
+
+// ---------------------------------------------------------------------------
+// Active subjects (subject-level interest, not content/mastery)
+// ---------------------------------------------------------------------------
+
+export interface StudentSubjectInterest {
+  id: number;
+  subject_key: string;
+  subject_label: string;
+  is_active: boolean;
+  priority: GoalPriority;
+  target_note: string;
+  exam: number | null;
+  start_date: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSubjectInterestPayload {
+  subject_key: string;
+  is_active?: boolean;
+  priority?: GoalPriority;
+  target_note?: string;
+  exam?: number | null;
+  start_date?: string | null;
+}
+
+export async function fetchSubjectInterests(): Promise<StudentSubjectInterest[]> {
+  const { data } = await apiClient.get("/profile/subjects/");
+  return data;
+}
+
+export async function createSubjectInterest(payload: CreateSubjectInterestPayload): Promise<StudentSubjectInterest> {
+  const { data } = await apiClient.post("/profile/subjects/", payload);
+  return data;
+}
+
+export async function updateSubjectInterest(
+  id: number,
+  payload: Partial<CreateSubjectInterestPayload>,
+): Promise<StudentSubjectInterest> {
+  const { data } = await apiClient.patch(`/profile/subjects/${id}/`, payload);
+  return data;
+}
+
+export async function deleteSubjectInterest(id: number): Promise<void> {
+  await apiClient.delete(`/profile/subjects/${id}/`);
+}
+
+// ---------------------------------------------------------------------------
+// Study availability — declared preferences only
+// ---------------------------------------------------------------------------
+
+export interface StudyAvailability {
+  preferred_days: number[];
+  preferred_start_time: string | null;
+  typical_session_minutes: number | null;
+  min_daily_minutes: number | null;
+  max_daily_minutes: number | null;
+  timezone: string;
+  updated_at: string;
+}
+
+export async function fetchStudyAvailability(): Promise<StudyAvailability> {
+  const { data } = await apiClient.get("/profile/study-availability/");
+  return data;
+}
+
+export async function updateStudyAvailability(payload: Partial<StudyAvailability>): Promise<StudyAvailability> {
+  const { data } = await apiClient.patch("/profile/study-availability/", payload);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Learning preferences — declared pedagogical preferences for the AI Tutor
+// ---------------------------------------------------------------------------
+
+export type ExplanationStyle = "direct" | "socratic" | "mixed";
+
+export interface LearningPreferences {
+  explanation_style: ExplanationStyle;
+  hints_before_answers: boolean;
+  preferred_language: "" | "hy" | "en";
+  updated_at: string;
+}
+
+export async function fetchLearningPreferences(): Promise<LearningPreferences> {
+  const { data } = await apiClient.get("/profile/learning-preferences/");
+  return data;
+}
+
+export async function updateLearningPreferences(
+  payload: Partial<LearningPreferences>,
+): Promise<LearningPreferences> {
+  const { data } = await apiClient.patch("/profile/learning-preferences/", payload);
   return data;
 }

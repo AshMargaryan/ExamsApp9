@@ -5,9 +5,10 @@ from rest_framework import serializers
 
 from apps.activity.services import total_seconds_since, weekly_seconds
 from apps.friends.serializers import MiniUserSerializer
+from apps.friends.services import are_friends
 from apps.games.models import GameStats
 from apps.games.serializers import GameStatsSerializer
-from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus
+from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus, MockExamSubject
 from apps.practice.models import AttemptAnswer
 from apps.streaks.models import LearningStreak
 from apps.streaks.serializers import LearningStreakSerializer
@@ -21,11 +22,16 @@ from .leveling import xp_progress
 from .models import (
     Achievement,
     GoalType,
+    LearningEvent,
+    LearningPreferences,
     PersonalGoal,
     Profile,
     ProfilePrivacySettings,
     Rarity,
     ShowcaseSlot,
+    StudentExam,
+    StudentSubject,
+    StudyAvailability,
     UserAchievement,
 )
 from .validators import validate_avatar_file
@@ -85,6 +91,10 @@ class ProfileSerializer(serializers.ModelSerializer):
     grade = serializers.IntegerField(source="user.grade", required=False, allow_null=True)
     age = serializers.IntegerField(source="user.age", required=False, allow_null=True)
     marz = serializers.CharField(source="user.marz", required=False, allow_blank=True)
+    tutor_subjects = serializers.ListField(
+        child=serializers.ChoiceField(choices=MockExamSubject.choices),
+        source="user.tutor_subjects", required=False,
+    )
 
     total_xp = serializers.IntegerField(read_only=True)
     level = serializers.SerializerMethodField()
@@ -115,6 +125,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "avatar", "bio", "role",
             "username", "first_name", "last_name",
             "school", "school_id", "grade", "age", "marz", "university", "university_id",
+            "tutor_subjects",
             "target_major",
             "total_xp", "level", "xp_into_level", "xp_for_next_level", "trophies_count",
             "target_exam_date", "days_until_exam", "username_change_available_at",
@@ -302,7 +313,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         sees their own full profile — this only ever narrows the other-user
         view (UserProfileDetailView), never the self view (ProfileMeView).
         Exception: a student's own connected teacher always sees full stats —
-        that's the existing StudentReviewPanel feature, not a stranger view."""
+        that's the existing StudentReviewPanel feature, not a stranger view.
+        Same exception for a confirmed friend (see apps.friends.services.are_friends) —
+        friends unlock each other's full profile, same as the parent-facing
+        child dashboard does for a linked parent."""
         data = super().to_representation(instance)
         request = self.context.get("request")
         viewer = getattr(request, "user", None) if request else None
@@ -310,6 +324,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             viewer is not None
             and getattr(viewer, "id", None) != instance.user_id
             and not self._viewer_is_teacher_of(viewer, instance.user)
+            and not are_friends(viewer, instance.user)
         ):
             privacy, _ = ProfilePrivacySettings.objects.get_or_create(user=instance.user)
             if not privacy.show_age:
@@ -356,12 +371,17 @@ class PersonalGoalSerializer(serializers.ModelSerializer):
         model = PersonalGoal
         fields = [
             "id", "goal_type", "target_value", "subject", "subject_name", "custom_title",
-            "deadline", "created_at", "completed_at", "progress",
+            "priority", "metadata", "deadline", "created_at", "completed_at", "progress",
         ]
         read_only_fields = ["created_at"]
 
     def get_progress(self, obj):
         return analytics.goal_progress(obj)
+
+    def validate_metadata(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("metadata must be a JSON object.")
+        return value
 
     def validate(self, attrs):
         goal_type = attrs.get("goal_type", getattr(self.instance, "goal_type", None))
@@ -382,6 +402,105 @@ class PersonalGoalCompleteSerializer(serializers.Serializer):
     """POST-only action serializer for marking a CUSTOM goal done."""
 
     completed = serializers.BooleanField()
+
+
+class StudentExamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentExam
+        fields = [
+            "id", "name", "subject_key", "exam_date", "target_score", "importance",
+            "status", "topics_note", "notes", "metadata", "created_at",
+        ]
+        read_only_fields = ["created_at"]
+
+    def validate_metadata(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("metadata must be a JSON object.")
+        return value
+
+
+class StudentSubjectSerializer(serializers.ModelSerializer):
+    subject_label = serializers.CharField(source="get_subject_key_display", read_only=True)
+
+    class Meta:
+        model = StudentSubject
+        fields = [
+            "id", "subject_key", "subject_label", "is_active", "priority", "target_note",
+            "exam", "start_date", "metadata", "created_at", "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+    def validate_metadata(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("metadata must be a JSON object.")
+        return value
+
+    def validate(self, attrs):
+        exam = attrs.get("exam", getattr(self.instance, "exam", None))
+        subject_key = attrs.get("subject_key", getattr(self.instance, "subject_key", None))
+        if exam is not None and exam.subject_key and exam.subject_key != subject_key:
+            raise serializers.ValidationError({"exam": "Linked exam is for a different subject."})
+
+        request = self.context.get("request")
+        if request and subject_key and self.instance is None:
+            if StudentSubject.objects.filter(user=request.user, subject_key=subject_key).exists():
+                raise serializers.ValidationError({"subject_key": "You already have an entry for this subject."})
+        return attrs
+
+    def validate_exam(self, value):
+        request = self.context.get("request")
+        if value is not None and request and value.user_id != request.user.id:
+            raise serializers.ValidationError("Exam not found.")
+        return value
+
+
+class LearningEventSerializer(serializers.ModelSerializer):
+    """Read-only — events are written server-side via services.record_event,
+    never accepted from student-facing requests."""
+
+    event_type_display = serializers.CharField(source="get_event_type_display", read_only=True)
+
+    class Meta:
+        model = LearningEvent
+        fields = [
+            "id", "event_type", "event_type_display", "subject_key", "topic_label",
+            "source", "session", "target_id", "result", "metadata", "occurred_at",
+        ]
+        read_only_fields = fields
+
+
+class StudyAvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudyAvailability
+        fields = [
+            "preferred_days", "preferred_start_time", "typical_session_minutes",
+            "min_daily_minutes", "max_daily_minutes", "timezone", "updated_at",
+        ]
+        read_only_fields = ["updated_at"]
+
+    def validate_preferred_days(self, value):
+        if not isinstance(value, list) or any(not isinstance(d, int) or d < 0 or d > 6 for d in value):
+            raise serializers.ValidationError("preferred_days must be a list of integers 0-6 (Monday-Sunday).")
+        return value
+
+    def validate(self, attrs):
+        min_daily = attrs.get("min_daily_minutes", getattr(self.instance, "min_daily_minutes", None))
+        max_daily = attrs.get("max_daily_minutes", getattr(self.instance, "max_daily_minutes", None))
+        if min_daily is not None and max_daily is not None and min_daily > max_daily:
+            raise serializers.ValidationError({"min_daily_minutes": "Cannot exceed max_daily_minutes."})
+        return attrs
+
+
+class LearningPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearningPreferences
+        fields = ["explanation_style", "hints_before_answers", "preferred_language", "updated_at"]
+        read_only_fields = ["updated_at"]
+
+    def validate_preferred_language(self, value):
+        if value and value not in ("hy", "en"):
+            raise serializers.ValidationError("preferred_language must be 'hy', 'en', or blank.")
+        return value
 
 
 class ProfilePrivacySettingsSerializer(serializers.ModelSerializer):

@@ -1,0 +1,23 @@
+/* Hero ring + orbiting subject icons for the Learning Profile page. The
+   orbit spins the wrapper and counter-spins each icon so the emoji itself
+   stays upright while it travels around the ring. */
+@keyframes lp-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes lp-orbit-counter {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+@keyframes lp-rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lp-orbit-ring { animation: lp-orbit 70s linear infinite; }
+.lp-orbit-chip { animation: lp-orbit-counter 70s linear infinite; }
+.lp-rise-in { animation: lp-rise-in 0.5s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-orbit-ring, .lp-orbit-chip { animation: none; }
+}

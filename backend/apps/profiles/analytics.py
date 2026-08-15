@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.activity.models import StudySession
 from apps.flashcards.models import FlashcardProgress, FlashcardProgressStatus, FlashcardReview
+from apps.knowledge.models import SubjectMastery as StoredSubjectMastery
 from apps.mistakes.models import MistakeEntry
 from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus
 from apps.practice.models import AttemptAnswer, DailyProblemAttempt, PracticeAttempt, Tier, Topic, TopicMistake
@@ -117,6 +118,11 @@ def _recent_trend(user, practice_name, mock_key):
 
 
 def subject_mastery(user) -> list:
+    stored_mastery = {
+        m.subject_key: m.mastery_score
+        for m in StoredSubjectMastery.objects.filter(user=user)
+    }
+
     results = []
     for key, label in SUBJECT_LABELS.items():
         sources = {}
@@ -143,7 +149,12 @@ def subject_mastery(user) -> list:
             known_count = progress.filter(status=FlashcardProgressStatus.KNOWN).count()
             sources["flashcards"] = round(known_count / reviewed_count * 100, 1)
 
-        mastery = round(sum(sources.values()) / len(sources), 1) if sources else None
+        # The single source of truth for "mastery" is the Knowledge Engine's
+        # recency-weighted score (apps.knowledge.SubjectMastery, kept fresh
+        # by its own signals — see apps.knowledge.signals). `sources` above
+        # stays a live per-channel breakdown for transparency; it's no
+        # longer averaged into a second, competing mastery number.
+        mastery = stored_mastery.get(key)
 
         # Difficulty handling: hard-tier accuracy from practice + mock exam
         # only — flashcard "difficulty" is content metadata, not a
