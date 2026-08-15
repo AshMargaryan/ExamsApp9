@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { retryMistake, type MistakeEntry, type MistakeRetryResult } from "../../api/mistakes";
 import { MathText } from "../MathText";
+import { Button } from "../ui/Button";
 import { MultipleChoiceQuestion } from "../questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../questions/TrueFalseQuestion";
@@ -66,13 +67,9 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
     return (
       <div className="mt-3 rounded-md border border-border bg-surface-muted p-4">
         {!flipped ? (
-          <button
-            type="button"
-            onClick={() => setFlipped(true)}
-            className="text-sm font-medium text-primary hover:underline"
-          >
+          <Button variant="secondary" size="sm" onClick={() => setFlipped(true)}>
             Ցույց տալ պատասխանը
-          </button>
+          </Button>
         ) : (
           <>
             <p className="mb-3 text-text">

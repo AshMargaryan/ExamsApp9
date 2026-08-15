@@ -10,6 +10,26 @@ class MistakeEntrySource(models.TextChoices):
     FLASHCARD = "flashcard", "Flashcard"
 
 
+class MistakeType(models.TextChoices):
+    # No answer was submitted at all (e.g. a mock exam finished with blank
+    # questions) — not evidence of a misconception, so kept separate from
+    # INCORRECT everywhere mistake counts drive recommendations.
+    NOT_ATTEMPTED = "not_attempted", "Not Attempted"
+    INCORRECT = "incorrect", "Incorrect"
+
+
+class ErrorCategory(models.TextChoices):
+    """*Why* an INCORRECT mistake happened — set once, lazily, by
+    apps.mistakes.classification.classify_mistake, never computed here.
+    Never set for NOT_ATTEMPTED entries (nothing to analyze)."""
+
+    UNCLASSIFIED = "unclassified", "Not yet classified"
+    CARELESS_SLIP = "careless_slip", "Careless slip"
+    CONCEPTUAL_GAP = "conceptual_gap", "Conceptual gap"
+    PROCESS_ERROR = "process_error", "Process error"
+    MISREAD_QUESTION = "misread_question", "Misread question"
+
+
 class MistakeEntry(models.Model):
     """
     Permanent log of one incorrect answer — the Mistake Notebook. Created
@@ -29,6 +49,9 @@ class MistakeEntry(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mistake_entries"
     )
     source = models.CharField(max_length=12, choices=MistakeEntrySource.choices, db_index=True)
+    mistake_type = models.CharField(
+        max_length=20, choices=MistakeType.choices, default=MistakeType.INCORRECT, db_index=True,
+    )
     subject_name = models.CharField(max_length=120)
     topic_label = models.CharField(max_length=200, blank=True, default="")
 
@@ -57,6 +80,16 @@ class MistakeEntry(models.Model):
     retry_count = models.PositiveIntegerField(default=0)
     last_retried_at = models.DateTimeField(null=True, blank=True)
     last_retry_correct = models.BooleanField(null=True, blank=True)
+
+    # AI-assisted classification of *why* the mistake happened — set lazily
+    # by MistakeClassifyView the first time a student asks, then cached
+    # forever. Never recomputed automatically (the snapshot above doesn't
+    # change either, so there's nothing new to reclassify from).
+    error_category = models.CharField(
+        max_length=20, choices=ErrorCategory.choices, default=ErrorCategory.UNCLASSIFIED, db_index=True,
+    )
+    error_explanation = models.TextField(blank=True, default="")
+    classified_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

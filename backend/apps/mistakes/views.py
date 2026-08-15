@@ -4,6 +4,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .classification import classify_mistake
 from .models import MistakeEntry, MistakeEntrySource
 from .serializers import MistakeEntrySerializer, MistakeRetryInputSerializer
 
@@ -63,3 +64,17 @@ class MistakeRetryView(APIView):
             "explanation": entry.explanation,
             "retry_count": entry.retry_count,
         })
+
+
+class MistakeClassifyView(APIView):
+    """POST /api/mistakes/<id>/classify/ — lazily classifies *why* this
+    mistake happened via AI, caching the result on the entry. A second call
+    on an already-classified (or not-attempted) entry is a cheap no-op that
+    just returns the current state — never re-bills the AI call."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        entry = get_object_or_404(MistakeEntry, pk=pk, user=request.user)
+        classify_mistake(entry)
+        return Response(MistakeEntrySerializer(entry).data)

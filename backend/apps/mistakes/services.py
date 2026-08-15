@@ -7,9 +7,20 @@ plus .text/.hint) for the question types they have in common — only
 short_answer vs free_response, true_false vs multi_statement), and mock
 exams add a fourth type (matching) practice doesn't have.
 """
-from .models import MistakeEntry, MistakeEntrySource
+from .models import MistakeEntry, MistakeEntrySource, MistakeType
 
 NO_ANSWER = "(չպատասխանված)"
+
+
+def was_attempted(answer_data: dict) -> bool:
+    """True if the student actually submitted something for this question,
+    as opposed to leaving it blank (e.g. finishing a mock exam early)."""
+    return bool(
+        answer_data.get("selected_choice_id")
+        or answer_data.get("answer_text")
+        or answer_data.get("selected_statement_ids")
+        or answer_data.get("match_pairs")
+    )
 
 
 def _choice_snapshot(question, answer_data):
@@ -82,8 +93,10 @@ def record_mistake(user, *, source, subject_name, topic_label, question, questio
     passed to that app's score_answer()."""
     build = _SNAPSHOT_BUILDERS[question_type]
     your_answer, correct_answer, render_data = build(question, answer_data)
+    mistake_type = MistakeType.INCORRECT if was_attempted(answer_data) else MistakeType.NOT_ATTEMPTED
     MistakeEntry.objects.create(
-        user=user, source=source, subject_name=subject_name, topic_label=topic_label or "",
+        user=user, source=source, mistake_type=mistake_type,
+        subject_name=subject_name, topic_label=topic_label or "",
         question_type=question_type, question_text=question.text, render_data=render_data,
         your_answer_text=your_answer, correct_answer_text=correct_answer,
         explanation=explanation, hint=hint or getattr(question, "hint", ""),

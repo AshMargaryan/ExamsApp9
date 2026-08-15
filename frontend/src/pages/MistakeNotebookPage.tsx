@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { listMistakes, type MistakeEntry, type MistakeSource } from "../api/mistakes";
+import { HelpCircle, Sparkles, Tag } from "lucide-react";
+import { classifyMistake, listMistakes, type ErrorCategory, type MistakeEntry, type MistakeSource } from "../api/mistakes";
 import { MistakeRetryPanel } from "../components/mistakes/MistakeRetryPanel";
 import { MathText } from "../components/MathText";
+import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { useAssistantLaunch } from "../contexts/AssistantLaunchContext";
+import { Button } from "../components/ui/Button";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const TABS: { key: MistakeSource | "all"; label: string; icon: string }[] = [
   { key: "all", label: "Բոլորը", icon: "📓" },
@@ -17,6 +21,22 @@ const SOURCE_LABEL: Record<MistakeSource, string> = {
   flashcard: "Բառաքարտ",
 };
 
+const CATEGORY_LABELS: Record<ErrorCategory, string> = {
+  unclassified: "Դեռ չդասակարգված",
+  careless_slip: "Անուշադրության սխալ",
+  conceptual_gap: "Հասկացողության բաց",
+  process_error: "Սխալ մեթոդ",
+  misread_question: "Սխալ ընկալված հարց",
+};
+
+const CATEGORY_CLASSES: Record<ErrorCategory, string> = {
+  unclassified: "border-border bg-surface-muted text-text-muted",
+  careless_slip: "border-primary/40 bg-primary/10 text-primary",
+  conceptual_gap: "border-incorrect/40 bg-incorrect/10 text-incorrect",
+  process_error: "border-primary/40 bg-primary/10 text-primary",
+  misread_question: "border-border bg-surface-muted text-text-muted",
+};
+
 function groupBySubject(entries: MistakeEntry[]): [string, MistakeEntry[]][] {
   const groups = new Map<string, MistakeEntry[]>();
   for (const entry of entries) {
@@ -27,17 +47,59 @@ function groupBySubject(entries: MistakeEntry[]): [string, MistakeEntry[]][] {
   return Array.from(groups.entries());
 }
 
-function MistakeCard({ entry }: { entry: MistakeEntry }) {
+function MistakeCard({ entry: initialEntry }: { entry: MistakeEntry }) {
+  const { showError } = useToast();
   const [retrying, setRetrying] = useState(false);
-  const [lastCorrect, setLastCorrect] = useState<boolean | null>(entry.last_retry_correct);
-  const [retryCount, setRetryCount] = useState(entry.retry_count);
+  const [lastCorrect, setLastCorrect] = useState<boolean | null>(initialEntry.last_retry_correct);
+  const [retryCount, setRetryCount] = useState(initialEntry.retry_count);
+  const [entry, setEntry] = useState(initialEntry);
+  const [classifying, setClassifying] = useState(false);
+  const [classifyFailed, setClassifyFailed] = useState(false);
+  const { askAboutQuestion } = useAssistantLaunch();
+
+  async function handleClassify() {
+    setClassifying(true);
+    setClassifyFailed(false);
+    try {
+      const updated = await classifyMistake(entry.id);
+      setEntry(updated);
+      if (updated.classified_at === null) {
+        setClassifyFailed(true);
+      }
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    } finally {
+      setClassifying(false);
+    }
+  }
+
+  function handleAskAi() {
+    const hint = entry.classified_at
+      ? ` (հավանական պատճառ. ${entry.error_category_display})`
+      : "";
+    askAboutQuestion({
+      message:
+        `Ինչու՞ եմ սխալվել այս հարցում. «${entry.question_text}»: ` +
+        `Իմ պատասխանը՝ «${entry.your_answer_text}», ճիշտ պատասխանը՝ «${entry.correct_answer_text}»։${hint}`,
+      educationalContext: {
+        subject: entry.subject_name,
+        topic: entry.topic_label || undefined,
+        conversation_mode: "why_am_i_wrong",
+      },
+    });
+  }
 
   return (
     <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-text-muted">
-        <span>
+        <span className="flex items-center gap-2">
           {SOURCE_LABEL[entry.source]}
           {entry.topic_label && ` · ${entry.topic_label}`}
+          {entry.mistake_type === "not_attempted" && (
+            <span className="rounded-full bg-surface-muted px-2 py-0.5 text-text-muted">
+              Բաց թողնված
+            </span>
+          )}
         </span>
         <span>{new Date(entry.created_at).toLocaleString("hy-AM")}</span>
       </div>
@@ -46,9 +108,13 @@ function MistakeCard({ entry }: { entry: MistakeEntry }) {
         <MathText text={entry.question_text} />
       </p>
 
-      <div className="mb-1 text-sm text-incorrect">
-        Ձեր պատասխանը՝ <MathText text={entry.your_answer_text} />
-      </div>
+      {entry.mistake_type === "not_attempted" ? (
+        <div className="mb-1 text-sm text-text-muted">Պատասխան չեք նշել</div>
+      ) : (
+        <div className="mb-1 text-sm text-incorrect">
+          Ձեր պատասխանը՝ <MathText text={entry.your_answer_text} />
+        </div>
+      )}
       <div className="mb-2 text-sm text-correct">
         Ճիշտ պատասխանը՝ <MathText text={entry.correct_answer_text} />
       </div>
@@ -57,6 +123,38 @@ function MistakeCard({ entry }: { entry: MistakeEntry }) {
         <p className="mb-2 text-sm text-text-muted">
           <MathText text={entry.explanation} />
         </p>
+      )}
+
+      {entry.mistake_type !== "not_attempted" && (
+        <div className="mb-2">
+          {entry.classified_at ? (
+            <div className="flex flex-col gap-1.5">
+              <span className={`inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${CATEGORY_CLASSES[entry.error_category]}`}>
+                <Tag size={11} strokeWidth={1.75} /> {CATEGORY_LABELS[entry.error_category]}
+              </span>
+              {entry.error_explanation && <p className="text-xs text-text-muted">{entry.error_explanation}</p>}
+              <Button variant="ghost" size="sm" onClick={handleAskAi} className="h-7 w-fit px-2 text-xs">
+                <Sparkles size={12} strokeWidth={1.75} /> Քննարկել AI-ի հետ
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={handleClassify} disabled={classifying} className="h-7 px-2 text-xs">
+                {classifying ? "Վերլուծվում է..." : (
+                  <>
+                    <HelpCircle size={12} strokeWidth={1.75} /> Ինչու՞ եմ սխալվել
+                  </>
+                )}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleAskAi} className="h-7 px-2 text-xs">
+                <Sparkles size={12} strokeWidth={1.75} /> Քննարկել AI-ի հետ
+              </Button>
+              {classifyFailed && (
+                <span className="text-xs text-text-muted">AI-ն այժմ հասանելի չէ, փորձեք ավելի ուշ։</span>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -105,9 +203,7 @@ export function MistakeNotebookPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/" className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← Գլխավոր
-      </Link>
+      <LinkButton to="/" className="mb-4">← Գլխավոր</LinkButton>
       <h1 className="mb-1 text-3xl font-semibold text-text">📓 Սխալների տետր</h1>
       <p className="mb-6 text-sm text-text-muted">
         Ձեր բոլոր սխալ պատասխանները մեկ տեղում՝ կրկնիր ու ամրապնդիր։

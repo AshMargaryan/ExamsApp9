@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 
 export type MistakeSource = "practice" | "mock_exam" | "flashcard";
+export type MistakeType = "not_attempted" | "incorrect";
 
 export interface MistakeChoice {
   id: number;
@@ -37,9 +38,17 @@ export interface MistakeRenderData {
   translation?: string;
 }
 
+export type ErrorCategory =
+  | "unclassified"
+  | "careless_slip"
+  | "conceptual_gap"
+  | "process_error"
+  | "misread_question";
+
 export interface MistakeEntry {
   id: number;
   source: MistakeSource;
+  mistake_type: MistakeType;
   subject_name: string;
   topic_label: string;
   question_type: string;
@@ -54,6 +63,10 @@ export interface MistakeEntry {
   last_retried_at: string | null;
   last_retry_correct: boolean | null;
   retryable: boolean;
+  error_category: ErrorCategory;
+  error_category_display: string;
+  error_explanation: string;
+  classified_at: string | null;
 }
 
 export interface MistakeRetryInput {
@@ -78,5 +91,10 @@ export async function listMistakes(source?: MistakeSource): Promise<MistakeEntry
 
 export async function retryMistake(id: number, input: MistakeRetryInput): Promise<MistakeRetryResult> {
   const { data } = await apiClient.post(`/mistakes/${id}/retry/`, input);
+  return data;
+}
+
+export async function classifyMistake(id: number): Promise<MistakeEntry> {
+  const { data } = await apiClient.post(`/mistakes/${id}/classify/`);
   return data;
 }
