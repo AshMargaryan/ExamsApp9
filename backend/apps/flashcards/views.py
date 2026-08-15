@@ -332,6 +332,11 @@ class CardFlagView(APIView):
 # drives the interval/ease scheduling with real granularity.
 MIN_EASE_FACTOR = 1.3
 MAX_EASE_FACTOR = 3.0
+# A year is already far past "review this before an exam" territory — caps
+# the exponential interval*ease_factor growth so a long correct streak can't
+# compound into a datetime.timedelta overflow. Same cap as the mirrored
+# scheduler in apps.knowledge.services._apply_spaced_repetition.
+MAX_INTERVAL_DAYS = 365
 
 GRADE_STATUS = {
     "again": FlashcardProgressStatus.LEARNING,
@@ -348,7 +353,7 @@ def _schedule(progress: FlashcardProgress, grade: str) -> None:
         progress.interval_days = 0
         progress.ease_factor = max(MIN_EASE_FACTOR, progress.ease_factor - 0.3)
     elif grade == "hard":
-        progress.interval_days = max(1, round(prev_interval * 1.2)) if prev_interval else 1
+        progress.interval_days = min(MAX_INTERVAL_DAYS, max(1, round(prev_interval * 1.2)) if prev_interval else 1)
         progress.ease_factor = max(MIN_EASE_FACTOR, progress.ease_factor - 0.15)
     elif grade == "good":
         if prev_interval == 0:
@@ -356,10 +361,12 @@ def _schedule(progress: FlashcardProgress, grade: str) -> None:
         elif prev_interval == 1:
             progress.interval_days = 3
         else:
-            progress.interval_days = round(prev_interval * progress.ease_factor)
+            progress.interval_days = min(MAX_INTERVAL_DAYS, round(prev_interval * progress.ease_factor))
         progress.ease_factor = min(MAX_EASE_FACTOR, progress.ease_factor + 0.05)
     else:  # easy
-        progress.interval_days = 4 if prev_interval == 0 else round(prev_interval * progress.ease_factor * 1.3)
+        progress.interval_days = (
+            4 if prev_interval == 0 else min(MAX_INTERVAL_DAYS, round(prev_interval * progress.ease_factor * 1.3))
+        )
         progress.ease_factor = min(MAX_EASE_FACTOR, progress.ease_factor + 0.15)
 
 
