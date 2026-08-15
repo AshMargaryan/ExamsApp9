@@ -6,7 +6,9 @@ from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.utils import timezone
 
+from apps.notifications.models import NotificationType as StudentNotificationType
 from apps.notifications.realtime import push_notification_refresh
+from apps.notifications.services import create_notification
 from apps.practice.models import AttemptAnswer, PracticeAttempt, Subject, Subtopic
 from apps.practice.services import get_weekly_progress, progress_by_subtopic, subtopic_ids_with_questions
 from apps.profiles.models import Profile, UserAchievement
@@ -66,6 +68,11 @@ def respond_to_child_request(request_id: int, child, action: str) -> ParentChild
         req.status = ParentChildRequestStatus.ACCEPTED
         req.save(update_fields=["status"])
         ParentChildLink.objects.get_or_create(parent=req.parent, child=child)
+        child_name = child.first_name or child.username
+        create_notification(
+            req.parent, StudentNotificationType.PARENT_LINK_ACCEPTED,
+            f"{child_name} ընդունեց ձեր հարցումը՝ հետևելու իր առաջընթացին", link="/family",
+        )
     elif action == "reject":
         req.status = ParentChildRequestStatus.REJECTED
         req.save(update_fields=["status"])

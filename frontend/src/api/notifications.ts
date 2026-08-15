@@ -6,7 +6,12 @@ export type StudentNotificationType =
   | "season_ending"
   | "season_result"
   | "challenge_received"
-  | "challenge_result";
+  | "challenge_result"
+  | "friend_added"
+  | "parent_link_accepted"
+  | "message_request"
+  | "mention"
+  | "group_invite";
 
 export interface StudentNotification {
   id: number;

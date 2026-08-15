@@ -9,6 +9,12 @@ class NotificationType(models.TextChoices):
     SEASON_RESULT = "season_result", "Season result"
     CHALLENGE_RECEIVED = "challenge_received", "Challenge received"
     CHALLENGE_RESULT = "challenge_result", "Challenge result"
+    FRIEND_ADDED = "friend_added", "New friend"
+    PARENT_LINK_ACCEPTED = "parent_link_accepted", "Child accepted parent link request"
+    MESSAGE_REQUEST = "message_request", "New message request"
+    MENTION = "mention", "Mentioned in chat"
+    GROUP_INVITE = "group_invite", "Added to a group"
+    TODO_REMINDER = "todo_reminder", "To-do reminder"
 
 
 class StudentNotification(models.Model):
