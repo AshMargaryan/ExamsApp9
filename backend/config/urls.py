@@ -23,6 +23,12 @@ urlpatterns = [
     path("api/chat/", include("apps.chat.urls")),
     path("api/mistakes/", include("apps.mistakes.urls")),
     path("api/study-plan/", include("apps.study_plan.urls")),
+    path("api/help/", include("apps.helpcenter.urls")),
+    path("api/knowledge/", include("apps.knowledge.urls")),
+    path("api/notepad/", include("apps.notepad.urls")),
+    path("api/groups/", include("apps.study_groups.urls")),
+    path("api/todo/", include("apps.todo.urls")),
+    path("api/notes/", include("apps.notes.urls")),
 ]
 
 if settings.DEBUG:
