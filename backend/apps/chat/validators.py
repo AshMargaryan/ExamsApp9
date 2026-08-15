@@ -25,6 +25,12 @@ ALLOWED_ATTACHMENTS = {
     "txt": (AttachmentType.TEXT, {"text/plain"}),
     "md": (AttachmentType.TEXT, {"text/plain", "text/markdown"}),
     "csv": (AttachmentType.TEXT, {"text/plain", "text/csv"}),
+    # Voice messages (spec #27) — MediaRecorder output. libmagic sometimes
+    # sniffs a container as its video mimetype even with only an audio
+    # track, hence the video/* entries alongside the audio/* ones.
+    "webm": (AttachmentType.AUDIO, {"audio/webm", "video/webm"}),
+    "ogg": (AttachmentType.AUDIO, {"audio/ogg", "application/ogg", "video/ogg"}),
+    "mp4": (AttachmentType.AUDIO, {"audio/mp4", "video/mp4"}),
 }
 
 

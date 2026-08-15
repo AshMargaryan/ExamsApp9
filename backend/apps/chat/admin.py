@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Attachment, Conversation, ConversationParticipant, Message, MessageReaction
+from .models import Attachment, Conversation, ConversationParticipant, Message, MessageReaction, MessageReport
 
 
 class ConversationParticipantInline(admin.TabularInline):
@@ -55,3 +55,11 @@ class AttachmentAdmin(admin.ModelAdmin):
     list_filter = ["file_type"]
     search_fields = ["original_filename", "uploaded_by__username"]
     autocomplete_fields = ["conversation", "uploaded_by", "message"]
+
+
+@admin.register(MessageReport)
+class MessageReportAdmin(admin.ModelAdmin):
+    list_display = ["id", "message", "reporter", "reason", "created_at"]
+    list_filter = ["reason"]
+    search_fields = ["reporter__username", "details"]
+    autocomplete_fields = ["message", "reporter"]

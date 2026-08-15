@@ -1,18 +1,50 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Ban, Info, Inbox, Swords } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 import * as chatApi from "../api/chat";
 import type { Conversation } from "../api/chat";
+import type { ChallengeInvite } from "../api/challenges";
+import * as friendsApi from "../api/friends";
+import * as teachingApi from "../api/teaching";
+import type { FriendUser } from "../api/friends";
+import { ChallengeModal } from "../components/challenges/ChallengeModal";
 import { ConversationList } from "../components/chat/ConversationList";
 import { ConversationView } from "../components/chat/ConversationView";
-import { NewConversationModal } from "../components/chat/NewConversationModal";
+import { GlobalSearchPanel } from "../components/chat/GlobalSearchPanel";
+import { GroupInfoPanel } from "../components/chat/GroupInfoPanel";
+import { MessageRequestsModal } from "../components/chat/MessageRequestsModal";
+import { NewConversationModal, type GroupCreationExtra } from "../components/chat/NewConversationModal";
 import { conversationTitle } from "../lib/chatLabels";
+import { LinkButton } from "../components/ui/LinkButton";
 
 export function ChatPage() {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [students, setStudents] = useState<FriendUser[]>([]);
+  const [requestsOpen, setRequestsOpen] = useState(false);
+  const [requestCount, setRequestCount] = useState(0);
+  const [blocking, setBlocking] = useState(false);
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [challenging, setChallenging] = useState(false);
+
+  useEffect(() => {
+    if (user?.role !== "teacher") return;
+    teachingApi.fetchStudentRoster().then((roster) => setStudents(roster.map((r) => r.student)));
+  }, [user?.role]);
+
+  function refreshRequestCount() {
+    chatApi.listMessageRequests().then((r) => setRequestCount(r.length));
+  }
+
+  useEffect(() => {
+    refreshRequestCount();
+    const interval = setInterval(refreshRequestCount, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   function refresh(): Promise<Conversation[]> {
     return chatApi.listConversations(search || undefined).then((data) => {
@@ -42,6 +74,33 @@ export function ChatPage() {
     setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, unread_count: 0 } : c)) ?? prev);
   }
 
+  async function handleTogglePin(id: number, pinned: boolean) {
+    setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, pinned } : c)) ?? prev);
+    await chatApi.setConversationPrefs(id, { pinned });
+  }
+
+  async function handleToggleMute(id: number, muted: boolean) {
+    setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, muted } : c)) ?? prev);
+    await chatApi.setConversationPrefs(id, { muted });
+  }
+
+  async function handleStartChatFromSearch(userId: number) {
+    await handleCreatePrivate(userId);
+    setSearch("");
+  }
+
+  // A message/file search result's conversation may not be in `conversations`
+  // right now — that list is itself filtered by the search text (by name,
+  // not content), so a hit on message text alone can point at a
+  // conversation the name-filter excluded. Clearing the search reverts to
+  // the full unfiltered list so selectedConversation resolves once refresh
+  // completes.
+  function handleSelectFromSearch(id: number) {
+    setSelectedId(id);
+    setSearch("");
+    setSidebarOpen(false);
+  }
+
   async function handleCreatePrivate(userId: number) {
     const conversation = await chatApi.createPrivateConversation(userId);
     await refresh();
@@ -50,8 +109,30 @@ export function ChatPage() {
     setSidebarOpen(false);
   }
 
-  async function handleCreateGroup(name: string, participantIds: number[]) {
-    const conversation = await chatApi.createGroupConversation(name, participantIds);
+  async function handleBlock() {
+    const other = selectedConversation?.other_participant;
+    if (!other) return;
+    if (!window.confirm(`Արգելափակե՞լ ${other.username}-ին։ Կչեղարկվի ընկերությունը և այլևս չեք կարողանա նամակագրվել։`)) {
+      return;
+    }
+    setBlocking(true);
+    try {
+      await friendsApi.blockUser(other.id);
+      setSelectedId(null);
+      await refresh();
+    } finally {
+      setBlocking(false);
+    }
+  }
+
+  async function handleChallengeSent(invite: ChallengeInvite) {
+    if (!selectedId) return;
+    setChallenging(false);
+    await chatApi.sendMessage(selectedId, "", [], null, { context_type: "challenge", context_id: invite.id });
+  }
+
+  async function handleCreateGroup(name: string, participantIds: number[], extra: GroupCreationExtra) {
+    const conversation = await chatApi.createGroupConversation(name, participantIds, extra);
     await refresh();
     setSelectedId(conversation.id);
     setCreating(false);
@@ -60,13 +141,26 @@ export function ChatPage() {
 
   const sidebarContent = (
     <>
-      <div className="p-3">
+      <div className="flex gap-2 p-3">
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
+          className="flex-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
         >
           + Նոր զրույց
+        </button>
+        <button
+          type="button"
+          onClick={() => setRequestsOpen(true)}
+          title="Հաղորդագրության հարցումներ"
+          className="relative shrink-0 rounded-md border border-border px-3 py-2 text-text-muted hover:bg-surface-muted"
+        >
+          <Inbox size={16} strokeWidth={1.75} />
+          {requestCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-contrast">
+              {requestCount}
+            </span>
+          )}
         </button>
       </div>
       <div className="px-3 pb-3">
@@ -80,6 +174,13 @@ export function ChatPage() {
       <div className="flex-1 overflow-y-auto px-2 pb-3">
         {conversations === null ? (
           <p className="px-2 py-4 text-sm text-text-muted">Բեռնվում է...</p>
+        ) : search.trim() ? (
+          <GlobalSearchPanel
+            query={search}
+            matchingConversations={conversations}
+            onSelectConversation={handleSelectFromSearch}
+            onStartChat={handleStartChatFromSearch}
+          />
         ) : (
           <ConversationList
             conversations={conversations}
@@ -88,6 +189,8 @@ export function ChatPage() {
               handleSelect(id);
               setSidebarOpen(false);
             }}
+            onTogglePin={handleTogglePin}
+            onToggleMute={handleToggleMute}
           />
         )}
       </div>
@@ -116,12 +219,41 @@ export function ChatPage() {
           >
             ☰
           </button>
-          <Link to="/" className="text-sm text-primary hover:underline">
-            ← Գլխավոր
-          </Link>
+          <LinkButton to="/">← Գլխավոր</LinkButton>
           <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-text">
             {selectedConversation ? conversationTitle(selectedConversation) : "Հաղորդագրություններ"}
           </h1>
+          {selectedConversation?.type === "private" && selectedConversation.other_participant && (
+            <button
+              type="button"
+              onClick={() => setChallenging(true)}
+              title="Մարտահրավեր"
+              className="shrink-0 text-text-muted hover:text-primary"
+            >
+              <Swords size={16} strokeWidth={1.75} />
+            </button>
+          )}
+          {selectedConversation?.type === "private" && (
+            <button
+              type="button"
+              onClick={handleBlock}
+              disabled={blocking}
+              title="Արգելափակել օգտատիրոջը"
+              className="shrink-0 text-text-muted hover:text-incorrect disabled:opacity-60"
+            >
+              <Ban size={16} strokeWidth={1.75} />
+            </button>
+          )}
+          {selectedConversation?.type === "group" && (
+            <button
+              type="button"
+              onClick={() => setGroupInfoOpen(true)}
+              title="Խմբի մասին"
+              className="shrink-0 text-text-muted hover:text-primary"
+            >
+              <Info size={16} strokeWidth={1.75} />
+            </button>
+          )}
         </header>
 
         {selectedConversation ? (
@@ -138,6 +270,29 @@ export function ChatPage() {
           onClose={() => setCreating(false)}
           onCreatePrivate={handleCreatePrivate}
           onCreateGroup={handleCreateGroup}
+          students={students}
+        />
+      )}
+
+      {requestsOpen && (
+        <MessageRequestsModal
+          onClose={() => {
+            setRequestsOpen(false);
+            refreshRequestCount();
+            refresh();
+          }}
+        />
+      )}
+
+      {groupInfoOpen && selectedConversation && (
+        <GroupInfoPanel conversation={selectedConversation} onClose={() => setGroupInfoOpen(false)} />
+      )}
+
+      {challenging && selectedConversation?.other_participant && (
+        <ChallengeModal
+          friend={selectedConversation.other_participant}
+          onClose={() => setChallenging(false)}
+          onSent={handleChallengeSent}
         />
       )}
     </div>

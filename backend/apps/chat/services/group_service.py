@@ -1,6 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
-from ..models import Conversation, ConversationParticipant, ParticipantRole
+from apps.notifications.models import NotificationType
+from apps.notifications.services import create_notification
+
+from ..models import Conversation, ConversationParticipant, Message, ParticipantRole
 
 User = get_user_model()
 
@@ -23,10 +27,19 @@ def add_participants(conversation: Conversation, user_ids: list[int]) -> list[Co
         ConversationParticipant.objects.bulk_update(to_reactivate, ["active"])
 
     new_ids = set(user_ids) - set(existing)
+    new_users = list(User.objects.filter(id__in=new_ids))
     created = ConversationParticipant.objects.bulk_create([
-        ConversationParticipant(conversation=conversation, user_id=uid, role=ParticipantRole.MEMBER)
-        for uid in User.objects.filter(id__in=new_ids).values_list("id", flat=True)
+        ConversationParticipant(conversation=conversation, user=u, role=ParticipantRole.MEMBER)
+        for u in new_users
     ])
+    # Only genuinely new members, not reactivated ones — someone who left
+    # and got re-added doesn't need a "you were added" ping the same way a
+    # first-timer does.
+    for u in new_users:
+        create_notification(
+            u, NotificationType.GROUP_INVITE,
+            f"Ավելացվեցիք «{conversation.name}» խմբում", link="/chat",
+        )
     return created + to_reactivate
 
 
@@ -41,6 +54,14 @@ def is_owner(conversation: Conversation, user) -> bool:
     ).exists()
 
 
+def is_manager(conversation: Conversation, user) -> bool:
+    """Owner or admin — the roles spec #31 grants pin/settings/moderation privileges to."""
+    return ConversationParticipant.objects.filter(
+        conversation=conversation, user=user, active=True,
+        role__in=[ParticipantRole.OWNER, ParticipantRole.ADMIN],
+    ).exists()
+
+
 def rename(conversation: Conversation, name: str) -> Conversation:
     conversation.name = name
     conversation.save(update_fields=["name"])
@@ -51,3 +72,36 @@ def update_image(conversation: Conversation, image_file) -> Conversation:
     conversation.image = image_file
     conversation.save(update_fields=["image"])
     return conversation
+
+
+def update_settings(conversation: Conversation, **fields) -> Conversation:
+    """fields: any of description/subject/grade/privacy — only touches what's passed."""
+    update_fields = []
+    for name, value in fields.items():
+        setattr(conversation, name, value)
+        update_fields.append(name)
+    if update_fields:
+        conversation.save(update_fields=update_fields)
+    return conversation
+
+
+def pin_message(message: Message) -> Message:
+    if message.pinned_at is None:
+        message.pinned_at = timezone.now()
+        message.save(update_fields=["pinned_at"])
+    return message
+
+
+def unpin_message(message: Message) -> Message:
+    if message.pinned_at is not None:
+        message.pinned_at = None
+        message.save(update_fields=["pinned_at"])
+    return message
+
+
+def list_pinned(conversation: Conversation) -> list[Message]:
+    return list(
+        conversation.messages.filter(pinned_at__isnull=False, deleted_at__isnull=True)
+        .select_related("sender")
+        .order_by("-pinned_at")
+    )

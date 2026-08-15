@@ -52,6 +52,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self._mark_read(content.get("message_id"))
         elif action == "react":
             await self._set_reaction(content.get("message_id"), content.get("emoji"))
+        elif action == "edit":
+            await self._handle_edit(content)
+        elif action == "delete":
+            await self._handle_delete(content)
+        elif action == "typing":
+            await self._broadcast_typing()
 
     async def _handle_message(self, content):
         try:
@@ -59,12 +65,45 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         except ValueError as e:
             await self.send_json({"type": "error", "detail": str(e)})
 
+    async def _handle_edit(self, content):
+        try:
+            await self._edit_message(content.get("message_id"), content.get("text"))
+        except ValueError as e:
+            await self.send_json({"type": "error", "detail": str(e)})
+
+    async def _handle_delete(self, content):
+        try:
+            await self._delete_message(content.get("message_id"))
+        except ValueError as e:
+            await self.send_json({"type": "error", "detail": str(e)})
+
+    async def _broadcast_typing(self):
+        # No DB write, no persistence — a pure ephemeral presence signal,
+        # so this skips message_service/realtime.py entirely and just
+        # group_sends directly (those exist to give sync REST views a way
+        # to trigger a broadcast too; nothing outside this consumer needs
+        # to announce typing).
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                "type": "chat.typing",
+                "payload": {
+                    "type": "typing",
+                    "user_id": self.user.id,
+                    "name": self.user.first_name or self.user.username,
+                },
+            },
+        )
+
     # -- group event handlers (invoked via channel_layer.group_send) --------
 
     async def chat_message(self, event):
         await self.send_json(event["payload"])
 
     async def chat_read(self, event):
+        await self.send_json(event["payload"])
+
+    async def chat_typing(self, event):
         await self.send_json(event["payload"])
 
     # -- DB helpers -----------------------------------------------------
@@ -81,6 +120,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             text=content.get("text", ""),
             attachment_ids=content.get("attachment_ids"),
             reply_to_id=content.get("reply_to_id"),
+            context_type=content.get("context_type"),
+            context_id=content.get("context_id"),
         )
 
     @database_sync_to_async
@@ -99,3 +140,17 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         if message is None:
             return
         reaction_service.set_reaction(message, self.user, emoji)
+
+    @database_sync_to_async
+    def _edit_message(self, message_id, text):
+        message = Message.objects.filter(pk=message_id, conversation_id=self.conversation_id).first()
+        if message is None:
+            raise ValueError("Հաղորդագրությունը չի գտնվել։")
+        message_service.edit_message(message, self.user, text)
+
+    @database_sync_to_async
+    def _delete_message(self, message_id):
+        message = Message.objects.filter(pk=message_id, conversation_id=self.conversation_id).first()
+        if message is None:
+            raise ValueError("Հաղորդագրությունը չի գտնվել։")
+        message_service.delete_message_for_everyone(message, self.user)

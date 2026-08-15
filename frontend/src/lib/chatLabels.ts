@@ -1,4 +1,9 @@
+import { AI_BOT_USERNAME } from "../api/chat";
 import type { Conversation } from "../api/chat";
+
+export function isAiSender(sender: { username: string } | null | undefined): boolean {
+  return sender?.username === AI_BOT_USERNAME;
+}
 
 export function conversationTitle(conversation: Conversation): string {
   if (conversation.type === "group") return conversation.name || "Խումբ";
@@ -22,8 +27,15 @@ const MESSAGE_TYPE_PREVIEW: Record<string, string> = {
   file: "📎 Ֆայլ",
 };
 
+const CONTEXT_TYPE_PREVIEW: Record<string, string> = {
+  mock_exam_result: "📝 Քննության արդյունք",
+  achievement: "🏆 Նվաճում",
+  profile: "👤 Պրոֆիլ",
+};
+
 /** Text/image/file preview label for anything shaped like a message (last-message preview, reply bar, in-bubble quote). */
-export function messagePreviewText(message: { text: string; message_type: string }): string {
+export function messagePreviewText(message: { text: string; message_type: string; context_type?: string | null }): string {
+  if (message.context_type) return CONTEXT_TYPE_PREVIEW[message.context_type] ?? message.text;
   if (message.message_type !== "text") return MESSAGE_TYPE_PREVIEW[message.message_type] ?? message.text;
   return message.text;
 }
