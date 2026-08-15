@@ -1,8 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../lib/cn";
-import type { ButtonVariant } from "./Button";
-
-type IconButtonSize = "sm" | "md" | "lg";
+import type { ButtonVariant } from "./buttonStyles";
+import { ICON_BUTTON_SIZE_CLASSES, ICON_BUTTON_VARIANT_CLASSES, type IconButtonSize } from "./iconButtonStyles";
 
 interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   icon: ReactNode;
@@ -12,18 +11,6 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   variant?: Extract<ButtonVariant, "secondary" | "ghost" | "primary">;
   size?: IconButtonSize;
 }
-
-const VARIANT_CLASSES: Record<string, string> = {
-  primary: "bg-primary text-primary-contrast shadow-sm hover:bg-primary-hover active:brightness-95",
-  secondary: "border border-border bg-surface text-text hover:border-primary hover:bg-surface-muted",
-  ghost: "bg-transparent text-text-muted hover:bg-surface-muted hover:text-text",
-};
-
-const SIZE_CLASSES: Record<IconButtonSize, string> = {
-  sm: "h-8 w-8 text-base",
-  md: "h-10 w-10 text-lg",
-  lg: "h-11 w-11 text-xl",
-};
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   { icon, variant = "ghost", size = "md", disabled, className, ...rest },
@@ -40,8 +27,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
         "hover:-translate-y-px active:translate-y-0",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "disabled:pointer-events-none disabled:opacity-40",
-        VARIANT_CLASSES[variant],
-        SIZE_CLASSES[size],
+        ICON_BUTTON_VARIANT_CLASSES[variant],
+        ICON_BUTTON_SIZE_CLASSES[size],
         className,
       )}
       {...rest}
