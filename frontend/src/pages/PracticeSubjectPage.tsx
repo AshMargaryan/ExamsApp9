@@ -9,10 +9,9 @@ import * as teachingApi from "../api/teaching";
 import { Battery } from "../components/Battery";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
 import { SpeakOnSelect } from "../components/SpeakOnSelect";
-import { ToolsDock } from "../components/ToolsDock";
-import { NotepadProvider } from "../context/NotepadContext";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 import { useAuth } from "../auth/AuthContext";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const TIERS: Tier[] = ["easy", "medium", "hard"];
 
@@ -332,9 +331,7 @@ export function PracticeSubjectPage() {
     return (
       <div className="p-8">
         <p className="text-lg text-text-muted">Առարկան չի գտնվել։</p>
-        <Link to="/practice" className="text-sm text-primary hover:underline">
-          ← Առարկաներ
-        </Link>
+        <LinkButton to="/practice">← Առարկաներ</LinkButton>
       </div>
     );
   }
@@ -346,14 +343,11 @@ export function PracticeSubjectPage() {
   const isMath = subject.name === MATH_SUBJECT_NAME;
 
   return (
-    <NotepadProvider>
     <div className="flex min-h-screen bg-bg">
       {sidebarOpen ? (
         <aside className="w-[26rem] shrink-0 overflow-y-auto border-r border-border bg-surface p-5">
           <div className="mb-4 flex items-center justify-between">
-            <Link to="/practice" className="text-sm text-primary hover:underline">
-              ← Առարկաներ
-            </Link>
+            <LinkButton to="/practice">← Առարկաներ</LinkButton>
             <button
               type="button"
               title="Փակել ցանկը"
@@ -457,9 +451,6 @@ export function PracticeSubjectPage() {
           )
         )}
       </main>
-
-      {isMath && <ToolsDock />}
     </div>
-    </NotepadProvider>
   );
 }
