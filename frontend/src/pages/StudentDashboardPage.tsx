@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import * as profileApi from "../api/profile";
 import type { ActivityDay, Profile, UserAchievement } from "../api/profile";
 import * as teachingApi from "../api/teaching";
 import type { Assignment } from "../api/teaching";
-import { PublicProfileModal } from "../components/profile/PublicProfileModal";
 import { TeachingModal } from "../components/teaching/TeachingModal";
 import { DailyProgressChart } from "../components/dashboard/DailyProgressChart";
 import { DashboardAssignmentCard } from "../components/dashboard/DashboardAssignmentCard";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const ACCURACY_RING_R = 24;
 const ACCURACY_RING_CIRCUMFERENCE = 2 * Math.PI * ACCURACY_RING_R;
@@ -37,12 +37,12 @@ function StatCard({
 }
 
 export function StudentDashboardPage() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [assignments, setAssignments] = useState<Assignment[] | null>(null);
   const [achievements, setAchievements] = useState<UserAchievement[] | null>(null);
   const [activity, setActivity] = useState<ActivityDay[] | null>(null);
   const [teachingOpen, setTeachingOpen] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
   const [settingExamDate, setSettingExamDate] = useState(false);
   const [examDateInput, setExamDateInput] = useState("");
 
@@ -99,9 +99,7 @@ export function StudentDashboardPage() {
     <div className="min-h-screen bg-bg px-4 py-8 sm:px-8 lg:px-16">
       <div className="mx-auto max-w-6xl">
         <div className="mb-4">
-          <Link to="/" className="text-sm text-primary hover:underline">
-            ← Գլխավոր
-          </Link>
+          <LinkButton to="/">← Գլխավոր</LinkButton>
         </div>
 
         {/* HEADER */}
@@ -114,7 +112,7 @@ export function StudentDashboardPage() {
               Աշակերտի վահանակ
             </div>
             <h1 className="text-3xl font-semibold text-text sm:text-4xl" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-              Բարի վերադարձ, {fullName.split(" ")[0]} 👋
+              Բարի վերադարձ, {fullName.split(" ")[0]}
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -152,7 +150,7 @@ export function StudentDashboardPage() {
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setViewingUserId(t.id)}
+                    onClick={() => navigate(`/profile/${t.id}`)}
                     className="flex items-center gap-3.5 rounded-full border border-border bg-surface py-2.5 pr-6 pl-2.5 text-left transition-colors hover:border-primary"
                   >
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-base font-semibold text-text-muted">
@@ -354,9 +352,6 @@ export function StudentDashboardPage() {
       </div>
 
       {teachingOpen && <TeachingModal role="student" onClose={handleTeachingClose} onChange={refreshProfile} />}
-      {viewingUserId !== null && (
-        <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
-      )}
     </div>
   );
 }

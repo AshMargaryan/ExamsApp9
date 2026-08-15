@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as teachingApi from "../../api/teaching";
 import type { StudentSearchResult, TeacherStudentConnection } from "../../api/teaching";
 import type { AccountRole } from "../../api/auth";
-import { PublicProfileModal } from "../profile/PublicProfileModal";
+import { Button } from "../ui/Button";
 
 type Tab = "invitations" | "search";
 
@@ -43,13 +44,13 @@ export function TeachingModal({
   onClose: () => void;
   onChange: () => void;
 }) {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("invitations");
   const [invitations, setInvitations] = useState<TeacherStudentConnection[] | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<StudentSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
 
   function loadInvitations() {
     teachingApi.fetchInvitations().then(setInvitations);
@@ -156,36 +157,24 @@ export function TeachingModal({
                     className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar user={person} onClick={() => setViewingUserId(person.id)} />
+                      <Avatar user={person} onClick={() => navigate(`/profile/${person.id}`)} />
                       <div>
                         <p className="text-text">{displayName(person)}</p>
                         <p className="text-xs text-text-muted">@{person.username}</p>
                       </div>
                     </div>
                     {role === "teacher" ? (
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(inv.id)}
-                        className="text-sm text-text-muted hover:underline"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleCancel(inv.id)} className="h-7 px-2 text-xs">
                         Չեղարկել
-                      </button>
+                      </Button>
                     ) : (
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => handleRespond(inv.id, "accept")}
-                          className="text-sm text-primary hover:underline"
-                        >
+                      <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" onClick={() => handleRespond(inv.id, "accept")} className="h-7 px-2 text-xs">
                           Ընդունել
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRespond(inv.id, "decline")}
-                          className="text-sm text-text-muted hover:underline"
-                        >
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleRespond(inv.id, "decline")} className="h-7 px-2 text-xs">
                           Մերժել
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -213,20 +202,16 @@ export function TeachingModal({
                   className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
                 >
                   <div className="flex items-center gap-3">
-                    <Avatar user={u} onClick={() => setViewingUserId(u.id)} />
+                    <Avatar user={u} onClick={() => navigate(`/profile/${u.id}`)} />
                     <div>
                       <p className="text-text">{displayName(u)}</p>
                       <p className="text-xs text-text-muted">@{u.username}</p>
                     </div>
                   </div>
                   {u.connection_status === "none" && (
-                    <button
-                      type="button"
-                      onClick={() => handleSend(u.id)}
-                      className="text-sm text-primary hover:underline"
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => handleSend(u.id)} className="h-7 px-2 text-xs">
                       Հրավիրել
-                    </button>
+                    </Button>
                   )}
                   {u.connection_status === "pending" && (
                     <span className="text-sm text-text-muted">Ուղարկված է</span>
@@ -242,12 +227,6 @@ export function TeachingModal({
 
         {error && <p className="mt-3 text-sm text-incorrect">{error}</p>}
       </div>
-
-      {viewingUserId !== null && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
-        </div>
-      )}
     </div>
   );
 }

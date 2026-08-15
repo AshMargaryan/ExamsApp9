@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 import type { FriendUser } from "./friends";
+import type { ChildDashboard } from "./parents";
+import type { RankHistoryPoint, RankingScope } from "./rankings";
 
 export type ConnectionStatus = "pending" | "accepted" | "declined";
 export type StudentConnectionStatus = ConnectionStatus | "none";
@@ -179,5 +181,67 @@ export async function fetchAssignmentNotifications(): Promise<Assignment[]> {
 
 export async function redoAssignment(id: number): Promise<Assignment> {
   const { data } = await apiClient.post(`/teaching/assignments/${id}/redo/`);
+  return data;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  student: FriendUser;
+  monthly_xp: number;
+  level: number;
+  trend: { xp_change: number } | null;
+}
+
+export async function fetchClassLeaderboard(): Promise<LeaderboardEntry[]> {
+  const { data } = await apiClient.get("/teaching/students/leaderboard/");
+  return data;
+}
+
+export async function fetchStudentDashboard(studentId: number): Promise<ChildDashboard> {
+  const { data } = await apiClient.get(`/teaching/students/${studentId}/dashboard/`);
+  return data;
+}
+
+export async function fetchStudentRankHistory(
+  studentId: number,
+  scope: RankingScope,
+): Promise<RankHistoryPoint[]> {
+  const { data } = await apiClient.get(`/teaching/students/${studentId}/rank-history/`, {
+    params: { scope },
+  });
+  return data;
+}
+
+export interface DashboardStats {
+  student_count: number;
+  pending_review_count: number;
+  overdue_count: number;
+  online_now_count: number;
+}
+
+export interface WeakSpot {
+  subject_name: string;
+  topic_label: string;
+  count: number;
+}
+
+export type ActivityEventType = "submitted" | "approved" | "rejected" | "joined";
+
+export interface ActivityEvent {
+  type: ActivityEventType;
+  at: string;
+  student: FriendUser;
+  title: string;
+}
+
+export interface DashboardSummary {
+  stats: DashboardStats;
+  pending_review: Assignment[];
+  weak_spots: WeakSpot[];
+  activity_feed: ActivityEvent[];
+}
+
+export async function fetchDashboardSummary(): Promise<DashboardSummary> {
+  const { data } = await apiClient.get("/teaching/dashboard/summary/");
   return data;
 }

@@ -6,6 +6,7 @@ import { assignmentDisplayTitle, assignmentLink, assignmentTargetLabel } from ".
 import { AssignmentProgressBar } from "../teaching/AssignmentProgressBar";
 import { AssignmentSubmitForm } from "../teaching/AssignmentSubmitForm";
 import { TestStatusIndicator } from "../teaching/TestStatusIndicator";
+import { LinkButton } from "../ui/LinkButton";
 
 function navState(assignment: Assignment): Record<string, number | undefined> | undefined {
   if (assignment.assignment_type === "subtopic") return { subtopicId: assignment.subtopic?.id };
@@ -171,9 +172,9 @@ export function DashboardAssignmentCard({
         </div>
       )}
       {(assignment.status === "submitted" || assignment.status === "completed") && (
-        <Link to={`/assignments/${assignment.id}`} className="text-sm text-primary hover:underline">
+        <LinkButton to={`/assignments/${assignment.id}`}>
           Մանրամասն →
-        </Link>
+        </LinkButton>
       )}
     </div>
   );

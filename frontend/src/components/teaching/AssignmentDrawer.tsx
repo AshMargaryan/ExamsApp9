@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ClipboardCheck } from "lucide-react";
 import * as teachingApi from "../../api/teaching";
 import type { Assignment } from "../../api/teaching";
+import { useOnClickOutside } from "../../hooks/useOnClickOutside";
 import { AssignmentCard } from "./AssignmentCard";
 
 // assigned/in_progress are the same "still open" group — clicking "Կատարել"
@@ -15,14 +17,17 @@ const ORDER: Record<Assignment["status"], number> = {
 };
 
 /**
- * Collapsible drawer (toggled by an edge tab) listing the student's open
- * assignments — in-progress ones first, then upcoming, then a completed
- * one stays visible only until the student has opened the drawer and seen
- * it (mirrors a notification, not a permanent history).
+ * Header dropdown (button + panel) listing the student's open assignments —
+ * in-progress ones first, then upcoming, then a completed one stays visible
+ * only until the student has opened the drawer and seen it (mirrors a
+ * notification, not a permanent history).
  */
-export function AssignmentSidebar() {
+export function AssignmentDrawer() {
   const [open, setOpen] = useState(false);
   const [assignments, setAssignments] = useState<Assignment[] | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useOnClickOutside(containerRef, () => setOpen(false), open);
 
   function refresh() {
     teachingApi.fetchAssignments().then(setAssignments);
@@ -60,15 +65,16 @@ export function AssignmentSidebar() {
   const openCount = sorted.filter((a) => a.status === "assigned" || a.status === "in_progress").length;
 
   return (
-    <>
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={handleToggle}
         aria-label="Առաջադրանքներ"
         title="Առաջադրանքներ"
-        className="fixed right-4 top-36 z-40 flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-2 text-sm font-medium text-text shadow-lg transition-colors hover:border-primary"
+        className="flex h-[34px] items-center gap-1.5 rounded-full border border-border bg-surface px-2 text-sm font-medium text-text transition-colors hover:border-primary sm:px-3"
       >
-        📋 Առաջադրանքներ
+        <span aria-hidden="true"><ClipboardCheck size={16} strokeWidth={1.75} /></span>
+        <span className="hidden sm:inline">Առաջադրանքներ</span>
         {openCount > 0 && (
           <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-contrast">
             {openCount}
@@ -77,7 +83,7 @@ export function AssignmentSidebar() {
       </button>
 
       {open && (
-        <div className="fixed right-4 top-48 z-40 max-h-[65vh] w-[min(92vw,24rem)] overflow-y-auto rounded-[var(--radius)] border border-border bg-surface p-3 shadow-xl">
+        <div className="absolute right-0 top-full z-40 mt-2 max-h-[65vh] w-[min(92vw,24rem)] overflow-y-auto rounded-[var(--radius)] border border-border bg-surface p-3 shadow-xl">
           {assignments === null && <p className="p-3 text-sm text-text-muted">Բեռնվում է...</p>}
           {assignments !== null && sorted.length === 0 && (
             <p className="p-3 text-sm text-text-muted">Ընթացիկ առաջադրանքներ չկան։</p>
@@ -89,6 +95,6 @@ export function AssignmentSidebar() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

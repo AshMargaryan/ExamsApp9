@@ -1,7 +1,9 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import * as teachingApi from "../../api/teaching";
 import type { Assignment } from "../../api/teaching";
 import { assignmentDisplayTitle, assignmentLink, assignmentTargetLabel } from "../../lib/assignmentLabels";
+import { Button } from "../ui/Button";
+import { LinkButton } from "../ui/LinkButton";
 import { AssignmentProgressBar } from "./AssignmentProgressBar";
 import { AssignmentSubmitForm } from "./AssignmentSubmitForm";
 import { TestStatusIndicator } from "./TestStatusIndicator";
@@ -81,29 +83,28 @@ export function AssignmentCard({
           </span>
           <div className="flex gap-3">
             {canWorkOn && !wasRejected && (
-              <Link
+              <LinkButton
                 to={assignmentLink(assignment)}
                 state={navState(assignment)}
                 onClick={handleOpen}
-                className="text-sm text-primary hover:underline"
               >
                 Կատարել
-              </Link>
+              </LinkButton>
             )}
             {canWorkOn && wasRejected && (
-              <button type="button" onClick={handleRedo} className="text-sm text-primary hover:underline">
+              <Button variant="secondary" size="sm" onClick={handleRedo}>
                 Կրկին անել
-              </button>
+              </Button>
             )}
             {canWorkOn && compact && (
-              <Link to="/student-dashboard" className="text-sm text-primary hover:underline">
+              <LinkButton to="/student-dashboard">
                 Ուղարկել պատասխանը
-              </Link>
+              </LinkButton>
             )}
             {(assignment.status === "submitted" || assignment.status === "completed") && (
-              <Link to={`/assignments/${assignment.id}`} className="text-sm text-primary hover:underline">
+              <LinkButton to={`/assignments/${assignment.id}`}>
                 Մանրամասն
-              </Link>
+              </LinkButton>
             )}
           </div>
         </div>
