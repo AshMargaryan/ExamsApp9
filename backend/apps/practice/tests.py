@@ -3,6 +3,8 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.profiles.models import LearningEvent, LearningEventType
+
 from .models import (
     DailyProblemAttempt, Domain, MistakeSource, Question, QuestionType,
     Subject, Subtopic, Tier, Topic, TopicMistake,
@@ -103,3 +105,39 @@ class DailyProblemViewTests(TestCase):
         self.assertIn("topic_name", resp.data["question"])
         self.assertIn("subtopic_name", resp.data["question"])
         self.assertIn("subtopic_id", resp.data["question"])
+
+
+class QuestionHintViewedTests(TestCase):
+    def setUp(self):
+        self.user = _make_user()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+        self.subtopic = _make_subtopic()
+        self.question = _make_question(self.subtopic, dataset_id="hint-1")
+
+    def test_records_hint_requested_event(self):
+        resp = self.client.post(f"/api/practice/questions/{self.question.id}/hint-viewed/")
+        self.assertEqual(resp.status_code, 204)
+
+        event = LearningEvent.objects.get(user=self.user, event_type=LearningEventType.HINT_REQUESTED)
+        self.assertEqual(event.subject_key, "math")
+        self.assertEqual(event.topic_label, self.subtopic.name)
+        self.assertEqual(event.source, "practice")
+        self.assertEqual(event.target_id, self.question.id)
+
+    def test_unmapped_subject_stores_blank_subject_key(self):
+        subtopic = _make_subtopic(subject_name="Աշխարհագրություն", topic_name="T", subtopic_name="S")
+        question = _make_question(subtopic, dataset_id="hint-2")
+        resp = self.client.post(f"/api/practice/questions/{question.id}/hint-viewed/")
+        self.assertEqual(resp.status_code, 204)
+        event = LearningEvent.objects.get(user=self.user, event_type=LearningEventType.HINT_REQUESTED)
+        self.assertEqual(event.subject_key, "")
+
+    def test_404_for_unknown_question(self):
+        resp = self.client.post("/api/practice/questions/999999/hint-viewed/")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_requires_authentication(self):
+        self.client.force_authenticate(None)
+        resp = self.client.post(f"/api/practice/questions/{self.question.id}/hint-viewed/")
+        self.assertEqual(resp.status_code, 401)

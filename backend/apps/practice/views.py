@@ -5,6 +5,7 @@ from pathlib import Path
 import requests
 from django.conf import settings
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -14,7 +15,7 @@ from .models import (
     Subject, Subtopic, Question, PracticeAttempt, AttemptAnswer, DailyProblemAttempt,
     MistakeSource,
 )
-from apps.mistakes.services import record_mistake
+from apps.mistakes.services import record_mistake, was_attempted
 from apps.mistakes.models import MistakeEntrySource
 from .scoring import score_answer
 from .services import (
@@ -31,6 +32,8 @@ from .serializers import (
     DailyProblemSerializer, DailyProblemSubmitSerializer,
 )
 from apps.profiles.engine import evaluate_achievements
+from apps.profiles.models import LearningEventType
+from apps.profiles.services import record_event
 from apps.profiles.subjects import canonical_key_for_practice_subject
 from apps.profiles.xp import award_xp
 from apps.streaks.services import record_activity
@@ -175,11 +178,12 @@ class SubmitTierView(APIView):
             attempt=attempt, question=question, defaults=defaults,
         )
         if not defaults["is_correct"] and not attempt.revealed_answers:
-            record_topic_mistake(
-                attempt.user, source=MistakeSource.PRACTICE,
-                subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
-                subtopic=subtopic,
-            )
+            if was_attempted(a):
+                record_topic_mistake(
+                    attempt.user, source=MistakeSource.PRACTICE,
+                    subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
+                    subtopic=subtopic,
+                )
             record_mistake(
                 attempt.user, source=MistakeEntrySource.PRACTICE,
                 subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
@@ -260,11 +264,12 @@ class DailyProblemView(APIView):
 
         if not attempt.is_correct:
             subtopic = question.subtopic
-            record_topic_mistake(
-                request.user, source=MistakeSource.PRACTICE,
-                subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
-                subtopic=subtopic,
-            )
+            if was_attempted(serializer.validated_data):
+                record_topic_mistake(
+                    request.user, source=MistakeSource.PRACTICE,
+                    subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
+                    subtopic=subtopic,
+                )
             record_mistake(
                 request.user, source=MistakeEntrySource.PRACTICE,
                 subject_name=subtopic.topic.domain.subject.name, topic_label=subtopic.name,
@@ -373,3 +378,23 @@ class TranslateView(APIView):
         result = {"text": text, "translation": translation}
         cache_path.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
         return Response(result)
+
+
+class QuestionHintViewedView(APIView):
+    """POST /api/practice/questions/<id>/hint-viewed/ — records that the
+    student opened this question's (or one of its statements') hint.
+    Questions aren't user-owned, so no ownership check; carries no reward,
+    so a duplicate/replayed call is harmless beyond a duplicate log row."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, question_id):
+        question = get_object_or_404(
+            Question.objects.select_related("subtopic__topic__domain__subject"), pk=question_id,
+        )
+        subject_key = canonical_key_for_practice_subject(question.subtopic.topic.domain.subject) or ""
+        record_event(
+            request.user, LearningEventType.HINT_REQUESTED,
+            subject_key=subject_key, topic_label=question.subtopic.name,
+            source="practice", target_id=question.id,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
