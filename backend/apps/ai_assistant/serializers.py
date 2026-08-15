@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Attachment, Conversation, Message
+from .models import Attachment, Conversation, Message, ToolCall
 from .validators import validate_attachment_file
 
 
@@ -34,7 +34,10 @@ class EducationalContextSerializer(serializers.Serializer):
     difficulty = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     lesson_id = serializers.IntegerField(required=False, allow_null=True)
     conversation_mode = serializers.ChoiceField(
-        choices=["general_chat", "solving_question", "learning", "revision", "homework_solver"],
+        choices=[
+            "general_chat", "solving_question", "learning", "revision", "homework_solver",
+            "explain_mode", "teach_it_to_me", "why_am_i_wrong",
+        ],
         required=False, allow_null=True,
     )
 
@@ -76,8 +79,16 @@ class AttachmentUploadSerializer(serializers.Serializer):
 # Messages
 # ---------------------------------------------------------------------------
 
+class ToolCallSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ToolCall
+        fields = ["id", "tool_name", "arguments", "result", "status", "created_at"]
+        read_only_fields = fields
+
+
 class MessageSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
+    tool_calls = ToolCallSerializer(many=True, read_only=True)
 
     class Meta:
         model = Message
@@ -85,7 +96,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "id", "conversation", "role", "content", "status", "error_message",
             "created_at", "edited_at", "model_used", "provider",
             "response_time_ms", "token_usage", "educational_context",
-            "is_active_response", "attachments",
+            "is_active_response", "attachments", "tool_calls",
         ]
         read_only_fields = fields
 
@@ -100,10 +111,3 @@ class SendMessageSerializer(serializers.Serializer):
 
 class EditMessageSerializer(serializers.Serializer):
     content = serializers.CharField(allow_blank=False, trim_whitespace=True)
-
-
-class SendMessageResponseSerializer(serializers.Serializer):
-    """Response envelope for POST .../messages/ — both turns of the exchange."""
-
-    user_message = MessageSerializer()
-    assistant_message = MessageSerializer()

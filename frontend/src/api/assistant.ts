@@ -1,10 +1,15 @@
-import { apiClient } from "./client";
+import { API_ORIGIN, apiClient } from "./client";
 
 export type MessageRole = "system" | "user" | "assistant" | "tool";
-export type MessageStatus = "sending" | "sent" | "failed";
+// "stopped": a streaming turn whose client disconnected (Stop button,
+// network drop) before the backend could send a terminal SSE event —
+// distinct from "failed" (an explicit provider error). Mirrors
+// backend MessageStatus (apps/ai_assistant/models.py).
+export type MessageStatus = "sending" | "sent" | "failed" | "stopped";
 export type AttachmentType = "image" | "pdf" | "document" | "text" | "other";
 export type ConversationMode =
-  | "general_chat" | "solving_question" | "learning" | "revision" | "homework_solver";
+  | "general_chat" | "solving_question" | "learning" | "revision" | "homework_solver"
+  | "explain_mode" | "teach_it_to_me" | "why_am_i_wrong";
 
 export interface Conversation {
   id: number;
@@ -60,11 +65,6 @@ export interface Message {
   attachments: Attachment[];
 }
 
-export interface SendMessageResult {
-  user_message: Message;
-  assistant_message: Message;
-}
-
 export async function listConversations(params?: {
   q?: string;
   archived?: boolean;
@@ -103,18 +103,34 @@ export async function listMessages(conversationId: number): Promise<Message[]> {
   return data;
 }
 
-export async function sendMessage(
-  conversationId: number,
+// Sending/regenerating a message now streams (Server-Sent Events) instead
+// of returning one JSON response — see useConversationChat.ts, which owns
+// the fetch/ReadableStream consumption since it needs to drive incremental
+// UI updates rather than resolve once. These are just the URL/body/event
+// shapes both call sites (send + regenerate) share.
+
+export type SSEEvent =
+  | { type: "user_message"; message: Message }
+  | { type: "tool_call"; tool_name: string }
+  | { type: "tool_call_reset" }
+  | { type: "delta"; content: string }
+  | { type: "message"; message: Message }
+  | { type: "error"; message: Message };
+
+export function sendMessageStreamUrl(conversationId: number): string {
+  return `${API_ORIGIN}/api/assistant/conversations/${conversationId}/messages/`;
+}
+
+export function regenerateMessageStreamUrl(messageId: number): string {
+  return `${API_ORIGIN}/api/assistant/messages/${messageId}/regenerate/`;
+}
+
+export function sendMessageStreamBody(
   content: string,
   attachmentIds: number[] = [],
   educationalContext?: EducationalContext,
-): Promise<SendMessageResult> {
-  const { data } = await apiClient.post(`/assistant/conversations/${conversationId}/messages/`, {
-    content,
-    attachment_ids: attachmentIds,
-    educational_context: educationalContext,
-  });
-  return data;
+): Record<string, unknown> {
+  return { content, attachment_ids: attachmentIds, educational_context: educationalContext };
 }
 
 export async function editMessage(id: number, content: string): Promise<Message> {
@@ -124,11 +140,6 @@ export async function editMessage(id: number, content: string): Promise<Message>
 
 export async function deleteMessage(id: number): Promise<void> {
   await apiClient.delete(`/assistant/messages/${id}/`);
-}
-
-export async function regenerateMessage(id: number): Promise<Message> {
-  const { data } = await apiClient.post(`/assistant/messages/${id}/regenerate/`);
-  return data;
 }
 
 export async function uploadAttachment(conversationId: number, file: File): Promise<Attachment> {
