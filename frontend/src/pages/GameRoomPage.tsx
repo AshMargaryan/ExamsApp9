@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import * as gamesApi from "../api/games";
@@ -10,6 +10,7 @@ import { LinkButton } from "../components/ui/LinkButton";
 
 const STATUS_LABELS: Record<GameRoom["status"], string> = {
   waiting: "Սպասման մեջ",
+  starting: "Սկսվում է...",
   running: "Ընթացքի մեջ",
   finished: "Ավարտված",
 };
@@ -44,6 +45,8 @@ export function GameRoomPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
+  const prevStatusRef = useRef<GameRoom["status"] | null>(null);
 
   const load = useCallback(() => {
     if (!roomCode) return;
@@ -57,11 +60,40 @@ export function GameRoomPage() {
     load();
   }, [load]);
 
+  // Poll at 1s while waiting/starting so every client — not just the
+  // creator's, who sees "starting" instantly from their own Start response
+  // — notices the countdown begin (and later, the room going RUNNING)
+  // within ~1s instead of up to 3s late. A 3s-late discovery is what made
+  // the countdown look like it "started at 2 seconds" for everyone else.
   useEffect(() => {
     if (!room || room.status === "finished") return;
-    const interval = setInterval(load, 3000);
+    const intervalMs = room.status === "running" ? 3000 : 1000;
+    const interval = setInterval(load, intervalMs);
     return () => clearInterval(interval);
   }, [room, load]);
+
+  // The game starts automatically for everyone once the countdown ends —
+  // jump straight into it rather than making players click again.
+  useEffect(() => {
+    if (room && room.status === "running" && prevStatusRef.current !== "running" && roomCode) {
+      navigate(`/games/${roomCode}/play`);
+    }
+    if (room) prevStatusRef.current = room.status;
+  }, [room, roomCode, navigate]);
+
+  useEffect(() => {
+    if (!room || room.status !== "starting" || !room.scheduled_start_at) {
+      setCountdownSeconds(null);
+      return;
+    }
+    const target = new Date(room.scheduled_start_at).getTime();
+    function tick() {
+      setCountdownSeconds(Math.max(0, Math.ceil((target - Date.now()) / 1000)));
+    }
+    tick();
+    const interval = setInterval(tick, 250);
+    return () => clearInterval(interval);
+  }, [room]);
 
   async function handleStart() {
     if (!roomCode) return;
@@ -189,6 +221,13 @@ export function GameRoomPage() {
               ))}
             </div>
           </div>
+
+          {room.status === "starting" && (
+            <div className="mt-6 rounded-md border border-primary bg-surface-muted py-6 text-center">
+              <p className="text-sm text-text-muted">Խաղը սկսվում է...</p>
+              <p className="text-5xl font-bold text-primary">{countdownSeconds ?? ""}</p>
+            </div>
+          )}
 
           {room.status === "running" && (
             <Link

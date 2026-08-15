@@ -6,7 +6,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Attachment, Conversation, ConversationType, Message, MessageReport
+from .models import Attachment, AttachmentType, Conversation, ConversationType, Message, MessageReport
 from .permissions import IsConversationParticipant, IsGroupOwner, is_participant
 from .serializers import (
     AddParticipantsSerializer, AttachmentSearchResultSerializer, AttachmentSerializer, AttachmentUploadSerializer,
@@ -470,6 +470,7 @@ class AttachmentUploadView(APIView):
             )
 
         uploaded_file = d["file"]
+        metadata = {"duration": d["duration"]} if d["file_type"] == AttachmentType.AUDIO and d["duration"] else None
         attachment = Attachment.objects.create(
             conversation=conversation,
             uploaded_by=request.user,
@@ -478,6 +479,7 @@ class AttachmentUploadView(APIView):
             mime_type=d["mime_type"],
             file_size=uploaded_file.size,
             file_type=d["file_type"],
+            metadata=metadata,
         )
         return Response(
             AttachmentSerializer(attachment, context={"request": request}).data,

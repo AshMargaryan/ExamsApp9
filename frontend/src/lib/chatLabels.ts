@@ -29,6 +29,7 @@ export function conversationInitial(conversation: Conversation): string {
 const MESSAGE_TYPE_PREVIEW: Record<string, string> = {
   image: "📷 Նկար",
   file: "📎 Ֆայլ",
+  voice: "🎤 Ձայնային հաղորդագրություն",
 };
 
 const CONTEXT_TYPE_PREVIEW: Record<string, string> = {

@@ -6,26 +6,67 @@ import { useAuthenticatedImageUrl } from "../../hooks/useAuthenticatedImageUrl";
 const SPEEDS = [1, 1.5, 2];
 
 function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds)) return "0:00";
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment; own: boolean }) {
-  // Reuses the image hook's fetch-as-blob logic — the download endpoint
-  // needs an Authorization header a plain <audio src> can't send, and the
-  // hook itself is blob-type-agnostic despite the name.
+  // useAuthenticatedImageUrl is generic despite the name: it just fetches
+  // the URL through apiClient (auth header attached) and hands back an
+  // object URL, which works equally well as an <audio> src.
   const { src, error } = useAuthenticatedImageUrl(attachment.download_url);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [current, setCurrent] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(attachment.duration ?? 0);
   const [speedIndex, setSpeedIndex] = useState(0);
 
   useEffect(() => {
-    setPlaying(false);
-    setCurrent(0);
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onTime = () => setCurrentTime(audio.currentTime);
+    const onEnded = () => {
+      setPlaying(false);
+      setCurrentTime(0);
+    };
+    // Duration comes from the server-finalized WebM container (see
+    // apps.chat.validators._finalize_webm_container — every voice message
+    // is remuxed with ffmpeg on upload, which writes a real Segment
+    // Duration), so audio.duration is reliably finite here. Deliberately
+    // NOT seeking to force a duration calculation if it somehow isn't
+    // (Chrome bug workaround that used to live here): on a blob: URL,
+    // Chrome's FFmpegDemuxer can throw a fatal, unrecoverable
+    // "demuxer seek failed" read error on an out-of-range seek, which
+    // permanently breaks playback for that element. attachment.duration
+    // (captured client-side while recording, used as this state's initial
+    // value) is a perfectly good fallback if audio.duration is ever
+    // unavailable — no seek gymnastics needed.
+    const onLoaded = () => {
+      if (Number.isFinite(audio.duration)) setDuration(audio.duration);
+    };
+    const onError = () => {
+      const err = audio.error;
+      console.error("[voice-message] audio error", {
+        src: audio.currentSrc,
+        code: err?.code,
+        message: err?.message,
+        networkState: audio.networkState,
+        readyState: audio.readyState,
+        duration: audio.duration,
+      });
+    };
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("loadedmetadata", onLoaded);
+    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
+    return () => {
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
+    };
   }, [src]);
 
   function togglePlay() {
@@ -33,8 +74,19 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
     if (!audio) return;
     if (playing) {
       audio.pause();
+      setPlaying(false);
     } else {
-      audio.play();
+      setPlaying(true);
+      // play() rejects (AbortError) if something else — a re-render tearing
+      // down this element, another pause() racing in — interrupts it before
+      // it resolves. That's a real possibility here because the surrounding
+      // page reconnects two WebSockets on mount; without this catch it's an
+      // unhandled promise rejection that also leaves `playing` stuck true
+      // with audio actually paused (button shows ⏸ but nothing is playing).
+      audio.play().catch((err) => {
+        console.error("[voice-message] play() rejected", err);
+        setPlaying(false);
+      });
     }
   }
 
@@ -44,63 +96,67 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
     if (audioRef.current) audioRef.current.playbackRate = SPEEDS[next];
   }
 
-  function seek(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleSeek(e: React.ChangeEvent<HTMLInputElement>) {
     const audio = audioRef.current;
     if (!audio) return;
     const value = Number(e.target.value);
     audio.currentTime = value;
-    setCurrent(value);
+    setCurrentTime(value);
   }
 
   if (error) {
     return (
-      <div className="flex h-10 w-56 items-center justify-center rounded-full border border-border bg-surface-muted text-xs text-text-muted">
+      <div
+        className={`flex h-11 w-64 max-w-full items-center rounded-full border px-3 text-sm ${
+          own ? "border-primary-contrast/30 text-primary-contrast/80" : "border-border text-text-muted"
+        }`}
+      >
         Ձայնագրությունը հասանելի չէ
       </div>
     );
   }
 
   return (
-    <div className={`flex w-64 max-w-full items-center gap-2 rounded-full px-2 py-1.5 ${own ? "" : ""}`}>
-      {src && (
-        <audio
-          ref={audioRef}
-          src={src}
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-          onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onEnded={() => setPlaying(false)}
-        />
-      )}
+    <div
+      className={`flex h-11 w-64 max-w-full items-center gap-2 rounded-full border px-2 ${
+        own ? "border-primary-contrast/30" : "border-border"
+      }`}
+    >
+      {src && <audio ref={audioRef} src={src} preload="metadata" />}
       <button
         type="button"
         onClick={togglePlay}
         disabled={!src}
-        title={playing ? "Դադարեցնել" : "Նվագարկել"}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm disabled:opacity-50 ${
-          own ? "bg-primary-contrast/20 hover:bg-primary-contrast/30" : "bg-primary/15 text-primary hover:bg-primary/25"
+        aria-label={playing ? "Դադարեցնել" : "Նվագարկել"}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm disabled:opacity-50 ${
+          own ? "bg-primary-contrast/20 text-primary-contrast" : "bg-primary/15 text-primary"
         }`}
       >
-        {playing ? <Pause size={15} strokeWidth={1.75} /> : <Play size={15} strokeWidth={1.75} />}
+        {src ? (
+          playing ? <Pause size={15} strokeWidth={1.75} /> : <Play size={15} strokeWidth={1.75} />
+        ) : (
+          "…"
+        )}
       </button>
       <input
         type="range"
         min={0}
         max={duration || 0}
-        value={current}
-        onChange={seek}
-        disabled={!src}
-        className="h-1 min-w-0 flex-1 accent-current"
+        step={0.1}
+        value={Math.min(currentTime, duration || 0)}
+        onChange={handleSeek}
+        disabled={!src || !duration}
+        className={`h-1 flex-1 accent-current ${own ? "text-primary-contrast" : "text-primary"}`}
       />
-      <span className="w-9 shrink-0 text-right text-[10px] tabular-nums opacity-80">
-        {formatTime(playing || current > 0 ? current : duration)}
+      <span className={`w-10 shrink-0 text-right text-xs tabular-nums ${own ? "text-primary-contrast/80" : "text-text-muted"}`}>
+        {formatTime(playing || currentTime > 0 ? currentTime : duration)}
       </span>
       <button
         type="button"
         onClick={cycleSpeed}
+        disabled={!src}
         title="Նվագարկման արագություն"
-        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium disabled:opacity-50 ${
           own ? "bg-primary-contrast/20" : "bg-primary/15 text-primary"
         }`}
       >

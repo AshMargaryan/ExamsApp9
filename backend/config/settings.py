@@ -283,6 +283,13 @@ OLLAMA_MODEL = env("OLLAMA_MODEL", default="qwen3:8b")
 OLLAMA_TIMEOUT_SECONDS = env.int("OLLAMA_TIMEOUT_SECONDS", default=120)
 OLLAMA_THINK = env.bool("OLLAMA_THINK", default=False)
 
+# Armenian voice (STT/TTS) sidecar service — see voice_benchmark/ at the repo
+# root. Kept as a separate lightweight HTTP service (same pattern as Ollama
+# above) so torch/ctranslate2/faster-whisper never get installed into the
+# Django image; Django just proxies audio to/from it.
+VOICE_SERVICE_URL = env("VOICE_SERVICE_URL", default="http://localhost:8100")
+VOICE_SERVICE_TIMEOUT_SECONDS = env.int("VOICE_SERVICE_TIMEOUT_SECONDS", default=120)
+
 # ---------------------------------------------------------------------------
 # Email
 # ---------------------------------------------------------------------------

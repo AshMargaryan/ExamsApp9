@@ -160,6 +160,7 @@ class MessageType(models.TextChoices):
     TEXT = "text", "Text"
     IMAGE = "image", "Image"
     FILE = "file", "File"
+    VOICE = "voice", "Voice"
 
 
 class ContextType(models.TextChoices):

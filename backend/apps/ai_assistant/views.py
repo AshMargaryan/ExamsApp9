@@ -1,7 +1,9 @@
 import json
 
+import requests
 from asgiref.sync import sync_to_async
-from django.http import StreamingHttpResponse
+from django.conf import settings
+from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -14,6 +16,7 @@ from .serializers import (
     AttachmentSerializer, AttachmentUploadSerializer,
     ConversationRenameSerializer, ConversationSerializer,
     EditMessageSerializer, MessageSerializer, SendMessageSerializer,
+    VoiceSynthesizeSerializer,
 )
 from .services import conversation_service, message_service
 
@@ -277,3 +280,74 @@ class AttachmentDetailView(APIView):
         attachment.file.delete(save=False)
         attachment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------
+# Voice (STT/TTS) — thin proxies to the standalone voice_benchmark sidecar.
+# Chosen over embedding faster-whisper/ctranslate2/torch directly in Django:
+# keeps the production image light, same pattern already used for Ollama.
+# ---------------------------------------------------------------------------
+
+class VoiceTranscribeView(APIView):
+    """POST an audio file, get back {"text": "..."} via the local small_v2
+    Armenian Whisper model running in the voice sidecar. Deliberately doesn't
+    persist the audio or create an Attachment — the transcript just becomes
+    normal message text, so no schema change was needed for this first slice.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        audio_file = request.FILES.get("audio")
+        if not audio_file:
+            return Response({"detail": "Missing 'audio' file."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            response = requests.post(
+                f"{settings.VOICE_SERVICE_URL}/api/stt/transcribe",
+                files={"audio": (audio_file.name, audio_file.read(), audio_file.content_type)},
+                timeout=settings.VOICE_SERVICE_TIMEOUT_SECONDS,
+            )
+        except requests.RequestException as exc:
+            return Response(
+                {"detail": f"Voice service unreachable: {exc}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        if not response.ok:
+            detail = response.json().get("detail", "Transcription failed") if response.content else "Transcription failed"
+            return Response({"detail": detail}, status=status.HTTP_502_BAD_GATEWAY)
+
+        data = response.json()
+        return Response({"text": data.get("transcript", "")})
+
+
+class VoiceSynthesizeView(APIView):
+    """POST {"text": ..., "voice": "hy-AM-AnahitNeural"|"hy-AM-HaykNeural"},
+    get back playable audio/wav bytes via Azure TTS (called by the sidecar,
+    which holds the Azure credentials — Django never sees the Azure key).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = VoiceSynthesizeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        d = serializer.validated_data
+
+        try:
+            response = requests.post(
+                f"{settings.VOICE_SERVICE_URL}/api/tts/synthesize",
+                data={"text": d["text"], "voice": d.get("voice", "")},
+                timeout=settings.VOICE_SERVICE_TIMEOUT_SECONDS,
+            )
+        except requests.RequestException as exc:
+            return Response(
+                {"detail": f"Voice service unreachable: {exc}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        if not response.ok:
+            detail = response.json().get("detail", "Speech synthesis failed") if response.content else "Speech synthesis failed"
+            return Response({"detail": detail}, status=status.HTTP_502_BAD_GATEWAY)
+
+        return HttpResponse(response.content, content_type="audio/wav")

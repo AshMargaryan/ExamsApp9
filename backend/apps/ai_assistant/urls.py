@@ -4,6 +4,7 @@ from .views import (
     AttachmentDetailView, AttachmentUploadView,
     ConversationActionView, ConversationDetailView, ConversationListCreateView,
     MessageDetailView, MessageListSendView, MessageRegenerateView,
+    VoiceSynthesizeView, VoiceTranscribeView,
 )
 
 urlpatterns = [
@@ -21,4 +22,6 @@ urlpatterns = [
     path("messages/<int:pk>/regenerate/", MessageRegenerateView.as_view(), name="assistant-message-regenerate"),
     path("attachments/", AttachmentUploadView.as_view(), name="assistant-attachment-upload"),
     path("attachments/<int:pk>/", AttachmentDetailView.as_view(), name="assistant-attachment-detail"),
+    path("voice/transcribe/", VoiceTranscribeView.as_view(), name="assistant-voice-transcribe"),
+    path("voice/synthesize/", VoiceSynthesizeView.as_view(), name="assistant-voice-synthesize"),
 ]

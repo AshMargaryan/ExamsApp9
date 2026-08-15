@@ -79,7 +79,9 @@ class ChallengeInviteStateTests(TestCase):
         self.assertEqual(invite.status, ChallengeStatus.ACCEPTED)
         self.assertIsNotNone(invite.room)
         self.assertEqual(invite.room.participants.count(), 2)
-        self.assertEqual(invite.room.status, GameRoomStatus.RUNNING)
+        # Player-count trigger begins the countdown (WAITING -> STARTING)
+        # rather than starting instantly — see games.services.maybe_auto_start.
+        self.assertEqual(invite.room.status, GameRoomStatus.STARTING)
 
     def test_decline_sets_status(self):
         invite = create_challenge(self.alice, self.bob, self.subject)
@@ -178,7 +180,8 @@ class ChallengeWinnerBonusTests(TestCase):
         room = GameRoom.objects.create(creator=self.alice, name="Public room", type=GameRoomType.PRIVATE)
         GameSettings.objects.create(
             room=room, subject=self.subject, question_count=5, medium_count=5,
-            time_limit_per_question=30, question_types=list(QuestionType.values),
+            easy_time_limit=15, medium_time_limit=30, hard_time_limit=45,
+            question_types=list(QuestionType.values),
         )
         p1 = GameParticipant.objects.create(game=room, user=self.alice, score=80)
         _settle_room(room)

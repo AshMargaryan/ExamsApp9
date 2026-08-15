@@ -11,5 +11,11 @@ export function assignmentDisplayTitle(a: Assignment): string {
 }
 
 export function assignmentLink(a: Assignment): string {
-  return a.assignment_type === "mock_exam" ? "/mock-exams" : "/practice";
+  if (a.assignment_type === "mock_exam") return "/mock-exams";
+  // Subtopics now have their own page (see PracticeSubjectPage's spatial
+  // hierarchy + SubtopicPage) — go straight there instead of through
+  // /practice's old "resolve owning subject, then open it inline" redirect,
+  // which no longer applies to subtopics.
+  if (a.assignment_type === "subtopic" && a.subtopic) return `/practice/subtopic/${a.subtopic.id}`;
+  return "/practice";
 }

@@ -6,7 +6,7 @@ const TYPE_ICON: Record<Attachment["file_type"], string> = {
   pdf: "📕",
   document: "📄",
   text: "📝",
-  audio: "🎙️",
+  audio: "🎤",
   other: "📎",
 };
 

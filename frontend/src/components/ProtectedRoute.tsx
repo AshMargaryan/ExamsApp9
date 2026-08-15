@@ -2,9 +2,11 @@ import type { ReactNode } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { AssistantLaunchProvider } from "../contexts/AssistantLaunchContext";
+import { ChatWidgetProvider } from "../context/ChatWidgetContext";
 import { NotepadProvider } from "../context/NotepadContext";
 import { AppSidebar } from "./AppSidebar";
 import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
+import { FloatingChatWidget } from "./chat/FloatingChatWidget";
 import { HeaderStrip } from "./HeaderStrip";
 import { ReloadButton } from "./ReloadButton";
 import { ToolsDock } from "./ToolsDock";
@@ -20,14 +22,17 @@ export function AppChrome({ children }: { children: ReactNode }) {
   return (
     <AssistantLaunchProvider>
       <NotepadProvider>
-        <HeaderStrip />
-        <AppSidebar />
-        {/* Clears the persistent top strip (h-16) at every viewport width, not just mobile —
-         * the strip used to be just a mobile-only hamburger offset before HeaderStrip shipped. */}
-        <div className="pt-16">{children}</div>
-        <ReloadButton />
-        {showStudyTools && <FloatingAssistantWidget />}
-        {showStudyTools && <ToolsDock />}
+        <ChatWidgetProvider>
+          <HeaderStrip />
+          <AppSidebar />
+          {/* Clears the persistent top strip (h-16) at every viewport width, not just mobile —
+           * the strip used to be just a mobile-only hamburger offset before HeaderStrip shipped. */}
+          <div className="pt-16">{children}</div>
+          <ReloadButton />
+          {showStudyTools && <FloatingAssistantWidget />}
+          {showStudyTools && <ToolsDock />}
+          <FloatingChatWidget />
+        </ChatWidgetProvider>
       </NotepadProvider>
     </AssistantLaunchProvider>
   );

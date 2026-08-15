@@ -29,7 +29,7 @@ class GameParticipantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GameParticipant
-        fields = ["id", "user", "score", "rank", "joined_at"]
+        fields = ["id", "user", "score", "rank", "joined_at", "finished_at"]
 
 
 class GameSettingsSerializer(serializers.ModelSerializer):
@@ -42,7 +42,7 @@ class GameSettingsSerializer(serializers.ModelSerializer):
         fields = [
             "subject", "subject_name", "topic", "topic_name", "question_count",
             "easy_count", "medium_count", "hard_count",
-            "time_limit_per_question", "total_game_time",
+            "easy_time_limit", "medium_time_limit", "hard_time_limit", "total_game_time",
             "allow_mixed_question_types", "question_types",
             "correctness_weight", "speed_weight",
         ]
@@ -50,12 +50,21 @@ class GameSettingsSerializer(serializers.ModelSerializer):
     def get_topic_name(self, obj):
         return obj.topic.name if obj.topic else None
 
-    def validate_time_limit_per_question(self, value):
+    def _validate_tier_time_limit(self, value):
         if not (5 <= value <= 300):
             raise serializers.ValidationError(
                 "Հարցի ժամանակաչափը պետք է լինի 5-ից 300 վայրկյանի սահմաններում։"
             )
         return value
+
+    def validate_easy_time_limit(self, value):
+        return self._validate_tier_time_limit(value)
+
+    def validate_medium_time_limit(self, value):
+        return self._validate_tier_time_limit(value)
+
+    def validate_hard_time_limit(self, value):
+        return self._validate_tier_time_limit(value)
 
     def validate_total_game_time(self, value):
         if value is not None and not (30 <= value <= 14400):
@@ -194,7 +203,7 @@ class GameRoomCreateSerializer(serializers.ModelSerializer):
 class GameStatsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameStats
-        fields = ["games_played", "wins", "losses", "points_earned"]
+        fields = ["games_played", "wins", "losses", "points_earned", "trophies"]
 
 
 class MatchmakingQueueSerializer(serializers.ModelSerializer):
@@ -209,12 +218,13 @@ class MatchmakingTicketSerializer(serializers.ModelSerializer):
     room_status = serializers.SerializerMethodField()
     players_waiting = serializers.SerializerMethodField()
     scheduled_start_at = serializers.SerializerMethodField()
+    subject_name = serializers.SerializerMethodField()
 
     class Meta:
         model = MatchmakingTicket
         fields = [
             "id", "queue", "status", "room_code", "room_status",
-            "players_waiting", "scheduled_start_at", "created_at",
+            "players_waiting", "scheduled_start_at", "created_at", "subject_name",
         ]
 
     def get_room_code(self, obj):
@@ -228,3 +238,7 @@ class MatchmakingTicketSerializer(serializers.ModelSerializer):
 
     def get_scheduled_start_at(self, obj):
         return obj.room.scheduled_start_at if obj.room else None
+
+    def get_subject_name(self, obj):
+        settings = getattr(obj.room, "settings", None) if obj.room else None
+        return settings.subject.name if settings else None

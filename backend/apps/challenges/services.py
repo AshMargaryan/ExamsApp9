@@ -5,8 +5,9 @@ from django.utils import timezone
 
 from apps.friends.services import are_friends
 from apps.games.models import GameParticipant, GameRoom, GameRoomType, GameSettings, GameStartCondition
+from apps.games.question_engine import DEFAULT_TIER_TIME_LIMITS
 from apps.games.services import maybe_auto_start
-from apps.practice.models import QuestionType
+from apps.practice.models import QuestionType, Tier
 from apps.profiles.subjects import canonical_key_for_practice_subject
 
 from .models import ChallengeInvite, ChallengeStatus
@@ -19,7 +20,6 @@ CHALLENGE_QUESTION_COUNT = 10
 CHALLENGE_EASY_COUNT = 3
 CHALLENGE_MEDIUM_COUNT = 5
 CHALLENGE_HARD_COUNT = 2
-CHALLENGE_TIME_LIMIT_PER_QUESTION = 30
 CHALLENGE_EXPIRY_HOURS = 24
 CHALLENGE_WINNER_BONUS_XP = 20
 
@@ -67,18 +67,19 @@ def accept_challenge(invite: ChallengeInvite) -> ChallengeInvite:
         room=room, subject=invite.subject, topic=invite.topic,
         question_count=CHALLENGE_QUESTION_COUNT,
         easy_count=CHALLENGE_EASY_COUNT, medium_count=CHALLENGE_MEDIUM_COUNT, hard_count=CHALLENGE_HARD_COUNT,
-        time_limit_per_question=CHALLENGE_TIME_LIMIT_PER_QUESTION,
+        easy_time_limit=DEFAULT_TIER_TIME_LIMITS[Tier.EASY],
+        medium_time_limit=DEFAULT_TIER_TIME_LIMITS[Tier.MEDIUM],
+        hard_time_limit=DEFAULT_TIER_TIME_LIMITS[Tier.HARD],
         question_types=list(QuestionType.values),
     )
     GameParticipant.objects.create(game=room, user=invite.sender)
     GameParticipant.objects.create(game=room, user=invite.receiver)
 
     invite.status = ChallengeStatus.ACCEPTED
-    invite.room = room
+    invite.room = maybe_auto_start(room)
     invite.responded_at = timezone.now()
     invite.save(update_fields=["status", "room", "responded_at"])
 
-    maybe_auto_start(room)
     return invite
 
 

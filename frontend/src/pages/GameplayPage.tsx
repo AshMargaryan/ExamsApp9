@@ -244,6 +244,12 @@ export function GameplayPage() {
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-8 sm:px-8">
         <div className="rounded-[var(--radius)] border border-border bg-surface p-6 sm:p-10">
+          {q.passage && (
+            <div className="mb-6 rounded-md bg-surface-muted p-4 text-lg leading-relaxed italic whitespace-pre-line text-text">
+              <MathText text={q.passage} />
+            </div>
+          )}
+
           <p className="mb-8 text-center text-2xl leading-relaxed font-medium text-text sm:text-3xl">
             <MathText text={q.text} />
           </p>
@@ -327,9 +333,7 @@ export function GameplayPage() {
           )}
 
           {feedback === null && alreadyAnswered && (
-            <p className="mt-6 text-center text-lg text-text-muted">
-              Սպասում ենք մյուս խաղացողներին...
-            </p>
+            <p className="mt-6 text-center text-lg text-text-muted">Ուղարկվում է...</p>
           )}
         </div>
 

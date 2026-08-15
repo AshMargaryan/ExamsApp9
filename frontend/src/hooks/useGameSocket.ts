@@ -26,6 +26,12 @@ export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "closed"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 const MAX_BACKOFF_MS = 8000;
+// Nudges the server for a fresh personal state every few seconds, on top
+// of the push updates that already arrive after answering / on your own
+// deadline. This is what lets a player notice the creator stopped the game
+// (or the room's total_game_time cap force-closed it) within a few
+// seconds even if they're just sitting on a question doing nothing.
+const SYNC_INTERVAL_MS = 4000;
 
 function wsUrl(roomCode: string): string {
   const token = tokenStorage.getAccess();
@@ -46,6 +52,7 @@ export function useGameSocket(roomCode: string | undefined) {
   const attemptRef = useRef(0);
   const shouldReconnectRef = useRef(true);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const connect = useCallback(() => {
     if (!roomCode) return;
@@ -57,6 +64,9 @@ export function useGameSocket(roomCode: string | undefined) {
     ws.onopen = () => {
       attemptRef.current = 0;
       setStatus("open");
+      syncIntervalRef.current = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action: "sync" }));
+      }, SYNC_INTERVAL_MS);
     };
 
     ws.onmessage = (event) => {
@@ -68,6 +78,10 @@ export function useGameSocket(roomCode: string | undefined) {
     };
 
     ws.onclose = () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
       if (!shouldReconnectRef.current) {
         setStatus("closed");
         return;

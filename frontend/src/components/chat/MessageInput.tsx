@@ -8,22 +8,23 @@ import { EmojiPicker } from "./EmojiPicker";
 const ACCEPT = ".png,.jpg,.jpeg,.webp,.gif,.pdf,.docx,.xlsx,.txt,.md,.csv";
 const TYPING_THROTTLE_MS = 2000;
 
-const VOICE_MIME_CANDIDATES: { mimeType: string; ext: string }[] = [
-  { mimeType: "audio/webm", ext: "webm" },
-  { mimeType: "audio/ogg", ext: "ogg" },
-  { mimeType: "audio/mp4", ext: "mp4" },
-];
+// Chrome/Firefox record audio/webm; Safari only supports audio/mp4. Picking
+// whatever MediaRecorder actually supports beats hardcoding one mime type
+// that silently fails to record on half of desktop browsers.
+const VOICE_MIME_CANDIDATES = ["audio/webm", "audio/mp4", "audio/ogg"];
 
-function pickVoiceMimeType(): { mimeType: string; ext: string } | null {
-  if (typeof MediaRecorder === "undefined") return null;
-  return VOICE_MIME_CANDIDATES.find((c) => MediaRecorder.isTypeSupported(c.mimeType)) ?? null;
+function pickVoiceMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return undefined;
+  return VOICE_MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type));
 }
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
+
+const MIN_VOICE_MESSAGE_SECONDS = 1;
 
 export function MessageInput({
   conversationId,
@@ -52,12 +53,14 @@ export function MessageInput({
 
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [voiceSending, setVoiceSending] = useState(false);
+  const [sendingVoice, setSendingVoice] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-  const recordingExtRef = useRef("webm");
+  const recordingStreamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const recordingStartRef = useRef(0);
+  const cancelledRef = useRef(false);
 
   function handleTextChange(value: string) {
     setText(value);
@@ -72,6 +75,13 @@ export function MessageInput({
   useEffect(() => {
     if (replyingTo) textareaRef.current?.focus();
   }, [replyingTo]);
+
+  useEffect(() => {
+    return () => {
+      recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    };
+  }, []);
 
   async function handleFiles(files: FileList | File[]) {
     setUploadError(null);
@@ -109,75 +119,89 @@ export function MessageInput({
     }
   }
 
-  function stopStream() {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    if (recordingTimerRef.current) {
-      clearInterval(recordingTimerRef.current);
-      recordingTimerRef.current = null;
-    }
-  }
-
   async function startRecording() {
-    const picked = pickVoiceMimeType();
-    if (!picked) {
-      setUploadError("Ձայնագրումը չի աջակցվում այս բրաուզերում։");
+    setVoiceError(null);
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setVoiceError("Ձայնագրումն այս սարքում հասանելի չէ։");
       return;
     }
-    setUploadError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      recordingExtRef.current = picked.ext;
+      recordingStreamRef.current = stream;
+      cancelledRef.current = false;
       recordedChunksRef.current = [];
-      const recorder = new MediaRecorder(stream, { mimeType: picked.mimeType });
+
+      const mimeType = pickVoiceMimeType();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunksRef.current.push(e.data);
       };
-      mediaRecorderRef.current = recorder;
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        recordingStreamRef.current = null;
+      };
+
       recorder.start();
-      setRecording(true);
+      recordingStartRef.current = Date.now();
       setRecordingSeconds(0);
-      recordingTimerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+      setRecording(true);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((Date.now() - recordingStartRef.current) / 1000);
+      }, 200);
     } catch {
-      setUploadError("Խնդրում ենք թույլատրել մուտք դեպի խոսափող։");
+      setVoiceError("Խնդրում ենք թույլատրել մուտք դեպի խոսափողը։");
     }
   }
 
   function cancelRecording() {
+    cancelledRef.current = true;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     mediaRecorderRef.current?.stop();
     mediaRecorderRef.current = null;
-    recordedChunksRef.current = [];
-    stopStream();
     setRecording(false);
+    setRecordingSeconds(0);
   }
 
-  async function sendRecording() {
+  function stopAndSendRecording() {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+    const finalDuration = (Date.now() - recordingStartRef.current) / 1000;
+    recorder.onstop = async () => {
+      recordingStreamRef.current?.getTracks().forEach((t) => t.stop());
+      recordingStreamRef.current = null;
+      mediaRecorderRef.current = null;
+
+      if (cancelledRef.current) return;
+      if (finalDuration < MIN_VOICE_MESSAGE_SECONDS || recordedChunksRef.current.length === 0) {
+        setVoiceError("Ձայնագրությունը չափազանց կարճ է։");
+        return;
+      }
+
+      const mimeType = recorder.mimeType || "audio/webm";
+      const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+      const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
+      const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
+
+      setSendingVoice(true);
+      setVoiceError(null);
+      try {
+        const attachment = await uploadAttachment(conversationId, file, finalDuration);
+        onSend("", [attachment.id]);
+      } catch {
+        setVoiceError("Ձայնագրությունը չհաջողվեց ուղարկել։");
+      } finally {
+        setSendingVoice(false);
+      }
+    };
+
+    recorder.stop();
     setRecording(false);
-    stopStream();
-
-    const blob: Blob = await new Promise((resolve) => {
-      recorder.onstop = () => resolve(new Blob(recordedChunksRef.current, { type: recorder.mimeType }));
-      recorder.stop();
-    });
-    mediaRecorderRef.current = null;
-
-    if (blob.size === 0) return;
-    setVoiceSending(true);
-    try {
-      const file = new File([blob], `voice-message.${recordingExtRef.current}`, { type: blob.type });
-      const attachment = await uploadAttachment(conversationId, file);
-      onSend("", [attachment.id]);
-    } catch {
-      setUploadError("Ձայնագրությունը չհաջողվեց ուղարկել։");
-    } finally {
-      setVoiceSending(false);
-    }
+    setRecordingSeconds(0);
   }
-
-  useEffect(() => stopStream, []);
 
   return (
     <div
@@ -226,6 +250,7 @@ export function MessageInput({
       )}
 
       {uploadError && <p className="mb-2 text-sm text-incorrect">{uploadError}</p>}
+      {voiceError && <p className="mb-2 text-sm text-incorrect">{voiceError}</p>}
 
       {recording ? (
         <div className="flex items-center gap-3 rounded-md border border-incorrect/40 bg-incorrect/5 px-3 py-2">
@@ -242,8 +267,8 @@ export function MessageInput({
           </button>
           <button
             type="button"
-            onClick={sendRecording}
-            disabled={voiceSending}
+            onClick={stopAndSendRecording}
+            disabled={sendingVoice}
             title="Ուղարկել"
             className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-sm text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
           >
@@ -256,7 +281,7 @@ export function MessageInput({
             type="button"
             title="Կցել ֆայլ"
             onClick={() => fileInputRef.current?.click()}
-            disabled={disabled || uploading}
+            disabled={disabled || uploading || sendingVoice}
             className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
           >
             <Paperclip size={18} strokeWidth={1.75} />
@@ -307,7 +332,7 @@ export function MessageInput({
               type="button"
               title="Ձայնային հաղորդագրություն"
               onClick={startRecording}
-              disabled={disabled || uploading}
+              disabled={disabled || uploading || sendingVoice}
               className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
             >
               <Mic size={18} strokeWidth={1.75} />

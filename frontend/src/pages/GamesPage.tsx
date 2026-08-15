@@ -3,11 +3,14 @@ import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import * as gamesApi from "../api/games";
 import type { GameRoom, StartCondition } from "../api/games";
+import { getHierarchy } from "../api/practice";
+import type { SubjectNode } from "../api/practice";
 import { MessageModal } from "../components/MessageModal";
 import { LinkButton } from "../components/ui/LinkButton";
 
 const STATUS_LABELS: Record<GameRoom["status"], string> = {
   waiting: "Սպասման մեջ",
+  starting: "Սկսվում է...",
   running: "Ընթացքի մեջ",
   finished: "Ավարտված",
 };
@@ -31,6 +34,14 @@ export function GamesPage() {
   const [minPlayers, setMinPlayers] = useState("2");
   const [creating, setCreating] = useState(false);
 
+  const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
+  const [subjectId, setSubjectId] = useState<string>("");
+  const [topicId, setTopicId] = useState<string>("");
+  const [questionCount, setQuestionCount] = useState("10");
+  const [easyTimeLimit, setEasyTimeLimit] = useState("15");
+  const [mediumTimeLimit, setMediumTimeLimit] = useState("20");
+  const [hardTimeLimit, setHardTimeLimit] = useState("30");
+
   const [joinCode, setJoinCode] = useState("");
   const [joining, setJoining] = useState(false);
 
@@ -39,19 +50,44 @@ export function GamesPage() {
 
   useEffect(() => {
     gamesApi.fetchMyRooms().then(setMyRooms);
+    getHierarchy().then((data) => {
+      setSubjects(data);
+      if (data.length > 0) setSubjectId(String(data[0].id));
+    });
   }, []);
+
+  const selectedSubject = subjects?.find((s) => String(s.id) === subjectId) ?? null;
+  const topicOptions = selectedSubject
+    ? selectedSubject.domains.flatMap((d) => d.topics.map((t) => ({ id: t.id, name: t.name })))
+    : [];
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!subjectId) {
+      setError("Ընտրեք առարկան։");
+      return;
+    }
     setCreating(true);
     try {
+      const count = Number(questionCount);
       const room = await gamesApi.createRoom({
         name,
         max_players: Number(maxPlayers),
         start_condition: startCondition,
         timer_seconds: startCondition === "timer" ? Number(timerSeconds) : undefined,
         min_players_to_start: startCondition === "player_count" ? Number(minPlayers) : undefined,
+        settings: {
+          subject: Number(subjectId),
+          topic: topicId ? Number(topicId) : null,
+          question_count: count,
+          easy_count: 0,
+          medium_count: count,
+          hard_count: 0,
+          easy_time_limit: Number(easyTimeLimit),
+          medium_time_limit: Number(mediumTimeLimit),
+          hard_time_limit: Number(hardTimeLimit),
+        },
       });
       navigate(`/games/${room.room_code}`);
     } catch (err) {
@@ -109,6 +145,93 @@ export function GamesPage() {
               required
               maxLength={100}
             />
+
+            <label className={labelClass}>Առարկա</label>
+            <select
+              className={`${inputClass} mb-3`}
+              value={subjectId}
+              onChange={(e) => {
+                setSubjectId(e.target.value);
+                setTopicId("");
+              }}
+              required
+            >
+              {subjects === null && <option value="">Բեռնվում է...</option>}
+              {subjects?.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            {topicOptions.length > 0 && (
+              <>
+                <label className={labelClass}>Թեմա (ընտրովի)</label>
+                <select
+                  className={`${inputClass} mb-3`}
+                  value={topicId}
+                  onChange={(e) => setTopicId(e.target.value)}
+                >
+                  <option value="">Բոլոր թեմաները</option>
+                  {topicOptions.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <label className={labelClass}>Հարցերի քանակ</label>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              className={`${inputClass} mb-3`}
+              value={questionCount}
+              onChange={(e) => setQuestionCount(e.target.value)}
+              required
+            />
+
+            <label className={labelClass}>Ժամանակ մեկ հարցի համար (վայրկյան)</label>
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              <div>
+                <label className="mb-1 block text-xs text-text-muted">Հեշտ</label>
+                <input
+                  type="number"
+                  min={5}
+                  max={300}
+                  className={inputClass}
+                  value={easyTimeLimit}
+                  onChange={(e) => setEasyTimeLimit(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-text-muted">Միջին</label>
+                <input
+                  type="number"
+                  min={5}
+                  max={300}
+                  className={inputClass}
+                  value={mediumTimeLimit}
+                  onChange={(e) => setMediumTimeLimit(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-text-muted">Դժվար</label>
+                <input
+                  type="number"
+                  min={5}
+                  max={300}
+                  className={inputClass}
+                  value={hardTimeLimit}
+                  onChange={(e) => setHardTimeLimit(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
 
             <label className={labelClass}>Խաղացողների առավելագույն քանակ</label>
             <input

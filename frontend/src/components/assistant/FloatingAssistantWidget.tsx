@@ -4,6 +4,8 @@ import * as assistantApi from "../../api/assistant";
 import { useAuth } from "../../auth/AuthContext";
 import { useAssistantLaunch } from "../../contexts/AssistantLaunchContext";
 import { useConversationChat } from "../../hooks/useConversationChat";
+import { useFloatingPanel } from "../../hooks/useFloatingPanel";
+import { PanelResizeHandles } from "../panels/PanelResizeHandles";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { WelcomeMessage } from "./WelcomeMessage";
@@ -32,63 +34,13 @@ export function FloatingAssistantWidget() {
   // fires normally.
   const dispatchedLaunchRequestRef = useRef<typeof launchRequest>(null);
 
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const dragState = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
-    baseLeft: number;
-    baseTop: number;
-    width: number;
-    height: number;
-  } | null>(null);
-
-  function handleDragStart(e: React.PointerEvent<HTMLDivElement>) {
-    if ((e.target as HTMLElement).closest("a, button")) return;
-    const panel = panelRef.current;
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    dragState.current = {
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      originX: dragOffset.x,
-      originY: dragOffset.y,
-      baseLeft: rect.left - dragOffset.x,
-      baseTop: rect.top - dragOffset.y,
-      width: rect.width,
-      height: rect.height,
-    };
-    setDragging(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-
-  function handleDragMove(e: React.PointerEvent<HTMLDivElement>) {
-    const drag = dragState.current;
-    if (!drag || drag.pointerId !== e.pointerId) return;
-    const margin = 8;
-    const minX = margin - drag.baseLeft;
-    const maxX = window.innerWidth - margin - drag.width - drag.baseLeft;
-    const minY = margin - drag.baseTop;
-    const maxY = window.innerHeight - margin - drag.height - drag.baseTop;
-
-    const rawX = drag.originX + (e.clientX - drag.startX);
-    const rawY = drag.originY + (e.clientY - drag.startY);
-    setDragOffset({
-      x: Math.min(Math.max(rawX, Math.min(minX, maxX)), Math.max(minX, maxX)),
-      y: Math.min(Math.max(rawY, Math.min(minY, maxY)), Math.max(minY, maxY)),
+  const { rect, zIndex, isDragging, isCompact, bringToFront, dragHandleProps, getResizeHandleProps } =
+    useFloatingPanel({
+      defaultSize: { width: 352, height: 512 },
+      minSize: { width: 300, height: 360 },
+      defaultAnchor: "bottom-right",
+      margin: 16,
     });
-  }
-
-  function handleDragEnd(e: React.PointerEvent<HTMLDivElement>) {
-    if (dragState.current?.pointerId !== e.pointerId) return;
-    dragState.current = null;
-    setDragging(false);
-  }
 
   // A conversation that failed to load (e.g. deleted mid-session) 404s
   // forever instead of loading — drop it and start fresh rather than
@@ -145,17 +97,22 @@ export function FloatingAssistantWidget() {
     <>
       {open && (
         <div
-          ref={panelRef}
-          style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }}
-          className="fixed right-4 bottom-24 z-40 flex h-[32rem] w-[min(92vw,22rem)] flex-col rounded-[var(--radius)] border border-border bg-surface shadow-xl sm:right-6"
+          onPointerDownCapture={bringToFront}
+          style={
+            isCompact
+              ? { zIndex }
+              : { left: rect.left, top: rect.top, width: rect.width, height: rect.height, zIndex }
+          }
+          className={
+            isCompact
+              ? "fixed inset-4 flex flex-col rounded-[var(--radius)] border border-border bg-surface shadow-xl"
+              : "fixed flex flex-col rounded-[var(--radius)] border border-border bg-surface shadow-xl"
+          }
         >
           <div
-            onPointerDown={handleDragStart}
-            onPointerMove={handleDragMove}
-            onPointerUp={handleDragEnd}
-            onPointerCancel={handleDragEnd}
+            {...dragHandleProps}
             className={`flex items-center justify-between border-b border-border px-4 py-3 touch-none ${
-              dragging ? "cursor-grabbing" : "cursor-grab"
+              isCompact ? "" : isDragging ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
             <span className="text-sm font-medium text-text select-none">🤖 AI Օգնական</span>
@@ -203,6 +160,8 @@ export function FloatingAssistantWidget() {
               />
             </div>
           )}
+
+          {!isCompact && <PanelResizeHandles getHandleProps={getResizeHandleProps} />}
         </div>
       )}
 

@@ -111,3 +111,22 @@ class SendMessageSerializer(serializers.Serializer):
 
 class EditMessageSerializer(serializers.Serializer):
     content = serializers.CharField(allow_blank=False, trim_whitespace=True)
+
+
+class SendMessageResponseSerializer(serializers.Serializer):
+    """Response envelope for POST .../messages/ — both turns of the exchange."""
+
+    user_message = MessageSerializer()
+    assistant_message = MessageSerializer()
+
+
+# ---------------------------------------------------------------------------
+# Voice
+# ---------------------------------------------------------------------------
+
+class VoiceSynthesizeSerializer(serializers.Serializer):
+    text = serializers.CharField(allow_blank=False, trim_whitespace=True, max_length=4000)
+    voice = serializers.ChoiceField(
+        choices=["hy-AM-AnahitNeural", "hy-AM-HaykNeural"],
+        required=False, default="hy-AM-AnahitNeural",
+    )
