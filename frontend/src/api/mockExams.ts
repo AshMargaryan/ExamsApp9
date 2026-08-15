@@ -106,6 +106,29 @@ export interface AttemptResults {
   answers: Record<number, SavedAnswer>;
 }
 
+export type ErrorCategory =
+  | "unclassified" | "careless_slip" | "conceptual_gap" | "process_error" | "misread_question";
+
+export interface QuestionMistakeInfo {
+  mistake_entry_id: number;
+  error_category: ErrorCategory;
+  error_category_display: string;
+  error_explanation: string;
+  classified_at: string | null;
+}
+
+export interface AttemptAutopsy {
+  subject_mastery: {
+    subject_key: string;
+    subject_label: string;
+    mastery_score: number | null;
+    data_sufficiency: "low" | "medium" | "high";
+  } | null;
+  dominant_error_category: ErrorCategory | null;
+  dominant_error_category_display: string | null;
+  mistakes_by_question: Record<string, QuestionMistakeInfo>;
+}
+
 export async function listMockExams(subject?: MockExamSubject): Promise<MockExamSummary[]> {
   const { data } = await apiClient.get("/mock-exams/exams/", {
     params: subject ? { subject } : undefined,
@@ -140,6 +163,10 @@ export async function getAttempt(attemptId: number): Promise<AttemptDetail> {
   return data;
 }
 
+export async function abandonAttempt(attemptId: number): Promise<void> {
+  await apiClient.post(`/mock-exams/attempts/${attemptId}/abandon/`);
+}
+
 export async function saveDraft(
   attemptId: number,
   answers: AnswerInput[],
@@ -162,6 +189,11 @@ export async function finishAttempt(
 
 export async function getResults(attemptId: number): Promise<AttemptResults> {
   const { data } = await apiClient.get(`/mock-exams/attempts/${attemptId}/results/`);
+  return data;
+}
+
+export async function getAutopsy(attemptId: number): Promise<AttemptAutopsy> {
+  const { data } = await apiClient.get(`/mock-exams/attempts/${attemptId}/autopsy/`);
   return data;
 }
 
@@ -195,4 +227,14 @@ export function formatHoursMinutes(totalSeconds: number): string {
   const m = Math.floor((s % 3600) / 60);
   if (h === 0) return `${m}ր`;
   return `${h}ժ ${m}ր`;
+}
+
+/** Fire-and-forget: records a HINT_REQUESTED learning event. Never throws
+ * to the caller — a failed report shouldn't disrupt the student's exam. */
+export async function markHintViewed(questionId: number): Promise<void> {
+  try {
+    await apiClient.post(`/mock-exams/questions/${questionId}/hint-viewed/`);
+  } catch {
+    // best-effort telemetry, intentionally swallowed
+  }
 }

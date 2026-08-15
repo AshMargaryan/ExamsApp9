@@ -35,6 +35,18 @@ apiClient.interceptors.request.use((config) => {
 
 let refreshPromise: Promise<string> | null = null;
 
+/** Shared by the axios interceptor below and useConversationChat's manual
+ * fetch() (for the SSE streaming endpoints, which don't go through axios) —
+ * both must dedupe onto the same in-flight refresh instead of racing two
+ * independent calls, since SIMPLE_JWT.ROTATE_REFRESH_TOKENS blacklists the
+ * refresh token after one use and the second racer would fail. */
+export function refreshAccessTokenShared(): Promise<string> {
+  refreshPromise ??= refreshAccessToken().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
 async function refreshAccessToken(): Promise<string> {
   const refresh = tokenStorage.getRefresh();
   if (!refresh) throw new Error("No refresh token");
@@ -59,10 +71,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && original && !original._retried) {
       original._retried = true;
       try {
-        refreshPromise ??= refreshAccessToken().finally(() => {
-          refreshPromise = null;
-        });
-        const newAccess = await refreshPromise;
+        const newAccess = await refreshAccessTokenShared();
         original.headers = original.headers ?? {};
         original.headers.Authorization = `Bearer ${newAccess}`;
         return apiClient(original);
