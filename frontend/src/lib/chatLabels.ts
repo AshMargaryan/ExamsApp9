@@ -5,7 +5,11 @@ export function isAiSender(sender: { username: string } | null | undefined): boo
   return sender?.username === AI_BOT_USERNAME;
 }
 
-export function conversationTitle(conversation: Conversation): string {
+export function conversationTitle(conversation: {
+  type: Conversation["type"];
+  name: Conversation["name"];
+  other_participant: Conversation["other_participant"];
+}): string {
   if (conversation.type === "group") return conversation.name || "Խումբ";
   const other = conversation.other_participant;
   if (!other) return "Զրույց";

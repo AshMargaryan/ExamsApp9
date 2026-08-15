@@ -4,7 +4,7 @@ import * as chatApi from "../../api/chat";
 import type { ChatSearchResults, Conversation } from "../../api/chat";
 import * as friendsApi from "../../api/friends";
 import type { SearchResultUser } from "../../api/friends";
-import { conversationTitle, messagePreviewText } from "../../lib/chatLabels";
+import { conversationTitle } from "../../lib/chatLabels";
 import { ConversationAvatar } from "./ConversationAvatar";
 
 type Tab = "all" | "messages" | "people" | "files";
@@ -122,7 +122,7 @@ export function GlobalSearchPanel({
               className="flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-surface-muted"
             >
               <span className="text-xs font-medium text-primary">{conversationTitle(m.conversation)}</span>
-              <span className="truncate text-sm text-text">{messagePreviewText(m)}</span>
+              <span className="truncate text-sm text-text">{m.text}</span>
             </button>
           ))}
         </div>

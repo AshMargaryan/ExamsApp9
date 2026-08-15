@@ -20,7 +20,6 @@ import { HaygitInsightCard } from "../components/HaygitInsightCard";
 import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { StatTile } from "../components/ui/StatTile";
-import { SectionHeader } from "../components/ui/SectionHeader";
 import { LinkButton } from "../components/ui/LinkButton";
 import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
 

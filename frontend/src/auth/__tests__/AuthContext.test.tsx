@@ -46,6 +46,7 @@ describe("AuthContext — behavior after a session is revoked", () => {
       id: 1, username: "student1", email: "s@example.com", date_joined: "2026-01-01",
       is_email_verified: true, role: "student", first_name: "A", last_name: "B",
       age: null, grade: null, sex: "", school: null, university: null,
+      has_usable_password: true,
     });
 
     render(

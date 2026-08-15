@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FileText, LifeBuoy, SearchX } from "lucide-react";
 import {
-  getCategory, listCategories, listPopularArticles, searchArticles,
+  listCategories, listPopularArticles, searchArticles,
   type ArticleSummary, type Category,
 } from "../api/help";
 import { Card } from "../components/ui/Card";
