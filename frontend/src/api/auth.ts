@@ -27,6 +27,7 @@ export interface User {
   sex: "" | "male" | "female";
   school: School | null;
   university: University | null;
+  has_usable_password: boolean;
 }
 
 export interface RegisterPayload {
@@ -145,6 +146,20 @@ export async function confirmPasswordReset(
   await apiClient.post("/auth/password-reset/confirm/", {
     uid,
     token,
+    new_password: newPassword,
+    confirm_new_password: confirmNewPassword,
+  });
+}
+
+/** currentPassword is ignored server-side for an account with no usable
+ * password yet (Google/Apple-only) — see ChangePasswordView. */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+  confirmNewPassword: string,
+): Promise<void> {
+  await apiClient.post("/auth/change-password/", {
+    current_password: currentPassword,
     new_password: newPassword,
     confirm_new_password: confirmNewPassword,
   });

@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import (
-    RegisterView, LoginView, LogoutView, MeView, SessionAwareTokenRefreshView,
+    RegisterView, LoginView, LogoutView, MeView, ChangePasswordView, SessionAwareTokenRefreshView,
     GoogleAuthView, AppleAuthView, OAuthCompleteRegisterView,
     SessionListView, SessionRevokeView, SessionManagementListView, SessionManagementRevokeView,
     SchoolSearchView, UniversitySearchView,
@@ -18,6 +18,7 @@ urlpatterns = [
     path("apple/", AppleAuthView.as_view(), name="apple_auth"),
     path("oauth/complete/", OAuthCompleteRegisterView.as_view(), name="oauth_complete"),
     path("me/", MeView.as_view(), name="me"),
+    path("change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("sessions/", SessionListView.as_view(), name="session_list"),
     path("sessions/<int:pk>/revoke/", SessionRevokeView.as_view(), name="session_revoke"),
     path("sessions/manage/list/", SessionManagementListView.as_view(), name="session_management_list"),

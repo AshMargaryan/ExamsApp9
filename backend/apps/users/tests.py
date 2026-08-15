@@ -237,6 +237,7 @@ from django.test import TransactionTestCase
 from rest_framework.test import APIClient
 
 from .models import UserSession
+from .utils import issue_tokens_for_user
 
 PASSWORD = "StrongPass1"
 
@@ -410,6 +411,75 @@ class DeviceSessionLimitTests(APITestCase):
         self.assertEqual(revoke.status_code, status.HTTP_404_NOT_FOUND)
         other_session.refresh_from_db()
         self.assertTrue(other_session.is_active)
+
+
+class ChangePasswordViewTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="pwuser", email="pwuser@example.com", password=PASSWORD)
+        login = self.client.post("/api/auth/login/", {"username": "pwuser", "password": PASSWORD})
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+
+    def test_wrong_current_password_is_rejected(self):
+        resp = self.client.post("/api/auth/change-password/", {
+            "current_password": "WrongPass1", "new_password": "NewPass123", "confirm_new_password": "NewPass123",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(PASSWORD))
+
+    def test_successful_change(self):
+        resp = self.client.post("/api/auth/change-password/", {
+            "current_password": PASSWORD, "new_password": "NewPass123", "confirm_new_password": "NewPass123",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("NewPass123"))
+        self.assertFalse(self.user.check_password(PASSWORD))
+
+    def test_mismatched_confirmation_is_rejected(self):
+        resp = self.client.post("/api/auth/change-password/", {
+            "current_password": PASSWORD, "new_password": "NewPass123", "confirm_new_password": "Different1",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_weak_new_password_is_rejected(self):
+        resp = self.client.post("/api/auth/change-password/", {
+            "current_password": PASSWORD, "new_password": "alllettersnodigits", "confirm_new_password": "alllettersnodigits",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_too_short_new_password_is_rejected(self):
+        resp = self.client.post("/api/auth/change-password/", {
+            "current_password": PASSWORD, "new_password": "abc1", "confirm_new_password": "abc1",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_requires_authentication(self):
+        self.client.credentials()
+        resp = self.client.post("/api/auth/change-password/", {
+            "current_password": PASSWORD, "new_password": "NewPass123", "confirm_new_password": "NewPass123",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_oauth_only_account_can_set_a_first_password_without_current_password(self):
+        oauth_user = User.objects.create(username="oauthuser", email="oauthuser@example.com", google_id="g-1")
+        oauth_user.set_unusable_password()
+        oauth_user.save()
+        self.assertFalse(oauth_user.has_usable_password())
+
+        # SessionAwareJWTAuthentication requires every token to carry a
+        # session_id pointing at a live UserSession (see authentication.py)
+        # — a bare RefreshToken.for_user() would 401 on the very next request.
+        session = UserSession.objects.create(user=oauth_user)
+        tokens = issue_tokens_for_user(oauth_user, session)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+
+        resp = self.client.post("/api/auth/change-password/", {
+            "new_password": "NewPass123", "confirm_new_password": "NewPass123",
+        })
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        oauth_user.refresh_from_db()
+        self.assertTrue(oauth_user.check_password("NewPass123"))
 
 
 class ConcurrentLoginRaceTests(TransactionTestCase):

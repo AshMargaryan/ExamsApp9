@@ -1,3 +1,4 @@
+import math
 import uuid
 
 from django.contrib.auth.models import AbstractUser
@@ -38,6 +39,8 @@ class AccountRole(models.TextChoices):
 
 
 class User(AbstractUser):
+    USERNAME_CHANGE_COOLDOWN_DAYS = 14
+
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     username_changed_at = models.DateTimeField(null=True, blank=True)
@@ -78,6 +81,19 @@ class User(AbstractUser):
     def set_email_verification_code(self, code: str, ttl_minutes: int = 15) -> None:
         self.email_verification_code = code
         self.email_verification_expires_at = timezone.now() + timezone.timedelta(minutes=ttl_minutes)
+
+    def next_username_change_at(self):
+        base = self.username_changed_at or self.created_at
+        return base + timezone.timedelta(days=self.USERNAME_CHANGE_COOLDOWN_DAYS)
+
+    def can_change_username(self) -> bool:
+        return timezone.now() >= self.next_username_change_at()
+
+    def days_until_username_change(self) -> int:
+        remaining = (self.next_username_change_at() - timezone.now()).total_seconds()
+        if remaining <= 0:
+            return 0
+        return math.ceil(remaining / 86400)
 
 
 class UserSession(models.Model):
