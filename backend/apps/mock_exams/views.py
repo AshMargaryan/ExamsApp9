@@ -9,8 +9,9 @@ from .models import (
     MockExam, MockExamQuestion, MockExamAttempt, MockExamAnswer,
     MockExamAttemptStatus, MockExamDifficulty,
 )
-from apps.mistakes.services import record_mistake
-from apps.mistakes.models import MistakeEntrySource
+from apps.knowledge.models import SubjectMastery
+from apps.mistakes.services import record_mistake, was_attempted
+from apps.mistakes.models import ErrorCategory, MistakeEntry, MistakeEntrySource
 from .scoring import score_answer, compute_scaled_score
 from .serializers import (
     MockExamListSerializer,
@@ -19,6 +20,8 @@ from .serializers import (
     MockExamAttemptSerializer,
 )
 from apps.profiles.engine import evaluate_achievements
+from apps.profiles.models import LearningEventType
+from apps.profiles.services import record_event
 from apps.profiles.xp import award_xp
 from apps.streaks.services import record_activity
 
@@ -158,6 +161,22 @@ class StartAttemptView(APIView):
         return Response(MockExamAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED)
 
 
+class AbandonAttemptView(APIView):
+    """POST /api/mock-exams/attempts/<id>/abandon/ — discards this user's own
+    in-progress attempt so they can start the exam over from scratch. Only
+    IN_PROGRESS attempts can be abandoned; nothing was ever graded or logged
+    to the Mistake Notebook for an unfinished attempt, so a plain delete is
+    safe and needs no other cleanup."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        attempt = get_object_or_404(
+            MockExamAttempt, pk=pk, user=request.user, status=MockExamAttemptStatus.IN_PROGRESS,
+        )
+        attempt.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 def _remaining_seconds(attempt: MockExamAttempt):
     if attempt.duration_minutes is None:
         return None
@@ -264,8 +283,8 @@ class FinishAttemptView(APIView):
             question = questions.get(a["question_id"])
             if question is None:
                 continue
-            if (a.get("selected_choice_id") or a.get("answer_text")
-                    or a.get("selected_statement_ids") or a.get("match_pairs")):
+            attempted = was_attempted(a)
+            if attempted:
                 answered_count += 1
 
             defaults = score_answer(question, a)
@@ -282,7 +301,9 @@ class FinishAttemptView(APIView):
                     question=question, question_type=question.question_type, answer_data=a,
                     explanation="\n".join(question.solution_steps) if question.solution_steps else "",
                 )
-                if question.topic:
+                # Skipped questions aren't evidence of a topic weakness —
+                # only count genuinely wrong attempts toward it.
+                if question.topic and attempted:
                     from apps.practice.models import MistakeSource  # local import: avoids a load-order dependency
                     from apps.practice.services import record_topic_mistake
                     record_topic_mistake(
@@ -325,6 +346,13 @@ class FinishAttemptView(APIView):
         else:
             award_xp(request.user, XP_RETAKE_COMPLETION_BONUS, subject=attempt.exam.subject)
 
+        record_event(
+            request.user, LearningEventType.EXAM_COMPLETED,
+            subject_key=attempt.exam.subject, source="mock_exams",
+            target_id=attempt.id, result=f"{raw_score}/{len(questions)}",
+            metadata={"exam_id": attempt.exam.exam_id, "scaled_score": attempt.scaled_score},
+        )
+
         return Response(MockExamAttemptSerializer(attempt).data)
 
 
@@ -350,3 +378,86 @@ class AttemptResultsView(APIView):
             "questions": MockExamQuestionRevealSerializer(questions, many=True).data,
             "answers": saved_answers,
         })
+
+
+class AttemptAutopsyView(APIView):
+    """GET /api/mock-exams/attempts/<id>/autopsy/ — ties this attempt's
+    wrong answers to the Mistake Intelligence classification for that exact
+    question (if it's been classified) and the student's current subject
+    mastery, so the results page can explain *why* the score is what it is,
+    not just what it is. No new AI classification logic here — everything
+    is read from apps.knowledge/apps.mistakes, which are the sources of
+    truth for that data (see apps.knowledge.signals, which recomputes
+    SubjectMastery automatically whenever a MockExamAnswer is graded)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        attempt = get_object_or_404(MockExamAttempt, pk=pk, user=request.user)
+
+        wrong_question_ids = list(
+            attempt.answers.filter(is_correct=False).values_list("question_id", flat=True)
+        )
+
+        mistakes_by_question = {}
+        if wrong_question_ids:
+            entries = (
+                MistakeEntry.objects
+                .filter(
+                    user=attempt.user, source=MistakeEntrySource.MOCK_EXAM,
+                    object_id__in=wrong_question_ids,
+                )
+                .order_by("object_id", "-created_at")
+            )
+            for entry in entries:
+                # Most recent MistakeEntry for that question wins — a
+                # student may have gotten the same question wrong on an
+                # earlier attempt too; the latest classification is the
+                # most relevant one to show here.
+                mistakes_by_question.setdefault(entry.object_id, entry)
+
+        category_counts = {}
+        for entry in mistakes_by_question.values():
+            if entry.classified_at is not None:
+                category_counts[entry.error_category] = category_counts.get(entry.error_category, 0) + 1
+        dominant_category = max(category_counts, key=category_counts.get) if category_counts else None
+
+        mastery = SubjectMastery.objects.filter(user=attempt.user, subject_key=attempt.exam.subject).first()
+
+        return Response({
+            "subject_mastery": {
+                "subject_key": mastery.subject_key,
+                "subject_label": mastery.get_subject_key_display(),
+                "mastery_score": mastery.mastery_score,
+                "data_sufficiency": mastery.data_sufficiency,
+            } if mastery else None,
+            "dominant_error_category": dominant_category,
+            "dominant_error_category_display": ErrorCategory(dominant_category).label if dominant_category else None,
+            "mistakes_by_question": {
+                str(question_id): {
+                    "mistake_entry_id": entry.id,
+                    "error_category": entry.error_category,
+                    "error_category_display": entry.get_error_category_display(),
+                    "error_explanation": entry.error_explanation,
+                    "classified_at": entry.classified_at,
+                }
+                for question_id, entry in mistakes_by_question.items()
+            },
+        })
+
+
+class QuestionHintViewedView(APIView):
+    """POST /api/mock-exams/questions/<id>/hint-viewed/ — records that the
+    student opened this question's hint. Questions aren't user-owned, so no
+    ownership check; carries no reward, so a duplicate/replayed call is
+    harmless beyond a duplicate log row."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, question_id):
+        question = get_object_or_404(MockExamQuestion.objects.select_related("exam"), pk=question_id)
+        record_event(
+            request.user, LearningEventType.HINT_REQUESTED,
+            subject_key=question.exam.subject, topic_label=question.topic,
+            source="mock_exams", target_id=question.id,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
