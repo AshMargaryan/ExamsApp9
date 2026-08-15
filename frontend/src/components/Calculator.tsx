@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type PendingOp = "+" | "−" | "×" | "÷" | "xʸ" | null;
+
+const KEY_TO_OP: Record<string, Exclude<PendingOp, null>> = {
+  "+": "+",
+  "-": "−",
+  "*": "×",
+  "/": "÷",
+};
 
 function formatResult(value: number): string {
   if (!Number.isFinite(value)) return "Սխալ";
@@ -25,6 +32,8 @@ export function Calculator() {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [scientific, setScientific] = useState(false);
   const [degMode, setDegMode] = useState(true);
+  const [memory, setMemory] = useState<number | null>(null);
+  const [history, setHistory] = useState<{ expr: string; result: string }[]>([]);
 
   function inputDigit(digit: string) {
     if (waitingForOperand) {
@@ -78,7 +87,9 @@ export function Calculator() {
     if (pendingOp === null || stored === null) return;
     const current = parseFloat(display);
     const result = applyOp(stored, pendingOp, current);
-    setDisplay(formatResult(result));
+    const resultText = formatResult(result);
+    setHistory((h) => [{ expr: `${formatResult(stored)} ${pendingOp} ${display}`, result: resultText }, ...h].slice(0, 5));
+    setDisplay(resultText);
     setStored(null);
     setPendingOp(null);
     setWaitingForOperand(true);
@@ -99,32 +110,131 @@ export function Calculator() {
     setWaitingForOperand(true);
   }
 
+  function recallFromHistory(value: string) {
+    setDisplay(value);
+    setStored(null);
+    setPendingOp(null);
+    setWaitingForOperand(false);
+  }
+
+  function memoryClear() {
+    setMemory(null);
+  }
+
+  function memoryRecall() {
+    if (memory === null) return;
+    setDisplay(formatResult(memory));
+    setWaitingForOperand(false);
+  }
+
+  function memoryAdd() {
+    setMemory((m) => (m ?? 0) + parseFloat(display));
+    setWaitingForOperand(true);
+  }
+
+  function memorySubtract() {
+    setMemory((m) => (m ?? 0) - parseFloat(display));
+    setWaitingForOperand(true);
+  }
+
+  useEffect(() => {
+    function isTypingElsewhere() {
+      const tag = document.activeElement?.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA";
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (isTypingElsewhere()) return;
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        inputDigit(e.key);
+        return;
+      }
+      if (e.key in KEY_TO_OP) {
+        e.preventDefault();
+        chooseOperator(KEY_TO_OP[e.key]);
+        return;
+      }
+      if (e.key === "." || e.key === ",") {
+        e.preventDefault();
+        inputDecimal();
+        return;
+      }
+      if (e.key === "Enter" || e.key === "=") {
+        e.preventDefault();
+        equals();
+        return;
+      }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        backspace();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        clearAll();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [display, stored, pendingOp, waitingForOperand]);
+
   const digitBtn =
-    "rounded-md bg-surface-muted py-3 text-lg font-medium text-text transition-colors hover:bg-border";
-  const opBtn =
-    "rounded-md bg-primary/10 py-3 text-lg font-medium text-primary transition-colors hover:bg-primary/20";
+    "rounded-md bg-surface-muted py-3 text-lg font-medium text-text transition-colors hover:bg-border active:scale-95";
+  const opBtnFor = (op: Exclude<PendingOp, null>) =>
+    `rounded-md py-3 text-lg font-medium transition-colors active:scale-95 ${
+      pendingOp === op
+        ? "bg-primary text-primary-contrast"
+        : "bg-primary/10 text-primary hover:bg-primary/20"
+    }`;
   const fnBtn =
-    "rounded-md border border-border py-2 text-sm font-medium text-text-muted transition-colors hover:border-primary hover:text-primary";
+    "rounded-md border border-border py-2 text-sm font-medium text-text-muted transition-colors hover:border-primary hover:text-primary active:scale-95";
+  const memBtn =
+    "rounded-md border border-border py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-primary hover:text-primary active:scale-95 disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-muted";
 
   return (
     <div className="w-72 select-none">
       <div className="mb-3 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => setScientific((s) => !s)}
-          className={fnBtn}
-        >
+        <button type="button" onClick={() => setScientific((s) => !s)} className={fnBtn}>
           {scientific ? "Պարզ" : "Գիտական"}
         </button>
-        {scientific && (
-          <button type="button" onClick={() => setDegMode((d) => !d)} className={fnBtn}>
-            {degMode ? "DEG" : "RAD"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {memory !== null && <span className="text-xs font-semibold text-primary">M</span>}
+          {scientific && (
+            <button type="button" onClick={() => setDegMode((d) => !d)} className={fnBtn}>
+              {degMode ? "DEG" : "RAD"}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="mb-3 overflow-x-auto rounded-md border border-border bg-surface-muted px-3 py-3 text-right text-2xl font-semibold text-text">
+      {history.length > 0 && (
+        <div className="mb-2 flex flex-wrap-reverse gap-1.5">
+          {history.map((h, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => recallFromHistory(h.result)}
+              title={h.expr}
+              className="rounded-full border border-border bg-surface-muted px-2 py-0.5 text-xs text-text-muted transition-colors hover:border-primary hover:text-primary"
+            >
+              {h.result}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-3 overflow-x-auto rounded-md border border-border bg-surface-muted px-3 py-3 text-right text-2xl font-semibold text-text [font-variant-numeric:tabular-nums]">
         {display}
+      </div>
+
+      <div className="mb-2 grid grid-cols-4 gap-1.5">
+        <button className={memBtn} onClick={memoryClear} disabled={memory === null}>MC</button>
+        <button className={memBtn} onClick={memoryRecall} disabled={memory === null}>MR</button>
+        <button className={memBtn} onClick={memoryAdd}>M+</button>
+        <button className={memBtn} onClick={memorySubtract}>M−</button>
       </div>
 
       {scientific && (
@@ -146,27 +256,27 @@ export function Calculator() {
         <button className={fnBtn} onClick={clearAll}>C</button>
         <button className={fnBtn} onClick={toggleSign}>±</button>
         <button className={fnBtn} onClick={backspace}>⌫</button>
-        <button className={opBtn} onClick={() => chooseOperator("÷")}>÷</button>
+        <button className={opBtnFor("÷")} onClick={() => chooseOperator("÷")}>÷</button>
 
         <button className={digitBtn} onClick={() => inputDigit("7")}>7</button>
         <button className={digitBtn} onClick={() => inputDigit("8")}>8</button>
         <button className={digitBtn} onClick={() => inputDigit("9")}>9</button>
-        <button className={opBtn} onClick={() => chooseOperator("×")}>×</button>
+        <button className={opBtnFor("×")} onClick={() => chooseOperator("×")}>×</button>
 
         <button className={digitBtn} onClick={() => inputDigit("4")}>4</button>
         <button className={digitBtn} onClick={() => inputDigit("5")}>5</button>
         <button className={digitBtn} onClick={() => inputDigit("6")}>6</button>
-        <button className={opBtn} onClick={() => chooseOperator("−")}>−</button>
+        <button className={opBtnFor("−")} onClick={() => chooseOperator("−")}>−</button>
 
         <button className={digitBtn} onClick={() => inputDigit("1")}>1</button>
         <button className={digitBtn} onClick={() => inputDigit("2")}>2</button>
         <button className={digitBtn} onClick={() => inputDigit("3")}>3</button>
-        <button className={opBtn} onClick={() => chooseOperator("+")}>+</button>
+        <button className={opBtnFor("+")} onClick={() => chooseOperator("+")}>+</button>
 
         <button className={`${digitBtn} col-span-2`} onClick={() => inputDigit("0")}>0</button>
         <button className={digitBtn} onClick={inputDecimal}>.</button>
         <button
-          className="rounded-md bg-primary py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+          className="rounded-md bg-primary py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover active:scale-95"
           onClick={equals}
         >
           =

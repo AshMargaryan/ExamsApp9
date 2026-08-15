@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { BookOpen, CalendarDays, Flame, Target } from "lucide-react";
 import { API_ORIGIN } from "../api/client";
 import * as parentsApi from "../api/parents";
 import type {
@@ -9,8 +9,15 @@ import { GOAL_TYPE_LABELS } from "../api/parents";
 import { getHierarchy } from "../api/practice";
 import type { SubjectNode } from "../api/practice";
 import { RARITY_COLORS, RARITY_LABELS } from "../lib/achievementRarity";
-import { WeeklyProgressChart } from "../components/WeeklyProgressChart";
+import { ActivityHeatmap } from "../components/ActivityHeatmap";
+import { Chart } from "../components/ui/Chart";
+import { ProgressRing } from "../components/dashboard/ProgressRing";
+import { SkillColumn } from "../components/dashboard/SkillColumn";
+import { SkillsMasteryDonut } from "../components/dashboard/SkillsMasteryDonut";
+import { SubjectRadarChart } from "../components/dashboard/SubjectRadarChart";
 import { useAuth } from "../auth/AuthContext";
+import { Button } from "../components/ui/Button";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const GOAL_TYPES: GoalType[] = ["lessons_per_week", "xp_per_month", "subject_accuracy"];
 
@@ -160,48 +167,6 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
   );
 }
 
-function ActivityHeatmap({ points }: { points: ChildDashboard["activity_calendar"] }) {
-  function levelClass(count: number) {
-    if (count === 0) return "bg-surface-muted";
-    if (count <= 2) return "bg-primary/30";
-    if (count <= 5) return "bg-primary/60";
-    return "bg-primary";
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {points.map((p) => (
-        <div
-          key={p.date}
-          title={`${p.date}՝ ${p.count} հարց`}
-          className={`h-3.5 w-3.5 rounded-sm ${levelClass(p.count)}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function SkillColumn({ title, color, items }: { title: string; color: string; items: { name: string; subject_name: string; avg_score: number }[] }) {
-  return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-4">
-      <p className="mb-2 text-sm font-semibold text-text">
-        {color} {title} ({items.length})
-      </p>
-      {items.length === 0 ? (
-        <p className="text-xs text-text-muted">Դեռ ոչինչ այս խմբում։</p>
-      ) : (
-        <ul className="flex flex-col gap-1.5">
-          {items.slice(0, 8).map((item) => (
-            <li key={item.name} className="text-xs text-text-muted">
-              <span className="text-text">{item.name}</span> · {item.subject_name} · {item.avg_score}%
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 function GoalForm({
   childId, subjects, onCreated,
 }: {
@@ -336,11 +301,14 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Overview */}
-      <section className="rounded-[var(--radius)] border border-border bg-surface p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Hero */}
+      <section
+        className="rounded-[calc(var(--radius)*1.15)] p-6 sm:p-7"
+        style={{ background: "var(--gradient-hero)", boxShadow: "0 12px 30px rgba(0,0,0,0.18)" }}
+      >
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-2xl font-semibold text-text-muted">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/40 bg-white/10 text-2xl font-semibold text-white">
               {overview.avatar ? (
                 <img
                   src={overview.avatar.startsWith("/") ? `${API_ORIGIN}${overview.avatar}` : overview.avatar}
@@ -352,68 +320,91 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
               )}
             </div>
             <div>
-              <p className="text-lg font-semibold text-text">
+              <p className="text-lg font-semibold text-white">
                 {[overview.first_name, overview.last_name].filter(Boolean).join(" ") || overview.username}
               </p>
-              <p className="text-sm text-text-muted">
+              <p className="text-sm text-white/80">
                 {[overview.grade ? `${overview.grade}-րդ դասարան` : null, overview.school].filter(Boolean).join(" · ")}
               </p>
-              <p className="text-xs text-text-muted">
+              <p className="text-xs text-white/70">
                 Վերջին ակտիվություն՝ {overview.last_active_date ?? "դեռ չկա"}
               </p>
             </div>
           </div>
-          <div className="flex gap-6">
+          <div className="flex items-center gap-6">
             <div className="text-center">
               <p className="text-2xl font-semibold text-text">🔥 {overview.current_streak}</p>
-              <p className="text-xs text-text-muted">օրյա շարք</p>
+              <p className="text-xs text-white/70">օրյա շարք</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-semibold text-text">{overview.level}</p>
-              <p className="text-xs text-text-muted">{overview.total_xp} XP</p>
+              <p className="text-2xl font-semibold text-white">{overview.level}</p>
+              <p className="text-xs text-white/70">{overview.total_xp} XP</p>
             </div>
+            {predicted_exam_score !== null && (
+              <div className="flex flex-col items-center gap-1">
+                <ProgressRing value={predicted_exam_score} max={100} size={56} color="#fff" />
+                <p className="text-[10px] text-white/70">կանխ. միավոր</p>
+              </div>
+            )}
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-3 border-t border-border pt-4 text-sm">
-          {predicted_exam_score !== null && (
-            <span className="rounded-full bg-surface-muted px-3 py-1 text-text-muted">
-              🎯 Կանխատեսվող միավոր՝ <strong className="text-text">{predicted_exam_score}</strong>
-            </span>
-          )}
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/20 pt-4 text-sm">
           {best_study_hour !== null && (
-            <span className="rounded-full bg-surface-muted px-3 py-1 text-text-muted">
+            <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
               ⏰ Լավագույն ժամ՝ <strong className="text-text">{best_study_hour}:00</strong>
             </span>
           )}
-          <button onClick={handleUnlink} className="ml-auto text-xs text-text-muted hover:text-incorrect">
+          <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
+            <Flame className="inline" size={14} strokeWidth={1.75} /> Ռեկորդային շարք՝ <strong className="text-white">{overview.longest_streak}</strong> օր
+          </span>
+          <button onClick={handleUnlink} className="ml-auto text-xs text-white/70 hover:text-white">
             Հեռացնել կապը
           </button>
         </div>
       </section>
 
       {/* Subject performance */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-text">Առարկայական առաջընթաց</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subject_performance.map((s) => (
-            <div key={s.subject_id} className="rounded-[var(--radius)] border border-border bg-surface p-4">
-              <p className="font-medium text-text">{s.subject_name}</p>
-              <p className="mt-1 text-sm text-text-muted">
-                {s.avg_score === null ? "Դեռ չսկսված" : `Միջին միավոր՝ ${s.avg_score}%`}
-              </p>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${s.completion_percent}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-text-muted">{s.completion_percent}% ավարտված</p>
+      <section className="rounded-[var(--radius)] border border-border bg-surface p-5">
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
+          <BookOpen size={18} strokeWidth={1.75} /> Առարկայական առաջընթաց
+        </h2>
+        {subject_performance.length === 0 ? (
+          <p className="text-text-muted">Տվյալներ դեռ չկան։</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <SubjectRadarChart subjects={subject_performance} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              {subject_performance.map((s) => (
+                <div key={s.subject_id} className="rounded-[var(--radius)] border border-border bg-bg p-3">
+                  <p className="text-sm font-medium text-text">{s.subject_name}</p>
+                  <p className="mt-0.5 text-xs text-text-muted">
+                    {s.avg_score === null ? "Դեռ չսկսված" : `Միջին միավոր՝ ${s.avg_score}%`}
+                  </p>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${s.completion_percent}%` }} />
+                  </div>
+                  <p className="mt-1 text-xs text-text-muted">{s.completion_percent}% ավարտված</p>
+                </div>
+              ))}
             </div>
-          ))}
-          {subject_performance.length === 0 && <p className="text-text-muted">Տվյալներ դեռ չկան։</p>}
-        </div>
+          </div>
+        )}
       </section>
 
       {/* Skills mastery */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-text">Հմտությունների յուրացում</h2>
+      <section className="rounded-[var(--radius)] border border-border bg-surface p-5">
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
+          <Target size={18} strokeWidth={1.75} /> Հմտությունների յուրացում
+        </h2>
+        <div className="mb-4">
+          <SkillsMasteryDonut
+            counts={{
+              mastered: skills_mastery.mastered.length,
+              practicing: skills_mastery.practicing.length,
+              needs_improvement: skills_mastery.needs_improvement.length,
+            }}
+          />
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SkillColumn title="Յուրացված" color="🟢" items={skills_mastery.mastered} />
           <SkillColumn title="Պարապում է" color="🟡" items={skills_mastery.practicing} />
@@ -424,12 +415,28 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
       {/* Weekly progress + activity calendar */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-          <h2 className="mb-3 text-lg font-semibold text-text">Առաջընթաց ըստ շաբաթների</h2>
-          <WeeklyProgressChart points={weekly_progress} />
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
+            <CalendarDays size={18} strokeWidth={1.75} /> Առաջընթաց ըստ շաբաթների
+          </h2>
+          <Chart
+            data={weekly_progress.map((p) => ({
+              week: new Date(p.week_start).toLocaleDateString("hy-AM", { day: "numeric", month: "short" }),
+              solved: p.solved,
+              correct: p.correct,
+            }))}
+            xKey="week"
+            series={[
+              { key: "solved", label: "Ընդհանուր", color: "var(--color-border)" },
+              { key: "correct", label: "Ճիշտ", color: "var(--color-accent)" },
+            ]}
+          />
         </div>
         <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
           <h2 className="mb-3 text-lg font-semibold text-text">Ակտիվության օրացույց (30 օր)</h2>
-          <ActivityHeatmap points={activity_calendar} />
+          <ActivityHeatmap
+            points={activity_calendar.map((p) => ({ ...p, tooltip: `${p.date}՝ ${p.count} հարց` }))}
+            rangeDays={30}
+          />
         </div>
       </section>
 
@@ -459,13 +466,11 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
         <div className="flex flex-col gap-3">
           {goals?.map((g) => (
             <div key={g.id} className="flex items-center gap-4 rounded-[var(--radius)] border border-border bg-surface p-4">
+              <ProgressRing value={g.progress.current} max={g.progress.target} size={48} strokeWidth={5} color="var(--color-accent)" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-text">
                   {GOAL_TYPE_LABELS[g.goal_type]}{g.subject_name ? ` · ${g.subject_name}` : ""}
                 </p>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-                  <div className="h-full rounded-full bg-accent" style={{ width: `${g.progress.percent}%` }} />
-                </div>
                 <p className="mt-1 text-xs text-text-muted">
                   {g.progress.current} / {g.progress.target}
                 </p>
@@ -530,9 +535,9 @@ function NotificationsPanel() {
           Ծանուցումներ {unreadCount > 0 ? `(${unreadCount})` : ""}
         </h2>
         {unreadCount > 0 && (
-          <button onClick={handleMarkAllRead} className="text-sm text-primary hover:underline">
+          <Button variant="secondary" size="sm" onClick={handleMarkAllRead}>
             Նշել բոլորը կարդացված
-          </button>
+          </Button>
         )}
       </div>
       {notifications.length === 0 ? (
@@ -574,13 +579,11 @@ export function ParentDashboardPage() {
     <div className="min-h-screen bg-bg px-4 py-6">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
-          <Link to="/profile" className="text-sm text-primary hover:underline">
-            ← Պրոֆիլ
-          </Link>
+          <LinkButton to="/profile">← Պրոֆիլ</LinkButton>
           <h1 className="text-xl font-semibold text-text">👨‍👩‍👧 Ծնողական վահանակ</h1>
-          <button type="button" onClick={logout} className="text-sm text-primary hover:underline">
+          <Button variant="secondary" size="sm" onClick={logout}>
             Ելք
-          </button>
+          </Button>
         </div>
 
         {children === null && <p className="text-text-muted">Բեռնվում է...</p>}

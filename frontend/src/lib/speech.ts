@@ -62,7 +62,7 @@ async function pickGoodLocalVoice(): Promise<SpeechSynthesisVoice | null> {
   return english.find((v) => !v.localService) ?? null;
 }
 
-async function speakViaServer(text: string, onEnd: () => void): Promise<void> {
+async function speakViaServer(text: string, onEnd: () => void, rate: number, onError?: () => void): Promise<void> {
   try {
     const { data } = await apiClient.get("/practice/pronounce/", {
       params: { text },
@@ -70,27 +70,42 @@ async function speakViaServer(text: string, onEnd: () => void): Promise<void> {
     });
     const url = URL.createObjectURL(data as Blob);
     const audio = new Audio(url);
+    audio.playbackRate = rate;
     currentAudio = audio;
     const cleanup = () => {
       URL.revokeObjectURL(url);
       if (currentAudio === audio) currentAudio = null;
+    };
+    audio.onended = () => {
+      cleanup();
       onEnd();
     };
-    audio.onended = cleanup;
-    audio.onerror = cleanup;
+    audio.onerror = () => {
+      cleanup();
+      onError?.();
+      onEnd();
+    };
     await audio.play();
   } catch {
+    onError?.();
     onEnd();
   }
 }
 
 // Speaks `text`, calling `onEnd` when playback finishes on its own (not
 // called if a later speak()/stop() call interrupts this one first).
-export async function speak(text: string, onEnd: () => void): Promise<void> {
+// `rate` follows the same convention as SpeechSynthesisUtterance.rate /
+// HTMLMediaElement.playbackRate — 1 is normal speed, 0.5 is half speed, etc.
+// `onError`, if given, fires before `onEnd` when playback couldn't happen at
+// all (both the local-voice and server-TTS paths failed).
+export async function speak(text: string, onEnd: () => void, rate = 1, onError?: () => void): Promise<void> {
   stop();
   const myGeneration = generation;
   const finish = () => {
     if (myGeneration === generation) onEnd();
+  };
+  const fail = () => {
+    if (myGeneration === generation) onError?.();
   };
 
   const trimmed = text.trim();
@@ -100,21 +115,25 @@ export async function speak(text: string, onEnd: () => void): Promise<void> {
   }
 
   if (!isSpeechSupported() || isLinuxDesktop()) {
-    await speakViaServer(trimmed, finish);
+    await speakViaServer(trimmed, finish, rate, fail);
     return;
   }
 
   const voice = await pickGoodLocalVoice();
   if (!voice) {
-    await speakViaServer(trimmed, finish);
+    await speakViaServer(trimmed, finish, rate, fail);
     return;
   }
 
   const utterance = new SpeechSynthesisUtterance(trimmed);
   utterance.lang = "en-US";
   utterance.voice = voice;
+  utterance.rate = rate;
   utterance.onend = finish;
-  utterance.onerror = finish;
+  utterance.onerror = () => {
+    fail();
+    finish();
+  };
   window.speechSynthesis.speak(utterance);
 }
 

@@ -76,6 +76,11 @@ class MessageStatus(models.TextChoices):
     SENDING = "sending", "Sending"
     SENT = "sent", "Sent"
     FAILED = "failed", "Failed"
+    # A streaming turn whose client disconnected (Stop button, network drop,
+    # tab close) before a terminal SSE event was sent. Distinct from FAILED
+    # (an explicit provider error) — whatever content had streamed so far is
+    # preserved either way.
+    STOPPED = "stopped", "Stopped"
 
 
 class Message(models.Model):

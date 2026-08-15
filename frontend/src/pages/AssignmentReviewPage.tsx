@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { MathText } from "../components/MathText";
 import { useAuth } from "../auth/AuthContext";
 import * as teachingApi from "../api/teaching";
 import type { AssignmentDetail, ProblemQuestionReview } from "../api/teaching";
 import { assignmentDisplayTitle } from "../lib/assignmentLabels";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const STATUS_LABELS: Record<AssignmentDetail["status"], string> = {
   assigned: "Հանձնարարված",
@@ -150,9 +151,9 @@ export function AssignmentReviewPage() {
     <div className="min-h-screen bg-bg px-4 py-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
-          <Link to={backTo} className="text-sm text-primary hover:underline" onClick={() => navigate(backTo)}>
+          <LinkButton to={backTo} onClick={() => navigate(backTo)}>
             ← Հետ
-          </Link>
+          </LinkButton>
           <span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-text-muted">
             {STATUS_LABELS[assignment.status]}
           </span>

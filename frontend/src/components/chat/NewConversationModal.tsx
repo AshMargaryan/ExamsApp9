@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
+import { Globe, Lock } from "lucide-react";
 import * as friendsApi from "../../api/friends";
-import type { SearchResultUser } from "../../api/friends";
+import type { FriendUser, SearchResultUser } from "../../api/friends";
+import type { GroupPrivacy } from "../../api/chat";
 
 function UserPickerRow({
   user, selected, onToggle,
 }: {
-  user: SearchResultUser;
+  user: FriendUser;
   selected: boolean;
   onToggle: () => void;
 }) {
@@ -35,19 +37,32 @@ function UserPickerRow({
   );
 }
 
+export interface GroupCreationExtra {
+  description: string;
+  subject: string;
+  grade: number | null;
+  privacy: GroupPrivacy;
+}
+
 export function NewConversationModal({
-  onClose, onCreatePrivate, onCreateGroup,
+  onClose, onCreatePrivate, onCreateGroup, students,
 }: {
   onClose: () => void;
   onCreatePrivate: (userId: number) => Promise<void>;
-  onCreateGroup: (name: string, participantIds: number[]) => Promise<void>;
+  onCreateGroup: (name: string, participantIds: number[], extra: GroupCreationExtra) => Promise<void>;
+  /** A teacher's connected students, shown up front so she doesn't have to search for them. */
+  students?: FriendUser[];
 }) {
   const [mode, setMode] = useState<"private" | "group">("private");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultUser[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [selectedUsers, setSelectedUsers] = useState<Map<number, SearchResultUser>>(new Map());
+  const [selectedUsers, setSelectedUsers] = useState<Map<number, FriendUser>>(new Map());
   const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
+  const [groupSubject, setGroupSubject] = useState("");
+  const [groupGrade, setGroupGrade] = useState("");
+  const [groupPrivacy, setGroupPrivacy] = useState<GroupPrivacy>("private");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +77,7 @@ export function NewConversationModal({
     return () => clearTimeout(timeout);
   }, [query]);
 
-  function toggleUser(user: SearchResultUser) {
+  function toggleUser(user: FriendUser) {
     if (mode === "private") {
       setSelectedIds(new Set([user.id]));
       setSelectedUsers(new Map([[user.id, user]]));
@@ -111,7 +126,12 @@ export function NewConversationModal({
     }
     setBusy(true);
     try {
-      await onCreateGroup(groupName.trim(), [...selectedIds]);
+      await onCreateGroup(groupName.trim(), [...selectedIds], {
+        description: groupDescription.trim(),
+        subject: groupSubject.trim(),
+        grade: groupGrade ? Number(groupGrade) : null,
+        privacy: groupPrivacy,
+      });
     } catch {
       setError("Խումբը ստեղծելիս սխալ տեղի ունեցավ։");
     } finally {
@@ -163,12 +183,56 @@ export function NewConversationModal({
 
         <div className="flex-1 overflow-y-auto p-4">
           {mode === "group" && (
-            <input
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Խմբի անունը"
-              className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
-            />
+            <>
+              <input
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Խմբի անունը"
+                className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+              />
+              <textarea
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                placeholder="Նկարագրություն (ոչ պարտադիր)"
+                rows={2}
+                className="mb-2 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+              />
+              <div className="mb-2 flex gap-2">
+                <input
+                  value={groupSubject}
+                  onChange={(e) => setGroupSubject(e.target.value)}
+                  placeholder="Առարկա (օր. Մաթեմատիկա)"
+                  className="min-w-0 flex-1 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                />
+                <input
+                  value={groupGrade}
+                  onChange={(e) => setGroupGrade(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Դասարան"
+                  inputMode="numeric"
+                  className="w-24 shrink-0 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                />
+              </div>
+              <div className="mb-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGroupPrivacy("private")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    groupPrivacy === "private" ? "border-primary text-primary" : "border-border text-text-muted"
+                  }`}
+                >
+                  <Lock size={14} strokeWidth={1.75} /> Փակ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGroupPrivacy("public")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    groupPrivacy === "public" ? "border-primary text-primary" : "border-border text-text-muted"
+                  }`}
+                >
+                  <Globe size={14} strokeWidth={1.75} /> Բաց
+                </button>
+              </div>
+            </>
           )}
 
           {mode === "group" && selectedUsers.size > 0 && (
@@ -195,9 +259,18 @@ export function NewConversationModal({
           />
 
           <div className="flex flex-col gap-1">
-            {results.map((u) => (
-              <UserPickerRow key={u.id} user={u} selected={selectedIds.has(u.id)} onToggle={() => toggleUser(u)} />
-            ))}
+            {!query.trim() && students && students.length > 0 && (
+              <>
+                <p className="px-2 pb-1 text-xs font-medium uppercase text-text-muted">Ձեր աշակերտները</p>
+                {students.map((u) => (
+                  <UserPickerRow key={u.id} user={u} selected={selectedIds.has(u.id)} onToggle={() => toggleUser(u)} />
+                ))}
+              </>
+            )}
+            {query.trim() &&
+              results.map((u) => (
+                <UserPickerRow key={u.id} user={u} selected={selectedIds.has(u.id)} onToggle={() => toggleUser(u)} />
+              ))}
             {query.trim() && results.length === 0 && (
               <p className="px-2 py-3 text-sm text-text-muted">Օգտատերեր չեն գտնվել։</p>
             )}

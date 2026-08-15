@@ -1,5 +1,6 @@
 *.pyc
 venv
+.venv
 backend/.env
 backend/staticfiles/
 backend/media/
@@ -11,3 +12,4 @@ frontend/.env
 frontend/.env*.local
 .DS_Store
 .idea/
+.claude/

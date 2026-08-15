@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { Mic, Paperclip, Send, Smile, X } from "lucide-react";
 import { uploadAttachment, type Attachment, type Message } from "../../api/chat";
 import { messagePreviewText } from "../../lib/chatLabels";
 import { AttachmentChip } from "./AttachmentChip";
 import { EmojiPicker } from "./EmojiPicker";
 
 const ACCEPT = ".png,.jpg,.jpeg,.webp,.gif,.pdf,.docx,.xlsx,.txt,.md,.csv";
+const TYPING_THROTTLE_MS = 2000;
 
 // Chrome/Firefox record audio/webm; Safari only supports audio/mp4. Picking
 // whatever MediaRecorder actually supports beats hardcoding one mime type
@@ -28,12 +30,14 @@ export function MessageInput({
   conversationId,
   disabled,
   onSend,
+  onTyping,
   replyingTo,
   onCancelReply,
 }: {
   conversationId: number;
   disabled?: boolean;
   onSend: (text: string, attachmentIds: number[]) => void;
+  onTyping?: () => void;
   replyingTo?: Message | null;
   onCancelReply?: () => void;
 }) {
@@ -45,6 +49,7 @@ export function MessageInput({
   const [emojiOpen, setEmojiOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastTypingSentRef = useRef(0);
 
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -57,6 +62,16 @@ export function MessageInput({
   const recordingStartRef = useRef(0);
   const cancelledRef = useRef(false);
 
+  function handleTextChange(value: string) {
+    setText(value);
+    if (!onTyping) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > TYPING_THROTTLE_MS) {
+      lastTypingSentRef.current = now;
+      onTyping();
+    }
+  }
+
   useEffect(() => {
     if (replyingTo) textareaRef.current?.focus();
   }, [replyingTo]);
@@ -67,6 +82,42 @@ export function MessageInput({
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     };
   }, []);
+
+  async function handleFiles(files: FileList | File[]) {
+    setUploadError(null);
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const attachment = await uploadAttachment(conversationId, file);
+        setAttachments((prev) => [...prev, attachment]);
+      }
+    } catch {
+      setUploadError("Ֆայլը չհաջողվեց վերբեռնել։ Ստուգեք ձևաչափը և չափսը։");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  }
+
+  function handleSend() {
+    const content = text.trim();
+    if ((!content && attachments.length === 0) || uploading) return;
+    onSend(content, attachments.map((a) => a.id));
+    setText("");
+    setAttachments([]);
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
 
   async function startRecording() {
     setVoiceError(null);
@@ -152,42 +203,6 @@ export function MessageInput({
     setRecordingSeconds(0);
   }
 
-  async function handleFiles(files: FileList | File[]) {
-    setUploadError(null);
-    setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        const attachment = await uploadAttachment(conversationId, file);
-        setAttachments((prev) => [...prev, attachment]);
-      }
-    } catch {
-      setUploadError("Ֆայլը չհաջողվեց վերբեռնել։ Ստուգեք ձևաչափը և չափսը։");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function handleDrop(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setDragOver(false);
-    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
-  }
-
-  function handleSend() {
-    const content = text.trim();
-    if ((!content && attachments.length === 0) || uploading) return;
-    onSend(content, attachments.map((a) => a.id));
-    setText("");
-    setAttachments([]);
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }
-
   return (
     <div
       onDragOver={(e) => {
@@ -238,24 +253,26 @@ export function MessageInput({
       {voiceError && <p className="mb-2 text-sm text-incorrect">{voiceError}</p>}
 
       {recording ? (
-        <div className="flex items-center gap-3 rounded-md border border-border bg-bg px-3 py-2">
+        <div className="flex items-center gap-3 rounded-md border border-incorrect/40 bg-incorrect/5 px-3 py-2">
           <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-incorrect" />
-          <span className="flex-1 text-sm text-text-muted">Ձայնագրվում է... {formatDuration(recordingSeconds)}</span>
+          <span className="text-sm font-medium text-text">{formatDuration(recordingSeconds)}</span>
+          <span className="flex-1 text-xs text-text-muted">Ձայնագրվում է...</span>
           <button
             type="button"
             onClick={cancelRecording}
-            title="Չեղարկել ձայնագրումը"
-            className="shrink-0 rounded-md border border-border px-3 py-1.5 text-text-muted hover:text-text"
+            title="Չեղարկել"
+            className="shrink-0 rounded-full border border-border px-3 py-1.5 text-sm text-text-muted hover:bg-surface-muted"
           >
-            ✕
+            <X size={16} strokeWidth={1.75} />
           </button>
           <button
             type="button"
             onClick={stopAndSendRecording}
+            disabled={sendingVoice}
             title="Ուղարկել"
-            className="shrink-0 rounded-md bg-primary px-3 py-1.5 font-medium text-primary-contrast hover:bg-primary-hover"
+            className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-sm text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
           >
-            ➤
+            <Send size={16} strokeWidth={1.75} />
           </button>
         </div>
       ) : (
@@ -267,7 +284,7 @@ export function MessageInput({
             disabled={disabled || uploading || sendingVoice}
             className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
           >
-            📎
+            <Paperclip size={18} strokeWidth={1.75} />
           </button>
           <input
             ref={fileInputRef}
@@ -295,24 +312,14 @@ export function MessageInput({
               disabled={disabled}
               className="rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
             >
-              🙂
+              <Smile size={18} strokeWidth={1.75} />
             </button>
           </div>
-
-          <button
-            type="button"
-            title="Ձայնային հաղորդագրություն"
-            onClick={startRecording}
-            disabled={disabled || uploading || sendingVoice}
-            className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
-          >
-            {sendingVoice ? "…" : "🎤"}
-          </button>
 
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Գրեք հաղորդագրություն..."
             rows={1}
@@ -320,14 +327,26 @@ export function MessageInput({
             className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary disabled:opacity-50"
           />
 
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={disabled || uploading || (!text.trim() && attachments.length === 0)}
-            className="shrink-0 rounded-md bg-primary px-4 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-          >
-            Ուղարկել
-          </button>
+          {!text.trim() && attachments.length === 0 ? (
+            <button
+              type="button"
+              title="Ձայնային հաղորդագրություն"
+              onClick={startRecording}
+              disabled={disabled || uploading || sendingVoice}
+              className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+            >
+              <Mic size={18} strokeWidth={1.75} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={disabled || uploading}
+              className="shrink-0 rounded-md bg-primary px-4 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+            >
+              Ուղարկել
+            </button>
+          )}
         </div>
       )}
     </div>

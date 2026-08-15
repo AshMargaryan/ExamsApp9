@@ -1,13 +1,6 @@
 import { useState } from "react";
 import type { DeckFormInput, FlashcardSubject } from "../../api/flashcards";
-
-const SUBJECTS: { key: FlashcardSubject; label: string }[] = [
-  { key: "math", label: "Մաթեմատիկա" },
-  { key: "physics", label: "Ֆիզիկա" },
-  { key: "biology", label: "Կենսաբանություն" },
-  { key: "chemistry", label: "Քիմիա" },
-  { key: "english", label: "Անգլերեն" },
-];
+import { SUBJECTS } from "../../lib/subjects";
 
 interface Props {
   title: string;
@@ -41,7 +34,7 @@ export function DeckFormModal({ title, initial, busy, onSave, onClose }: Props) 
           type="button"
           onClick={onClose}
           aria-label="Փակել"
-          className="absolute top-3 right-3 text-lg text-text-muted transition-colors hover:text-text"
+          className="btn-icon-fx absolute top-3 right-3 text-lg text-text-muted transition-colors hover:text-text"
         >
           ✕
         </button>
@@ -71,7 +64,7 @@ export function DeckFormModal({ title, initial, busy, onSave, onClose }: Props) 
               key={s.key}
               type="button"
               onClick={() => setSubject(s.key)}
-              className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+              className={`btn-fx rounded-full border px-3 py-2 text-sm font-medium ${
                 subject === s.key
                   ? "border-primary bg-primary text-primary-contrast"
                   : "border-border text-text hover:border-primary"
@@ -88,7 +81,7 @@ export function DeckFormModal({ title, initial, busy, onSave, onClose }: Props) 
           type="button"
           disabled={busy}
           onClick={handleSave}
-          className="w-full rounded-md bg-primary py-2.5 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="btn-fx btn-fx-glow w-full rounded-full bg-primary py-2.5 text-lg font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
         >
           {busy ? "Պահպանվում է..." : "Պահպանել"}
         </button>

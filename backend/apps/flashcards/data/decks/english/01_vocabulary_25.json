@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-025",
+  "title": "Անգլերեն — Բառապաշար 25",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Deteriorate",
+      "back": "to become progressively worse",
+      "hint": "",
+      "translation": "վատթարանալ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Inevitable",
+      "back": "certain to happen; unavoidable",
+      "hint": "",
+      "translation": "անխուսափելի"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Plausible",
+      "back": "seeming reasonable or probable; believable",
+      "hint": "",
+      "translation": "հավանական"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Culminate",
+      "back": "to reach a climax or final, decisive point",
+      "hint": "",
+      "translation": "հասնել գագաթնակետի"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Discrepancy",
+      "back": "a difference between things that should be the same",
+      "hint": "",
+      "translation": "անհամապատասխանություն"
+    }
+  ]
+}

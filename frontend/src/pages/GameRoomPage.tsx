@@ -5,6 +5,8 @@ import * as gamesApi from "../api/games";
 import type { GameRoom } from "../api/games";
 import { useAuth } from "../auth/AuthContext";
 import { MessageModal } from "../components/MessageModal";
+import { Button } from "../components/ui/Button";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const STATUS_LABELS: Record<GameRoom["status"], string> = {
   waiting: "Սպասման մեջ",
@@ -154,9 +156,7 @@ export function GameRoomPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg px-4">
         <p className="text-lg text-text-muted">Այս սենյակը գոյություն չունի կամ ջնջվել է։</p>
-        <Link to="/games" className="text-primary hover:underline">
-          ← Վերադառնալ խաղասենյակներին
-        </Link>
+        <LinkButton to="/games">← Վերադառնալ խաղասենյակներին</LinkButton>
       </div>
     );
   }
@@ -171,9 +171,7 @@ export function GameRoomPage() {
   return (
     <div className="min-h-screen bg-bg px-4 py-8">
       <div className="mx-auto max-w-2xl">
-        <Link to="/games" className="mb-6 inline-block text-sm text-primary hover:underline">
-          ← Խաղասենյակներ
-        </Link>
+        <LinkButton to="/games" className="mb-6">← Խաղասենյակներ</LinkButton>
 
         <div className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm">
           <div className="flex items-start justify-between">
@@ -191,13 +189,9 @@ export function GameRoomPage() {
           <div className="mt-4 flex items-center gap-3 rounded-md border border-border bg-bg px-4 py-3">
             <span className="text-sm text-text-muted">Կոդ՝</span>
             <span className="text-xl font-semibold tracking-widest text-text">{room.room_code}</span>
-            <button
-              type="button"
-              onClick={handleCopyCode}
-              className="ml-auto text-sm text-primary hover:underline"
-            >
+            <Button variant="secondary" size="sm" onClick={handleCopyCode} className="ml-auto">
               {copied ? "Պատճենված է ✓" : "Պատճենել"}
-            </button>
+            </Button>
           </div>
 
           <p className="mt-3 text-sm text-text-muted">{CONDITION_LABELS[room.start_condition]}</p>
@@ -219,13 +213,9 @@ export function GameRoomPage() {
                     )}
                   </span>
                   {isCreator && p.user.id !== room.creator.id && room.status === "waiting" && (
-                    <button
-                      type="button"
-                      onClick={() => handleKick(p.user.id)}
-                      className="text-sm text-incorrect hover:underline"
-                    >
+                    <Button variant="danger" size="sm" onClick={() => handleKick(p.user.id)} className="h-7 px-2 text-xs">
                       Հեռացնել
-                    </button>
+                    </Button>
                   )}
                 </div>
               ))}

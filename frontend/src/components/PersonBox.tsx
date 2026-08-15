@@ -5,14 +5,19 @@ export function PersonBox({ person, onClick }: { person: FriendUser; onClick: ()
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col items-center gap-2 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
+      className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface p-4 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg hover:shadow-primary/10"
     >
-      <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-lg font-semibold text-text-muted">
-        {person.avatar ? (
-          <img src={person.avatar} alt={person.username} className="h-full w-full object-cover" />
-        ) : (
-          (person.first_name || person.username).slice(0, 1).toUpperCase()
-        )}
+      <span
+        className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-surface-muted p-0.5 text-lg font-semibold text-text-muted transition-transform group-hover:scale-105"
+        style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent))" }}
+      >
+        <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface">
+          {person.avatar ? (
+            <img src={person.avatar} alt={person.username} className="h-full w-full object-cover" />
+          ) : (
+            (person.first_name || person.username).slice(0, 1).toUpperCase()
+          )}
+        </span>
       </span>
       <span className="text-sm font-medium text-text">
         {[person.first_name, person.last_name].filter(Boolean).join(" ") || person.username}

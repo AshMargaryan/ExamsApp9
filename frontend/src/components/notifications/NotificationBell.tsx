@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as friendsApi from "../../api/friends";
 import type { FriendRequest } from "../../api/friends";
+import * as notificationsApi from "../../api/notifications";
+import type { StudentNotification, StudentNotificationType } from "../../api/notifications";
 import * as parentsApi from "../../api/parents";
 import type { ParentChildRequest } from "../../api/parents";
 import { useNotificationSocket } from "../../hooks/useNotificationSocket";
@@ -10,12 +12,26 @@ import type { Assignment, TeacherStudentConnection } from "../../api/teaching";
 import { useAuth } from "../../auth/AuthContext";
 import { useAssignmentNotifications } from "../../hooks/useAssignmentNotifications";
 import { assignmentDisplayTitle, assignmentTargetLabel } from "../../lib/assignmentLabels";
-import { PublicProfileModal } from "../profile/PublicProfileModal";
+import { Button } from "../ui/Button";
 
 function displayName(u: { username: string; first_name: string; last_name: string }) {
   const full = [u.first_name, u.last_name].filter(Boolean).join(" ");
   return full || u.username;
 }
+
+const STUDENT_NOTIFICATION_ICONS: Record<StudentNotificationType, string> = {
+  rank_up: "🔥",
+  overtaken: "⚠️",
+  season_ending: "⏳",
+  season_result: "🏆",
+  challenge_received: "⚔️",
+  challenge_result: "🎮",
+  friend_added: "🤝",
+  parent_link_accepted: "🔗",
+  message_request: "✉️",
+  mention: "📣",
+  group_invite: "👥",
+};
 
 function assignmentNotificationText(a: Assignment, isStudent: boolean): string {
   if (isStudent) {
@@ -28,12 +44,18 @@ function assignmentNotificationText(a: Assignment, isStudent: boolean): string {
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [incomingFriends, setIncomingFriends] = useState<FriendRequest[] | null>(null);
   const [incomingParents, setIncomingParents] = useState<ParentChildRequest[] | null>(null);
   const [teachingInvitations, setTeachingInvitations] = useState<TeacherStudentConnection[] | null>(null);
-  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
+  const [studentNotifications, setStudentNotifications] = useState<StudentNotification[] | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  function viewProfile(id: number) {
+    setOpen(false);
+    navigate(`/profile/${id}`);
+  }
 
   const isStudent = user?.role === "student";
   const assignmentNotifications = useAssignmentNotifications();
@@ -41,6 +63,7 @@ export function NotificationBell() {
   function loadIncoming() {
     friendsApi.fetchIncomingRequests().then(setIncomingFriends);
     parentsApi.fetchIncomingChildRequests().then(setIncomingParents);
+    notificationsApi.listNotifications().then(setStudentNotifications);
     // Only a student has invitations waiting on *their* response — a
     // teacher's own pending invitations are outgoing, not actionable here.
     if (isStudent) teachingApi.fetchInvitations().then(setTeachingInvitations);
@@ -87,22 +110,33 @@ export function NotificationBell() {
     setOpen(false);
   }
 
+  async function handleStudentNotificationClick(n: StudentNotification) {
+    if (!n.is_read) {
+      setStudentNotifications((prev) => prev?.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)) ?? prev);
+      notificationsApi.markNotificationRead(n.id);
+    }
+    setOpen(false);
+  }
+
+  const unreadStudentNotifications = studentNotifications?.filter((n) => !n.is_read) ?? [];
+
   const count =
     (incomingFriends?.length ?? 0) +
     (incomingParents?.length ?? 0) +
     (teachingInvitations?.length ?? 0) +
-    (assignmentNotifications?.length ?? 0);
+    (assignmentNotifications?.length ?? 0) +
+    unreadStudentNotifications.length;
   const loading = incomingFriends === null || incomingParents === null;
   const isEmpty = !loading && count === 0;
 
   return (
-    <div ref={wrapRef} className="fixed right-4 top-4 z-40">
+    <div ref={wrapRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Ծանուցումներ"
         title="Ծանուցումներ"
-        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-xl shadow-lg transition-colors hover:border-primary"
+        className="relative flex h-[34px] w-[34px] items-center justify-center rounded-full border border-border bg-surface text-base transition-colors hover:border-primary"
       >
         🔔
         {count > 0 && (
@@ -121,11 +155,23 @@ export function NotificationBell() {
           {loading && <p className="p-4 text-sm text-text-muted">Բեռնվում է...</p>}
           {isEmpty && <p className="p-4 text-sm text-text-muted">Նոր ծանուցումներ չկան։</p>}
 
+          {unreadStudentNotifications.map((n) => (
+            <Link
+              key={`student-notification-${n.id}`}
+              to={n.link || "/rankings"}
+              onClick={() => handleStudentNotificationClick(n)}
+              className="flex items-start gap-3 border-b border-border p-3 transition-colors last:border-0 hover:bg-surface-muted"
+            >
+              <span className="text-lg leading-none">{STUDENT_NOTIFICATION_ICONS[n.notification_type]}</span>
+              <p className="min-w-0 flex-1 text-sm text-text">{n.message}</p>
+            </Link>
+          ))}
+
           {incomingParents?.map((r) => (
             <div key={`parent-${r.id}`} className="flex items-center gap-3 border-b border-border p-3 last:border-0">
               <button
                 type="button"
-                onClick={() => setViewingUserId(r.parent.id)}
+                onClick={() => viewProfile(r.parent.id)}
                 title="Տեսնել պրոֆիլը"
                 className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted transition-colors hover:border-primary"
               >
@@ -141,21 +187,13 @@ export function NotificationBell() {
                   👨‍👩‍👧 <span className="font-medium">{displayName(r.parent)}</span> ցանկանում է լինել ձեր ծնողը
                 </p>
                 <p className="text-xs text-text-muted">@{r.parent.username}</p>
-                <div className="mt-1.5 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleRespondParent(r.id, "accept")}
-                    className="text-sm text-primary hover:underline"
-                  >
+                <div className="mt-1.5 flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => handleRespondParent(r.id, "accept")} className="h-7 px-2 text-xs">
                     Ընդունել
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRespondParent(r.id, "reject")}
-                    className="text-sm text-text-muted hover:underline"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleRespondParent(r.id, "reject")} className="h-7 px-2 text-xs">
                     Մերժել
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -165,7 +203,7 @@ export function NotificationBell() {
             <div key={`friend-${r.id}`} className="flex items-center gap-3 border-b border-border p-3 last:border-0">
               <button
                 type="button"
-                onClick={() => setViewingUserId(r.sender.id)}
+                onClick={() => viewProfile(r.sender.id)}
                 title="Տեսնել պրոֆիլը"
                 className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted transition-colors hover:border-primary"
               >
@@ -181,28 +219,16 @@ export function NotificationBell() {
                   <span className="font-medium">{displayName(r.sender)}</span>-ից ընկերության հարցում
                 </p>
                 <p className="text-xs text-text-muted">@{r.sender.username}</p>
-                <div className="mt-1.5 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleRespondFriend(r.id, "accept")}
-                    className="text-sm text-primary hover:underline"
-                  >
+                <div className="mt-1.5 flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => handleRespondFriend(r.id, "accept")} className="h-7 px-2 text-xs">
                     Ընդունել
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRespondFriend(r.id, "reject")}
-                    className="text-sm text-text-muted hover:underline"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleRespondFriend(r.id, "reject")} className="h-7 px-2 text-xs">
                     Մերժել
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewingUserId(r.sender.id)}
-                    className="text-sm text-text-muted hover:underline"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => viewProfile(r.sender.id)} className="h-7 px-2 text-xs">
                     Պրոֆիլ
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -221,7 +247,7 @@ export function NotificationBell() {
                 <div key={inv.id} className="flex items-center gap-3 border-b border-border p-3 last:border-0">
                   <button
                     type="button"
-                    onClick={() => setViewingUserId(inv.teacher.id)}
+                    onClick={() => viewProfile(inv.teacher.id)}
                     title="Տեսնել պրոֆիլը"
                     className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted transition-colors hover:border-primary"
                   >
@@ -241,28 +267,16 @@ export function NotificationBell() {
                       <span className="font-medium">{displayName(inv.teacher)}</span>-ից ուսուցչի հրավեր
                     </p>
                     <p className="text-xs text-text-muted">@{inv.teacher.username}</p>
-                    <div className="mt-1.5 flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleRespondInvitation(inv.id, "accept")}
-                        className="text-sm text-primary hover:underline"
-                      >
+                    <div className="mt-1.5 flex gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => handleRespondInvitation(inv.id, "accept")} className="h-7 px-2 text-xs">
                         Ընդունել
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRespondInvitation(inv.id, "decline")}
-                        className="text-sm text-text-muted hover:underline"
-                      >
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleRespondInvitation(inv.id, "decline")} className="h-7 px-2 text-xs">
                         Մերժել
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setViewingUserId(inv.teacher.id)}
-                        className="text-sm text-text-muted hover:underline"
-                      >
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => viewProfile(inv.teacher.id)} className="h-7 px-2 text-xs">
                         Պրոֆիլ
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -290,12 +304,6 @@ export function NotificationBell() {
               </p>
             </Link>
           ))}
-        </div>
-      )}
-
-      {viewingUserId !== null && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <PublicProfileModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
         </div>
       )}
     </div>

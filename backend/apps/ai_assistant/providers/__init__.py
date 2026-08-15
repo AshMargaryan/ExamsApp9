@@ -7,7 +7,6 @@ _PROVIDER_CLASSES = {
     "ollama": "apps.ai_assistant.providers.ollama_provider.OllamaProvider",
     "openai": "apps.ai_assistant.providers.openai_provider.OpenAIProvider",
     "anthropic": "apps.ai_assistant.providers.anthropic_provider.AnthropicProvider",
-    "gemini": "apps.ai_assistant.providers.gemini_provider.GeminiProvider",
 }
 
 

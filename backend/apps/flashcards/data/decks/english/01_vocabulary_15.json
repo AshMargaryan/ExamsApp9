@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-015",
+  "title": "Անգլերեն — Բառապաշար 15",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Explorer",
+      "back": "a person who investigates a new or unfamiliar area",
+      "hint": "",
+      "translation": "հետազոտող"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Debt",
+      "back": "a sum of money that a person or organization owes",
+      "hint": "",
+      "translation": "պարտք"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Greedy",
+      "back": "wanting more of something than is fair or necessary",
+      "hint": "",
+      "translation": "ագահ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Contribution",
+      "back": "a gift or payment made to a common fund",
+      "hint": "",
+      "translation": "ներդրում"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Consideration",
+      "back": "careful thought over a period of time",
+      "hint": "",
+      "translation": "խորհրդածում"
+    }
+  ]
+}

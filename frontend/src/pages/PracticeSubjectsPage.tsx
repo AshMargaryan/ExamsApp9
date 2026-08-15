@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getHierarchy, type SubjectNode } from "../api/practice";
 import { Battery } from "../components/Battery";
+import { LinkButton } from "../components/ui/LinkButton";
 
 type NavState = { subtopicId?: number; topicId?: number } | null;
 
@@ -47,9 +48,7 @@ export function PracticeSubjectsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <Link to="/" className="text-sm text-primary hover:underline">
-        ← Գլխավոր
-      </Link>
+      <LinkButton to="/">← Գլխավոր</LinkButton>
       <h1 className="mt-2 mb-6 text-3xl font-semibold text-text">Պարապել</h1>
 
       {subjects.length === 0 && (

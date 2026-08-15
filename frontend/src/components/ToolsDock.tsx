@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Calculator as CalculatorIcon, StickyNote, Wrench, X } from "lucide-react";
 import { Calculator } from "./Calculator";
 import { Notepad } from "./Notepad";
 import { NotepadBrowser } from "./NotepadBrowser";
@@ -6,12 +7,22 @@ import { useNotepad } from "../context/NotepadContext";
 
 type Panel = "calculator" | "notepad" | null;
 
-const PANEL_TOP = 96;
-const PANEL_RIGHT = 16;
+const PANEL_BOTTOM = 96;
+const PANEL_LEFT = 16;
 
+const DIAL_ITEMS: { panel: Exclude<Panel, null>; icon: ReactNode; label: string }[] = [
+  { panel: "notepad", icon: <StickyNote size={20} strokeWidth={1.75} />, label: "Նշումներ" },
+  { panel: "calculator", icon: <CalculatorIcon size={20} strokeWidth={1.75} />, label: "Հաշվիչ" },
+];
+
+/** Global floating tools (notepad + calculator), mounted once in AppChrome so they're
+ * available on every authenticated page. Anchored bottom-left (mirroring
+ * FloatingAssistantWidget's bottom-right) to stay clear of HeaderStrip's top-right icon
+ * cluster — see the collision that pattern already caused for NotificationBell. */
 export function ToolsDock() {
   const { openSignal, pendingEquation, clearPendingEquation } = useNotepad();
   const [panel, setPanel] = useState<Panel>(null);
+  const [expanded, setExpanded] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [browserOpen, setBrowserOpen] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -20,18 +31,46 @@ export function ToolsDock() {
   useEffect(() => {
     if (openSignal === 0) return;
     setPanel("notepad");
+    setExpanded(false);
     setFullscreen(true);
     setOffset({ x: 0, y: 0 });
     if (pendingEquation) setBrowserOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openSignal]);
 
-  function toggle(next: Exclude<Panel, null>) {
-    setPanel((p) => (p === next ? null : next));
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (panel) closePanel();
+      else if (expanded) setExpanded(false);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel, expanded]);
+
+  function openPanel(next: Exclude<Panel, null>) {
+    setPanel(next);
+    setExpanded(false);
     setOffset({ x: 0, y: 0 });
     setFullscreen(false);
     setBrowserOpen(false);
     clearPendingEquation();
+  }
+
+  function closePanel() {
+    setPanel(null);
+    setFullscreen(false);
+    setBrowserOpen(false);
+    clearPendingEquation();
+  }
+
+  function handleHubClick() {
+    if (panel) {
+      closePanel();
+    } else {
+      setExpanded((v) => !v);
+    }
   }
 
   function handleHeaderPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -57,7 +96,7 @@ export function ToolsDock() {
         <div
           className={
             fullscreen
-              ? "fixed inset-4 z-30 flex flex-col rounded-[var(--radius)] border border-border bg-surface p-4 shadow-xl"
+              ? "fixed top-20 right-4 bottom-4 left-4 z-30 flex flex-col rounded-[var(--radius)] border border-border bg-surface p-4 shadow-xl"
               : `fixed z-30 flex w-[min(92vw,26rem)] flex-col rounded-[var(--radius)] border border-border bg-surface p-4 shadow-xl ${
                   panel === "notepad" ? "h-[65vh]" : "max-h-[70vh]"
                 }`
@@ -66,8 +105,8 @@ export function ToolsDock() {
             fullscreen
               ? undefined
               : {
-                  top: PANEL_TOP,
-                  right: PANEL_RIGHT,
+                  bottom: PANEL_BOTTOM,
+                  left: PANEL_LEFT,
                   transform: `translate(${offset.x}px, ${offset.y}px)`,
                 }
           }
@@ -107,12 +146,7 @@ export function ToolsDock() {
               )}
               <button
                 type="button"
-                onClick={() => {
-                  setPanel(null);
-                  setFullscreen(false);
-                  setBrowserOpen(false);
-                  clearPendingEquation();
-                }}
+                onClick={closePanel}
                 className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
                 aria-label="Close"
               >
@@ -135,34 +169,41 @@ export function ToolsDock() {
       )}
 
       {!fullscreen && (
-      <div className="fixed top-4 right-4 z-30 flex flex-col gap-3 sm:right-6">
-        <button
-          type="button"
-          onClick={() => toggle("notepad")}
-          className={`flex h-16 w-16 items-center justify-center rounded-full text-3xl shadow-lg transition-colors ${
-            panel === "notepad"
-              ? "bg-primary text-primary-contrast"
-              : "bg-surface text-text border border-border hover:border-primary"
-          }`}
-          aria-label="Notepad"
-          title="Notepad"
-        >
-          📝
-        </button>
-        <button
-          type="button"
-          onClick={() => toggle("calculator")}
-          className={`flex h-16 w-16 items-center justify-center rounded-full text-3xl shadow-lg transition-colors ${
-            panel === "calculator"
-              ? "bg-primary text-primary-contrast"
-              : "bg-surface text-text border border-border hover:border-primary"
-          }`}
-          aria-label="Calculator"
-          title="Calculator"
-        >
-          🖩
-        </button>
-      </div>
+        <div className="fixed bottom-4 left-4 z-30 flex flex-col-reverse items-center gap-3 sm:left-6">
+          <button
+            type="button"
+            onClick={handleHubClick}
+            aria-label={panel ? "Փակել գործիքները" : "Գործիքներ"}
+            aria-expanded={expanded}
+            title={panel ? "Փակել" : "Գործիքներ"}
+            className={`flex h-16 w-16 items-center justify-center rounded-full shadow-lg transition-colors ${
+              panel || expanded
+                ? "bg-primary text-primary-contrast"
+                : "bg-surface text-text border border-border hover:border-primary"
+            }`}
+          >
+            {panel || expanded ? <X size={26} strokeWidth={1.75} /> : <Wrench size={24} strokeWidth={1.75} />}
+          </button>
+
+          {DIAL_ITEMS.map((item, i) => (
+            <button
+              key={item.panel}
+              type="button"
+              onClick={() => openPanel(item.panel)}
+              aria-label={item.label}
+              title={item.label}
+              tabIndex={expanded && !panel ? 0 : -1}
+              className={`flex h-12 w-12 items-center justify-center rounded-full border border-border bg-surface text-xl shadow-md transition-all ease-out ${
+                expanded && !panel
+                  ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 scale-75 translate-y-2 pointer-events-none"
+              }`}
+              style={{ transitionDuration: "180ms", transitionDelay: expanded && !panel ? `${i * 40}ms` : "0ms" }}
+            >
+              {item.icon}
+            </button>
+          ))}
+        </div>
       )}
     </>
   );

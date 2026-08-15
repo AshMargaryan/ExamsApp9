@@ -15,10 +15,20 @@ urlpatterns = [
     path("api/mock-exams/", include("apps.mock_exams.urls")),
     path("api/flashcards/", include("apps.flashcards.urls")),
     path("api/rankings/", include("apps.rankings.urls")),
+    path("api/notifications/", include("apps.notifications.urls")),
+    path("api/challenges/", include("apps.challenges.urls")),
     path("api/parents/", include("apps.parents.urls")),
     path("api/activity/", include("apps.activity.urls")),
     path("api/teaching/", include("apps.teaching.urls")),
     path("api/chat/", include("apps.chat.urls")),
+    path("api/mistakes/", include("apps.mistakes.urls")),
+    path("api/study-plan/", include("apps.study_plan.urls")),
+    path("api/help/", include("apps.helpcenter.urls")),
+    path("api/knowledge/", include("apps.knowledge.urls")),
+    path("api/notepad/", include("apps.notepad.urls")),
+    path("api/groups/", include("apps.study_groups.urls")),
+    path("api/todo/", include("apps.todo.urls")),
+    path("api/notes/", include("apps.notes.urls")),
 ]
 
 if settings.DEBUG:

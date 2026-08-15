@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-021",
+  "title": "Անգլերեն — Բառապաշար 21",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Tradition",
+      "back": "beliefs, opinions, and customs passed down through generations",
+      "hint": "",
+      "translation": "ավանդույթ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Opponent",
+      "back": "a person on the other side of a fight, game, or argument",
+      "hint": "",
+      "translation": "հակառակորդ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Old-fashioned",
+      "back": "no longer used or admired by most people",
+      "hint": "",
+      "translation": "հնաոճ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Odd",
+      "back": "different from what is usual or expected; strange",
+      "hint": "",
+      "translation": "տարօրինակ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Advantage",
+      "back": "a condition that puts someone in a favourable position",
+      "hint": "",
+      "translation": "առավելություն"
+    }
+  ]
+}

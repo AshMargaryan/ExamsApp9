@@ -26,6 +26,7 @@ export interface Flashcard {
   front_text: string;
   back_text: string;
   hint?: string;
+  translation?: string;
   explanation?: string;
   notes?: string;
   tags: string[];
@@ -59,6 +60,7 @@ export interface CardFormInput {
   front_text: string;
   back_text: string;
   hint?: string;
+  translation?: string;
   explanation?: string;
   notes?: string;
   tags?: string[];
@@ -139,6 +141,7 @@ function buildCardFormData(input: CardFormInput): FormData {
   form.append("back_text", input.back_text);
   if (input.topic !== undefined) form.append("topic", input.topic);
   if (input.hint !== undefined) form.append("hint", input.hint);
+  if (input.translation !== undefined) form.append("translation", input.translation);
   if (input.explanation !== undefined) form.append("explanation", input.explanation);
   if (input.notes !== undefined) form.append("notes", input.notes);
   if (input.difficulty !== undefined) form.append("difficulty", input.difficulty);
@@ -201,6 +204,22 @@ export async function flagCard(
 ): Promise<{ is_favorite: boolean; is_difficult: boolean }> {
   const { data } = await apiClient.post(`/flashcards/cards/${cardId}/flag/`, flags);
   return data;
+}
+
+// ---------------------------------------------------------------------------
+// Favorites
+// ---------------------------------------------------------------------------
+
+export interface FavoriteCardEntry {
+  card: Flashcard;
+  deck: FlashcardDeckSummary;
+}
+
+export async function listFavoriteCards(subject?: FlashcardSubject): Promise<FavoriteCardEntry[]> {
+  const { data } = await apiClient.get("/flashcards/favorites/", {
+    params: subject ? { subject } : undefined,
+  });
+  return data.results;
 }
 
 export function isDue(progress: CardProgress | undefined): boolean {

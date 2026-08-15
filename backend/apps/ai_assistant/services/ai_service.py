@@ -1,6 +1,7 @@
 import time
+from typing import Iterator
 
-from ..providers import AIRequest, AIResponse, get_provider
+from ..providers import AIRequest, AIResponse, AIStreamChunk, get_provider
 
 
 class AIProviderError(Exception):
@@ -25,3 +26,14 @@ class AIService:
             raise AIProviderError(str(exc)) from exc
         response_time_ms = int((time.monotonic() - start) * 1000)
         return response, response_time_ms
+
+    def stream(self, request: AIRequest) -> Iterator[AIStreamChunk]:
+        """Wraps provider.stream(), converting exceptions raised mid-iteration
+        (not just at call time — the provider's stream is a generator, so an
+        HTTP/SDK error can surface on any next()) into AIProviderError."""
+        try:
+            yield from self.provider.stream(request)
+        except AIProviderError:
+            raise
+        except Exception as exc:
+            raise AIProviderError(str(exc)) from exc

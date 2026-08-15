@@ -1,9 +1,13 @@
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.utils import timezone
 
+from apps.activity.models import StudySession
+from apps.activity.services import IDLE_THRESHOLD
+from apps.mistakes.models import MistakeEntry
 from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus
 from apps.practice.models import PracticeAttempt, Tier
 
-from .models import AssignmentType, ConnectionStatus, TeacherStudentConnection
+from .models import Assignment, AssignmentStatus, AssignmentType, ConnectionStatus, TeacherStudentConnection
 
 # Armenian display labels for practice tiers — Tier.choices' human labels are
 # English (admin-facing), so problem-set review text is built from this
@@ -214,6 +218,100 @@ def _mock_exam_problem_sets(assignment) -> list[dict]:
         "score": attempt.scaled_score,
         "questions": [_question_review(q, answers_by_question.get(q.id)) for q in questions],
     }]
+
+
+def roster_student_ids(teacher) -> list[int]:
+    return list(
+        TeacherStudentConnection.objects.filter(
+            teacher=teacher, status=ConnectionStatus.ACCEPTED, active=True
+        ).values_list("student_id", flat=True)
+    )
+
+
+def dashboard_stats(teacher, student_ids: list[int]) -> dict:
+    """Top-strip numbers for the teacher home page."""
+    now = timezone.now()
+    pending_review_count = Assignment.objects.filter(
+        teacher=teacher, status=AssignmentStatus.SUBMITTED
+    ).count()
+    overdue_count = Assignment.objects.filter(
+        teacher=teacher,
+        due_date__isnull=False,
+        due_date__lt=now,
+        status__in=[AssignmentStatus.ASSIGNED, AssignmentStatus.IN_PROGRESS],
+    ).count()
+    online_now_count = StudySession.objects.filter(
+        user_id__in=student_ids, ended_at__isnull=True, last_activity_at__gte=now - IDLE_THRESHOLD
+    ).values("user_id").distinct().count()
+    return {
+        "student_count": len(student_ids),
+        "pending_review_count": pending_review_count,
+        "overdue_count": overdue_count,
+        "online_now_count": online_now_count,
+    }
+
+
+def pending_review_queue(teacher, limit: int = 20):
+    """Submitted assignments awaiting the teacher's decision, oldest first (most urgent)."""
+    return (
+        Assignment.objects.filter(teacher=teacher, status=AssignmentStatus.SUBMITTED)
+        .select_related("student__profile", "mock_exam", "topic", "subtopic")
+        .order_by("submitted_at")[:limit]
+    )
+
+
+def class_weak_spots(student_ids: list[int], limit: int = 6) -> list[dict]:
+    """
+    Where the class struggles most: mistake-log entries across all connected
+    students, grouped by subject/topic. Both INCORRECT and NOT_ATTEMPTED
+    count — a blank answer is a gap too, not just a wrong one.
+    """
+    rows = (
+        MistakeEntry.objects.filter(user_id__in=student_ids)
+        .values("subject_name", "topic_label")
+        .annotate(count=Count("id"))
+        .order_by("-count")[:limit]
+    )
+    return [
+        {
+            "subject_name": row["subject_name"],
+            "topic_label": row["topic_label"],
+            "count": row["count"],
+        }
+        for row in rows
+    ]
+
+
+def recent_activity_feed(teacher, student_ids: list[int], limit: int = 15) -> list[dict]:
+    """
+    Chronological feed merging assignment lifecycle events (submitted,
+    approved, sent back for rework) and new students joining the roster.
+    Built from existing timestamp fields rather than a dedicated event log,
+    since those already fully capture "what happened when" for this teacher.
+    """
+    events = []
+
+    submitted = Assignment.objects.filter(
+        teacher=teacher, submitted_at__isnull=False
+    ).select_related("student__profile").order_by("-submitted_at")[:limit]
+    for a in submitted:
+        events.append({"type": "submitted", "at": a.submitted_at, "student": a.student, "title": a.title})
+
+    reviewed = Assignment.objects.filter(
+        teacher=teacher, reviewed_at__isnull=False
+    ).select_related("student__profile").order_by("-reviewed_at")[:limit]
+    for a in reviewed:
+        kind = "approved" if a.status == AssignmentStatus.COMPLETED else "rejected"
+        events.append({"type": kind, "at": a.reviewed_at, "student": a.student, "title": a.title})
+
+    joined = TeacherStudentConnection.objects.filter(
+        teacher=teacher, status=ConnectionStatus.ACCEPTED, active=True, accepted_at__isnull=False
+    ).select_related("student__profile").order_by("-accepted_at")[:limit]
+    for c in joined:
+        events.append({"type": "joined", "at": c.accepted_at, "student": c.student, "title": ""})
+
+    events.sort(key=lambda e: e["at"], reverse=True)
+    return events[:limit]
 
 
 def build_problem_sets(assignment) -> list[dict]:

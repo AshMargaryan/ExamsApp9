@@ -1,6 +1,9 @@
+import json
+
 import requests
+from asgiref.sync import sync_to_async
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -12,11 +15,68 @@ from .permissions import IsConversationOwner, IsMessageOwner
 from .serializers import (
     AttachmentSerializer, AttachmentUploadSerializer,
     ConversationRenameSerializer, ConversationSerializer,
-    EditMessageSerializer, MessageSerializer,
-    SendMessageResponseSerializer, SendMessageSerializer,
+    EditMessageSerializer, MessageSerializer, SendMessageSerializer,
     VoiceSynthesizeSerializer,
 )
 from .services import conversation_service, message_service
+
+
+async def _sse_stream(event_iterator):
+    """Formats a message_service event-dict generator as Server-Sent
+    Events.
+
+    This MUST be an async generator, not a plain sync one. Django's ASGI
+    handler (StreamingHttpResponse.__aiter__, django/http/response.py)
+    async-iterates the response body; handed a sync iterator it falls back
+    to `for part in await sync_to_async(list)(self.streaming_content)` —
+    which drains the ENTIRE underlying generator (every provider chunk,
+    every tool call) into a list FIRST, before sending a single byte to the
+    client. That silently defeats streaming end-to-end: the browser would
+    see one huge delayed write instead of a live trickle, no matter how
+    correct the generator or the frontend renderer are.
+
+    event_iterator itself is a plain sync generator (message_service's DB
+    calls and the OpenAI SDK's HTTP client are both synchronous), so each
+    next() call is individually bridged via sync_to_async — meaning control
+    returns to the event loop, and Daphne can flush the chunk, after every
+    single event, not just once the whole response is done.
+
+    next() is wrapped rather than called directly: asyncio's Future
+    machinery explicitly forbids a bare StopIteration from crossing a
+    sync_to_async boundary ("StopIteration interacts badly with generators
+    and cannot be raised into a Future") — so the sentinel below catches
+    exhaustion *inside* the sync call, before it ever has to propagate
+    through the Future.
+    """
+    _exhausted = object()
+
+    def _next_or_exhausted(iterator):
+        try:
+            return next(iterator)
+        except StopIteration:
+            return _exhausted
+
+    it = iter(event_iterator)
+    next_event = sync_to_async(_next_or_exhausted, thread_sensitive=True)
+    while True:
+        event = await next_event(it)
+        if event is _exhausted:
+            break
+        if event.get("type") == "heartbeat":
+            yield b": keep-alive\n\n"
+            continue
+        yield f"data: {json.dumps(event, default=str)}\n\n".encode("utf-8")
+
+
+def _sse_response(event_iterator) -> StreamingHttpResponse:
+    response = StreamingHttpResponse(_sse_stream(event_iterator), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    # Tells nginx (see nginx/nginx.conf) not to buffer this specific
+    # response — the standard per-response alternative to a proxy_buffering
+    # off location block, so the SSE bytes reach the browser as they're
+    # written instead of only once the connection closes.
+    response["X-Accel-Buffering"] = "no"
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +169,7 @@ class MessageListSendView(APIView):
         messages = (
             conversation.messages
             .filter(is_active_response=True)
-            .prefetch_related("attachments")
+            .prefetch_related("attachments", "tool_calls")
         )
         return Response(MessageSerializer(messages, many=True, context={"request": request}).data)
 
@@ -119,18 +179,14 @@ class MessageListSendView(APIView):
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
 
-        user_message, assistant_message = message_service.send_message(
+        event_iterator = message_service.stream_send_message(
             conversation=conversation,
-            user=request.user,
             content=d["content"],
             attachment_ids=d.get("attachment_ids", []),
             educational_context=d.get("educational_context"),
+            request=request,
         )
-        response_data = SendMessageResponseSerializer(
-            {"user_message": user_message, "assistant_message": assistant_message},
-            context={"request": request},
-        ).data
-        return Response(response_data, status=status.HTTP_201_CREATED)
+        return _sse_response(event_iterator)
 
 
 class MessageDetailView(APIView):
@@ -172,13 +228,10 @@ class MessageRegenerateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            new_message = message_service.regenerate(message)
+            event_iterator = message_service.stream_regenerate(message, request=request)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            MessageSerializer(new_message, context={"request": request}).data,
-            status=status.HTTP_201_CREATED,
-        )
+        return _sse_response(event_iterator)
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-018",
+  "title": "Անգլերեն — Բառապաշար 18",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Reveal",
+      "back": "to make something known that was previously hidden",
+      "hint": "",
+      "translation": "բացահայտել"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Excursion",
+      "back": "a short trip, especially one taken for leisure",
+      "hint": "",
+      "translation": "էքսկուրսիա"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Voyage",
+      "back": "a journey made by sea",
+      "hint": "",
+      "translation": "նավարկություն"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Embarrassment",
+      "back": "a feeling of shame or awkwardness",
+      "hint": "",
+      "translation": "շփոթվածություն"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Achievement",
+      "back": "something that a person has succeeded in doing",
+      "hint": "",
+      "translation": "նվաճում"
+    }
+  ]
+}

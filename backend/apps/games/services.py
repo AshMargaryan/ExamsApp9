@@ -4,6 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.profiles.engine import evaluate_achievements
+from apps.profiles.subjects import canonical_key_for_practice_subject
 from apps.profiles.xp import award_xp
 
 from .models import (
@@ -17,6 +18,8 @@ from .models import (
     MatchmakingStartMode,
     MatchmakingTicket,
     MatchmakingTicketStatus,
+    SuspiciousActivityEventType,
+    SuspiciousActivityLog,
 )
 from .gameplay import get_room_questions, maybe_advance_participant_if_expired, time_limit_for_question
 from .question_engine import build_default_settings, populate_game_questions
@@ -27,6 +30,24 @@ from .trophies import award_speed_bonuses, award_trophies
 # client just watches the same room.scheduled_start_at, so they all flip to
 # RUNNING together without any one client having to drive it.
 COUNTDOWN_SECONDS = 5
+
+# Anti-farming: games are the one XP source with no natural "pay once per
+# unique work unit" cap (unlike practice/daily-problem/mock-exam — see
+# apps.profiles.xp module docstring). Diminishing returns per Nth game
+# settled *today* preserves legitimate heavy play (never drops to 0) while
+# killing the "replay games back-to-back" farming vector. Thresholds are
+# defaults, not tuned against a target economy — adjust freely.
+GAMES_TODAY_FULL_XP = 5
+GAMES_TODAY_HALF_XP = 10
+GAMES_TODAY_SUSPICIOUS = 20
+
+
+def _xp_multiplier_for_nth_game_today(n: int) -> float:
+    if n <= GAMES_TODAY_FULL_XP:
+        return 1.0
+    if n <= GAMES_TODAY_HALF_XP:
+        return 0.5
+    return 0.1
 
 
 @transaction.atomic
@@ -269,11 +290,14 @@ def _settle_room(room: GameRoom) -> GameRoom:
     the first settle commits, then sees FINISHED) and never reaches this
     function twice for the same room.
     """
+    today = timezone.localdate()
     total_questions = room.game_questions.count()
     participants = list(
         room.participants.select_related("user").prefetch_related("answers")
         .order_by("-score", "finished_at", "joined_at")
     )
+    game_settings = getattr(room, "settings", None)
+    subject_key = canonical_key_for_practice_subject(game_settings.subject) if game_settings else None
     for index, participant in enumerate(participants, start=1):
         participant.rank = index
         _finalize_participant_stats(participant, room, total_questions)
@@ -298,9 +322,22 @@ def _settle_room(room: GameRoom) -> GameRoom:
     award_trophies(room, participants)
 
     for participant in participants:
-        xp_gained = participant.score + participant.speed_bonus_xp
+        # finished_at isn't set on `room` until after this loop, so this
+        # correctly counts only games settled *before* this one today.
+        games_today_before = GameParticipant.objects.filter(
+            user=participant.user, game__status=GameRoomStatus.FINISHED, game__finished_at__date=today,
+        ).count()
+        nth_game_today = games_today_before + 1
+        multiplier = _xp_multiplier_for_nth_game_today(nth_game_today)
+        raw_xp = participant.score + participant.speed_bonus_xp
+        xp_gained = round(raw_xp * multiplier)
         if xp_gained:
-            award_xp(participant.user, xp_gained)
+            award_xp(participant.user, xp_gained, subject=subject_key)
+        if nth_game_today > GAMES_TODAY_SUSPICIOUS:
+            SuspiciousActivityLog.objects.create(
+                user=participant.user, event_type=SuspiciousActivityEventType.GAME_XP_VOLUME,
+                detail={"games_today": nth_game_today, "raw_score": raw_xp, "awarded_xp": xp_gained},
+            )
         participant.xp_earned = xp_gained
         participant.save(
             update_fields=[
@@ -310,8 +347,29 @@ def _settle_room(room: GameRoom) -> GameRoom:
             ]
         )
 
+    # Additive-only branch: a 1v1 challenge room gets a winner bonus on top
+    # of (never instead of) the per-participant award_xp calls above. Every
+    # non-challenge room (type=public/private) has no `.challenge` relation
+    # and is completely unaffected by this block.
+    challenge = getattr(room, "challenge", None)
+    if challenge is not None:
+        # Local import: avoids a load-order coupling between games and
+        # challenges, which both depend on each other (challenges builds
+        # GameRoom/GameSettings; games needs to know about the challenge
+        # relation at settle time) — same convention used elsewhere in this
+        # codebase for cross-app calls.
+        from apps.challenges.services import CHALLENGE_WINNER_BONUS_XP, notify_challenge_result
+
+        winner = next((p for p in participants if p.rank == 1), None)
+        if winner is not None:
+            award_xp(winner.user, CHALLENGE_WINNER_BONUS_XP, subject=subject_key)
+            winner.xp_earned += CHALLENGE_WINNER_BONUS_XP
+            winner.save(update_fields=["xp_earned"])
+        notify_challenge_result(challenge, winner.user_id if winner else None)
+
     room.status = GameRoomStatus.FINISHED
-    room.save(update_fields=["status", "trophies_awarded"])
+    room.finished_at = timezone.now()
+    room.save(update_fields=["status", "finished_at", "trophies_awarded"])
     return room
 
 

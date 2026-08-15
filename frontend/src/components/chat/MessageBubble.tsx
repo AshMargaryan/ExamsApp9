@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  Ban, Check, CheckCheck, Copy, Download, Flag, Forward, MoreVertical, Paperclip, Pencil,
+  Pin, PinOff, Reply as ReplyIcon, Sparkles, Trash2,
+} from "lucide-react";
 import type { Attachment, Message } from "../../api/chat";
 import { useAuth } from "../../auth/AuthContext";
 import { useAuthenticatedImageUrl } from "../../hooks/useAuthenticatedImageUrl";
-import { messagePreviewText } from "../../lib/chatLabels";
+import { isAiSender, messagePreviewText } from "../../lib/chatLabels";
 import { downloadAuthenticatedFile, saveBlobUrl } from "../../lib/authenticatedFile";
+import { ContextCard } from "./ContextCard";
 import { EmojiPicker } from "./EmojiPicker";
 import { ImageLightbox } from "./ImageLightbox";
+import { ReportMessageModal } from "./ReportMessageModal";
 import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
 
 function formatSize(bytes: number): string {
@@ -69,7 +75,7 @@ function FileAttachment({ attachment, own }: { attachment: Attachment; own: bool
         own ? "border-primary-contrast/30 hover:bg-black/10" : "border-border hover:bg-surface-muted"
       }`}
     >
-      <span className="text-xl">📎</span>
+      <Paperclip size={18} strokeWidth={1.75} />
       <span className="min-w-0 flex-1 truncate">{attachment.original_filename}</span>
       <span className={own ? "shrink-0 text-primary-contrast/70" : "shrink-0 text-text-muted"}>
         {formatSize(attachment.file_size)}
@@ -112,12 +118,20 @@ function ReplyQuote({
 }
 
 function MessageActionsMenu({
-  message, own, onReply, onForward,
+  message, own, onReply, onForward, onEdit, onDeleteForEveryone, onDeleteForMe, onReport, onAskAI,
+  canPin, onTogglePin,
 }: {
   message: Message;
   own: boolean;
   onReply: () => void;
   onForward: () => void;
+  onEdit: () => void;
+  onDeleteForEveryone: () => void;
+  onDeleteForMe: () => void;
+  onReport: () => void;
+  onAskAI: () => void;
+  canPin: boolean;
+  onTogglePin: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -145,6 +159,9 @@ function MessageActionsMenu({
     }
   }
 
+  const canEdit = own && message.message_type === "text" && !message.context_type;
+  const isAi = isAiSender(message.sender);
+
   return (
     <div
       ref={menuRef}
@@ -158,7 +175,7 @@ function MessageActionsMenu({
         onClick={() => setOpen((v) => !v)}
         className="rounded-full p-1.5 text-sm text-text-muted hover:bg-surface-muted hover:text-text"
       >
-        {copied ? "✅" : "⋮"}
+        {copied ? <Check size={16} strokeWidth={1.75} /> : <MoreVertical size={16} strokeWidth={1.75} />}
       </button>
       {open && (
         <div
@@ -172,9 +189,9 @@ function MessageActionsMenu({
               setOpen(false);
               onReply();
             }}
-            className="block w-full px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
           >
-            ↩️ Պատասխանել
+            <ReplyIcon size={15} strokeWidth={1.75} /> Պատասխանել
           </button>
           <button
             type="button"
@@ -182,28 +199,106 @@ function MessageActionsMenu({
               setOpen(false);
               onForward();
             }}
-            className="block w-full px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
           >
-            ➡️ Փոխանցել
+            <Forward size={15} strokeWidth={1.75} /> Փոխանցել
           </button>
           {message.text && (
             <button
               type="button"
               onClick={handleCopy}
-              className="block w-full px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
             >
-              📋 Պատճենել
+              <Copy size={15} strokeWidth={1.75} /> Պատճենել
             </button>
           )}
           {message.attachments.length > 0 && (
             <button
               type="button"
               onClick={handleSave}
-              className="block w-full px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
             >
-              💾 Պահպանել
+              <Download size={15} strokeWidth={1.75} /> Պահպանել
             </button>
           )}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onEdit();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
+            >
+              <Pencil size={15} strokeWidth={1.75} /> Խմբագրել
+            </button>
+          )}
+          {own && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onDeleteForEveryone();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-incorrect hover:bg-surface-muted"
+            >
+              <Trash2 size={15} strokeWidth={1.75} /> Ջնջել բոլորի համար
+            </button>
+          )}
+          {!isAi && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onAskAI();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
+            >
+              <Sparkles size={15} strokeWidth={1.75} /> Հարցնել AI-ին
+            </button>
+          )}
+          {canPin && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onTogglePin();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-muted"
+            >
+              {message.pinned_at ? (
+                <>
+                  <PinOff size={15} strokeWidth={1.75} /> Հանել ամրակցումից
+                </>
+              ) : (
+                <>
+                  <Pin size={15} strokeWidth={1.75} /> Ամրակցել
+                </>
+              )}
+            </button>
+          )}
+          {!own && !isAi && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onReport();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-incorrect hover:bg-surface-muted"
+            >
+              <Flag size={15} strokeWidth={1.75} /> Բողոքել
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onDeleteForMe();
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-incorrect hover:bg-surface-muted"
+          >
+            <Trash2 size={15} strokeWidth={1.75} /> Ջնջել ինձ համար
+          </button>
         </div>
       )}
     </div>
@@ -272,8 +367,42 @@ function ReactionBar({
   );
 }
 
+function EditComposer({
+  message, onSave, onCancel,
+}: {
+  message: Message;
+  onSave: (text: string) => void;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState(message.text);
+  return (
+    <div className="flex w-72 max-w-full flex-col gap-2 rounded-2xl border border-primary bg-surface p-2.5">
+      <textarea
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={2}
+        className="resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+      />
+      <div className="flex justify-end gap-2 text-xs">
+        <button type="button" onClick={onCancel} className="px-2 py-1 text-text-muted hover:text-text">
+          Չեղարկել
+        </button>
+        <button
+          type="button"
+          onClick={() => text.trim() && onSave(text.trim())}
+          className="rounded-md bg-primary px-2 py-1 font-medium text-primary-contrast hover:bg-primary-hover"
+        >
+          Պահպանել
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function MessageBubble({
   message, own, showSender, highlighted, registerRef, onReply, onForward, onJumpToMessage, onReact,
+  onEdit, onDeleteForEveryone, onDeleteForMe, onAskAI, receipt, canPin, onTogglePin,
 }: {
   message: Message;
   own: boolean;
@@ -284,9 +413,39 @@ export function MessageBubble({
   onForward: () => void;
   onJumpToMessage: (messageId: number) => void;
   onReact: (emoji: string) => void;
+  onEdit: (text: string) => void;
+  onDeleteForEveryone: () => void;
+  onDeleteForMe: () => void;
+  onAskAI: () => void;
+  receipt?: "sent" | "read";
+  canPin?: boolean;
+  onTogglePin?: () => void;
 }) {
-  const senderName = senderDisplayName(message.sender);
+  const [editing, setEditing] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const isAi = isAiSender(message.sender);
+  const senderName = isAi ? "Gitus AI" : senderDisplayName(message.sender);
   const time = new Date(message.created_at).toLocaleTimeString("hy-AM", { hour: "2-digit", minute: "2-digit" });
+
+  if (message.deleted_at) {
+    return (
+      <div
+        ref={registerRef}
+        className={`flex items-center gap-1 ${own ? "justify-end" : "justify-start"}`}
+      >
+        <div className={`flex max-w-[80%] flex-col gap-1 ${own ? "items-end" : "items-start"}`}>
+          {showSender && !own && (
+            <span className="flex items-center gap-1 px-1 text-xs text-text-muted">
+              {isAi && <Sparkles size={11} strokeWidth={1.75} />} {senderName}
+            </span>
+          )}
+          <p className="flex items-center gap-1.5 rounded-2xl border border-dashed border-border px-3.5 py-2.5 text-sm italic text-text-muted">
+            <Ban size={14} strokeWidth={1.75} /> Հաղորդագրությունը ջնջվել է
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -295,24 +454,82 @@ export function MessageBubble({
         highlighted ? "bg-primary/10" : ""
       }`}
     >
-      <MessageActionsMenu message={message} own={own} onReply={onReply} onForward={onForward} />
+      {!editing && (
+        <MessageActionsMenu
+          message={message}
+          own={own}
+          onReply={onReply}
+          onForward={onForward}
+          onEdit={() => setEditing(true)}
+          onDeleteForEveryone={onDeleteForEveryone}
+          onDeleteForMe={onDeleteForMe}
+          onReport={() => setReporting(true)}
+          onAskAI={onAskAI}
+          canPin={!!canPin}
+          onTogglePin={() => onTogglePin?.()}
+        />
+      )}
+      {reporting && <ReportMessageModal messageId={message.id} onClose={() => setReporting(false)} />}
       <div className={`flex max-w-[80%] flex-col gap-1 ${own ? "items-end" : "items-start"}`}>
-        {showSender && !own && <span className="px-1 text-xs text-text-muted">{senderName}</span>}
-        <div
-          className={`flex flex-col gap-2 rounded-2xl px-3.5 py-2.5 ${
-            own ? "rounded-br-sm bg-primary text-primary-contrast" : "rounded-bl-sm bg-surface-muted text-text"
-          }`}
-        >
-          {message.reply_to && (
-            <ReplyQuote replyTo={message.reply_to} own={own} onClick={() => onJumpToMessage(message.reply_to!.id)} />
-          )}
-          {message.attachments.map((a) => (
-            <AttachmentView key={a.id} attachment={a} own={own} />
-          ))}
-          {message.text && <p className="whitespace-pre-wrap break-words">{message.text}</p>}
-        </div>
+        {(showSender || isAi) && !own && (
+          <span className={`flex items-center gap-1 px-1 text-xs ${isAi ? "font-medium text-primary" : "text-text-muted"}`}>
+            {isAi && <Sparkles size={11} strokeWidth={1.75} />} {senderName}
+          </span>
+        )}
+        {message.pinned_at && (
+          <span className="flex items-center gap-1 px-1 text-xs text-text-muted">
+            <Pin size={11} strokeWidth={1.75} /> Ամրակցված
+          </span>
+        )}
+        {editing ? (
+          <EditComposer
+            message={message}
+            onCancel={() => setEditing(false)}
+            onSave={(text) => {
+              onEdit(text);
+              setEditing(false);
+            }}
+          />
+        ) : message.context_type && message.context_data ? (
+          <ContextCard
+            contextType={message.context_type}
+            contextData={message.context_data}
+            senderId={message.sender?.id ?? null}
+            own={own}
+          />
+        ) : (
+          <div
+            className={`flex flex-col gap-2 rounded-2xl px-3.5 py-2.5 ${
+              own
+                ? "rounded-br-sm bg-primary text-primary-contrast"
+                : isAi
+                  ? "rounded-bl-sm border border-primary/30 bg-primary/5 text-text"
+                  : "rounded-bl-sm bg-surface-muted text-text"
+            }`}
+          >
+            {message.reply_to && (
+              <ReplyQuote replyTo={message.reply_to} own={own} onClick={() => onJumpToMessage(message.reply_to!.id)} />
+            )}
+            {message.attachments.map((a) => (
+              <AttachmentView key={a.id} attachment={a} own={own} />
+            ))}
+            {message.text && <p className="whitespace-pre-wrap break-words">{message.text}</p>}
+          </div>
+        )}
         <ReactionBar message={message} own={own} onReact={onReact} />
-        <span className="px-1 text-xs text-text-muted">{time}</span>
+        <span className="flex items-center gap-1 px-1 text-xs text-text-muted">
+          {time}
+          {message.edited_at && <span title="Խմբագրված">· խմբագրված</span>}
+          {receipt && (
+            <span className={receipt === "read" ? "text-primary" : ""}>
+              {receipt === "read" ? (
+                <CheckCheck size={13} strokeWidth={1.75} />
+              ) : (
+                <Check size={13} strokeWidth={1.75} />
+              )}
+            </span>
+          )}
+        </span>
       </div>
     </div>
   );

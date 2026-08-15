@@ -5,7 +5,9 @@ from datetime import timedelta
 from django.db.models import F
 from django.utils import timezone
 
-from .models import AttemptAnswer, MistakeSource, Question, Subtopic, Tier
+from .models import (
+    AttemptAnswer, DailyProblemAttempt, MistakeSource, Question, Subtopic, Tier, TopicMistake,
+)
 
 TIERS = [t.value for t in Tier]
 
@@ -42,8 +44,6 @@ def subtopic_ids_with_questions():
 # ---------------------------------------------------------------------------
 
 def record_topic_mistake(student, *, source, subject_name, topic_label, subtopic=None):
-    from .models import TopicMistake
-
     now = timezone.now()
     obj, created = TopicMistake.objects.get_or_create(
         student=student, source=source, subject_name=subject_name, topic_label=topic_label,
@@ -64,8 +64,6 @@ def record_topic_mistake(student, *, source, subject_name, topic_label, subtopic
 # ---------------------------------------------------------------------------
 
 def get_recommended_subtopics(user, limit=5):
-    from .models import TopicMistake
-
     progress = progress_by_subtopic(user)
     ids_with_questions = subtopic_ids_with_questions()
 
@@ -160,23 +158,75 @@ def get_weekly_progress(user, weeks=8):
 
 
 # ---------------------------------------------------------------------------
-# Daily problem — same question for every user on a given calendar day,
-# picked deterministically so it doesn't need its own scheduling job.
+# Daily problem — personalized when possible. If the user has an existing
+# answer for `on_date`, that exact question is returned (so a re-fetch after
+# other practice activity never disagrees with what was actually answered).
+# Otherwise, if the user has a weak subtopic (TopicMistake, most mistakes
+# first), an easy/medium question from that subtopic is picked, chosen
+# deterministically via a hash of (user id, date) so repeat GETs the same day
+# are stable. Falls back to the original global-deterministic pick (same
+# question for everyone) when there's no personalization signal yet — new
+# users / empty state behave exactly as before.
 # ---------------------------------------------------------------------------
 
-def get_daily_question(on_date=None):
+def _pick_question(ids, seed_text):
+    if not ids:
+        return None
+    seed = int(hashlib.sha256(seed_text.encode()).hexdigest(), 16)
+    question_id = ids[seed % len(ids)]
+    return (
+        Question.objects
+        .select_related("subtopic__topic__domain__subject")
+        .prefetch_related("choices", "statements")
+        .get(pk=question_id)
+    )
+
+
+def get_daily_question(user=None, on_date=None):
     on_date = on_date or timezone.localdate()
+
+    if user is not None and user.is_authenticated:
+        existing = DailyProblemAttempt.objects.filter(user=user, date=on_date).first()
+        if existing is not None:
+            return existing.question
+
+        weakest = (
+            TopicMistake.objects
+            .filter(student=user, source=MistakeSource.PRACTICE, subtopic__isnull=False)
+            .order_by("-incorrect_count", "-last_incorrect_at")
+            .first()
+        )
+        if weakest is not None:
+            ids = list(
+                Question.objects.filter(
+                    subtopic_id=weakest.subtopic_id, tier__in=[Tier.EASY, Tier.MEDIUM],
+                ).order_by("id").values_list("id", flat=True)
+            )
+            question = _pick_question(ids, f"{user.id}:{on_date.isoformat()}")
+            if question is not None:
+                return question
+
     ids = list(
         Question.objects.filter(tier__in=[Tier.EASY, Tier.MEDIUM])
         .order_by("id")
         .values_list("id", flat=True)
     )
-    if not ids:
-        return None
-    seed = int(hashlib.sha256(on_date.isoformat().encode()).hexdigest(), 16)
-    question_id = ids[seed % len(ids)]
-    return (
-        Question.objects
-        .prefetch_related("choices", "statements")
-        .get(pk=question_id)
-    )
+    return _pick_question(ids, on_date.isoformat())
+
+
+def get_daily_question_reason(user, question):
+    """Why this question was chosen — computed live from the displayed
+    question's own subtopic mistake data, so it stays honest even as that
+    data changes after the fact (e.g. the topic later gets mastered)."""
+    if user is None or not user.is_authenticated or question is None or question.subtopic_id is None:
+        return {"kind": "default"}
+    mistake = TopicMistake.objects.filter(
+        student=user, source=MistakeSource.PRACTICE, subtopic_id=question.subtopic_id,
+    ).first()
+    if mistake is not None and mistake.incorrect_count > 0:
+        return {
+            "kind": "weak_topic",
+            "topic_label": mistake.topic_label,
+            "incorrect_count": mistake.incorrect_count,
+        }
+    return {"kind": "default"}

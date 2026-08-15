@@ -1,20 +1,42 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Shuffle, Sparkles } from "lucide-react";
 import {
   getDailyProblem, submitDailyProblem,
   type DailyProblem, type DailyProblemSubmitInput, type Question,
 } from "../api/practice";
+import { useAssistantLaunch } from "../contexts/AssistantLaunchContext";
 import { MathText } from "./MathText";
+import { Button } from "./ui/Button";
 import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "./questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "./questions/TrueFalseQuestion";
 
-export function DailyProblemCard() {
+function ReasonNote({ reason }: { reason: DailyProblem["reason"] }) {
+  const [open, setOpen] = useState(false);
+  const text =
+    reason.kind === "weak_topic"
+      ? `Այս թեմայից («${reason.topic_label}») ունեք ${reason.incorrect_count} սխալ, ուստի Haygit-ը առաջարկեց հենց սա։`
+      : "Բավարար տվյալներ դեռ չկան Ձեր մասին, ուստի այս հարցը պատահականորեն է ընտրված։";
+
+  return (
+    <div className="mb-3">
+      <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)} className="h-7 px-2 text-xs">
+        Ինչու՞ հենց սա {open ? "▲" : "▼"}
+      </Button>
+      {open && <p className="mt-1 text-xs text-text-muted">{text}</p>}
+    </div>
+  );
+}
+
+export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string }) {
   const [problem, setProblem] = useState<DailyProblem | null>(null);
   const [selectedChoiceId, setSelectedChoiceId] = useState<number | undefined>();
   const [answerText, setAnswerText] = useState("");
   const [selectedStatementIds, setSelectedStatementIds] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { askAboutQuestion } = useAssistantLaunch();
 
   useEffect(() => {
     getDailyProblem()
@@ -32,6 +54,20 @@ export function DailyProblemCard() {
 
   const revealed = problem.already_answered;
   const question: Question = revealed ? problem.result!.question : problem.question;
+
+  function handleExplain() {
+    askAboutQuestion({
+      message: `Բացատրիր ինձ այս հարցը. «${question.text}»`,
+      educationalContext: {
+        question_id: question.id,
+        subject: question.subject_name,
+        topic: question.topic_name,
+        subtopic: question.subtopic_name,
+        difficulty: question.tier,
+        conversation_mode: "solving_question",
+      },
+    });
+  }
 
   async function handleSubmit() {
     setBusy(true);
@@ -67,6 +103,14 @@ export function DailyProblemCard() {
           </span>
         )}
       </div>
+
+      {question.subject_name && (
+        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-accent">
+          {[question.subject_name, question.topic_name, question.subtopic_name].filter(Boolean).join(" · ")}
+        </p>
+      )}
+
+      <ReasonNote reason={problem.reason} />
 
       <p className="mb-4 text-base text-text">
         <MathText text={question.text} />
@@ -113,6 +157,32 @@ export function DailyProblemCard() {
         </div>
       )}
 
+      {revealed && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleExplain}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+          >
+            <Sparkles size={15} strokeWidth={1.75} /> Բացատրել
+          </button>
+          {question.subtopic_id != null && (
+            <Link
+              to={`/practice/subtopic/${question.subtopic_id}/${question.tier}`}
+              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+            >
+              <Shuffle size={15} strokeWidth={1.75} /> Նման խնդիր
+            </Link>
+          )}
+          <Link
+            to={nextHref}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+          >
+            <ArrowRight size={15} strokeWidth={1.75} /> Հաջորդը
+          </Link>
+        </div>
+      )}
+
       {error && <p className="mt-3 text-sm text-incorrect">{error}</p>}
 
       {!revealed && (
@@ -120,7 +190,8 @@ export function DailyProblemCard() {
           type="button"
           onClick={handleSubmit}
           disabled={busy}
-          className="mt-4 rounded-md bg-primary px-5 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+          style={{ background: "var(--gradient-primary, linear-gradient(45deg, #1d4ed8, #2563eb))" }}
+          className="mt-4 rounded-md px-5 py-2 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {busy ? "..." : "Ուղարկել պատասխանը"}
         </button>

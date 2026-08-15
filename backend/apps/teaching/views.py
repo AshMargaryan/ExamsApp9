@@ -5,15 +5,31 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.friends.serializers import MiniUserSerializer
+from apps.parents.serializers import ChildDashboardSerializer
+from apps.parents.services import build_child_dashboard
+from apps.profiles.leveling import level_for_xp
+from apps.rankings.models import MonthlyXP, RankHistory, RankingScope
+from apps.rankings.serializers import RankHistorySerializer
+
 from .models import Assignment, AssignmentStatus, ConnectionStatus, TeacherProfile, TeacherStudentConnection
 from .permissions import IsStudent, IsTeacher
 from .serializers import (
     AssignmentCreateSerializer, AssignmentDetailSerializer, AssignmentSerializer,
     StudentRosterSerializer, StudentSearchSerializer, TeacherStudentConnectionSerializer,
 )
-from .services import accepted_student_count, is_connected
+from .services import (
+    accepted_student_count,
+    class_weak_spots,
+    dashboard_stats,
+    is_connected,
+    pending_review_queue,
+    recent_activity_feed,
+    roster_student_ids,
+)
 
 User = get_user_model()
+RANK_HISTORY_DAYS = 30
 
 
 class StudentSearchView(generics.ListAPIView):
@@ -399,3 +415,133 @@ class TeacherStudentRosterView(generics.ListAPIView):
         return TeacherStudentConnection.objects.filter(
             teacher=self.request.user, status=ConnectionStatus.ACCEPTED, active=True
         ).select_related("student__profile")
+
+
+class TeacherClassLeaderboardView(APIView):
+    """
+    GET /api/teaching/students/leaderboard/ — the teacher's roster ranked by
+    this month's XP (live MonthlyXP ledger, same source the student-facing
+    rankings pages use). Students with no XP yet this month still appear,
+    at 0. `trend` is best-effort: RankHistory rows are only written lazily
+    when a student themselves visits a ranking board (see
+    apps.rankings.services.maybe_snapshot_rank_history), so a student who
+    hasn't checked their own rank recently will show trend=null rather than
+    a fabricated number.
+    """
+
+    permission_classes = [IsTeacher]
+
+    def get(self, request):
+        connections = list(
+            TeacherStudentConnection.objects.filter(
+                teacher=request.user, status=ConnectionStatus.ACCEPTED, active=True
+            ).select_related("student__profile")
+        )
+        student_ids = [c.student_id for c in connections]
+
+        today = timezone.localdate()
+        xp_by_user = dict(
+            MonthlyXP.objects.filter(
+                year=today.year, month=today.month, user_id__in=student_ids
+            ).values_list("user_id", "xp")
+        )
+
+        trend_by_user = {}
+        history_rows = RankHistory.objects.filter(
+            user_id__in=student_ids, scope=RankingScope.GLOBAL
+        ).order_by("user_id", "-date")
+        seen_per_user = {}
+        for row in history_rows:
+            bucket = seen_per_user.setdefault(row.user_id, [])
+            if len(bucket) < 2:
+                bucket.append(row)
+        for user_id, rows in seen_per_user.items():
+            if len(rows) == 2:
+                trend_by_user[user_id] = {"xp_change": rows[0].xp - rows[1].xp}
+
+        rows = [
+            {
+                "student": MiniUserSerializer(c.student, context={"request": request}).data,
+                "monthly_xp": xp_by_user.get(c.student_id, 0),
+                "level": level_for_xp(c.student.profile.total_xp) if hasattr(c.student, "profile") else 1,
+                "trend": trend_by_user.get(c.student_id),
+            }
+            for c in connections
+        ]
+        rows.sort(key=lambda r: r["monthly_xp"], reverse=True)
+        for i, row in enumerate(rows, start=1):
+            row["rank"] = i
+
+        return Response(rows)
+
+
+class TeacherStudentDashboardView(APIView):
+    """
+    GET /api/teaching/students/<student_id>/dashboard/ — reuses
+    apps.parents.services.build_child_dashboard (parameterized on any user,
+    not parent-specific) so a teacher sees the exact same rich progress
+    payload — subject performance, skills mastery, weekly progress,
+    activity calendar, predicted exam score — a parent sees for their child.
+    """
+
+    permission_classes = [IsTeacher]
+
+    def get(self, request, student_id):
+        student = get_object_or_404(User, pk=student_id)
+        if not is_connected(request.user, student):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(ChildDashboardSerializer(build_child_dashboard(student)).data)
+
+
+class TeacherStudentRankHistoryView(APIView):
+    """GET /api/teaching/students/<student_id>/rank-history/?scope=global —
+    mirrors apps.rankings.views.RankHistoryView but for a connected student
+    instead of the caller themself."""
+
+    permission_classes = [IsTeacher]
+
+    def get(self, request, student_id):
+        student = get_object_or_404(User, pk=student_id)
+        if not is_connected(request.user, student):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        scope = request.query_params.get("scope", RankingScope.GLOBAL)
+        if scope not in RankingScope.values:
+            return Response({"detail": "Անվավեր scope։"}, status=status.HTTP_400_BAD_REQUEST)
+
+        cutoff = timezone.localdate() - timezone.timedelta(days=RANK_HISTORY_DAYS)
+        rows = RankHistory.objects.filter(user=student, scope=scope, date__gte=cutoff).order_by("date")
+        return Response(RankHistorySerializer(rows, many=True).data)
+
+
+class TeacherDashboardSummaryView(APIView):
+    """
+    GET /api/teaching/dashboard/summary/ — everything the teacher home page
+    needs in one call: top-strip stats, the review queue, class weak spots
+    (aggregated from the Mistake Notebook), and a merged recent-activity
+    feed. Composed from apps.teaching.services so each piece stays testable
+    on its own.
+    """
+
+    permission_classes = [IsTeacher]
+
+    def get(self, request):
+        student_ids = roster_student_ids(request.user)
+
+        pending = pending_review_queue(request.user)
+        feed = recent_activity_feed(request.user, student_ids)
+
+        return Response({
+            "stats": dashboard_stats(request.user, student_ids),
+            "pending_review": AssignmentSerializer(pending, many=True, context={"request": request}).data,
+            "weak_spots": class_weak_spots(student_ids),
+            "activity_feed": [
+                {
+                    "type": e["type"],
+                    "at": e["at"],
+                    "student": MiniUserSerializer(e["student"], context={"request": request}).data,
+                    "title": e["title"],
+                }
+                for e in feed
+            ],
+        })

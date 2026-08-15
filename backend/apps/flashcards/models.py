@@ -68,6 +68,9 @@ class Flashcard(models.Model):
     front_text = models.TextField()
     back_text = models.TextField()
     hint = models.TextField(blank=True, default="")
+    translation = models.TextField(
+        blank=True, default="", help_text="Armenian translation of front_text, shown alongside it."
+    )
 
     # Shown on the back, alongside the answer — distinct from `hint` (a
     # front-side study aid shown before flipping).

@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
+import { StopCircle } from "lucide-react";
 import { synthesizeVoice, type Message } from "../../api/assistant";
 import { AttachmentChip } from "./AttachmentChip";
 import { MarkdownMessage } from "./MarkdownMessage";
@@ -8,15 +9,19 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export function MessageBubble({
+function MessageBubbleImpl({
   message,
   pending,
+  activityLabel,
   onEdit,
   onDelete,
   onRegenerate,
 }: {
   message: Message;
   pending?: boolean;
+  /** Shown next to the thinking-dots while a tool call is in flight and no
+   * answer text has arrived yet — irrelevant once content starts streaming. */
+  activityLabel?: string | null;
   onEdit?: (content: string) => void;
   onDelete?: () => void;
   onRegenerate?: () => void;
@@ -66,11 +71,17 @@ export function MessageBubble({
   }
 
   return (
-    <div className={`group flex flex-col ${isUser ? "items-end" : "items-start"}`}>
+    <div className={`group flex flex-col ${isUser ? "items-end" : "w-full items-start"}`}>
       <div
-        className={`max-w-[80%] rounded-[var(--radius)] px-4 py-3 ${
-          isUser ? "bg-primary text-primary-contrast" : "bg-surface-muted text-text"
-        } ${message.status === "failed" ? "border border-incorrect" : ""}`}
+        className={
+          isUser
+            ? "max-w-[80%] rounded-[var(--radius)] bg-primary px-4 py-3 text-primary-contrast"
+            // ChatGPT-style assistant reply: plain flowing text, no bubble
+            // chrome (no background/border/padding) — just a readable
+            // line-length cap so it doesn't stretch edge-to-edge on wide
+            // screens.
+            : "w-full max-w-[70ch] text-text"
+        }
       >
         {message.attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
@@ -109,12 +120,21 @@ export function MessageBubble({
               </button>
             </div>
           </div>
-        ) : pending && !isUser ? (
-          <TypingIndicator />
-        ) : message.status === "failed" ? (
-          <p className="text-incorrect">
-            ⚠️ Չհաջողվեց ստանալ պատասխան{message.error_message ? `. ${message.error_message}` : "։"}
-          </p>
+        ) : pending && !isUser && !message.content ? (
+          <TypingIndicator label={activityLabel} />
+        ) : message.status === "failed" || message.status === "stopped" ? (
+          <div className="flex flex-col gap-2">
+            {message.content && <MarkdownMessage content={message.content} />}
+            {message.status === "failed" ? (
+              <p className="text-incorrect">
+                ⚠️ Չհաջողվեց ստանալ պատասխան{message.error_message ? `. ${message.error_message}` : "։"}
+              </p>
+            ) : (
+              <p className="flex items-center gap-1.5 text-text-muted">
+                <StopCircle size={15} strokeWidth={1.75} /> Գեներացումը կանգնեցվեց։
+              </p>
+            )}
+          </div>
         ) : isUser ? (
           <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
             {message.content}
@@ -131,7 +151,7 @@ export function MessageBubble({
       >
         <span>{formatTime(message.created_at)}</span>
         {message.edited_at && <span>(խմբագրված)</span>}
-        {!editing && !pending && message.status === "sent" && (
+        {!editing && !pending && message.content && (
           <button type="button" onClick={handleCopy} className="hover:text-text">
             {copied ? "Պատճենվեց ✓" : "Պատճենել"}
           </button>
@@ -146,7 +166,7 @@ export function MessageBubble({
             {speaking ? "…" : speakError ? "⚠️ Կրկին" : "🔊 Լսել"}
           </button>
         )}
-        {!isUser && !pending && message.status === "sent" && onRegenerate && (
+        {!isUser && !pending && message.status !== "sending" && onRegenerate && (
           <button type="button" onClick={onRegenerate} className="hover:text-text">
             ↻ Կրկին փորձել
           </button>
@@ -160,3 +180,9 @@ export function MessageBubble({
     </div>
   );
 }
+
+// Sibling bubbles must not re-render on every rAF-batched update to the one
+// actively-streaming message — setMessages already produces a new object
+// only for the changed message (see useConversationChat.ts), so a shallow
+// prop comparison here correctly skips everyone else.
+export const MessageBubble = memo(MessageBubbleImpl);

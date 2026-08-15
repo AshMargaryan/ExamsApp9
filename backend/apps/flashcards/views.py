@@ -9,6 +9,8 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.mistakes.services import record_flashcard_mistake
+
 from .models import (
     Flashcard, FlashcardDeck, FlashcardProgress, FlashcardProgressStatus, FlashcardReview,
 )
@@ -156,6 +158,7 @@ class DeckDuplicateView(APIView):
                 front_text=card.front_text,
                 back_text=card.back_text,
                 hint=card.hint,
+                translation=card.translation,
                 explanation=card.explanation,
                 notes=card.notes,
                 front_image=card.front_image,
@@ -232,7 +235,7 @@ class CardDuplicateView(APIView):
         new_card = Flashcard.objects.create(
             deck=deck, number=next_number, topic=card.topic,
             front_text=card.front_text, back_text=card.back_text, hint=card.hint,
-            explanation=card.explanation, notes=card.notes,
+            translation=card.translation, explanation=card.explanation, notes=card.notes,
             front_image=card.front_image, back_image=card.back_image, audio=card.audio,
             tags=card.tags, difficulty=card.difficulty,
             dataset_id=f"USER-{uuid.uuid4().hex}",
@@ -267,6 +270,31 @@ class CardMoveView(APIView):
         target_deck.save(update_fields=["card_count", "updated_at"])
 
         return Response(FlashcardSerializer(card, context={"request": request}).data)
+
+
+class FavoriteCardsView(APIView):
+    """GET /api/flashcards/favorites/ — every card this user has starred,
+    across every deck (library or owned), with the deck it belongs to."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        progress = (
+            FlashcardProgress.objects
+            .filter(user=request.user, is_favorite=True)
+            .select_related("card__deck")
+            .order_by("card__deck__subject", "card__deck__title", "card__number")
+        )
+        subject = request.query_params.get("subject")
+        if subject:
+            progress = progress.filter(card__deck__subject=subject)
+        results = [
+            {
+                "card": FlashcardSerializer(p.card, context={"request": request}).data,
+                "deck": FlashcardDeckSerializer(p.card.deck).data,
+            }
+            for p in progress
+        ]
+        return Response({"results": results})
 
 
 class CardFlagView(APIView):
@@ -304,6 +332,11 @@ class CardFlagView(APIView):
 # drives the interval/ease scheduling with real granularity.
 MIN_EASE_FACTOR = 1.3
 MAX_EASE_FACTOR = 3.0
+# A year is already far past "review this before an exam" territory — caps
+# the exponential interval*ease_factor growth so a long correct streak can't
+# compound into a datetime.timedelta overflow. Same cap as the mirrored
+# scheduler in apps.knowledge.services._apply_spaced_repetition.
+MAX_INTERVAL_DAYS = 365
 
 GRADE_STATUS = {
     "again": FlashcardProgressStatus.LEARNING,
@@ -320,7 +353,7 @@ def _schedule(progress: FlashcardProgress, grade: str) -> None:
         progress.interval_days = 0
         progress.ease_factor = max(MIN_EASE_FACTOR, progress.ease_factor - 0.3)
     elif grade == "hard":
-        progress.interval_days = max(1, round(prev_interval * 1.2)) if prev_interval else 1
+        progress.interval_days = min(MAX_INTERVAL_DAYS, max(1, round(prev_interval * 1.2)) if prev_interval else 1)
         progress.ease_factor = max(MIN_EASE_FACTOR, progress.ease_factor - 0.15)
     elif grade == "good":
         if prev_interval == 0:
@@ -328,10 +361,12 @@ def _schedule(progress: FlashcardProgress, grade: str) -> None:
         elif prev_interval == 1:
             progress.interval_days = 3
         else:
-            progress.interval_days = round(prev_interval * progress.ease_factor)
+            progress.interval_days = min(MAX_INTERVAL_DAYS, round(prev_interval * progress.ease_factor))
         progress.ease_factor = min(MAX_EASE_FACTOR, progress.ease_factor + 0.05)
     else:  # easy
-        progress.interval_days = 4 if prev_interval == 0 else round(prev_interval * progress.ease_factor * 1.3)
+        progress.interval_days = (
+            4 if prev_interval == 0 else min(MAX_INTERVAL_DAYS, round(prev_interval * progress.ease_factor * 1.3))
+        )
         progress.ease_factor = min(MAX_EASE_FACTOR, progress.ease_factor + 0.15)
 
 
@@ -359,6 +394,9 @@ class MarkCardView(APIView):
         progress.save()
 
         FlashcardReview.objects.create(user=request.user, card=card, grade=grade)
+
+        if grade == "again":
+            record_flashcard_mistake(request.user, card)
 
         return Response({
             "status": progress.status,

@@ -16,7 +16,10 @@ export function useConversationMessages(conversationId: number | null) {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
-  const { event, status, sendMessage: wsSendMessage, markRead, react: wsReact } = useChatSocket(conversationId);
+  const {
+    event, status, sendMessage: wsSendMessage, markRead, react: wsReact,
+    editMessage: wsEditMessage, deleteMessage: wsDeleteMessage, sendTyping,
+  } = useChatSocket(conversationId);
 
   useEffect(() => {
     setMessages([]);
@@ -78,5 +81,47 @@ export function useConversationMessages(conversationId: number | null) {
     }
   }
 
-  return { messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText, react, status, markRead };
+  async function editText(messageId: number, text: string) {
+    const sentLive = wsEditMessage(messageId, text);
+    if (!sentLive) {
+      const message = await chatApi.editMessage(messageId, text);
+      setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
+    }
+  }
+
+  async function deleteForEveryone(messageId: number) {
+    const sentLive = wsDeleteMessage(messageId);
+    if (!sentLive) {
+      const message = await chatApi.deleteMessageForEveryone(messageId);
+      setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
+    }
+  }
+
+  async function hideForMe(messageId: number) {
+    await chatApi.hideMessageForMe(messageId);
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+  }
+
+  async function askAI(messageId: number) {
+    if (conversationId === null) return;
+    // No WS path for this one — it's a slower, one-off request (calls out
+    // to the AI provider), unlike the fire-and-forget actions above. The
+    // reply still arrives live for every participant via the normal
+    // chat.message broadcast; appending it here too just covers the case
+    // where this tab's own socket isn't connected.
+    const message = await chatApi.askAI(conversationId, messageId);
+    setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
+  }
+
+  async function togglePin(messageId: number, pin: boolean) {
+    const message = pin ? await chatApi.pinMessage(messageId) : await chatApi.unpinMessage(messageId);
+    setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
+  }
+
+  return {
+    messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText, react, status, markRead,
+    editText, deleteForEveryone, hideForMe, sendTyping, askAI, togglePin,
+    typingEvent: event?.type === "typing" ? event : null,
+    readEvent: event?.type === "read" ? event : null,
+  };
 }

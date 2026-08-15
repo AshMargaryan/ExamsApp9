@@ -15,7 +15,7 @@ from .emails import generate_verification_code, send_password_reset_email, send_
 from .models import School, University, User, UserSession
 from .oauth import make_registration_ticket, verify_apple_id_token, verify_google_id_token
 from .serializers import (
-    OAuthCompleteRegisterSerializer, RegisterSerializer, SchoolSerializer,
+    ChangePasswordSerializer, OAuthCompleteRegisterSerializer, RegisterSerializer, SchoolSerializer,
     UniversitySerializer, UserSerializer, UserSessionSerializer,
 )
 from .sessions import (
@@ -216,6 +216,33 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class ChangePasswordView(APIView):
+    """
+    POST /api/auth/change-password/ {current_password?, new_password, confirm_new_password}
+    — current_password is only required (and checked) when the account
+    already has a usable one; a Google/Apple-only account (see
+    OAuthCompleteRegisterSerializer.set_unusable_password) can call this the
+    same way to set its first password, skipping straight to new_password.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        d = serializer.validated_data
+
+        if user.has_usable_password() and not user.check_password(d["current_password"]):
+            return Response(
+                {"detail": "Ընթացիկ գաղտնաբառը սխալ է։"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(d["new_password"])
+        user.save(update_fields=["password"])
+        return Response({"detail": "Գաղտնաբառը հաջողությամբ փոփոխվեց։"})
 
 
 def _current_session_id(request):

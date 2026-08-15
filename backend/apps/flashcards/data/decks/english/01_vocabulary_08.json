@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-008",
+  "title": "Անգլերեն — Բառապաշար 8",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Expedition",
+      "back": "an organized journey made for a particular purpose",
+      "hint": "",
+      "translation": "արշավախումբ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Crisis",
+      "back": "a time of intense difficulty or danger",
+      "hint": "",
+      "translation": "ճգնաժամ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Aggression",
+      "back": "feelings of anger and hatred that may lead to violence",
+      "hint": "",
+      "translation": "ագրեսիա"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Ritual",
+      "back": "a religious or solemn ceremony performed in a set way",
+      "hint": "",
+      "translation": "ծես"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Betray",
+      "back": "to be disloyal to someone, often by helping their enemy",
+      "hint": "",
+      "translation": "դավաճանել"
+    }
+  ]
+}

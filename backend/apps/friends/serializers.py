@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from rest_framework import serializers
 
-from .models import FriendRequest, FriendRequestStatus
+from .models import Block, FriendRequest, FriendRequestStatus
 from .services import are_friends
 
 User = get_user_model()
@@ -43,6 +43,14 @@ class UserSearchSerializer(MiniUserSerializer):
         if pending is None:
             return "none"
         return "request_sent" if pending.sender_id == me.id else "request_received"
+
+
+class BlockSerializer(serializers.ModelSerializer):
+    blocked = MiniUserSerializer(read_only=True)
+
+    class Meta:
+        model = Block
+        fields = ["id", "blocked", "created_at"]
 
 
 class FriendRequestSerializer(serializers.ModelSerializer):

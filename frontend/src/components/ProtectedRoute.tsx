@@ -1,11 +1,42 @@
+import type { ReactNode } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { AssistantLaunchProvider } from "../contexts/AssistantLaunchContext";
 import { ChatWidgetProvider } from "../context/ChatWidgetContext";
+import { NotepadProvider } from "../context/NotepadContext";
+import { AppSidebar } from "./AppSidebar";
 import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
 import { FloatingChatWidget } from "./chat/FloatingChatWidget";
-import { NotificationBell } from "./notifications/NotificationBell";
+import { HeaderStrip } from "./HeaderStrip";
 import { ReloadButton } from "./ReloadButton";
-import { AssignmentSidebar } from "./teaching/AssignmentSidebar";
+import { ToolsDock } from "./ToolsDock";
+
+/** Shared chrome (header strip, sidebar, notifications, assistant widget, floating
+ * tools) for any authenticated page. */
+export function AppChrome({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  // AI assistant, calculator, and notepad are study tools for students — parents
+  // have no use for them on their read-only family dashboard.
+  const showStudyTools = user?.role !== "parent";
+
+  return (
+    <AssistantLaunchProvider>
+      <NotepadProvider>
+        <ChatWidgetProvider>
+          <HeaderStrip />
+          <AppSidebar />
+          {/* Clears the persistent top strip (h-16) at every viewport width, not just mobile —
+           * the strip used to be just a mobile-only hamburger offset before HeaderStrip shipped. */}
+          <div className="pt-16">{children}</div>
+          <ReloadButton />
+          {showStudyTools && <FloatingAssistantWidget />}
+          {showStudyTools && <ToolsDock />}
+          <FloatingChatWidget />
+        </ChatWidgetProvider>
+      </NotepadProvider>
+    </AssistantLaunchProvider>
+  );
+}
 
 export function ProtectedRoute() {
   const { user, isLoading } = useAuth();
@@ -24,13 +55,8 @@ export function ProtectedRoute() {
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
 
   return (
-    <ChatWidgetProvider>
+    <AppChrome>
       <Outlet />
-      <ReloadButton />
-      <NotificationBell />
-      {user.role === "student" && <AssignmentSidebar />}
-      <FloatingChatWidget />
-      <FloatingAssistantWidget />
-    </ChatWidgetProvider>
+    </AppChrome>
   );
 }

@@ -16,13 +16,33 @@ export interface RankingEntry {
 export interface RankingBoard {
   year: number;
   month: number;
+  month_label: string;
   results: RankingEntry[];
   my_rank: number | null;
+  my_xp: number | null;
+  nearby: RankingEntry[];
   no_school?: boolean;
   no_grade?: boolean;
+  still_growing?: boolean;
 }
 
-export type RankingScope = "global" | "school" | "class";
+export type RankingScope = "global" | "school" | "class" | "friends";
+
+export type SubjectKey = "math" | "physics" | "biology" | "chemistry" | "english";
+
+export const SUBJECT_LABELS: Record<SubjectKey, string> = {
+  math: "Մաթեմատիկա",
+  physics: "Ֆիզիկա",
+  biology: "Կենսաբանություն",
+  chemistry: "Քիմիա",
+  english: "Անգլերեն",
+};
+
+export interface RankHistoryPoint {
+  date: string;
+  xp: number;
+  rank: number;
+}
 
 export interface SchoolComparisonEntry {
   rank: number;
@@ -34,6 +54,7 @@ export interface SchoolComparisonEntry {
 export interface SchoolComparisonBoard {
   year: number;
   month: number;
+  month_label: string;
   results: SchoolComparisonEntry[];
   my_school_rank: number | null;
 }
@@ -63,6 +84,21 @@ export async function fetchSchoolRanking(): Promise<RankingBoard> {
 
 export async function fetchClassRanking(): Promise<RankingBoard> {
   const { data } = await apiClient.get("/rankings/class/");
+  return data;
+}
+
+export async function fetchFriendsRanking(): Promise<RankingBoard> {
+  const { data } = await apiClient.get("/rankings/friends/");
+  return data;
+}
+
+export async function fetchSubjectRanking(subjectKey: SubjectKey): Promise<RankingBoard> {
+  const { data } = await apiClient.get(`/rankings/subject/${subjectKey}/`);
+  return data;
+}
+
+export async function fetchRankHistory(scope: RankingScope): Promise<RankHistoryPoint[]> {
+  const { data } = await apiClient.get("/rankings/history/", { params: { scope } });
   return data;
 }
 

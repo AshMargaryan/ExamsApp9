@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-007",
+  "title": "Անգլերեն — Բառապաշար 7",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Habitat",
+      "back": "the natural home or environment of an animal or plant",
+      "hint": "",
+      "translation": "բնակավայր"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Hospitality",
+      "back": "friendly, welcoming behaviour towards guests",
+      "hint": "",
+      "translation": "հյուրընկալություն"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Morality",
+      "back": "principles concerning the distinction between right and wrong",
+      "hint": "",
+      "translation": "բարոյականություն"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Heir",
+      "back": "a person who inherits and continues the work of a predecessor",
+      "hint": "",
+      "translation": "ժառանգորդ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Contemporary",
+      "back": "living or occurring at the same time",
+      "hint": "",
+      "translation": "ժամանակակից"
+    }
+  ]
+}

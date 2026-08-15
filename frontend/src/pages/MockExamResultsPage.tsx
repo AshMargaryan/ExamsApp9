@@ -1,20 +1,42 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { getResults, DIFFICULTY_LABELS, type AttemptResults, type MockExamQuestion } from "../api/mockExams";
+import { useParams } from "react-router-dom";
+import { HelpCircle, Search, Tag } from "lucide-react";
+import {
+  getResults, getAutopsy, DIFFICULTY_LABELS,
+  type AttemptAutopsy, type AttemptResults, type MockExamQuestion, type QuestionMistakeInfo,
+} from "../api/mockExams";
+import { classifyMistake } from "../api/mistakes";
+import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { MathText } from "../components/MathText";
 import { QuestionText } from "../components/QuestionText";
 import { QuestionFigure } from "../components/QuestionFigure";
+import { Button } from "../components/ui/Button";
+import { ProgressBar } from "../components/ui/ProgressBar";
 import { MultipleChoiceQuestion } from "../components/questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
 import { MatchingQuestion } from "../components/questions/MatchingQuestion";
+import { ShareToChatModal } from "../components/chat/ShareToChatModal";
+import { LinkButton } from "../components/ui/LinkButton";
+
+const CATEGORY_CLASSES: Record<string, string> = {
+  careless_slip: "border-primary/40 bg-primary/10 text-primary",
+  conceptual_gap: "border-incorrect/40 bg-incorrect/10 text-incorrect",
+  process_error: "border-primary/40 bg-primary/10 text-primary",
+  misread_question: "border-border bg-surface-muted text-text-muted",
+};
 
 export function MockExamResultsPage() {
   const { attemptId } = useParams<{ attemptId: string }>();
   const [results, setResults] = useState<AttemptResults | null>(null);
+  const [autopsy, setAutopsy] = useState<AttemptAutopsy | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const { showError } = useToast();
 
   useEffect(() => {
-    getResults(Number(attemptId)).then(setResults);
+    getResults(Number(attemptId)).then(setResults).catch((err) => showError(extractErrorMessage(err)));
+    getAutopsy(Number(attemptId)).then(setAutopsy).catch((err) => showError(extractErrorMessage(err)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptId]);
 
   if (!results) {
@@ -31,9 +53,16 @@ export function MockExamResultsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/mock-exams" className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← Ամբողջական թեստեր
-      </Link>
+      <div className="mb-4 flex items-center justify-between">
+        <LinkButton to="/mock-exams">← Ամբողջական թեստեր</LinkButton>
+        <button
+          type="button"
+          onClick={() => setSharing(true)}
+          className="rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
+        >
+          Կիսվել → Չաթ
+        </button>
+      </div>
       <h1 className="mb-6 text-2xl font-semibold text-text">{attempt.exam.title}</h1>
 
       <div className="mb-8 rounded-[var(--radius)] border border-border bg-surface p-6">
@@ -66,23 +95,89 @@ export function MockExamResultsPage() {
         </div>
       </div>
 
+      {autopsy && (autopsy.subject_mastery || autopsy.dominant_error_category) && (
+        <div className="mb-8 rounded-[var(--radius)] border border-border bg-surface p-6">
+          <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-text">
+            <Search size={16} strokeWidth={1.75} /> Հետազոտություն
+          </p>
+          {autopsy.subject_mastery && autopsy.subject_mastery.mastery_score != null && (
+            <div className="mb-3">
+              <div className="mb-1 flex items-center justify-between text-sm">
+                <span className="text-text-muted">Ընդհանուր իմացության մակարդակ՝ {autopsy.subject_mastery.subject_label}</span>
+                <span className="text-text">{Math.round(autopsy.subject_mastery.mastery_score)}%</span>
+              </div>
+              <ProgressBar percent={autopsy.subject_mastery.mastery_score} />
+            </div>
+          )}
+          {autopsy.dominant_error_category && (
+            <p className="text-sm text-text-muted">
+              Այս թեստի սխալների մեծ մասը՝{" "}
+              <span className="font-medium text-text">{autopsy.dominant_error_category_display}</span>
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col gap-6">
         {questions.map((q, idx) => (
-          <RevealedQuestionCard key={q.id} question={q} index={idx} answer={answers[q.id]} />
+          <RevealedQuestionCard
+            key={q.id}
+            question={q}
+            index={idx}
+            answer={answers[q.id]}
+            mistakeInfo={autopsy?.mistakes_by_question[String(q.id)]}
+            onClassified={(updated) =>
+              setAutopsy((prev) =>
+                prev ? { ...prev, mistakes_by_question: { ...prev.mistakes_by_question, [String(q.id)]: updated } } : prev
+              )
+            }
+          />
         ))}
       </div>
+
+      {sharing && (
+        <ShareToChatModal
+          contextType="mock_exam_result"
+          contextId={attempt.id}
+          title="Կիսվել արդյունքով"
+          onClose={() => setSharing(false)}
+        />
+      )}
     </div>
   );
 }
 
 function RevealedQuestionCard({
-  question, index, answer,
+  question, index, answer, mistakeInfo, onClassified,
 }: {
   question: MockExamQuestion;
   index: number;
   answer: AttemptResults["answers"][number] | undefined;
+  mistakeInfo: QuestionMistakeInfo | undefined;
+  onClassified: (updated: QuestionMistakeInfo) => void;
 }) {
   const isCorrect = answer?.is_correct ?? false;
+  const { showError } = useToast();
+  const [classifying, setClassifying] = useState(false);
+
+  async function handleClassify() {
+    if (!mistakeInfo) return;
+    setClassifying(true);
+    try {
+      const updated = await classifyMistake(mistakeInfo.mistake_entry_id);
+      onClassified({
+        mistake_entry_id: updated.id,
+        error_category: updated.error_category,
+        error_category_display: updated.error_category_display,
+        error_explanation: updated.error_explanation,
+        classified_at: updated.classified_at,
+      });
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    } finally {
+      setClassifying(false);
+    }
+  }
 
   return (
     <div className="rounded-[var(--radius)] border border-border bg-surface p-6">
@@ -95,6 +190,28 @@ function RevealedQuestionCard({
           {isCorrect ? "Ճիշտ" : "Սխալ"}
         </span>
       </div>
+
+      {!isCorrect && mistakeInfo && (
+        <div className="mb-3">
+          {mistakeInfo.classified_at ? (
+            <div className="flex flex-col gap-1">
+              <span className={`inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${CATEGORY_CLASSES[mistakeInfo.error_category] ?? ""}`}>
+                <Tag size={11} strokeWidth={1.75} /> {mistakeInfo.error_category_display}
+              </span>
+              {mistakeInfo.error_explanation && <p className="text-xs text-text-muted">{mistakeInfo.error_explanation}</p>}
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={handleClassify} disabled={classifying} className="flex h-7 items-center gap-1 px-2 text-xs">
+              {classifying ? "Վերլուծվում է..." : (
+                <>
+                  <HelpCircle size={12} strokeWidth={1.75} /> Ինչու՞ եմ սխալվել
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
+
       <QuestionText text={question.text} index={index} />
 
       <QuestionFigure svg={question.figure_svg} />

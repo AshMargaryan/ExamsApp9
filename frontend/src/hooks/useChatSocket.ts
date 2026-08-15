@@ -5,6 +5,7 @@ import type { Message } from "../api/chat";
 export type ChatSocketEvent =
   | { type: "message"; message: Message }
   | { type: "read"; conversation_id: number; user_id: number; last_read_message_id: number }
+  | { type: "typing"; user_id: number; name: string }
   | { type: "error"; detail: string };
 
 export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "closed";
@@ -106,5 +107,26 @@ export function useChatSocket(conversationId: number | null) {
     return true;
   }, []);
 
-  return { event, status, sendMessage, markRead, react };
+  const editMessage = useCallback((messageId: number, text: string): boolean => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    ws.send(JSON.stringify({ action: "edit", message_id: messageId, text }));
+    return true;
+  }, []);
+
+  const deleteMessage = useCallback((messageId: number): boolean => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    ws.send(JSON.stringify({ action: "delete", message_id: messageId }));
+    return true;
+  }, []);
+
+  const sendTyping = useCallback((): boolean => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    ws.send(JSON.stringify({ action: "typing" }));
+    return true;
+  }, []);
+
+  return { event, status, sendMessage, markRead, react, editMessage, deleteMessage, sendTyping };
 }

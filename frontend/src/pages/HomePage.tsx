@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate } from "react-router-dom";
+import {
+  AlertTriangle, ArrowRight, BookOpen, CalendarDays, Circle, ClipboardCheck,
+  Flame, HelpCircle, Sparkles, Target, TrendingUp, Trophy,
+} from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import * as profileApi from "../api/profile";
-import type { Profile } from "../api/profile";
+import type { HomeInsight, Profile } from "../api/profile";
 import * as streaksApi from "../api/streaks";
 import type { LearningStreak } from "../api/streaks";
 import {
@@ -11,17 +15,13 @@ import {
 } from "../api/practice";
 import { WeeklyProgressChart } from "../components/WeeklyProgressChart";
 import { DailyProblemCard } from "../components/DailyProblemCard";
+import { TodayMissionHero } from "../components/TodayMissionHero";
+import { HaygitInsightCard } from "../components/HaygitInsightCard";
+import { Card } from "../components/ui/Card";
+import { Badge } from "../components/ui/Badge";
+import { StatTile } from "../components/ui/StatTile";
+import { LinkButton } from "../components/ui/LinkButton";
 import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
-import { useChatUnreadCount } from "../hooks/useChatUnreadCount";
-
-const NAV_LINKS = [
-  { to: "/practice", icon: "📚", label: "Պարապել" },
-  { to: "/mock-exams", icon: "📝", label: "Ամբողջական թեստեր" },
-  { to: "/flashcards", icon: "🗂️", label: "Բառաքարտեր" },
-  { to: "/assistant", icon: "🤖", label: "AI Օգնական" },
-  { to: "/rankings", icon: "🏆", label: "Դասակարգում" },
-  { to: "/games", icon: "🎮", label: "Խաղասենյակներ" },
-];
 
 function ExamCountdown({ profile, onUpdated }: { profile: Profile; onUpdated: (p: Profile) => void }) {
   const [editing, setEditing] = useState(false);
@@ -42,7 +42,7 @@ function ExamCountdown({ profile, onUpdated }: { profile: Profile; onUpdated: (p
 
   if (!profile.target_exam_date || editing) {
     return (
-      <div className="flex flex-col gap-2 rounded-[var(--radius)] border border-dashed border-border bg-surface-muted p-4">
+      <Card>
         <p className="text-sm font-medium text-text">🎯 Երբ է ձեր ընդունելության քննությունը?</p>
         <div className="flex gap-2">
           <input
@@ -69,43 +69,68 @@ function ExamCountdown({ profile, onUpdated }: { profile: Profile; onUpdated: (p
             </button>
           )}
         </div>
-      </div>
+      </Card>
     );
   }
 
   const days = profile.days_until_exam ?? 0;
   const label = days > 0 ? `${days} օր մնացել է` : days === 0 ? "Քննությունը այսօր է" : "Քննությունն անցել է";
+  const goal = [profile.target_major, profile.school?.name].filter(Boolean).join(" · ");
 
   return (
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className="flex w-full items-center justify-between rounded-[var(--radius)] border border-primary bg-surface-muted px-4 py-3 text-left transition-colors hover:border-primary-hover"
+      className="flex w-full items-center gap-2 rounded-[var(--radius)] border border-border bg-surface p-5 text-left transition-colors hover:border-primary"
     >
-      <span className="flex items-center gap-2">
-        <span className="text-2xl">🎯</span>
-        <span>
-          <span className="block text-lg font-semibold text-text">{label}</span>
-          <span className="block text-xs text-text-muted">
-            {new Date(profile.target_exam_date).toLocaleDateString("hy-AM", { year: "numeric", month: "long", day: "numeric" })}
-          </span>
+      <span className="text-2xl">🎯</span>
+      <span className="flex-1">
+        <span className="block text-lg font-semibold text-text">{label}</span>
+        <span className="block text-xs text-text-muted">
+          {new Date(profile.target_exam_date).toLocaleDateString("hy-AM", { year: "numeric", month: "long", day: "numeric" })}
         </span>
+        {goal && (
+          <span className="mt-1 flex items-center gap-1 text-xs text-text-muted">
+            <Target size={12} strokeWidth={1.75} /> {goal}
+          </span>
+        )}
       </span>
       <span className="text-xs text-primary">Փոխել ✎</span>
     </button>
   );
 }
 
+const quickActionIconProps = { size: 22, strokeWidth: 1.75 };
+
+const QUICK_ACTIONS = [
+  { label: "AI Օգնական", href: "/assistant", icon: <Sparkles {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface))", fg: "var(--color-primary)" },
+  { label: "Թեստեր", href: "/mock-exams", icon: <ClipboardCheck {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-purple) 14%, var(--color-surface))", fg: "var(--color-purple)" },
+  { label: "Պարապել", href: "/practice", icon: <BookOpen {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-pink) 16%, var(--color-surface))", fg: "var(--color-pink)" },
+  { label: "Վարկանիշներ", href: "/rankings", icon: <Trophy {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface))", fg: "var(--color-primary)" },
+];
+
+function priorityTag(mistakeCount: number | null): { emoji: ReactNode; label: string; tone: "neutral" | "primary" | "incorrect" } {
+  if (mistakeCount === null) return { emoji: <Circle size={12} strokeWidth={1.75} />, label: "Նոր", tone: "neutral" };
+  if (mistakeCount >= 5) return { emoji: <AlertTriangle size={12} strokeWidth={1.75} />, label: "Աշխատիր սրա վրա", tone: "incorrect" };
+  return { emoji: <ArrowRight size={12} strokeWidth={1.75} />, label: "Հաջորդը", tone: "primary" };
+}
+
 function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
+  const priority = priorityTag(item.mistake_count);
   return (
     <Link
       to={`/practice/subtopic/${item.subtopic_id}/${item.suggested_tier}`}
       state={{ subtopicName: item.subtopic_name }}
-      className="flex flex-col gap-1 rounded-[var(--radius)] border border-border bg-surface p-4 transition-colors hover:border-primary"
+      className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-5 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
     >
-      <p className="text-xs text-text-muted">
-        {item.subject_name} · {item.domain_name} · {item.topic_name}
-      </p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-text-muted">
+          {item.subject_name} · {item.domain_name} · {item.topic_name}
+        </p>
+        <Badge tone={priority.tone}>
+          {priority.emoji} {priority.label}
+        </Badge>
+      </div>
       <p className="font-medium text-text">{item.subtopic_name}</p>
       <div className="mt-1 flex items-center justify-between">
         <span className="text-xs text-text-muted">
@@ -121,52 +146,12 @@ function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
   );
 }
 
-function ChatNavTile() {
-  const unreadChatCount = useChatUnreadCount();
-  return (
-    <Link
-      to="/chat"
-      className="relative flex flex-col items-center gap-1 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
-    >
-      <span className="text-2xl">💬</span>
-      <span className="text-xs font-medium text-text">Հաղորդագրություններ</span>
-      {unreadChatCount > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-incorrect px-1 text-xs font-semibold text-white">
-          {unreadChatCount > 99 ? "99+" : unreadChatCount}
-        </span>
-      )}
-    </Link>
-  );
-}
-
-function AssignmentsNavTile({ hasUnseen }: { hasUnseen: boolean }) {
-  return (
-    <Link
-      to="/student-dashboard"
-      className="relative flex flex-col items-center gap-1 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
-    >
-      <span className="text-2xl">📋</span>
-      <span className="text-xs font-medium text-text">Առաջադրանքներ</span>
-      {hasUnseen && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />}
-    </Link>
-  );
-}
-
-function TeacherHomePage({ user, logout }: { user: { username: string }; logout: () => void }) {
+function TeacherHomePage() {
   const notifications = useAssignmentNotifications();
   const hasUnseenAssignments = (notifications?.length ?? 0) > 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
-      <div className="absolute right-4 top-4 flex items-center gap-3 text-sm text-text-muted">
-        <Link to="/profile" className="text-primary hover:underline">
-          {user.username}
-        </Link>
-        <button onClick={logout} className="text-primary hover:underline">
-          Ելք
-        </button>
-      </div>
-
       <h1 className="text-3xl font-semibold text-text">Բարի գալուստ</h1>
 
       <div className="flex flex-wrap justify-center gap-4">
@@ -196,20 +181,30 @@ function TeacherHomePage({ user, logout }: { user: { username: string }; logout:
   );
 }
 
+/** Built from real fields only — never a generic motivational quote. */
+function greetingSubtext(insight: HomeInsight | null, profile: Profile): string | null {
+  if (insight?.coach.available && insight.coach.situation) return insight.coach.situation;
+  if (insight?.next_mission.available) return insight.next_mission.reason;
+  if (profile.days_until_exam != null && profile.days_until_exam > 0) {
+    return `Ձեր քննությանը մնացել է ${profile.days_until_exam} օր։ Այսօրվա փոքր քայլը կարևոր է։`;
+  }
+  return null;
+}
+
 export function HomePage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [streak, setStreak] = useState<LearningStreak | null>(null);
   const [recommended, setRecommended] = useState<RecommendedSubtopic[] | null>(null);
   const [weeklyProgress, setWeeklyProgress] = useState<WeeklyProgressPoint[] | null>(null);
-  const assignmentNotifications = useAssignmentNotifications();
-  const hasUnseenAssignments = (assignmentNotifications?.length ?? 0) > 0;
+  const [insight, setInsight] = useState<HomeInsight | null>(null);
 
   useEffect(() => {
     profileApi.fetchProfile().then(setProfile);
     streaksApi.fetchStreak().then(setStreak);
     getRecommendedExercises().then(setRecommended);
     getWeeklyProgress().then(setWeeklyProgress);
+    profileApi.fetchHomeInsight().then(setInsight);
   }, []);
 
   // Parent accounts land on the family dashboard, not the student practice
@@ -221,7 +216,7 @@ export function HomePage() {
   }
 
   if (user?.role === "teacher") {
-    return <TeacherHomePage user={user} logout={logout} />;
+    return <TeacherHomePage />;
   }
 
   const xpPercent =
@@ -229,104 +224,96 @@ export function HomePage() {
       ? Math.min(100, Math.round((profile.xp_into_level / profile.xp_for_next_level) * 100))
       : 100;
   const fullName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") : "";
+  const firstRecommendedHref = recommended && recommended.length > 0
+    ? `/practice/subtopic/${recommended[0].subtopic_id}/${recommended[0].suggested_tier}`
+    : "/practice";
+  const weeklyStudyHours = profile?.stats ? profile.stats.weekly_study_seconds / 3600 : 0;
 
   return (
     <div className="min-h-screen bg-bg px-4 py-6">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-text">
-            Բարի գալուստ{fullName ? `, ${fullName.split(" ")[0]}` : ""}
+        {/* Header */}
+        <div className="mb-2">
+          <h1 className="text-2xl font-semibold text-text sm:text-3xl">
+            Բարի վերադարձ{fullName ? `, ${fullName.split(" ")[0]}` : ""}
           </h1>
-          <div className="flex items-center gap-3 text-sm text-text-muted">
-            <Link to="/profile" className="text-primary hover:underline">
-              {user?.username}
-            </Link>
-            <button onClick={logout} className="text-primary hover:underline">
-              Ելք
-            </button>
-          </div>
+          {profile && (
+            <p className="mt-1 text-sm text-text-muted">
+              {[
+                `@${profile.username}`,
+                profile.grade ? `${profile.grade}-րդ դասարան` : null,
+                profile.school?.name,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
 
         {!profile ? (
           <p className="text-text-muted">Բեռնվում է...</p>
         ) : (
           <>
-            {/* Profile overview */}
-            <section className="rounded-[var(--radius)] border border-border bg-surface p-5 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-2xl font-semibold text-text-muted">
-                    {profile.avatar ? (
-                      <img src={profile.avatar} alt={profile.username} className="h-full w-full object-cover" />
-                    ) : (
-                      (profile.first_name || profile.username).slice(0, 1).toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-text">{fullName || profile.username}</p>
-                    <p className="text-sm text-text-muted">
-                      {[profile.grade ? `${profile.grade}-րդ դասարան` : null, profile.school?.name]
-                        .filter(Boolean)
-                        .join(" · ") || "Ավելացրեք ձեր դպրոցը"}
-                    </p>
-                  </div>
-                </div>
+            {/* Greeting subtext */}
+            {greetingSubtext(insight, profile) && (
+              <p className="mt-3 mb-1 text-sm text-text-muted">{greetingSubtext(insight, profile)}</p>
+            )}
 
-                <div className="flex gap-6">
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-text">🔥 {streak?.current_streak ?? "..."}</p>
-                    <p className="text-xs text-text-muted">օրյա շարք</p>
-                  </div>
-                  <div className="min-w-32 text-center">
-                    <p className="text-2xl font-semibold text-text">{profile.level}</p>
-                    <p className="text-xs text-text-muted">
-                      Մակարդակ · {profile.xp_into_level}/{profile.xp_for_next_level} XP
-                    </p>
-                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-                      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${xpPercent}%` }} />
-                    </div>
-                  </div>
-                </div>
+            {/* Stat pills */}
+            <div className="mt-3 mb-6 flex flex-wrap gap-3">
+              <div className="flex items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
+                <Flame size={18} strokeWidth={1.75} />
+                <span className="text-sm text-text">
+                  <strong>{streak?.current_streak ?? 0} օրյա</strong> շարք
+                </span>
               </div>
-
-              <div className="mt-4">
-                <ExamCountdown profile={profile} onUpdated={setProfile} />
+              <div className="flex items-center gap-3 rounded-full bg-surface px-4 py-2.5">
+                <span className="text-sm text-text">
+                  <strong>Level {profile.level}</strong>
+                </span>
+                <span className="h-1.5 w-[70px] overflow-hidden rounded-full bg-surface-muted">
+                  <span
+                    className="block h-full rounded-full"
+                    style={{ width: `${xpPercent}%`, background: "var(--gradient-hero)" }}
+                  />
+                </span>
+                <span className="text-xs text-text-muted">
+                  {profile.xp_into_level}/{profile.xp_for_next_level} XP
+                </span>
               </div>
-            </section>
-
-            {/* Progress + Daily problem */}
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <section className="rounded-[var(--radius)] border border-border bg-surface p-5">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-text">Առաջընթաց ըստ շաբաթների</h2>
-                  <div className="flex items-center gap-3 text-xs text-text-muted">
-                    <span className="flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-accent" /> Ճիշտ
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-primary" /> Ընդհանուր
-                    </span>
-                  </div>
+              {profile.target_exam_date && (
+                <div className="flex items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
+                  <CalendarDays size={18} strokeWidth={1.75} />
+                  <span className="text-sm text-text">
+                    <strong>{Math.max(profile.days_until_exam ?? 0, 0)} օր</strong> մինչև քննությունը ·{" "}
+                    {new Date(profile.target_exam_date).toLocaleDateString("hy-AM", { month: "long", day: "numeric" })}
+                  </span>
                 </div>
-                {weeklyProgress ? (
-                  <WeeklyProgressChart points={weeklyProgress} />
-                ) : (
-                  <p className="text-sm text-text-muted">Բեռնվում է...</p>
-                )}
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4">
-                  <div className="text-center">
-                    <p className="text-xl font-semibold text-text">{profile.stats.accuracy_percentage}%</p>
-                    <p className="text-xs text-text-muted">Ճշգրտություն</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-semibold text-text">{profile.stats.tests_completed}</p>
-                    <p className="text-xs text-text-muted">Ավարտված թեստեր</p>
-                  </div>
-                </div>
-              </section>
-
-              <DailyProblemCard />
+              )}
             </div>
+
+            {/* Today's Study Mission — hero */}
+            <div className="grid grid-cols-1 gap-6">
+              <TodayMissionHero insight={insight} streak={streak} />
+            </div>
+
+            {/* Daily Problem */}
+            <div className="mt-6">
+              <DailyProblemCard nextHref={firstRecommendedHref} />
+            </div>
+
+            {/* Haygit Insight + escape hatch */}
+            {insight && (
+              <div className="mt-6">
+                <HaygitInsightCard coach={insight.coach} mission={insight.next_mission} />
+                <div className="mt-2 flex flex-col items-center gap-1.5 text-xs text-text-muted">
+                  <span className="flex items-center gap-1">
+                    <HelpCircle size={13} strokeWidth={1.75} /> Չգիտե՞ս ինչ սովորել։
+                  </span>
+                  <LinkButton to={firstRecommendedHref}>Ցույց տուր ինչ անել →</LinkButton>
+                </div>
+              </div>
+            )}
 
             {/* Recommended exercises */}
             <section className="mt-6">
@@ -346,22 +333,63 @@ export function HomePage() {
               )}
             </section>
 
-            {/* Quick nav */}
-            <section className="mt-6">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                {NAV_LINKS.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    className="flex flex-col items-center gap-1 rounded-[var(--radius)] border border-border bg-surface p-4 text-center transition-colors hover:border-primary"
-                  >
-                    <span className="text-2xl">{link.icon}</span>
-                    <span className="text-xs font-medium text-text">{link.label}</span>
-                  </Link>
-                ))}
-                <AssignmentsNavTile hasUnseen={hasUnseenAssignments} />
-                <ChatNavTile />
+            {/* Exam countdown */}
+            <div className="mt-6">
+              <ExamCountdown profile={profile} onUpdated={setProfile} />
+            </div>
+
+            {/* Weekly progress + stats */}
+            <section className="mt-6 rounded-[calc(var(--radius)*1.15)] border border-border bg-surface p-6 sm:p-8">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="flex items-center gap-1.5 text-lg font-semibold text-text">
+                  <TrendingUp size={18} strokeWidth={1.75} /> Քո առաջընթացը
+                </h2>
+                <div className="flex items-center gap-3 text-xs text-text-muted">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-accent" /> Ճիշտ
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-border" /> Ընդհանուր
+                  </span>
+                </div>
               </div>
+              {weeklyProgress ? (
+                <WeeklyProgressChart points={weeklyProgress} />
+              ) : (
+                <p className="text-sm text-text-muted">Բեռնվում է...</p>
+              )}
+              <div className={`mt-4 grid gap-3 border-t border-border pt-4 ${weeklyStudyHours > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
+                <StatTile label="Ճշգրտություն" value={`${profile.stats?.accuracy_percentage ?? 0}%`} />
+                <StatTile label="Ավարտված թեստ" value={`${profile.stats?.tests_completed ?? 0}`} />
+                {weeklyStudyHours > 0 && (
+                  <StatTile label="Այս շաբաթ" value={`${weeklyStudyHours.toFixed(1)} ժ`} />
+                )}
+              </div>
+            </section>
+
+            {insight && !insight.checklist.all_complete && (
+              <p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-text-muted">
+                <Flame size={13} strokeWidth={1.75} /> Մի կոտրիր շարքը՝ ավարտիր այսօրվա պարապմունքը
+              </p>
+            )}
+
+            {/* Quick actions */}
+            <section className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {QUICK_ACTIONS.map((qa) => (
+                <Link
+                  key={qa.href}
+                  to={qa.href}
+                  className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg"
+                >
+                  <span
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
+                    style={{ background: qa.bg, color: qa.fg }}
+                  >
+                    {qa.icon}
+                  </span>
+                  <span className="text-sm font-semibold text-text">{qa.label}</span>
+                </Link>
+              ))}
             </section>
           </>
         )}

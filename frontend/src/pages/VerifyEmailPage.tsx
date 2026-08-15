@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { resendVerificationCode, verifyEmail } from "../api/auth";
+import { OtpInput } from "../components/OtpInput";
 
 export function VerifyEmailPage() {
   const { user, refreshUser } = useAuth();
@@ -66,15 +67,7 @@ export function VerifyEmailPage() {
         </p>
 
         <label className="mb-1 block text-sm text-text-muted">Հաստատման կոդ</label>
-        <input
-          className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-center text-lg tracking-[0.5em] text-text outline-none focus:border-primary"
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          inputMode="numeric"
-          maxLength={6}
-          autoFocus
-          required
-        />
+        <OtpInput value={code} onChange={setCode} autoFocus disabled={submitting} />
 
         {error && <p className="mb-4 text-sm text-incorrect">{error}</p>}
         {info && <p className="mb-4 text-sm text-primary">{info}</p>}

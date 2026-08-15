@@ -43,10 +43,19 @@ INSTALLED_APPS = [
     "apps.mock_exams",
     "apps.flashcards",
     "apps.rankings",
+    "apps.challenges",
     "apps.parents",
     "apps.activity",
     "apps.teaching",
     "apps.chat",
+    "apps.mistakes",
+    "apps.study_plan",
+    "apps.helpcenter",
+    "apps.knowledge",
+    "apps.notepad",
+    "apps.study_groups",
+    "apps.todo",
+    "apps.notes",
 ]
 
 MIDDLEWARE = [
@@ -253,7 +262,7 @@ SPECTACULAR_SETTINGS = {
 # AI Assistant
 # ---------------------------------------------------------------------------
 
-# Which provider AIService dispatches to: mock | ollama | openai | anthropic | gemini.
+# Which provider AIService dispatches to: mock | ollama | openai | anthropic.
 AI_PROVIDER = env("AI_PROVIDER", default="mock")
 
 # How many recent messages PromptBuilder includes as conversation history.
@@ -267,8 +276,8 @@ FLASHCARDS_MAX_IMAGE_SIZE_MB = env.int("FLASHCARDS_MAX_IMAGE_SIZE_MB", default=5
 FLASHCARDS_MAX_AUDIO_SIZE_MB = env.int("FLASHCARDS_MAX_AUDIO_SIZE_MB", default=15)
 
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-5.4-mini")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
-GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
 OLLAMA_BASE_URL = env("OLLAMA_BASE_URL", default="http://localhost:11434")
 OLLAMA_MODEL = env("OLLAMA_MODEL", default="qwen3:8b")
 OLLAMA_TIMEOUT_SECONDS = env.int("OLLAMA_TIMEOUT_SECONDS", default=120)

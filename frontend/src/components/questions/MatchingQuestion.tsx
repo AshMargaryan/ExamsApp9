@@ -157,7 +157,7 @@ export function MatchingQuestion({ leftItems, rightItems, value, onChange, revea
                     onClick={() => clickLeft(s.id)}
                     disabled={revealed}
                     className={`flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-lg transition-colors ${
-                      active ? "border-primary bg-surface-muted" : "border-border"
+                      active ? "border-primary bg-primary text-primary-contrast" : "border-border"
                     } ${revealed ? "" : "hover:border-primary"}`}
                   >
                     <span>

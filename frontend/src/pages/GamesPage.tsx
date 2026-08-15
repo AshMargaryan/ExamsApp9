@@ -6,6 +6,7 @@ import type { GameRoom, StartCondition } from "../api/games";
 import { getHierarchy } from "../api/practice";
 import type { SubjectNode } from "../api/practice";
 import { MessageModal } from "../components/MessageModal";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const STATUS_LABELS: Record<GameRoom["status"], string> = {
   waiting: "Սպասման մեջ",
@@ -117,9 +118,7 @@ export function GamesPage() {
   return (
     <div className="min-h-screen bg-bg px-4 py-8">
       <div className="mx-auto max-w-3xl">
-        <Link to="/" className="mb-6 inline-block text-sm text-primary hover:underline">
-          ← Գլխավոր
-        </Link>
+        <LinkButton to="/" className="mb-6">← Գլխավոր</LinkButton>
 
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-semibold text-text">Խաղասենյակներ</h1>

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { Pause, Play } from "lucide-react";
 import type { Attachment } from "../../api/chat";
 import { useAuthenticatedImageUrl } from "../../hooks/useAuthenticatedImageUrl";
+
+const SPEEDS = [1, 1.5, 2];
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
@@ -18,6 +21,7 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(attachment.duration ?? 0);
+  const [speedIndex, setSpeedIndex] = useState(0);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -42,12 +46,6 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
     const onLoaded = () => {
       if (Number.isFinite(audio.duration)) setDuration(audio.duration);
     };
-    // TEMPORARY diagnostic, round 2 — the seek-hack that caused the fatal
-    // "demuxer seek failed" MediaError is gone, but playback is reportedly
-    // still silent, so something else is wrong. This surfaces whatever
-    // MediaError Chrome raises now (or confirms there isn't one, which
-    // would point at something outside this component, e.g. actual bytes
-    // being served, not decode failure).
     const onError = () => {
       const err = audio.error;
       console.error("[voice-message] audio error", {
@@ -92,6 +90,12 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
     }
   }
 
+  function cycleSpeed() {
+    const next = (speedIndex + 1) % SPEEDS.length;
+    setSpeedIndex(next);
+    if (audioRef.current) audioRef.current.playbackRate = SPEEDS[next];
+  }
+
   function handleSeek(e: React.ChangeEvent<HTMLInputElement>) {
     const audio = audioRef.current;
     if (!audio) return;
@@ -125,10 +129,14 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
         disabled={!src}
         aria-label={playing ? "Դադարեցնել" : "Նվագարկել"}
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm disabled:opacity-50 ${
-          own ? "bg-primary-contrast/20 text-primary-contrast" : "bg-surface text-text"
+          own ? "bg-primary-contrast/20 text-primary-contrast" : "bg-primary/15 text-primary"
         }`}
       >
-        {src ? (playing ? "⏸" : "▶") : "…"}
+        {src ? (
+          playing ? <Pause size={15} strokeWidth={1.75} /> : <Play size={15} strokeWidth={1.75} />
+        ) : (
+          "…"
+        )}
       </button>
       <input
         type="range"
@@ -143,6 +151,17 @@ export function VoiceMessagePlayer({ attachment, own }: { attachment: Attachment
       <span className={`w-10 shrink-0 text-right text-xs tabular-nums ${own ? "text-primary-contrast/80" : "text-text-muted"}`}>
         {formatTime(playing || currentTime > 0 ? currentTime : duration)}
       </span>
+      <button
+        type="button"
+        onClick={cycleSpeed}
+        disabled={!src}
+        title="Նվագարկման արագություն"
+        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium disabled:opacity-50 ${
+          own ? "bg-primary-contrast/20" : "bg-primary/15 text-primary"
+        }`}
+      >
+        {SPEEDS[speedIndex]}x
+      </button>
     </div>
   );
 }

@@ -29,6 +29,16 @@ export function FloatingChatWidget() {
     return () => clearInterval(interval);
   }, [open]);
 
+  async function handleTogglePin(id: number, pinned: boolean) {
+    setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, pinned } : c)) ?? prev);
+    await chatApi.setConversationPrefs(id, { pinned });
+  }
+
+  async function handleToggleMute(id: number, muted: boolean) {
+    setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, muted } : c)) ?? prev);
+    await chatApi.setConversationPrefs(id, { muted });
+  }
+
   // Avoid a redundant floating chat on top of the full chat page — same
   // rule FloatingAssistantWidget applies for /assistant. The panel's
   // open/selected-conversation state persists in context regardless, so
@@ -90,6 +100,8 @@ export function FloatingChatWidget() {
               conversations={conversations}
               selectedId={selectedConversationId}
               onSelect={selectConversation}
+              onTogglePin={handleTogglePin}
+              onToggleMute={handleToggleMute}
             />
           </div>
         )}

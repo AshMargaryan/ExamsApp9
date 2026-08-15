@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { requestPasswordReset } from "../api/auth";
+import { LinkButton } from "../components/ui/LinkButton";
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -52,10 +52,8 @@ export function ForgotPasswordPage() {
           </form>
         )}
 
-        <p className="mt-4 text-center text-sm text-text-muted">
-          <Link to="/login" className="text-primary hover:underline">
-            Վերադառնալ մուտք էջ
-          </Link>
+        <p className="mt-4 flex justify-center">
+          <LinkButton to="/login">Վերադառնալ մուտք էջ</LinkButton>
         </p>
       </div>
     </div>

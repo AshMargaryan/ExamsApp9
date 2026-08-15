@@ -10,10 +10,19 @@ from typing import Optional
 
 from django.conf import settings
 
+from apps.profiles.context import get_learner_context
+
 from ..models import Conversation, MessageRole, MessageStatus
-from ..prompts import BASE_SYSTEM_PROMPT, CONVERSATION_MODE_FRAMING
+from ..prompts import BASE_SYSTEM_PROMPT, CONVERSATION_MODE_FRAMING, TOOLS_SYSTEM_ADDENDUM
 from ..providers.base import AIMessage, AIRequest
+from ..tools.definitions import TOOL_DEFINITIONS
 from .rag_service import ContextChunk, EducationalContext
+
+# Kept small and read-only-summary — this goes into every turn's system
+# prompt, so it must stay cheap in tokens. Not the full get_learner_context()
+# payload (see apps.profiles.context docstring: callers should only pull
+# what they'll use).
+_LEARNER_CONTEXT_EVENTS_LIMIT = 5
 
 
 class PromptBuilder:
@@ -24,20 +33,16 @@ class PromptBuilder:
         educational_context: EducationalContext,
         retrieved_chunks: list[ContextChunk],
         attachments: Optional[list] = None,
-        tool_results: Optional[list[dict]] = None,
     ) -> AIRequest:
-        system_prompt = self._build_system_prompt(educational_context, retrieved_chunks)
+        system_prompt = self._build_system_prompt(educational_context, conversation.owner)
         messages = self._history_messages(conversation)
         messages.append(
             AIMessage(
                 role=MessageRole.USER,
-                content=user_text,
+                content=self._with_educational_context(user_text, retrieved_chunks),
                 attachments=self._attachment_metadata(attachments, embed_images=True),
             )
         )
-        if tool_results:
-            for result in tool_results:
-                messages.append(AIMessage(role=MessageRole.TOOL, content=str(result)))
 
         return AIRequest(
             messages=messages,
@@ -45,22 +50,126 @@ class PromptBuilder:
             educational_context=educational_context.to_dict()
             if not educational_context.is_empty()
             else None,
+            tools=TOOL_DEFINITIONS,
         )
 
-    def _build_system_prompt(
-        self, context: EducationalContext, chunks: list[ContextChunk]
-    ) -> str:
-        parts = [BASE_SYSTEM_PROMPT]
+    def _with_educational_context(self, user_text: str, chunks: list[ContextChunk]) -> str:
+        """RAG chunks are retrieved fresh from the CURRENT message's content
+        every turn, so they must never land in the system prompt: that
+        message sits before the whole conversation history in the request,
+        and OpenAI's automatic prompt caching matches on an exact prefix —
+        one changed token there invalidates the cache for every message
+        behind it too, not just the chunk section. Keeping chunks on the
+        latest (always-uncached-anyway) user message instead lets the
+        stable system prompt + growing history stay a cache hit turn over
+        turn."""
+        if not chunks:
+            return user_text
+        context_block = "\n\n".join(
+            ["--- Educational context ---"]
+            + [chunk.to_prompt_text() for chunk in chunks]
+            + ["--- End of educational context ---"]
+        )
+        return f"{context_block}\n\n{user_text}"
 
-        if context.conversation_mode and context.conversation_mode in CONVERSATION_MODE_FRAMING:
+    def _build_system_prompt(
+        self, context: EducationalContext, user
+    ) -> str:
+        parts = [BASE_SYSTEM_PROMPT, TOOLS_SYSTEM_ADDENDUM]
+
+        mode_explicitly_set = bool(context.conversation_mode and context.conversation_mode in CONVERSATION_MODE_FRAMING)
+        if mode_explicitly_set:
             parts.append(CONVERSATION_MODE_FRAMING[context.conversation_mode])
 
-        if chunks:
-            parts.append("--- Educational context ---")
-            parts.extend(chunk.to_prompt_text() for chunk in chunks)
-            parts.append("--- End of educational context ---")
+        learner_ctx = get_learner_context(user, recent_events_limit=_LEARNER_CONTEXT_EVENTS_LIMIT)
+
+        directives = self._preference_directives(learner_ctx["learning_preferences"], mode_explicitly_set)
+        parts.extend(directives)
+
+        learner_section = self._format_learner_context(learner_ctx)
+        if learner_section:
+            parts.append(learner_section)
 
         return "\n\n".join(parts)
+
+    def _preference_directives(self, preferences: Optional[dict], mode_explicitly_set: bool) -> list[str]:
+        """Declared AI Tutor preferences (apps.profiles.LearningPreferences).
+        Only fill in a default *mode* framing when the student hasn't picked
+        one for this turn — an explicit per-message conversation_mode always
+        wins over the standing preference."""
+        if preferences is None:
+            return []
+        directives = []
+
+        if not mode_explicitly_set and preferences["explanation_style"] == "direct":
+            directives.append(CONVERSATION_MODE_FRAMING["explain_mode"])
+        elif not mode_explicitly_set and preferences["explanation_style"] == "socratic":
+            directives.append(
+                "This student has asked for a strongly Socratic default: lean "
+                "even more on guided questions and hold back direct "
+                "explanations longer than usual, beyond the baseline."
+            )
+
+        if not preferences["hints_before_answers"]:
+            directives.append(
+                "This student has opted out of hints-first — you don't need "
+                "to wait for an attempted step before explaining; you can "
+                "give a more direct answer sooner when they ask for help."
+            )
+
+        if preferences["preferred_language"]:
+            language_name = {"hy": "Armenian", "en": "English"}.get(
+                preferences["preferred_language"], preferences["preferred_language"]
+            )
+            directives.append(f"Always respond in {language_name}, regardless of what language the student writes in.")
+
+        return directives
+
+    def _format_learner_context(self, ctx: dict) -> str:
+        """Compact, human-readable summary of the learner profile (goals,
+        active subjects, upcoming exams, availability, recent activity) —
+        not the raw dict, so the model reads it like a briefing, not JSON."""
+        lines = []
+
+        profile = ctx["profile"]
+        if profile and profile.get("target_major"):
+            target = f"Aiming for: {profile['target_major']}"
+            if profile.get("target_exam_date"):
+                target += f" (target date {profile['target_exam_date']})"
+            lines.append(target)
+
+        if ctx["active_subjects"]:
+            lines.append("Active subjects: " + ", ".join(
+                f"{s['subject_key']} (priority: {s['priority']})" for s in ctx["active_subjects"]
+            ))
+
+        if ctx["upcoming_exams"]:
+            lines.append("Upcoming exams: " + ", ".join(
+                f"{e['name']} ({e['subject_key']}) on {e['exam_date']}"
+                for e in ctx["upcoming_exams"][:3]
+            ))
+
+        if ctx["goals"]:
+            goal_lines = []
+            for g in ctx["goals"][:3]:
+                label = g["goal_type"] + (f" [{g['subject_name']}]" if g["subject_name"] else "")
+                if g["progress"] is not None:
+                    label += f" — {g['progress']}% done"
+                goal_lines.append(label)
+            lines.append("Active goals: " + ", ".join(goal_lines))
+
+        availability = ctx["study_availability"]
+        if availability and availability.get("typical_session_minutes"):
+            lines.append(f"Typically studies ~{availability['typical_session_minutes']} min/session")
+
+        if ctx["recent_events"]:
+            lines.append("Recent activity: " + ", ".join(
+                e["event_type"] for e in ctx["recent_events"][:3]
+            ))
+
+        if not lines:
+            return ""
+        return "--- Student profile ---\n" + "\n".join(lines) + "\n--- End of student profile ---"
 
     def _history_messages(self, conversation: Conversation) -> list[AIMessage]:
         window = getattr(settings, "AI_ASSISTANT_HISTORY_WINDOW", 20)

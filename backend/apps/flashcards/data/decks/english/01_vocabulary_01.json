@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-001",
+  "title": "Անգլերեն — Բառապաշար 1",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Precarious",
+      "back": "dangerously unstable or lacking security",
+      "hint": "",
+      "translation": "անկայուն"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Ambiguous",
+      "back": "open to more than one interpretation; unclear",
+      "hint": "",
+      "translation": "երկիմաստ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Candid",
+      "back": "open and honest; not hiding one's thoughts",
+      "hint": "",
+      "translation": "անկեղծ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Validated",
+      "back": "confirmed or proven to be true, often through testing",
+      "hint": "",
+      "translation": "հաստատված"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Lucrative",
+      "back": "producing a great deal of profit",
+      "hint": "",
+      "translation": "եկամտաբեր"
+    }
+  ]
+}

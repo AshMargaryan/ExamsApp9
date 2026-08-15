@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-019",
+  "title": "Անգլերեն — Բառապաշար 19",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Destination",
+      "back": "the place to which someone or something is being sent",
+      "hint": "",
+      "translation": "նպատակակետ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Manner",
+      "back": "a way of doing something",
+      "hint": "",
+      "translation": "ձև"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Promotion",
+      "back": "a move to a more important or senior job",
+      "hint": "",
+      "translation": "առաջխաղացում"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Hint",
+      "back": "to suggest something in an indirect way",
+      "hint": "",
+      "translation": "ակնարկ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Invest",
+      "back": "to put money into a venture in order to make a profit",
+      "hint": "",
+      "translation": "ներդնել"
+    }
+  ]
+}

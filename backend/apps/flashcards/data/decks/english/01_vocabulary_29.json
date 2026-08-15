@@ -1,0 +1,39 @@
+{
+  "deck_id": "FC-ENG-VOCAB-029",
+  "title": "Անգլերեն — Բառապաշար 29",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Elusive",
+      "back": "difficult to find, catch, or achieve",
+      "hint": "",
+      "translation": "անորսալի"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Resilient",
+      "back": "able to recover quickly from difficulties",
+      "hint": "",
+      "translation": "դիմացկուն"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Notorious",
+      "back": "famous for some bad quality or deed",
+      "hint": "",
+      "translation": "վատահամբավ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Candor",
+      "back": "the quality of being open and honest in speech",
+      "hint": "",
+      "translation": "անկեղծություն"
+    }
+  ]
+}

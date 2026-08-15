@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-014",
+  "title": "Անգլերեն — Բառապաշար 14",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Witty",
+      "back": "showing quick, inventive verbal humour",
+      "hint": "",
+      "translation": "սրամիտ"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Sensible",
+      "back": "based on good reasons; showing good judgment",
+      "hint": "",
+      "translation": "խելամիտ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Endanger",
+      "back": "to put someone or something at risk",
+      "hint": "",
+      "translation": "վտանգել"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Convert",
+      "back": "to change the form, character, or function of something",
+      "hint": "",
+      "translation": "փոխակերպել"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Defeat",
+      "back": "to win against someone in a contest or conflict",
+      "hint": "",
+      "translation": "հաղթել"
+    }
+  ]
+}

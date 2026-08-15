@@ -3,12 +3,13 @@ from .views import (
     HierarchyView, SubtopicMaterialView,
     TierQuestionsView, RevealTierView, SubmitTierView,
     RecommendedExercisesView, WeeklyProgressView, DailyProblemView,
-    PronounceView,
+    PronounceView, TranslateView, QuestionHintViewedView,
 )
 
 urlpatterns = [
     path("hierarchy/", HierarchyView.as_view(), name="practice-hierarchy"),
     path("pronounce/", PronounceView.as_view(), name="practice-pronounce"),
+    path("translate/", TranslateView.as_view(), name="practice-translate"),
     path(
         "subtopics/<int:subtopic_id>/material/",
         SubtopicMaterialView.as_view(), name="practice-subtopic-material",
@@ -34,4 +35,8 @@ urlpatterns = [
         WeeklyProgressView.as_view(), name="practice-dashboard-weekly-progress",
     ),
     path("daily-problem/", DailyProblemView.as_view(), name="practice-daily-problem"),
+    path(
+        "questions/<int:question_id>/hint-viewed/",
+        QuestionHintViewedView.as_view(), name="practice-question-hint-viewed",
+    ),
 ]

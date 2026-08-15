@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getExamAttemptHistory, type MockExamAttempt } from "../api/mockExams";
+import { LinkButton } from "../components/ui/LinkButton";
 
 export function MockExamHistoryPage() {
   const { examId } = useParams<{ examId: string }>();
@@ -16,9 +17,7 @@ export function MockExamHistoryPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <Link to="/mock-exams" className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← Ամբողջական թեստեր
-      </Link>
+      <LinkButton to="/mock-exams" className="mb-4">← Ամբողջական թեստեր</LinkButton>
       <h1 className="mb-6 text-2xl font-semibold text-text">
         {attempts[0]?.exam.title ?? "Նախորդ պատասխանները"}
       </h1>

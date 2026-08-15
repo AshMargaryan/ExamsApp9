@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as assistantApi from "../../api/assistant";
 import { useAuth } from "../../auth/AuthContext";
+import { useAssistantLaunch } from "../../contexts/AssistantLaunchContext";
 import { useConversationChat } from "../../hooks/useConversationChat";
 import { useFloatingPanel } from "../../hooks/useFloatingPanel";
 import { PanelResizeHandles } from "../panels/PanelResizeHandles";
@@ -9,21 +10,29 @@ import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { WelcomeMessage } from "./WelcomeMessage";
 
-const STORAGE_KEY_PREFIX = "assistant_widget_conversation_id_";
-
 export function FloatingAssistantWidget() {
   const location = useLocation();
   const { user } = useAuth();
-  const storageKey = `${STORAGE_KEY_PREFIX}${user?.id ?? "anon"}`;
   const [open, setOpen] = useState(false);
-  const [conversationId, setConversationId] = useState<number | null>(() => {
-    const stored = localStorage.getItem(storageKey);
-    return stored ? Number(stored) : null;
-  });
+  const [conversationId, setConversationId] = useState<number | null>(null);
   const [preparing, setPreparing] = useState(false);
 
-  const { messages, messagesFailed, sending, sendMessage, regenerate, editMessage, deleteMessage } =
-    useConversationChat(conversationId);
+  const {
+    messages, messagesFailed, sending, activityLabel,
+    sendMessage, regenerate, editMessage, deleteMessage, stopGeneration,
+  } = useConversationChat(conversationId);
+  const {
+    request: launchRequest,
+    clearRequest: clearLaunchRequest,
+    assistantSuppressed,
+  } = useAssistantLaunch();
+  // StrictMode double-invokes effects in dev; without this, the effect below
+  // that fires sendMessage(launchRequest...) can run twice for the same
+  // request before clearLaunchRequest()'s state update propagates, sending
+  // the same message twice. Tracks the specific request object already
+  // dispatched, not just a boolean, so a genuinely new launch request still
+  // fires normally.
+  const dispatchedLaunchRequestRef = useRef<typeof launchRequest>(null);
 
   const { rect, zIndex, isDragging, isCompact, bringToFront, dragHandleProps, getResizeHandleProps } =
     useFloatingPanel({
@@ -33,18 +42,14 @@ export function FloatingAssistantWidget() {
       margin: 16,
     });
 
-  // A conversation ID left over from a different account on this browser
-  // (or one that no longer exists) 404s forever instead of loading —
-  // drop it and start fresh rather than getting stuck on "Loading...".
+  // A conversation that failed to load (e.g. deleted mid-session) 404s
+  // forever instead of loading — drop it and start fresh rather than
+  // getting stuck on "Loading...".
   useEffect(() => {
     if (messagesFailed && conversationId !== null) {
-      localStorage.removeItem(storageKey);
       setConversationId(null);
     }
-  }, [messagesFailed, conversationId, storageKey]);
-
-  // Avoid a redundant floating chat on top of the full assistant page.
-  if (location.pathname.startsWith("/assistant")) return null;
+  }, [messagesFailed, conversationId]);
 
   async function handleOpen() {
     setOpen(true);
@@ -52,12 +57,41 @@ export function FloatingAssistantWidget() {
     setPreparing(true);
     try {
       const conversation = await assistantApi.createConversation();
-      localStorage.setItem(storageKey, String(conversation.id));
       setConversationId(conversation.id);
     } finally {
       setPreparing(false);
     }
   }
+
+  // Another page asked to open the assistant pre-seeded with a question
+  // (e.g. "Explain this" on the daily problem) — open the panel and make
+  // sure a conversation exists; the actual send happens once that
+  // conversation's message list has loaded (see next effect), so
+  // useConversationChat's sendMessage always runs against a fresh
+  // conversationId instead of a stale closure.
+  useEffect(() => {
+    if (!launchRequest) return;
+    setOpen(true);
+    if (!conversationId && !preparing) {
+      handleOpen();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchRequest, conversationId, preparing]);
+
+  useEffect(() => {
+    if (!launchRequest || !conversationId || messages === null) return;
+    if (dispatchedLaunchRequestRef.current === launchRequest) return;
+    dispatchedLaunchRequestRef.current = launchRequest;
+    sendMessage(launchRequest.message, [], launchRequest.educationalContext);
+    clearLaunchRequest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchRequest, conversationId, messages]);
+
+  // Avoid a redundant floating chat on top of the full assistant page.
+  if (location.pathname.startsWith("/assistant")) return null;
+
+  // The student opted out of AI help for the mock exam they're currently taking.
+  if (assistantSuppressed) return null;
 
   return (
     <>
@@ -104,7 +138,8 @@ export function FloatingAssistantWidget() {
               <MessageBubble
                 key={m.id}
                 message={m}
-                pending={m.id < 0}
+                pending={m.status === "sending"}
+                activityLabel={m.role === "assistant" && m.status === "sending" ? activityLabel : undefined}
                 onEdit={m.role === "user" && m.id > 0 ? (content) => editMessage(m.id, content) : undefined}
                 onDelete={m.id > 0 ? () => deleteMessage(m.id) : undefined}
                 onRegenerate={m.role === "assistant" && m.id > 0 ? () => regenerate(m.id) : undefined}
@@ -117,6 +152,8 @@ export function FloatingAssistantWidget() {
               <MessageInput
                 conversationId={conversationId}
                 disabled={sending || preparing}
+                streaming={sending}
+                onStop={stopGeneration}
                 onSend={(content, attachmentIds, educationalContext) =>
                   sendMessage(content, attachmentIds, educationalContext)
                 }

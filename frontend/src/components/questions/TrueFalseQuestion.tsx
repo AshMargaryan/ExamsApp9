@@ -9,6 +9,7 @@ interface Props {
   revealed: boolean;
   size?: "normal" | "large";
   showHint?: boolean;
+  onHintOpen?: () => void;
 }
 
 export function TrueFalseQuestion({
@@ -18,6 +19,7 @@ export function TrueFalseQuestion({
   revealed,
   size = "normal",
   showHint = true,
+  onHintOpen,
 }: Props) {
   const sizeClasses = size === "large" ? "px-6 py-5 text-2xl" : "px-4 py-2 text-lg";
 
@@ -26,7 +28,7 @@ export function TrueFalseQuestion({
       {statements.map((s) => {
         const markedTrue = selectedIds.has(s.id);
         let classes = markedTrue
-          ? "border-primary bg-surface-muted"
+          ? "border-primary bg-primary text-primary-contrast"
           : "border-border";
 
         if (revealed) {
@@ -59,7 +61,7 @@ export function TrueFalseQuestion({
                     : "Սխալ"}
               </span>
             </button>
-            {!revealed && showHint && <HintButton hint={s.hint ?? ""} />}
+            {!revealed && showHint && <HintButton hint={s.hint ?? ""} onOpen={onHintOpen} />}
           </div>
         );
       })}

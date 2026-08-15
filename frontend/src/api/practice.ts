@@ -34,7 +34,10 @@ export interface Question {
   statements: Statement[];
   explanation?: string;
   correct_answer_text?: string;
+  subtopic_id?: number;
   subject_name?: string;
+  topic_name?: string;
+  subtopic_name?: string;
 }
 
 export interface Progress {
@@ -169,11 +172,16 @@ export interface DailyProblemResult {
   question: Question;
 }
 
+export type DailyProblemReason =
+  | { kind: "weak_topic"; topic_label: string; incorrect_count: number }
+  | { kind: "default" };
+
 export interface DailyProblem {
   date: string;
   question: Question;
   already_answered: boolean;
   result: DailyProblemResult | null;
+  reason: DailyProblemReason;
 }
 
 export interface DailyProblemSubmitInput {
@@ -200,4 +208,14 @@ export async function getDailyProblem(): Promise<DailyProblem> {
 export async function submitDailyProblem(input: DailyProblemSubmitInput): Promise<DailyProblem> {
   const { data } = await apiClient.post("/practice/daily-problem/", input);
   return data;
+}
+
+/** Fire-and-forget: records a HINT_REQUESTED learning event. Never throws
+ * to the caller — a failed report shouldn't disrupt the student's practice. */
+export async function markHintViewed(questionId: number): Promise<void> {
+  try {
+    await apiClient.post(`/practice/questions/${questionId}/hint-viewed/`);
+  } catch {
+    // best-effort telemetry, intentionally swallowed
+  }
 }

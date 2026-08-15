@@ -6,14 +6,15 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Attachment, AttachmentType, Conversation, ConversationType, Message
+from .models import Attachment, AttachmentType, Conversation, ConversationType, Message, MessageReport
 from .permissions import IsConversationParticipant, IsGroupOwner, is_participant
 from .serializers import (
-    AddParticipantsSerializer, AttachmentSerializer, AttachmentUploadSerializer, ConversationSerializer,
-    CreateGroupConversationSerializer, CreatePrivateConversationSerializer, GroupSettingsSerializer,
-    MessageSerializer, SendMessageSerializer,
+    AddParticipantsSerializer, AttachmentSearchResultSerializer, AttachmentSerializer, AttachmentUploadSerializer,
+    ConversationRequestRespondSerializer, ConversationSerializer, CreateGroupConversationSerializer,
+    CreatePrivateConversationSerializer, EditMessageSerializer, GroupSettingsSerializer, MessageReportSerializer,
+    MessageSearchResultSerializer, MessageSerializer, SendMessageSerializer,
 )
-from .services import conversation_service, group_service, message_service, reaction_service, read_service
+from .services import ai_service, conversation_service, group_service, message_service, reaction_service, read_service
 
 User = get_user_model()
 
@@ -43,9 +44,12 @@ class ConversationListCreateView(APIView):
         if conv_type == ConversationType.PRIVATE:
             serializer = CreatePrivateConversationSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
-            conversation, _ = conversation_service.get_or_create_private(
-                request.user, serializer.validated_data["user_id"]
-            )
+            try:
+                conversation, _ = conversation_service.get_or_create_private(
+                    request.user, serializer.validated_data["user_id"]
+                )
+            except ValueError as e:
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         elif conv_type == ConversationType.GROUP:
             serializer = CreateGroupConversationSerializer(data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
@@ -53,6 +57,10 @@ class ConversationListCreateView(APIView):
                 request.user,
                 serializer.validated_data["name"],
                 serializer.validated_data["participant_ids"],
+                description=serializer.validated_data["description"],
+                subject=serializer.validated_data["subject"],
+                grade=serializer.validated_data["grade"],
+                privacy=serializer.validated_data["privacy"],
             )
         else:
             return Response(
@@ -92,9 +100,9 @@ class ConversationDetailView(APIView):
             return Response(
                 {"detail": "Միայն խմբերն ունեն անուն/նկար։"}, status=status.HTTP_400_BAD_REQUEST
             )
-        if not group_service.is_owner(conversation, request.user):
+        if not group_service.is_manager(conversation, request.user):
             return Response(
-                {"detail": "Այս գործողությունը հասանելի է միայն խմբի սեփականատիրոջը։"},
+                {"detail": "Այս գործողությունը հասանելի է միայն խմբի ադմինիստրատորներին։"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -104,6 +112,11 @@ class ConversationDetailView(APIView):
             group_service.rename(conversation, serializer.validated_data["name"])
         if "image" in serializer.validated_data:
             group_service.update_image(conversation, serializer.validated_data["image"])
+        other_fields = {
+            k: v for k, v in serializer.validated_data.items() if k in ("description", "subject", "grade", "privacy")
+        }
+        if other_fields:
+            group_service.update_settings(conversation, **other_fields)
 
         return Response(ConversationSerializer(conversation, context={"request": request}).data)
 
@@ -193,7 +206,9 @@ class MessageListSendView(APIView):
         except ValueError:
             return Response({"detail": "before/limit-ը պետք է լինեն թվեր։"}, status=status.HTTP_400_BAD_REQUEST)
 
-        messages, has_more = message_service.list_messages(conversation, before_id=before_id, limit=limit)
+        messages, has_more = message_service.list_messages(
+            conversation, request.user, before_id=before_id, limit=limit
+        )
         return Response({
             "results": MessageSerializer(messages, many=True, context={"request": request}).data,
             "has_more": has_more,
@@ -211,6 +226,8 @@ class MessageListSendView(APIView):
                 text=serializer.validated_data["text"],
                 attachment_ids=serializer.validated_data["attachment_ids"],
                 reply_to_id=serializer.validated_data["reply_to_id"],
+                context_type=serializer.validated_data["context_type"],
+                context_id=serializer.validated_data["context_id"],
             )
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -218,6 +235,167 @@ class MessageListSendView(APIView):
         return Response(
             MessageSerializer(message, context={"request": request}).data, status=status.HTTP_201_CREATED
         )
+
+
+class MessageDetailView(APIView):
+    """
+    PATCH /api/chat/messages/<id>/ {text} — edit (sender only, text
+    messages only, not after deletion).
+    DELETE /api/chat/messages/<id>/ — "delete for everyone" (sender only):
+    the message becomes a tombstone visible to all participants, per
+    message_service.delete_message_for_everyone.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_message(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        if not is_participant(message.conversation_id, request.user):
+            raise Http404
+        return message
+
+    def patch(self, request, message_id):
+        message = self._get_message(request, message_id)
+        serializer = EditMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            message = message_service.edit_message(message, request.user, serializer.validated_data["text"])
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MessageSerializer(message, context={"request": request}).data)
+
+    def delete(self, request, message_id):
+        message = self._get_message(request, message_id)
+        try:
+            message = message_service.delete_message_for_everyone(message, request.user)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MessageSerializer(message, context={"request": request}).data)
+
+
+class MessageHideView(APIView):
+    """POST /api/chat/messages/<id>/hide/ — "delete for me": no effect on other participants."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        if not is_participant(message.conversation_id, request.user):
+            raise Http404
+        message_service.hide_message_for_me(message, request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MessagePinView(APIView):
+    """
+    POST /api/chat/messages/<id>/pin/ , DELETE to unpin — group owner/admin
+    only (spec #33). Pinning a private-conversation message doesn't mean
+    anything (no group info panel to surface it in), so it's rejected
+    outright rather than silently no-op'd.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_message(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        if message.conversation.type != ConversationType.GROUP:
+            raise Http404
+        # Not-a-participant and not-a-manager must look identical (404
+        # either way) — otherwise a 403-vs-404 split leaks which group
+        # message ids exist to someone who was never in that conversation.
+        if not is_participant(message.conversation_id, request.user):
+            raise Http404
+        if not group_service.is_manager(message.conversation, request.user):
+            return None
+        return message
+
+    def post(self, request, message_id):
+        message = self._get_message(request, message_id)
+        if message is None:
+            return Response(
+                {"detail": "Այս գործողությունը հասանելի է միայն խմբի ադմինիստրատորներին։"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        message = group_service.pin_message(message)
+        return Response(MessageSerializer(message, context={"request": request}).data)
+
+    def delete(self, request, message_id):
+        message = self._get_message(request, message_id)
+        if message is None:
+            return Response(
+                {"detail": "Այս գործողությունը հասանելի է միայն խմբի ադմինիստրատորներին։"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        message = group_service.unpin_message(message)
+        return Response(MessageSerializer(message, context={"request": request}).data)
+
+
+class ConversationPinnedMessagesView(APIView):
+    """GET /api/chat/conversations/<id>/pinned/ — every currently-pinned message, newest-pinned first."""
+
+    permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+
+    def get(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        self.check_object_permissions(request, conversation)
+        messages = group_service.list_pinned(conversation)
+        return Response(MessageSerializer(messages, many=True, context={"request": request}).data)
+
+
+class ConversationFilesView(APIView):
+    """GET /api/chat/conversations/<id>/files/ — every attachment ever sent in this conversation, newest first."""
+
+    permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+
+    def get(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        self.check_object_permissions(request, conversation)
+        files = conversation.attachments.filter(message__isnull=False).order_by("-uploaded_at")
+        return Response(AttachmentSerializer(files, many=True, context={"request": request}).data)
+
+
+class MessageReportView(APIView):
+    """POST /api/chat/messages/<id>/report/ {reason, details?} — flags a message for moderator review."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, message_id):
+        message = get_object_or_404(Message, pk=message_id)
+        if not is_participant(message.conversation_id, request.user):
+            raise Http404
+        serializer = MessageReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        MessageReport.objects.create(
+            message=message, reporter=request.user,
+            reason=serializer.validated_data["reason"], details=serializer.validated_data["details"],
+        )
+        return Response(status=status.HTTP_201_CREATED)
+
+
+class ConversationRequestListView(APIView):
+    """GET /api/chat/requests/ — the caller's own pending message requests (see spec #7/#50)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        conversations = conversation_service.list_requests(request.user)
+        return Response(ConversationSerializer(conversations, many=True, context={"request": request}).data)
+
+
+class ConversationRequestRespondView(APIView):
+    """POST /api/chat/requests/<id>/respond/ {action: accept|decline|block}."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        serializer = ConversationRequestRespondSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            conversation_service.respond_to_request(conversation, request.user, serializer.validated_data["action"])
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class MessageForwardView(APIView):
@@ -336,6 +514,32 @@ class ChatAttachmentDownloadView(APIView):
         )
 
 
+class AskAIView(APIView):
+    """
+    POST /api/chat/conversations/<id>/ask-ai/ {message_id} — "Ask Gitus AI"
+    on any message in the conversation (a question, a shared result card,
+    or just a chat message). Posts the answer back into the SAME
+    conversation as a message from the Gitus AI bot user, so it's visible
+    to every participant, not just whoever asked (spec #37).
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+
+    def post(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        self.check_object_permissions(request, conversation)
+
+        source_message = get_object_or_404(Message, pk=request.data.get("message_id"), conversation=conversation)
+        try:
+            ai_message = ai_service.ask_ai(conversation, source_message)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            MessageSerializer(ai_message, context={"request": request}).data, status=status.HTTP_201_CREATED
+        )
+
+
 class ConversationReadView(APIView):
     """
     POST /api/chat/conversations/<id>/read/ {message_id?} — REST
@@ -355,6 +559,54 @@ class ConversationReadView(APIView):
 
         conversation_service.attach_summary(conversation, request.user)
         return Response(ConversationSerializer(conversation, context={"request": request}).data)
+
+
+class ConversationPrefsView(APIView):
+    """
+    PATCH /api/chat/conversations/<id>/prefs/ {pinned?, muted?} — per-user
+    view preferences (see ConversationParticipant.pinned/muted). Any
+    participant can set their own; there's nothing here for anyone else to
+    touch, so no owner/admin check beyond membership.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+
+    def patch(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        self.check_object_permissions(request, conversation)
+
+        pinned = request.data.get("pinned")
+        muted = request.data.get("muted")
+        conversation_service.set_prefs(
+            conversation, request.user,
+            pinned=bool(pinned) if pinned is not None else None,
+            muted=bool(muted) if muted is not None else None,
+        )
+
+        conversation_service.attach_summary(conversation, request.user)
+        return Response(ConversationSerializer(conversation, context={"request": request}).data)
+
+
+class ChatSearchView(APIView):
+    """
+    GET /api/chat/search/?q=... — messages and files across every
+    conversation the caller participates in. People/group search reuses
+    apps.friends' existing user search and chat's own conversation-name
+    filter (listConversations?q=) rather than duplicating that here.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        if not query:
+            return Response({"messages": [], "files": []})
+
+        messages, files = conversation_service.search(request.user, query)
+        return Response({
+            "messages": MessageSearchResultSerializer(messages, many=True, context={"request": request}).data,
+            "files": AttachmentSearchResultSerializer(files, many=True, context={"request": request}).data,
+        })
 
 
 class UnreadCountView(APIView):

@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-004",
+  "title": "Անգլերեն — Բառապաշար 4",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Pragmatic",
+      "back": "dealing with things in a practical way rather than by theory",
+      "hint": "",
+      "translation": "գործնական"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Tenacious",
+      "back": "holding firmly to a purpose; not easily giving up",
+      "hint": "",
+      "translation": "հաստատակամ"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Diligent",
+      "back": "showing careful and persistent effort in work",
+      "hint": "",
+      "translation": "ջանասեր"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Cautious",
+      "back": "careful to avoid danger or mistakes",
+      "hint": "",
+      "translation": "զգույշ"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Frugal",
+      "back": "careful with money; avoiding unnecessary spending",
+      "hint": "",
+      "translation": "խնայող"
+    }
+  ]
+}

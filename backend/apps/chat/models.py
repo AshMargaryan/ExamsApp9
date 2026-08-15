@@ -30,6 +30,11 @@ def conversation_image_upload_path(instance, filename):
     return f"chat/conversation_images/{instance.pk or 'new'}/{unique_name}"
 
 
+class GroupPrivacy(models.TextChoices):
+    PUBLIC = "public", "Public"
+    PRIVATE = "private", "Private"
+
+
 class Conversation(models.Model):
     type = models.CharField(max_length=10, choices=ConversationType.choices)
     name = models.CharField(
@@ -39,6 +44,13 @@ class Conversation(models.Model):
         upload_to=conversation_image_upload_path, null=True, blank=True,
         help_text="Group photo. Unused for private conversations (the frontend shows the other user's avatar).",
     )
+    # Group-only metadata (spec #30) — blank/default for private conversations,
+    # same "one model, audience-agnostic" reasoning as the class docstring
+    # above rather than a separate StudyGroup model.
+    description = models.TextField(blank=True, default="")
+    subject = models.CharField(max_length=100, blank=True, default="")
+    grade = models.PositiveSmallIntegerField(null=True, blank=True)
+    privacy = models.CharField(max_length=10, choices=GroupPrivacy.choices, default=GroupPrivacy.PRIVATE)
 
     # Canonical "user_a_id_user_b_id" (smaller id first) for type=private —
     # NULL for groups. The unique constraint below is what actually
@@ -85,6 +97,19 @@ class ParticipantRole(models.TextChoices):
     MEMBER = "member", "Member"
 
 
+class RequestStatus(models.TextChoices):
+    """
+    Only meaningful for a PRIVATE conversation's non-initiating side when
+    the two users aren't friends (see conversation_service.get_or_create_private)
+    — "message requests" per spec #7/#50. Anyone already friends, or in a
+    group, is ACCEPTED from the start; there's no request gate to clear.
+    """
+
+    ACCEPTED = "accepted", "Accepted"
+    PENDING = "pending", "Pending"
+    DECLINED = "declined", "Declined"
+
+
 class ConversationParticipant(models.Model):
     """
     Membership row + per-user read cursor. `last_read_message` (rather than
@@ -105,6 +130,14 @@ class ConversationParticipant(models.Model):
         "Message", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     active = models.BooleanField(default=True)
+    # Per-user, not per-conversation — pinning/muting a shared group chat is
+    # a personal view preference, not something that should affect the
+    # other participants' inbox.
+    pinned = models.BooleanField(default=False)
+    muted = models.BooleanField(default=False)
+    request_status = models.CharField(
+        max_length=10, choices=RequestStatus.choices, default=RequestStatus.ACCEPTED
+    )
 
     class Meta:
         ordering = ["joined_at"]
@@ -130,6 +163,20 @@ class MessageType(models.TextChoices):
     VOICE = "voice", "Voice"
 
 
+class ContextType(models.TextChoices):
+    """
+    What a shared rich-content card refers to. Deliberately a small, closed
+    set (not a generic content-type framework) — each value maps to exactly
+    one builder function in services.context_service that knows how to
+    fetch + permission-check + snapshot that kind of object.
+    """
+
+    MOCK_EXAM_RESULT = "mock_exam_result", "Mock exam result"
+    ACHIEVEMENT = "achievement", "Achievement"
+    PROFILE = "profile", "Profile"
+    CHALLENGE = "challenge", "Challenge"
+
+
 class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages")
     # SET_NULL (not CASCADE): a group conversation's history shouldn't
@@ -149,12 +196,37 @@ class Message(models.Model):
     # Body text for TEXT messages; optional caption for IMAGE/FILE messages.
     text = models.TextField(blank=True, default="")
 
+    # A shared rich-content card (question/result/achievement/profile — see
+    # ContextType). context_id is the source object's id (e.g. a
+    # MockExamAttempt id); context_data is a snapshot built server-side at
+    # share time (services.context_service), never trusted from the client.
+    # Snapshotting means the card still renders correctly even if the
+    # source object later changes or is deleted, and the frontend never
+    # needs a second cross-app fetch (with its own permission check) just
+    # to paint the message.
+    context_type = models.CharField(max_length=20, choices=ContextType.choices, null=True, blank=True)
+    context_id = models.PositiveIntegerField(null=True, blank=True)
+    context_data = models.JSONField(null=True, blank=True)
+
+    # "Delete for me" — the message is untouched for everyone else; a
+    # viewer in this set just has it excluded from their own
+    # message_service.list_messages query. "Delete for everyone" is the
+    # existing deleted_at instead (visible to all as a tombstone).
+    hidden_for = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True, related_name="hidden_chat_messages"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     # Not used yet (no edit/delete endpoints in this phase) — included now
     # per the target schema so those features are a pure service+view
     # addition later, not a migration.
     edited_at = models.DateTimeField(null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    # Group-only (spec #33) — owner/admin pin a message so it surfaces in
+    # the group info panel regardless of how far it's scrolled into
+    # history. Nullable timestamp rather than a boolean so "most recently
+    # pinned first" is free.
+    pinned_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["id"]
@@ -250,3 +322,33 @@ class Attachment(models.Model):
 
     def __str__(self):
         return self.original_filename
+
+
+# ---------------------------------------------------------------------------
+# Moderation
+# ---------------------------------------------------------------------------
+
+class ReportReason(models.TextChoices):
+    SPAM = "spam", "Spam"
+    HARASSMENT = "harassment", "Harassment"
+    INAPPROPRIATE = "inappropriate", "Inappropriate content"
+    OTHER = "other", "Other"
+
+
+class MessageReport(models.Model):
+    """A user flagging a specific message for moderator review — no
+    automated action taken here (see spec #52: not solely AI-driven)."""
+
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="reports")
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_message_reports"
+    )
+    reason = models.CharField(max_length=20, choices=ReportReason.choices)
+    details = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Report by {self.reporter} on message {self.message_id} ({self.reason})"

@@ -1,0 +1,47 @@
+{
+  "deck_id": "FC-ENG-VOCAB-028",
+  "title": "Անգլերեն — Բառապաշար 28",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Deprive",
+      "back": "to prevent someone from having or enjoying something",
+      "hint": "",
+      "translation": "զրկել"
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Innate",
+      "back": "existing naturally in a person from birth",
+      "hint": "",
+      "translation": "բնածին"
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Meager",
+      "back": "lacking in quantity or quality; scanty",
+      "hint": "",
+      "translation": "սակավ"
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Anonymous",
+      "back": "not identified by name; of unknown identity",
+      "hint": "",
+      "translation": "անանուն"
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Sophisticated",
+      "back": "having a great deal of worldly experience or refinement",
+      "hint": "",
+      "translation": "նրբահյուս"
+    }
+  ]
+}

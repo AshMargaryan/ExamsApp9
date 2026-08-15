@@ -30,7 +30,7 @@ export function MultipleChoiceQuestion({
             classes = "border-incorrect bg-incorrect-bg text-incorrect";
           }
         } else if (isSelected) {
-          classes = "border-primary bg-surface-muted";
+          classes = "border-primary bg-primary text-primary-contrast";
         }
 
         return (

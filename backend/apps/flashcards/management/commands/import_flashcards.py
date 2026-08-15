@@ -62,6 +62,7 @@ class Command(BaseCommand):
                     front_text=c["front"],
                     back_text=c["back"],
                     hint=c.get("hint") or "",
+                    translation=c.get("translation") or "",
                 ),
             )
             seen_dataset_ids.append(dataset_id)

@@ -10,10 +10,17 @@ const SCROLL_TOP_THRESHOLD = 80;
 const NEAR_BOTTOM_THRESHOLD = 150;
 const HIGHLIGHT_DURATION_MS = 1500;
 
+const TYPING_EXPIRY_MS = 3000;
+
 export function ConversationView({ conversation }: { conversation: Conversation }) {
   const { user } = useAuth();
-  const { messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText, react } =
-    useConversationMessages(conversation.id);
+  const {
+    messages, hasMore, loadingInitial, loadingOlder, loadOlder, sendText, react,
+    editText, deleteForEveryone, hideForMe, sendTyping, typingEvent, readEvent, askAI, togglePin,
+  } = useConversationMessages(conversation.id);
+
+  const myRole = conversation.participants.find((p) => p.user.id === user?.id)?.role;
+  const canPin = conversation.type === "group" && (myRole === "owner" || myRole === "admin");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   // Set right before loadOlder() fires, so the post-render effect below can
@@ -29,11 +36,43 @@ export function ConversationView({ conversation }: { conversation: Conversation 
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [typingUser, setTypingUser] = useState<{ id: number; name: string } | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Seeded from the conversation's participant rows (their read cursor as
+  // of the last conversation-list fetch), then advanced live by "read" WS
+  // events — see readEvent effect below. Reset only on conversation
+  // switch, not on every parent re-render, so a live update doesn't get
+  // clobbered by a stale re-seed.
+  const [readState, setReadState] = useState<Record<number, number>>({});
 
   useEffect(() => {
     nearBottomRef.current = true;
     setReplyingTo(null);
+    const seed: Record<number, number> = {};
+    for (const p of conversation.participants) {
+      if (p.last_read_message_id != null) seed[p.user.id] = p.last_read_message_id;
+    }
+    setReadState(seed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.id]);
+
+  useEffect(() => {
+    if (!typingEvent || typingEvent.user_id === user?.id) return;
+    setTypingUser({ id: typingEvent.user_id, name: typingEvent.name });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => setTypingUser(null), TYPING_EXPIRY_MS);
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [typingEvent, user?.id]);
+
+  useEffect(() => {
+    if (!readEvent || readEvent.conversation_id !== conversation.id) return;
+    setReadState((prev) => ({
+      ...prev,
+      [readEvent.user_id]: Math.max(prev[readEvent.user_id] ?? 0, readEvent.last_read_message_id),
+    }));
+  }, [readEvent, conversation.id]);
 
   function handleScroll() {
     const el = scrollRef.current;
@@ -82,6 +121,17 @@ export function ConversationView({ conversation }: { conversation: Conversation 
     }
   }
 
+  // Read-receipt is shown on just the newest own message, not every
+  // bubble — matches spec's "subtle" guidance rather than a checkmark row
+  // on every line.
+  const lastOwnMessage = [...messages].reverse().find((m) => m.sender?.id === user?.id && !m.deleted_at);
+  const otherParticipantIds = conversation.participants
+    .filter((p) => p.user.id !== user?.id)
+    .map((p) => p.user.id);
+  const seenByOthers = lastOwnMessage
+    ? otherParticipantIds.some((id) => (readState[id] ?? 0) >= lastOwnMessage.id)
+    : false;
+
   return (
     <>
       <div ref={scrollRef} onScroll={handleScroll} className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-4">
@@ -109,16 +159,27 @@ export function ConversationView({ conversation }: { conversation: Conversation 
               onForward={() => setForwardingMessage(m)}
               onJumpToMessage={jumpToMessage}
               onReact={(emoji) => react(m.id, emoji)}
+              onEdit={(text) => editText(m.id, text)}
+              onDeleteForEveryone={() => deleteForEveryone(m.id)}
+              onDeleteForMe={() => hideForMe(m.id)}
+              onAskAI={() => askAI(m.id)}
+              canPin={canPin}
+              onTogglePin={() => togglePin(m.id, !m.pinned_at)}
+              receipt={own && lastOwnMessage?.id === m.id ? (seenByOthers ? "read" : "sent") : undefined}
             />
           );
         })}
       </div>
 
+      {typingUser && (
+        <p className="px-4 pb-1 text-xs italic text-text-muted">{typingUser.name}-ը գրում է...</p>
+      )}
       {error && <p className="px-4 pb-1 text-sm text-incorrect">{error}</p>}
       <div className="border-t border-border p-3">
         <MessageInput
           conversationId={conversation.id}
           onSend={handleSend}
+          onTyping={sendTyping}
           replyingTo={replyingTo}
           onCancelReply={() => setReplyingTo(null)}
         />

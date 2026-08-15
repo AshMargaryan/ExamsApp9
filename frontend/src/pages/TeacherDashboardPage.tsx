@@ -1,15 +1,20 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import * as teachingApi from "../api/teaching";
-import type { AssignmentType, StudentRosterEntry } from "../api/teaching";
+import type { AssignmentType, DashboardSummary, StudentRosterEntry } from "../api/teaching";
 import { listMockExams } from "../api/mockExams";
 import type { MockExamSummary } from "../api/mockExams";
 import { getHierarchy } from "../api/practice";
 import type { SubjectNode } from "../api/practice";
-import { StudentReviewPanel } from "../components/teaching/StudentReviewPanel";
+import { ActivityFeed } from "../components/teaching/ActivityFeed";
+import { ClassLeaderboard } from "../components/teaching/ClassLeaderboard";
+import { DashboardStatCards } from "../components/teaching/DashboardStatCards";
+import { PendingReviewQueue } from "../components/teaching/PendingReviewQueue";
 import { TeachingModal } from "../components/teaching/TeachingModal";
+import { WeakSpotsPanel } from "../components/teaching/WeakSpotsPanel";
 import { MessageModal } from "../components/MessageModal";
 import { SuccessModal } from "../components/SuccessModal";
+import { LinkButton } from "../components/ui/LinkButton";
 
 function StudentBox({ entry, onClick }: { entry: StudentRosterEntry; onClick: () => void }) {
   const { student, has_pending_review } = entry;
@@ -41,11 +46,13 @@ function StudentBox({ entry, onClick }: { entry: StudentRosterEntry; onClick: ()
 }
 
 export function TeacherDashboardPage() {
+  const navigate = useNavigate();
   const [roster, setRoster] = useState<StudentRosterEntry[] | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [tab, setTab] = useState<"overview" | "roster" | "leaderboard">("overview");
   const [mockExams, setMockExams] = useState<MockExamSummary[] | null>(null);
   const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
   const [teachingOpen, setTeachingOpen] = useState(false);
-  const [viewingStudentId, setViewingStudentId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
 
@@ -62,8 +69,13 @@ export function TeacherDashboardPage() {
     teachingApi.fetchStudentRoster().then(setRoster);
   }
 
+  function refreshSummary() {
+    teachingApi.fetchDashboardSummary().then(setSummary);
+  }
+
   useEffect(() => {
     refreshRoster();
+    refreshSummary();
     listMockExams().then(setMockExams);
     getHierarchy().then(setSubjects);
   }, []);
@@ -71,11 +83,7 @@ export function TeacherDashboardPage() {
   function handleTeachingClose() {
     setTeachingOpen(false);
     refreshRoster();
-  }
-
-  function handleReviewPanelClose() {
-    setViewingStudentId(null);
-    refreshRoster();
+    refreshSummary();
   }
 
   const subtopicOptions =
@@ -154,9 +162,7 @@ export function TeacherDashboardPage() {
     <div className="min-h-screen bg-bg px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
-          <Link to="/" className="text-sm text-primary hover:underline">
-            ← Գլխավոր
-          </Link>
+          <LinkButton to="/">← Գլխավոր</LinkButton>
           <h1 className="text-xl font-semibold text-text">Ուսուցչի վահանակ</h1>
           <button
             type="button"
@@ -167,111 +173,197 @@ export function TeacherDashboardPage() {
           </button>
         </div>
 
-        <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold text-text">Աշակերտներ {`(${roster.length})`}</h2>
-          {roster.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {roster.map((entry) => (
-                <StudentBox
-                  key={entry.student.id}
-                  entry={entry}
-                  onClick={() => setViewingStudentId(entry.student.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-              Դեռ կապակցված աշակերտներ չկան։ Օգտագործեք «Հրավիրել» կոճակը վերևում։
-            </p>
-          )}
-        </section>
+        <div className="mb-6 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setTab("overview")}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              tab === "overview"
+                ? "border-primary bg-surface-muted text-primary"
+                : "border-border text-text-muted hover:border-primary"
+            }`}
+          >
+            ⚡ Ակնարկ
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("roster")}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              tab === "roster"
+                ? "border-primary bg-surface-muted text-primary"
+                : "border-border text-text-muted hover:border-primary"
+            }`}
+          >
+            Ուսանողներ
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("leaderboard")}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              tab === "leaderboard"
+                ? "border-primary bg-surface-muted text-primary"
+                : "border-border text-text-muted hover:border-primary"
+            }`}
+          >
+            🏆 Դասակարգում
+          </button>
+        </div>
 
-        <section className="rounded-[var(--radius)] border border-border bg-surface p-6">
-          <h2 className="mb-4 text-lg font-semibold text-text">Նոր առաջադրանք</h2>
-          <form onSubmit={handleCreateAssignment} className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Աշակերտ</label>
-              <select className={inputClass} value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-                <option value="">Ընտրեք աշակերտ</option>
-                {roster.map((entry) => (
-                  <option key={entry.student.id} value={entry.student.id}>
-                    {[entry.student.first_name, entry.student.last_name].filter(Boolean).join(" ") ||
-                      entry.student.username}
-                  </option>
-                ))}
-              </select>
+        {tab === "overview" && (
+          <div className="flex flex-col gap-8">
+            {summary ? (
+              <DashboardStatCards stats={summary.stats} />
+            ) : (
+              <p className="text-text-muted">Բեռնվում է...</p>
+            )}
+
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-text">📥 Ստուգման սպասող</h2>
+              {summary ? (
+                <PendingReviewQueue items={summary.pending_review} />
+              ) : (
+                <p className="text-text-muted">Բեռնվում է...</p>
+              )}
+            </section>
+
+            <div className="grid gap-8 sm:grid-cols-2">
+              <section>
+                <h2 className="mb-3 text-lg font-semibold text-text">🎯 Դասարանի թույլ կողմերը</h2>
+                {summary ? (
+                  <WeakSpotsPanel spots={summary.weak_spots} />
+                ) : (
+                  <p className="text-text-muted">Բեռնվում է...</p>
+                )}
+              </section>
+
+              <section>
+                <h2 className="mb-3 text-lg font-semibold text-text">🕒 Վերջին ակտիվությունը</h2>
+                {summary ? (
+                  <ActivityFeed events={summary.activity_feed} />
+                ) : (
+                  <p className="text-text-muted">Բեռնվում է...</p>
+                )}
+              </section>
             </div>
-            <div>
-              <label className={labelClass}>Տեսակ</label>
-              <select
-                className={inputClass}
-                value={assignmentType}
-                onChange={(e) => {
-                  setAssignmentType(e.target.value as AssignmentType);
-                  setTargetId("");
-                }}
-              >
-                <option value="subtopic">Ենթաթեմա</option>
-                <option value="topic">Թեմա</option>
-                <option value="mock_exam">Ամբողջական թեստ</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass}>
-                {assignmentType === "mock_exam" ? "Թեստ" : assignmentType === "topic" ? "Թեմա" : "Ենթաթեմա"}
-              </label>
-              <select className={inputClass} value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-                <option value="">Ընտրեք</option>
-                {targetOptions.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Վերնագիր (ընտրովի)</label>
-              <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Հաղորդագրություն (ընտրովի)</label>
-              <textarea
-                className={`${inputClass} min-h-20 resize-y`}
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Վերջնաժամկետ</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={dueDate}
-                  disabled={noDeadline}
-                  onChange={(e) => setDueDate(e.target.value)}
-                />
-                <label className="flex shrink-0 items-center gap-2 text-sm text-text-muted">
-                  <input
-                    type="checkbox"
-                    checked={noDeadline}
-                    onChange={(e) => setNoDeadline(e.target.checked)}
+          </div>
+        )}
+
+        {tab === "roster" && (
+          <>
+            <section className="mb-8">
+              <h2 className="mb-3 text-lg font-semibold text-text">Աշակերտներ {`(${roster.length})`}</h2>
+              {roster.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  {roster.map((entry) => (
+                    <StudentBox
+                      key={entry.student.id}
+                      entry={entry}
+                      onClick={() => navigate(`/profile/${entry.student.id}`)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
+                  Դեռ կապակցված աշակերտներ չկան։ Օգտագործեք «Հրավիրել» կոճակը վերևում։
+                </p>
+              )}
+            </section>
+
+            <section className="rounded-[var(--radius)] border border-border bg-surface p-6">
+              <h2 className="mb-4 text-lg font-semibold text-text">Նոր առաջադրանք</h2>
+              <form onSubmit={handleCreateAssignment} className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Աշակերտ</label>
+                  <select className={inputClass} value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+                    <option value="">Ընտրեք աշակերտ</option>
+                    {roster.map((entry) => (
+                      <option key={entry.student.id} value={entry.student.id}>
+                        {[entry.student.first_name, entry.student.last_name].filter(Boolean).join(" ") ||
+                          entry.student.username}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Տեսակ</label>
+                  <select
+                    className={inputClass}
+                    value={assignmentType}
+                    onChange={(e) => {
+                      setAssignmentType(e.target.value as AssignmentType);
+                      setTargetId("");
+                    }}
+                  >
+                    <option value="subtopic">Ենթաթեմա</option>
+                    <option value="topic">Թեմա</option>
+                    <option value="mock_exam">Ամբողջական թեստ</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>
+                    {assignmentType === "mock_exam" ? "Թեստ" : assignmentType === "topic" ? "Թեմա" : "Ենթաթեմա"}
+                  </label>
+                  <select className={inputClass} value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+                    <option value="">Ընտրեք</option>
+                    {targetOptions.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Վերնագիր (ընտրովի)</label>
+                  <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Հաղորդագրություն (ընտրովի)</label>
+                  <textarea
+                    className={`${inputClass} min-h-20 resize-y`}
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
                   />
-                  Առանց վերջնաժամկետի
-                </label>
-              </div>
-            </div>
-            <div className="flex items-end sm:col-span-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-md bg-primary px-6 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-              >
-                {submitting ? "..." : "Հանձնարարել"}
-              </button>
-            </div>
-          </form>
-        </section>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Վերջնաժամկետ</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="date"
+                      className={inputClass}
+                      value={dueDate}
+                      disabled={noDeadline}
+                      onChange={(e) => setDueDate(e.target.value)}
+                    />
+                    <label className="flex shrink-0 items-center gap-2 text-sm text-text-muted">
+                      <input
+                        type="checkbox"
+                        checked={noDeadline}
+                        onChange={(e) => setNoDeadline(e.target.checked)}
+                      />
+                      Առանց վերջնաժամկետի
+                    </label>
+                  </div>
+                </div>
+                <div className="flex items-end sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="rounded-md bg-primary px-6 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+                  >
+                    {submitting ? "..." : "Հանձնարարել"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          </>
+        )}
+
+        {tab === "leaderboard" && (
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-text">🏆 Դասարանի դասակարգում (այս ամիս)</h2>
+            <ClassLeaderboard onSelectStudent={(id) => navigate(`/profile/${id}`)} />
+          </section>
+        )}
       </div>
 
       {error && <MessageModal message={error} onClose={() => setError(null)} />}
@@ -283,9 +375,6 @@ export function TeacherDashboardPage() {
       )}
       {teachingOpen && (
         <TeachingModal role="teacher" onClose={handleTeachingClose} onChange={refreshRoster} />
-      )}
-      {viewingStudentId !== null && (
-        <StudentReviewPanel studentId={viewingStudentId} onClose={handleReviewPanelClose} />
       )}
     </div>
   );

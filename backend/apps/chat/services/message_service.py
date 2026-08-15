@@ -1,15 +1,43 @@
+import re
+
 from django.db import transaction
 from django.utils import timezone
 
-from ..models import Attachment, AttachmentType, Conversation, ConversationParticipant, Message, MessageType
-from . import realtime
+from apps.friends.services import is_blocked
+from apps.notifications.models import NotificationType
+from apps.notifications.services import create_notification
+
+from ..models import (
+    Attachment, AttachmentType, Conversation, ConversationParticipant, ConversationType, Message, MessageType,
+)
+from . import context_service, realtime
 
 DEFAULT_PAGE_SIZE = 30
 MAX_PAGE_SIZE = 100
 
+MENTION_PATTERN = re.compile(r"@(\w+)")
+
+
+def _notify_mentions(message: Message) -> None:
+    usernames = set(MENTION_PATTERN.findall(message.text))
+    if not usernames or message.sender_id is None:
+        return
+    mentioned = (
+        ConversationParticipant.objects.filter(
+            conversation=message.conversation, active=True, user__username__in=usernames,
+        )
+        .exclude(user_id=message.sender_id)
+        .select_related("user")
+    )
+    sender_name = message.sender.first_name or message.sender.username
+    for participant in mentioned:
+        create_notification(
+            participant.user, NotificationType.MENTION, f"{sender_name} նշեց ձեզ չաթում", link="/chat",
+        )
+
 
 def list_messages(
-    conversation: Conversation, before_id: int | None = None, limit: int = DEFAULT_PAGE_SIZE,
+    conversation: Conversation, user, before_id: int | None = None, limit: int = DEFAULT_PAGE_SIZE,
 ) -> tuple[list[Message], bool]:
     """
     Cursor pagination for "load newest, then infinite-scroll upward" — NOT
@@ -18,11 +46,16 @@ def list_messages(
     everything at or after that message id; omit it for the newest page.
     Returns (messages, has_more) with messages already in chronological
     (oldest-first) order, ready to prepend/render directly.
+
+    Excludes messages `user` chose "delete for me" on (Message.hidden_for)
+    — a per-viewer filter, so this can't be cached/shared across users the
+    way the rest of the conversation's history effectively is.
     """
     limit = max(1, min(limit, MAX_PAGE_SIZE))
 
     qs = (
-        conversation.messages.select_related("sender", "reply_to", "reply_to__sender")
+        conversation.messages.exclude(hidden_for=user)
+        .select_related("sender", "reply_to", "reply_to__sender")
         .prefetch_related("attachments", "reactions__user")
         .order_by("-id")
     )
@@ -48,7 +81,7 @@ def _resolve_message_type(attachments: list[Attachment]) -> str:
 
 def send_message(
     conversation: Conversation, sender, text: str = "", attachment_ids: list[int] | None = None,
-    reply_to_id: int | None = None,
+    reply_to_id: int | None = None, context_type: str | None = None, context_id: int | None = None,
 ) -> Message:
     """
     The single place a chat Message gets created — called by both
@@ -57,9 +90,34 @@ def send_message(
     real-time broadcast never drift between the two paths. See
     realtime.broadcast_message for the "however it's created, every
     connected participant sees it instantly" part.
+
+    context_type/context_id (a shared question/result/achievement/profile
+    card) is resolved to a snapshot via context_service *before* anything
+    is written — a bad reference raises ValueError and nothing is created,
+    same failure mode as an empty message.
     """
     text = (text or "").strip()
     attachment_ids = attachment_ids or []
+
+    # A block created *after* a private conversation already exists must
+    # still stop messages both ways — get_or_create_private only guards
+    # the door at creation time, so this is the other half of "blocked
+    # users cannot bypass it through alternate chat routes."  Groups are
+    # exempt: leaving/removing a blocked member from a shared group is a
+    # moderation action, not something a 1:1 block should silently do.
+    if conversation.type == ConversationType.PRIVATE:
+        other = (
+            ConversationParticipant.objects.filter(conversation=conversation, active=True)
+            .exclude(user=sender)
+            .select_related("user")
+            .first()
+        )
+        if other is not None and is_blocked(sender, other.user):
+            raise ValueError("Հնարավոր չէ հաղորդագրություն ուղարկել այս օգտատիրոջը։")
+
+    context_data = None
+    if context_type is not None:
+        context_data = context_service.build_context_data(context_type, context_id, sender)
 
     with transaction.atomic():
         # Locking to this sender + not-yet-attached avoids one user's
@@ -70,7 +128,7 @@ def send_message(
                 id__in=attachment_ids, conversation=conversation, uploaded_by=sender, message__isnull=True,
             )
         )
-        if not text and not attachments:
+        if not text and not attachments and not context_data:
             raise ValueError("Հաղորդագրությունը դատարկ է։")
 
         # Only honored if the target is actually in this conversation —
@@ -83,6 +141,7 @@ def send_message(
         message = Message.objects.create(
             conversation=conversation, sender=sender, text=text,
             message_type=_resolve_message_type(attachments), reply_to=reply_to,
+            context_type=context_type, context_id=context_id, context_data=context_data,
         )
         if attachments:
             Attachment.objects.filter(id__in=[a.id for a in attachments]).update(message=message)
@@ -97,7 +156,40 @@ def send_message(
 
     message.refresh_from_db()
     realtime.broadcast_message(message)
+    _notify_mentions(message)
     return message
+
+
+def edit_message(message: Message, user, text: str) -> Message:
+    if message.sender_id != user.id:
+        raise ValueError("Կարող եք խմբագրել միայն սեփական հաղորդագրությունները։")
+    if message.deleted_at is not None:
+        raise ValueError("Ջնջված հաղորդագրությունը հնարավոր չէ խմբագրել։")
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("Հաղորդագրությունը դատարկ է։")
+
+    message.text = text
+    message.edited_at = timezone.now()
+    message.save(update_fields=["text", "edited_at"])
+    realtime.broadcast_message(message)
+    return message
+
+
+def delete_message_for_everyone(message: Message, user) -> Message:
+    if message.sender_id != user.id:
+        raise ValueError("Կարող եք ջնջել միայն սեփական հաղորդագրությունները։")
+    if message.deleted_at is None:
+        message.text = ""
+        message.deleted_at = timezone.now()
+        message.save(update_fields=["text", "deleted_at"])
+        realtime.broadcast_message(message)
+    return message
+
+
+def hide_message_for_me(message: Message, user) -> None:
+    """"Delete for me" — no broadcast, since nothing changed for anyone else."""
+    message.hidden_for.add(user)
 
 
 def forward_message(original: Message, target_conversation: Conversation, sender) -> Message:

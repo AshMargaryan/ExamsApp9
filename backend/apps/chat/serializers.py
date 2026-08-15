@@ -5,7 +5,10 @@ from rest_framework.reverse import reverse
 
 from apps.friends.serializers import MiniUserSerializer
 
-from .models import Attachment, Conversation, ConversationParticipant, ConversationType, Message, MessageReaction
+from .models import (
+    Attachment, ContextType, Conversation, ConversationParticipant, ConversationType, GroupPrivacy, Message,
+    MessageReaction, ReportReason,
+)
 from .services import conversation_service
 from .validators import validate_attachment_file
 
@@ -17,7 +20,7 @@ class ConversationParticipantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ConversationParticipant
-        fields = ["id", "user", "role", "joined_at", "active"]
+        fields = ["id", "user", "role", "joined_at", "active", "last_read_message_id"]
 
 
 class AttachmentSerializer(serializers.ModelSerializer):
@@ -101,7 +104,7 @@ class MessageReactionSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = MiniUserSerializer(read_only=True)
-    attachments = AttachmentSerializer(many=True, read_only=True)
+    attachments = serializers.SerializerMethodField()
     reply_to = ReplyPreviewSerializer(read_only=True)
     reactions = MessageReactionSerializer(many=True, read_only=True)
 
@@ -109,8 +112,19 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = [
             "id", "conversation", "sender", "message_type", "text",
-            "attachments", "reply_to", "reactions", "created_at", "edited_at", "deleted_at",
+            "attachments", "reply_to", "reactions", "created_at", "edited_at", "deleted_at", "pinned_at",
+            "context_type", "context_id", "context_data",
         ]
+
+    def get_attachments(self, obj):
+        # A "delete for everyone" tombstone (deleted_at set) hides the
+        # original files too — the Attachment rows themselves are left
+        # alone (ChatAttachmentDownloadView still gates on conversation
+        # membership regardless), this just stops the deleted bubble from
+        # rendering them.
+        if obj.deleted_at is not None:
+            return []
+        return AttachmentSerializer(obj.attachments.all(), many=True, context=self.context).data
 
 
 class LastMessagePreviewSerializer(serializers.ModelSerializer):
@@ -118,7 +132,7 @@ class LastMessagePreviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ["id", "message_type", "text", "sender", "created_at"]
+        fields = ["id", "message_type", "text", "sender", "created_at", "context_type"]
 
 
 class ConversationSerializer(serializers.ModelSerializer):
@@ -134,12 +148,15 @@ class ConversationSerializer(serializers.ModelSerializer):
     participants = ConversationParticipantSerializer(source="memberships", many=True, read_only=True)
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
+    pinned = serializers.SerializerMethodField()
+    muted = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
         fields = [
-            "id", "type", "name", "image", "other_participant", "participants",
-            "last_message", "unread_count", "created_at", "updated_at",
+            "id", "type", "name", "image", "description", "subject", "grade", "privacy",
+            "other_participant", "participants",
+            "last_message", "unread_count", "pinned", "muted", "created_at", "updated_at",
         ]
 
     def get_other_participant(self, obj):
@@ -155,6 +172,17 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     def get_unread_count(self, obj) -> int:
         return getattr(obj, "_unread_count", 0)
+
+    # Both read from the same _my_membership stash as unread_count — see
+    # conversation_service._attach_unread_counts — rather than a second
+    # per-conversation query.
+    def get_pinned(self, obj) -> bool:
+        membership = getattr(obj, "_my_membership", None)
+        return bool(membership and membership.pinned)
+
+    def get_muted(self, obj) -> bool:
+        membership = getattr(obj, "_my_membership", None)
+        return bool(membership and membership.muted)
 
 
 class CreatePrivateConversationSerializer(serializers.Serializer):
@@ -172,6 +200,10 @@ class CreateGroupConversationSerializer(serializers.Serializer):
     participant_ids = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), many=True, allow_empty=True,
     )
+    description = serializers.CharField(required=False, allow_blank=True, default="")
+    subject = serializers.CharField(required=False, allow_blank=True, default="")
+    grade = serializers.IntegerField(required=False, allow_null=True, default=None)
+    privacy = serializers.ChoiceField(choices=GroupPrivacy.choices, required=False, default=GroupPrivacy.PRIVATE)
 
     def validate_participant_ids(self, value):
         return [u.id for u in value]
@@ -188,10 +220,77 @@ class SendMessageSerializer(serializers.Serializer):
     text = serializers.CharField(required=False, allow_blank=True, default="")
     attachment_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
     reply_to_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    # The client only ever names *what* it wants to share (type + source id)
+    # — the actual card content (context_data on the Message) is always
+    # rebuilt server-side from these in services.context_service, never
+    # accepted from the request body, so a client can't forge a fake
+    # score/achievement/profile card.
+    context_type = serializers.ChoiceField(choices=ContextType.choices, required=False, allow_null=True, default=None)
+    context_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+
+    def validate(self, attrs):
+        if bool(attrs.get("context_type")) != bool(attrs.get("context_id")):
+            raise serializers.ValidationError("context_type և context_id պետք է նշվեն միասին։")
+        return attrs
+
+
+class EditMessageSerializer(serializers.Serializer):
+    text = serializers.CharField(trim_whitespace=True)
+
+
+class MessageReportSerializer(serializers.Serializer):
+    reason = serializers.ChoiceField(choices=ReportReason.choices)
+    details = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class ConversationRequestRespondSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["accept", "decline", "block"])
 
 
 class GroupSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
-        fields = ["name", "image"]
-        extra_kwargs = {"name": {"required": False}, "image": {"required": False}}
+        fields = ["name", "image", "description", "subject", "grade", "privacy"]
+        extra_kwargs = {
+            "name": {"required": False}, "image": {"required": False}, "description": {"required": False},
+            "subject": {"required": False}, "grade": {"required": False}, "privacy": {"required": False},
+        }
+
+
+class ConversationRefSerializer(serializers.ModelSerializer):
+    """Trimmed conversation identity for search results — just enough to title a result row and link to it."""
+
+    other_participant = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Conversation
+        fields = ["id", "type", "name", "image", "other_participant"]
+
+    def get_other_participant(self, obj):
+        if obj.type != ConversationType.PRIVATE:
+            return None
+        other = conversation_service.other_participant(obj, self.context["request"].user)
+        return MiniUserSerializer(other, context=self.context).data if other else None
+
+
+class MessageSearchResultSerializer(serializers.ModelSerializer):
+    sender = MiniUserSerializer(read_only=True)
+    conversation = ConversationRefSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ["id", "conversation", "sender", "text", "created_at"]
+
+
+class AttachmentSearchResultSerializer(serializers.ModelSerializer):
+    conversation = ConversationRefSerializer(read_only=True)
+    download_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Attachment
+        fields = ["id", "conversation", "file_type", "original_filename", "file_size", "download_url", "uploaded_at"]
+
+    def get_download_url(self, obj) -> str:
+        request = self.context.get("request")
+        path = reverse("chat_attachment_download", kwargs={"pk": obj.pk})
+        return request.build_absolute_uri(path) if request else f"{settings.BACKEND_URL}{path}"

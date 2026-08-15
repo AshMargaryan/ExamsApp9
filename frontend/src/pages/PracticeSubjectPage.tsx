@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
-import { getHierarchy, MATH_SUBJECT_NAME, type SubjectNode } from "../api/practice";
+import { getHierarchy, type SubjectNode } from "../api/practice";
 import { AmbientBackground } from "../components/hierarchy/AmbientBackground";
 import { ConnectionLines } from "../components/hierarchy/ConnectionLines";
 import { HierarchyNode } from "../components/hierarchy/HierarchyNode";
@@ -12,8 +12,7 @@ import {
   INTRO_GLYPH,
   type NodeVisual,
 } from "../components/hierarchy/hierarchyLayout";
-import { ToolsDock } from "../components/ToolsDock";
-import { NotepadProvider } from "../context/NotepadContext";
+import { LinkButton } from "../components/ui/LinkButton";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 
 // Re-settles the entrance animation on every level change: briefly drop to
@@ -127,13 +126,7 @@ export function PracticeSubjectPage() {
     return (
       <div className="p-8">
         <p className="text-lg text-text-muted">Առարկան չի գտնվել։</p>
-        <button
-          type="button"
-          onClick={() => navigate("/practice")}
-          className="text-sm text-primary hover:underline"
-        >
-          ← Առարկաներ
-        </button>
+        <LinkButton to="/practice">← Առարկաներ</LinkButton>
       </div>
     );
   }
@@ -141,8 +134,6 @@ export function PracticeSubjectPage() {
   if (!subject) {
     return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
   }
-
-  const isMath = subject.name === MATH_SUBJECT_NAME;
 
   const layout = computeLayout({
     domains: subject.domains,
@@ -220,7 +211,6 @@ export function PracticeSubjectPage() {
         : "Ընտրեք ենթաթեմա՝ դասը բացելու համար · սեղմեք կենտրոնական հանգույցը՝ հետ գնալու համար";
 
   return (
-    <NotepadProvider>
       <div
         style={{
           position: "fixed",
@@ -410,9 +400,6 @@ export function PracticeSubjectPage() {
           />
         )}
       </div>
-
-      {isMath && <ToolsDock />}
-    </NotepadProvider>
   );
 }
 
