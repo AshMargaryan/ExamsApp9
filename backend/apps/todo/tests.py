@@ -102,7 +102,7 @@ class DashboardTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 8)
         names = {c["name"] for c in resp.data}
-        self.assertIn("School", names)
+        self.assertIn("Դպրոց", names)
 
 
 class RecurrenceTests(TestCase):
