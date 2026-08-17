@@ -3,14 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the Capacitor iOS build paint under the notch and
+         home indicator; the --safe-* tokens in theme.css inset content back out. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
 
     <title>Gitus — AI ուսումնական հարթակ դպրոցականների համար</title>
     <meta
       name="description"
       content="Gitus-ը օգնում է հասկանալ բարդ թեմաները, պատրաստվել քննություններին և կառուցել քո առաջընթացը՝ AI Tutor-ի, իրական թեստերի և անհատական ուսումնական պլանի միջոցով։"
     />
-    <meta name="theme-color" content="#1a1a1a" />
+    <!-- Matches --color-bg so the iOS status-bar area and any browser chrome
+         sit on the same black the app paints. -->
+    <meta name="theme-color" content="#000000" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Gitus" />

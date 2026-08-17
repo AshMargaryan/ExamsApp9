@@ -1,0 +1,49 @@
+{
+  "deck_id": "FC-ENG-GRAM-004",
+  "title": "Անգլերեն — Քերականություն 4",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Which of these is grammatically uncountable in English (no plural form)?",
+      "back": "furniture",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "\"The number of students ___ increased.\" vs \"A number of students ___ failed.\" Correct verbs are:",
+      "back": "has / have",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "\"Of the two candidates, Maria is ___ qualified.\" Comparing exactly two things uses:",
+      "back": "the more (not \"the most\")",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "Inside an \"as...as\" comparison, the adjective must be in its:",
+      "back": "base form (\"as good as\", not \"as better as\")",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Which verb normally does NOT take a reflexive pronoun in English (unlike in many other languages)?",
+      "back": "relax",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "",
+      "front": "\"Tom and Sarah blamed ___ for the argument.\" (mutual action between two people) needs:",
+      "back": "each other",
+      "hint": ""
+    }
+  ]
+}

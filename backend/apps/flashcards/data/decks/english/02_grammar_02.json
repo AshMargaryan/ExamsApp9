@@ -1,0 +1,42 @@
+{
+  "deck_id": "FC-ENG-GRAM-002",
+  "title": "Անգլերեն — Քերականություն 2",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "\"No one had entered the building in over a decade.\" Why Past Perfect Simple, not Continuous, despite the long duration?",
+      "back": "it states one complete fact/absence, not an ongoing process",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "\"Look at those dark clouds! It ___ rain.\" Prediction based on visible present evidence uses:",
+      "back": "is going to",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "\"By next December, the crew ___ the bridge.\" (complete) — action finished before a future point uses:",
+      "back": "will have completed",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "\"The old warehouse ___ at the moment.\" (renovate) — ongoing passive action needs:",
+      "back": "is being renovated",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "After a modal verb, the passive is always formed as:",
+      "back": "modal + be + past participle",
+      "hint": ""
+    }
+  ]
+}

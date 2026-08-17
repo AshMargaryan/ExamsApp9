@@ -158,6 +158,7 @@ class DocumentDuplicateView(APIView):
         copy = Document.objects.create(
             user=request.user,
             folder=doc.folder,
+            kind=doc.kind,
             title=f"{doc.title} (պատճեն)" if doc.title else "(պատճեն)",
             icon=doc.icon,
             content=doc.content,

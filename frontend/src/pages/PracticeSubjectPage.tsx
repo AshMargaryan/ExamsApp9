@@ -165,7 +165,10 @@ export function PracticeSubjectPage() {
       glyph: INTRO_GLYPH,
       accent: accentFor(domainIndex),
       x: small ? 64 : 96,
-      y: small ? 96 : 120,
+      // Pushed below the breadcrumb/back-button row (header row starts at
+      // top:64 and runs to roughly y=115-130) so the two never overlap —
+      // they used to collide directly before this offset existed.
+      y: small ? 150 : 184,
       size: small ? 64 : 78,
       scale: draw,
       opacity: draw,
@@ -174,6 +177,7 @@ export function PracticeSubjectPage() {
       active: false,
       interactive: draw >= 0.6,
       pct: null,
+      order: null,
       onSelect: () => setIntroOpen("domain"),
     });
   }
@@ -185,7 +189,7 @@ export function PracticeSubjectPage() {
       glyph: INTRO_GLYPH,
       accent: accentFor(domainIndex),
       x: w - (small ? 64 : 96),
-      y: small ? 96 : 120,
+      y: small ? 150 : 184,
       size: small ? 64 : 78,
       scale: draw,
       opacity: draw,
@@ -194,6 +198,7 @@ export function PracticeSubjectPage() {
       active: false,
       interactive: draw >= 0.6,
       pct: null,
+      order: null,
       onSelect: () => setIntroOpen("topic"),
     });
   }
@@ -307,8 +312,13 @@ export function PracticeSubjectPage() {
             position: "absolute",
             left: 0,
             right: 0,
-            top: 0,
-            padding: small ? "20px 20px" : "30px 40px",
+            // The app shell's <header> is fixed/z-50/h-16 (64px) and painted
+            // opaque over route content — position:fixed;inset:0 above opts
+            // this page out of the normal ProtectedRoute "pt-16" clearance,
+            // so this row must clear it itself or it renders (and hit-tests)
+            // underneath the shell header, unreachable.
+            top: 64,
+            padding: small ? "16px 20px" : "22px 40px",
             display: "flex",
             alignItems: "baseline",
             justifyContent: "space-between",
@@ -316,7 +326,31 @@ export function PracticeSubjectPage() {
             pointerEvents: "none",
           }}
         >
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, pointerEvents: "auto", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, pointerEvents: "auto", flexWrap: "wrap" }}>
+            {level !== "domain" && (
+              <button
+                type="button"
+                onClick={() => (level === "subtopic" ? selectTopic(null) : selectDomain(null))}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontFamily: "'JetBrains Mono', system-ui, monospace",
+                  fontSize: 11,
+                  letterSpacing: ".08em",
+                  color: "rgba(232,236,244,.86)",
+                  background: "rgba(232,236,244,.08)",
+                  border: "1px solid rgba(232,236,244,.18)",
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  padding: "7px 14px 7px 10px",
+                }}
+              >
+                <span aria-hidden style={{ fontSize: 14 }}>←</span>
+                Հետ
+              </button>
+            )}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
             <button
               type="button"
               onClick={() => navigate("/practice")}
@@ -339,6 +373,7 @@ export function PracticeSubjectPage() {
               <Crumb label={selectedDomain.name} active={!selectedTopic} onClick={() => selectTopic(null)} />
             )}
             {selectedTopic && <Crumb label={selectedTopic.name} active clickable={false} />}
+            </div>
           </div>
           <div
             style={{
@@ -368,13 +403,16 @@ export function PracticeSubjectPage() {
           <div
             style={{
               fontFamily: "'Space Grotesk', system-ui, sans-serif",
-              fontWeight: 300,
-              fontSize: 13,
-              letterSpacing: ".04em",
-              color: "rgba(232,236,244,.34)",
+              fontWeight: 400,
+              fontSize: 15,
+              letterSpacing: ".02em",
+              color: "rgba(232,236,244,.82)",
+              background: leavingSubtopicId ? "transparent" : "rgba(232,236,244,.07)",
+              border: leavingSubtopicId ? "none" : "1px solid rgba(232,236,244,.14)",
+              borderRadius: 999,
+              padding: leavingSubtopicId ? "0 16px" : "8px 20px",
               transition: "color 400ms ease",
               textAlign: "center",
-              padding: "0 16px",
             }}
           >
             {leavingSubtopicId ? `Բացվում է՝ ${leavingSubtopicName ?? ""}...` : hint}

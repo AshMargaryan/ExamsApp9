@@ -1,4 +1,4 @@
-import random
+import secrets
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -7,7 +7,7 @@ ICON_URL = f"{settings.BACKEND_URL}/static/email/icon.png"
 
 
 def generate_verification_code() -> str:
-    return f"{random.randint(0, 999999):06d}"
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def _send_email_with_icon(subject: str, text_body: str, to_email: str) -> None:

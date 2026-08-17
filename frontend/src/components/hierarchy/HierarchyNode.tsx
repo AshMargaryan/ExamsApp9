@@ -1,11 +1,17 @@
 import { hexRgb } from "./hierarchyLayout";
 import type { NodeVisual } from "./hierarchyLayout";
 
+// Armenian domain/topic/subtopic names run much longer than the design's
+// English placeholders — often 30-60+ characters. The old floor (0.64) plus
+// a 2-line clamp made long titles shrink to near-illegible size and still
+// truncate. Gentler floor + a 3rd line (below) keeps names actually
+// readable instead of just technically present.
 function lengthScale(charCount: number): number {
   if (charCount <= 10) return 1;
-  if (charCount <= 16) return 0.86;
-  if (charCount <= 24) return 0.74;
-  return 0.64;
+  if (charCount <= 18) return 0.92;
+  if (charCount <= 30) return 0.82;
+  if (charCount <= 45) return 0.74;
+  return 0.68;
 }
 
 // One node in the spatial hierarchy map — domain, topic, subtopic, or the
@@ -31,10 +37,10 @@ export function HierarchyNode({ node }: { node: NodeVisual }) {
   // Armenian domain/topic/subtopic names run considerably longer than the
   // design's English placeholders (e.g. "Փոխակերպումներ և կապակցում" vs
   // "Algebra") — a fixed font size let long names spill past the node's
-  // circular border. Scale down for longer names, then hard-clip to 2
+  // circular border. Scale down for longer names, then hard-clip to 3
   // lines with an ellipsis so anything still too long truncates cleanly
   // instead of overflowing the circle.
-  const baseNameSize = Math.max(node.kind === "intro" ? 11 : 13, node.size * 0.115);
+  const baseNameSize = Math.max(node.kind === "intro" ? 11 : 14, node.size * 0.13);
   const nameSize = Math.round(baseNameSize * lengthScale(node.name.length));
 
   return (
@@ -56,6 +62,32 @@ export function HierarchyNode({ node }: { node: NodeVisual }) {
       role="button"
       aria-label={node.name}
     >
+      {node.order !== null && !node.active && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: "2%",
+            left: "2%",
+            minWidth: Math.round(node.size * 0.16),
+            height: Math.round(node.size * 0.16),
+            padding: "0 4px",
+            borderRadius: 999,
+            background: hexRgb(node.accent, 0.92),
+            color: "#0a0c12",
+            fontFamily: "'JetBrains Mono', system-ui, monospace",
+            fontWeight: 700,
+            fontSize: Math.max(10, Math.round(node.size * 0.09)),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 5,
+            boxShadow: "0 2px 8px rgba(0,0,0,.35)",
+          }}
+        >
+          {node.order}
+        </div>
+      )}
       <svg
         viewBox="0 0 100 100"
         style={{
@@ -119,18 +151,19 @@ export function HierarchyNode({ node }: { node: NodeVisual }) {
             fontFamily: "'Newsreader', system-ui, serif",
             fontWeight: 400,
             fontSize: nameSize,
-            lineHeight: 1.15,
+            lineHeight: 1.14,
             letterSpacing: ".005em",
             textAlign: "center",
-            maxWidth: "70%",
+            maxWidth: "84%",
             color: "rgba(255,255,255,.93)",
             display: "-webkit-box",
             WebkitBoxOrient: "vertical",
-            WebkitLineClamp: 2,
+            WebkitLineClamp: 3,
             overflow: "hidden",
             textOverflow: "ellipsis",
             wordBreak: "break-word",
           }}
+          title={node.name}
         >
           {node.name}
         </div>

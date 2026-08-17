@@ -148,8 +148,11 @@ class ConversationParticipantsView(APIView):
 class ConversationParticipantDetailView(APIView):
     """
     DELETE /api/chat/conversations/<id>/participants/<user_id>/ — remove a
-    member. The owner can remove anyone; anyone can remove themselves
-    (leave the group).
+    member. In a group, the owner can remove anyone and anyone can remove
+    themselves (leave the group). In a private conversation there's no
+    owner/other-member to remove — only leaving it yourself is allowed,
+    which just drops it from your own conversation list (message history
+    stays intact and reappears if either side messages again).
     """
 
     permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
@@ -157,12 +160,13 @@ class ConversationParticipantDetailView(APIView):
     def delete(self, request, pk, user_id):
         conversation = get_object_or_404(Conversation, pk=pk)
         self.check_object_permissions(request, conversation)
-        if conversation.type != ConversationType.GROUP:
-            return Response(
-                {"detail": "Մասնակիցներ կարելի է հեռացնել միայն խմբերից։"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
         is_self = user_id == request.user.id
+        if conversation.type != ConversationType.GROUP and not is_self:
+            return Response(
+                {"detail": "Անձնական զրույցներից կարելի է հեռացնել միայն ինքներդ ձեզ։"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if not is_self and not group_service.is_owner(conversation, request.user):
             return Response(
                 {"detail": "Այս գործողությունը հասանելի է միայն խմբի սեփականատիրոջը։"},

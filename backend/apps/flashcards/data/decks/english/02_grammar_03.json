@@ -1,0 +1,42 @@
+{
+  "deck_id": "FC-ENG-GRAM-003",
+  "title": "Անգլերեն — Քերականություն 3",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "\"Students ___ bring calculators; the school provides one.\" Not required but allowed =",
+      "back": "don't have to",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "\"You ___ have told me about the schedule change earlier!\" (criticizing a missed action) uses:",
+      "back": "should have + past participle",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "\"The lights were on... someone ___ have been inside.\" (confident deduction) uses:",
+      "back": "must",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "General statements about a whole category of plural nouns (e.g. \"Lions live in groups\") use:",
+      "back": "no article at all",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Superlatives (\"the youngest\", \"the most respected\") always take:",
+      "back": "the",
+      "hint": ""
+    }
+  ]
+}

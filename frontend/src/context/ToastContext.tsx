@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { isNativeApp } from "../lib/platform";
 
 type ToastKind = "success" | "error";
 
@@ -40,7 +41,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showSuccess, showError }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4">
+      <div
+        className="pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 px-4"
+        // In the app the bottom edge belongs to the tab bar, so toasts sit
+        // above it rather than on top of the navigation.
+        style={{
+          bottom: isNativeApp()
+            ? "calc(var(--safe-bottom) + var(--mobile-tabbar-h) + 0.75rem)"
+            : "1rem",
+        }}
+      >
         {toasts.map((t) => (
           <div
             key={t.id}

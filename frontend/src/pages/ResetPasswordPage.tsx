@@ -4,8 +4,15 @@ import { AxiosError } from "axios";
 import { confirmPasswordReset } from "../api/auth";
 import { MessageModal } from "../components/MessageModal";
 import { LinkButton } from "../components/ui/LinkButton";
+import { MobileResetPassword } from "../components/mobile/auth/MobileResetPassword";
+import { useIsNativeApp } from "../lib/platform";
 
 export function ResetPasswordPage() {
+  if (useIsNativeApp()) return <MobileResetPassword />;
+  return <WebResetPasswordPage />;
+}
+
+function WebResetPasswordPage() {
   const { uid, token } = useParams<{ uid: string; token: string }>();
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState("");

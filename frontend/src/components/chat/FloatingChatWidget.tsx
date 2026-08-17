@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as chatApi from "../../api/chat";
 import type { Conversation } from "../../api/chat";
+import { useAuth } from "../../auth/AuthContext";
 import { useChatWidget } from "../../context/ChatWidgetContext";
 import { useFloatingPanel } from "../../hooks/useFloatingPanel";
 import { conversationTitle } from "../../lib/chatLabels";
@@ -11,6 +12,7 @@ import { ConversationView } from "./ConversationView";
 
 export function FloatingChatWidget() {
   const location = useLocation();
+  const { user } = useAuth();
   const { open, selectedConversationId, selectConversation, closeFloatingChat } = useChatWidget();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
 
@@ -37,6 +39,13 @@ export function FloatingChatWidget() {
   async function handleToggleMute(id: number, muted: boolean) {
     setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, muted } : c)) ?? prev);
     await chatApi.setConversationPrefs(id, { muted });
+  }
+
+  async function handleLeave(id: number) {
+    if (!user) return;
+    await chatApi.removeParticipant(id, user.id);
+    setConversations((prev) => prev?.filter((c) => c.id !== id) ?? prev);
+    if (selectedConversationId === id) selectConversation(null);
   }
 
   // Avoid a redundant floating chat on top of the full chat page — same
@@ -102,6 +111,7 @@ export function FloatingChatWidget() {
               onSelect={selectConversation}
               onTogglePin={handleTogglePin}
               onToggleMute={handleToggleMute}
+              onLeave={handleLeave}
             />
           </div>
         )}

@@ -7,7 +7,7 @@ import { ColorMixPicker, type ColorMix } from "../components/ColorMixPicker";
 import { clearGradient, getStoredGradient, saveGradient } from "../lib/buttonGradient";
 import { clearBackground, getStoredBackground, saveBackground } from "../lib/backgroundGradient";
 
-const BUTTON_DEFAULTS: ColorMix = { colors: ["#2563eb", "#1d4ed8"], angle: 90 };
+const BUTTON_DEFAULTS: ColorMix = { colors: ["#7c3aed", "#6d28d9"], angle: 90 };
 const BACKGROUND_DEFAULTS: ColorMix = { colors: ["#2563EB", "#7F24B0", "#FF5C8D"], angle: 226 };
 
 function ChangePasswordCard() {

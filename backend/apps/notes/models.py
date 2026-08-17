@@ -106,6 +106,10 @@ class Document(models.Model):
     raw HTML blob. `content_text` is a plain-text mirror derived on save,
     used for search."""
 
+    class Kind(models.TextChoices):
+        RICH_TEXT = "rich_text", "Rich Text"
+        CANVAS = "canvas", "Canvas"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="documents"
@@ -114,6 +118,7 @@ class Document(models.Model):
         Folder, on_delete=models.SET_NULL, null=True, blank=True, related_name="documents"
     )
 
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.RICH_TEXT)
     title = models.CharField(max_length=255, blank=True, default="")
     icon = models.CharField(max_length=16, blank=True, default="")
     content = models.JSONField(default=dict, blank=True)

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellOff, Pin, PinOff } from "lucide-react";
+import { Bell, BellOff, LogOut, Pin, PinOff } from "lucide-react";
 import type { Conversation } from "../../api/chat";
 import { conversationTitle, lastMessagePreviewText } from "../../lib/chatLabels";
 import { ConversationAvatar } from "./ConversationAvatar";
@@ -15,11 +15,12 @@ function timeLabel(dateStr: string): string {
 }
 
 function RowMenu({
-  conversation, onTogglePin, onToggleMute,
+  conversation, onTogglePin, onToggleMute, onLeave,
 }: {
   conversation: Conversation;
   onTogglePin: (id: number, pinned: boolean) => void;
   onToggleMute: (id: number, muted: boolean) => void;
+  onLeave: (id: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -87,6 +88,21 @@ function RowMenu({
               </>
             )}
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              const message =
+                conversation.type === "group"
+                  ? "Դուրս գա՞լ այս խմբից։"
+                  : "Հեռացնե՞լ այս զրույցը ցանկից։ Պատմությունը կպահպանվի։";
+              if (window.confirm(message)) onLeave(conversation.id);
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-incorrect hover:bg-surface-muted"
+          >
+            <LogOut size={15} strokeWidth={1.75} />
+            {conversation.type === "group" ? "Դուրս գալ խմբից" : "Հեռացնել զրույցը"}
+          </button>
         </div>
       )}
     </div>
@@ -94,13 +110,14 @@ function RowMenu({
 }
 
 function ConversationRow({
-  conversation, active, onSelect, onTogglePin, onToggleMute,
+  conversation, active, onSelect, onTogglePin, onToggleMute, onLeave,
 }: {
   conversation: Conversation;
   active: boolean;
   onSelect: () => void;
   onTogglePin: (id: number, pinned: boolean) => void;
   onToggleMute: (id: number, muted: boolean) => void;
+  onLeave: (id: number) => void;
 }) {
   // Not a <button> — RowMenu below renders a real <button> for the "⋮"
   // trigger, and nesting <button> inside <button> is invalid HTML (the
@@ -153,13 +170,13 @@ function ConversationRow({
           </div>
         </div>
       </div>
-      <RowMenu conversation={conversation} onTogglePin={onTogglePin} onToggleMute={onToggleMute} />
+      <RowMenu conversation={conversation} onTogglePin={onTogglePin} onToggleMute={onToggleMute} onLeave={onLeave} />
     </div>
   );
 }
 
 function Section({
-  title, conversations, selectedId, onSelect, onTogglePin, onToggleMute,
+  title, conversations, selectedId, onSelect, onTogglePin, onToggleMute, onLeave,
 }: {
   title: string;
   conversations: Conversation[];
@@ -167,6 +184,7 @@ function Section({
   onSelect: (id: number) => void;
   onTogglePin: (id: number, pinned: boolean) => void;
   onToggleMute: (id: number, muted: boolean) => void;
+  onLeave: (id: number) => void;
 }) {
   if (conversations.length === 0) return null;
   return (
@@ -181,6 +199,7 @@ function Section({
             onSelect={() => onSelect(c.id)}
             onTogglePin={onTogglePin}
             onToggleMute={onToggleMute}
+            onLeave={onLeave}
           />
         ))}
       </div>
@@ -189,13 +208,14 @@ function Section({
 }
 
 export function ConversationList({
-  conversations, selectedId, onSelect, onTogglePin, onToggleMute,
+  conversations, selectedId, onSelect, onTogglePin, onToggleMute, onLeave,
 }: {
   conversations: Conversation[];
   selectedId: number | null;
   onSelect: (id: number) => void;
   onTogglePin: (id: number, pinned: boolean) => void;
   onToggleMute: (id: number, muted: boolean) => void;
+  onLeave: (id: number) => void;
 }) {
   if (conversations.length === 0) {
     return <p className="px-2 py-4 text-sm text-text-muted">Զրույցներ չկան։</p>;
@@ -205,7 +225,7 @@ export function ConversationList({
   const groups = conversations.filter((c) => !c.pinned && c.type === "group");
   const recent = conversations.filter((c) => !c.pinned && c.type === "private");
 
-  const sectionProps = { selectedId, onSelect, onTogglePin, onToggleMute };
+  const sectionProps = { selectedId, onSelect, onTogglePin, onToggleMute, onLeave };
 
   return (
     <div className="flex flex-col">

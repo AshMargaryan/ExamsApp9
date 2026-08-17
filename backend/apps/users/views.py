@@ -1,10 +1,13 @@
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core import signing
+from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
@@ -18,40 +21,51 @@ from .serializers import (
     ChangePasswordSerializer, OAuthCompleteRegisterSerializer, RegisterSerializer, SchoolSerializer,
     UniversitySerializer, UserSerializer, UserSessionSerializer,
 )
-from .sessions import (
-    DeviceLimitReached, create_session, get_device_limit,
-    make_management_ticket, read_management_ticket,
-)
-from .utils import issue_tokens_for_user
+from .sessions import create_session, get_device_limit
+from .throttling import LoginAccountThrottle, PasswordResetEmailThrottle
+from .utils import issue_tokens_for_user, suggest_usernames
 
 password_reset_token = PasswordResetTokenGenerator()
 
 
-def _issue_tokens_or_device_limit_response(user, request, success_status=status.HTTP_200_OK):
+def _describe_device(session) -> str:
+    """Human label for a signed-out device, e.g. "Windows · Chrome". Falls back
+    to a generic word when the user agent told us nothing useful."""
+    parts = [part for part in (session.platform, session.browser) if part]
+    return " · ".join(parts) if parts else "մեկ այլ սարք"
+
+
+def _issue_tokens_response(user, request, success_status=status.HTTP_200_OK):
     """Shared by every login path (password, Google, Apple, OAuth completion):
-    creates a device session if under the cap and returns tokens, or a 403
-    with a management_ticket the frontend can use to list/revoke an existing
-    session — see apps/users/sessions.py. Returns (response, granted) so
-    callers with side effects that should only happen on an actual successful
-    login (e.g. auto-linking a Google/Apple id) can gate on `granted`."""
-    try:
-        session = create_session(user, request)
-    except DeviceLimitReached:
-        return Response({
-            "detail": (
-                f"Հասել եք սարքերի առավելագույն թվին ({get_device_limit(user)})։ "
-                "Անջատեք մեկ այլ սարք՝ շարունակելու համար։"
-            ),
-            "code": "device_limit_reached",
-            "management_ticket": make_management_ticket(user.id),
-        }, status=status.HTTP_403_FORBIDDEN), False
-    return Response(issue_tokens_for_user(user, session), status=success_status), True
+    creates a device session and returns tokens.
+
+    Hitting the device cap no longer blocks the login. create_session signs the
+    oldest device out to make room, and the response carries `signed_out_device`
+    so the client can tell the user it happened — being silently logged out
+    elsewhere with no explanation is worse than the old blocking dialog, which
+    at least said something.
+
+    Returns (response, granted) so callers with side effects that should only
+    happen on an actual successful login (e.g. auto-linking a Google/Apple id)
+    can gate on `granted`. `granted` is now always True; the tuple shape is kept
+    so the call sites stay honest about that being a login-succeeded signal."""
+    session, evicted = create_session(user, request)
+    payload = issue_tokens_for_user(user, session)
+    if evicted:
+        payload["signed_out_device"] = {
+            "label": _describe_device(evicted[0]),
+            "count": len(evicted),
+            "device_limit": get_device_limit(user),
+        }
+    return Response(payload, status=success_status), True
 
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
 
     def perform_create(self, serializer):
         user = serializer.save()
@@ -68,11 +82,15 @@ class LoginView(APIView):
     device-session gate every other login path uses."""
 
     permission_classes = [permissions.AllowAny]
+    # Two complementary limits — see DEFAULT_THROTTLE_RATES in settings for
+    # why the per-IP one is loose and the per-account one is strict.
+    throttle_classes = [ScopedRateThrottle, LoginAccountThrottle]
+    throttle_scope = "login"
 
     def post(self, request):
         serializer = TokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        response, _ = _issue_tokens_or_device_limit_response(serializer.user, request)
+        response, _ = _issue_tokens_response(serializer.user, request)
         return response
 
 
@@ -114,7 +132,7 @@ def _oauth_login_or_ticket(provider: str, provider_field: str, sub: str, email: 
         needs_link = user is not None
 
     if user is not None:
-        response, granted = _issue_tokens_or_device_limit_response(user, request)
+        response, granted = _issue_tokens_response(user, request)
         # Only persist the provider link if the login actually succeeded —
         # a rejected (device-limit) attempt must not silently link the
         # account as a side effect.
@@ -137,6 +155,8 @@ class GoogleAuthView(APIView):
     """POST /api/auth/google/ — {id_token} from Google Identity Services."""
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "oauth-login"
 
     def post(self, request):
         token = str(request.data.get("id_token", "")).strip()
@@ -171,6 +191,8 @@ class AppleAuthView(APIView):
     already exists."""
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "oauth-login"
 
     def post(self, request):
         token = str(request.data.get("id_token", "")).strip()
@@ -201,12 +223,14 @@ class OAuthCompleteRegisterView(generics.CreateAPIView):
 
     serializer_class = OAuthCompleteRegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        response, _ = _issue_tokens_or_device_limit_response(user, request, success_status=status.HTTP_201_CREATED)
+        response, _ = _issue_tokens_response(user, request, success_status=status.HTTP_201_CREATED)
         return response
 
 
@@ -296,50 +320,75 @@ class SessionRevokeView(APIView):
         return Response({"detail": "Սարքն անջատված է։"})
 
 
-def _read_ticket_or_error(request):
-    """Shared by the two ticket-based (AllowAny) session-management endpoints
-    below — returns (user_id, None) or (None, error_response)."""
-    ticket = str(request.data.get("ticket", ""))
-    try:
-        return read_management_ticket(ticket), None
-    except signing.BadSignature:
-        return None, Response(
-            {"detail": "Հղումն անվավեր է կամ ժամկետանց։"}, status=status.HTTP_400_BAD_REQUEST
-        )
+class UsernameAvailabilityView(APIView):
+    """Live "is this username free?" check for the signup form.
 
+    Registration already rejects a duplicate username with suggestions, but
+    only after the user has filled in everything else. Answering while they
+    type turns a rejected submission into a choice made up front.
 
-class SessionManagementListView(APIView):
-    """POST /api/auth/sessions/manage/list/ — {ticket}. Lets a user who was
-    just rejected for hitting the device limit see their existing sessions
-    without a real access token — the ticket is scoped to nothing but this
-    and the revoke endpoint below (see apps/users/sessions.py)."""
-
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        user_id, error = _read_ticket_or_error(request)
-        if error:
-            return error
-        sessions = UserSession.objects.filter(user_id=user_id, revoked_at__isnull=True)
-        return Response(UserSessionSerializer(sessions, many=True).data)
-
-
-class SessionManagementRevokeView(APIView):
-    """POST /api/auth/sessions/manage/revoke/ — {ticket, session_id}."""
+    The endpoint is deliberately cheap to call, because a signup form calls it
+    a lot:
+      * a taken verdict is cached for CACHE_SECONDS, suggestions included — a
+        username that exists effectively never becomes free, and popular first
+        names are exactly what many people try, so this collapses the common
+        case to zero queries;
+      * an available verdict is NOT cached, since it can stop being true the
+        moment somebody registers it. RegisterSerializer.validate_username
+        remains the authority at submit time; this is a hint, not a promise.
+    """
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "username-availability"
 
-    def post(self, request):
-        user_id, error = _read_ticket_or_error(request)
-        if error:
-            return error
-        session = UserSession.objects.filter(
-            pk=request.data.get("session_id"), user_id=user_id, revoked_at__isnull=True
-        ).first()
-        if session is None:
-            return Response({"detail": "Սեսիան չի գտնվել։"}, status=status.HTTP_404_NOT_FOUND)
-        session.revoke()
-        return Response({"detail": "Սարքն անջատված է։"})
+    CACHE_SECONDS = 300
+
+    def get(self, request):
+        username = (request.query_params.get("username") or "").strip()
+        if not username:
+            return Response(
+                {"detail": "username query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Run the model field's own validators so the client gets the same
+        # verdict here that it would get from the register endpoint.
+        try:
+            for validator in User._meta.get_field("username").validators:
+                validator(username)
+        except DjangoValidationError as exc:
+            return Response({
+                "username": username,
+                "available": False,
+                "valid": False,
+                "detail": exc.messages[0],
+                "suggestions": [],
+            })
+
+        cache_key = f"username-taken:{username}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        if User.objects.filter(username=username).exists():
+            payload = {
+                "username": username,
+                "available": False,
+                "valid": True,
+                "detail": "Այս օգտանունն արդեն զբաղված է։",
+                "suggestions": suggest_usernames(username),
+            }
+            cache.set(cache_key, payload, self.CACHE_SECONDS)
+            return Response(payload)
+
+        return Response({
+            "username": username,
+            "available": True,
+            "valid": True,
+            "detail": "",
+            "suggestions": [],
+        })
 
 
 class SchoolSearchView(generics.ListAPIView):
@@ -370,6 +419,8 @@ class UniversitySearchView(generics.ListAPIView):
 
 class VerifyEmailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "verify-email"
 
     def post(self, request):
         user = request.user
@@ -392,6 +443,8 @@ class VerifyEmailView(APIView):
 
 class ResendVerificationCodeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "resend-verification"
 
     def post(self, request):
         user = request.user
@@ -405,6 +458,8 @@ class ResendVerificationCodeView(APIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle, PasswordResetEmailThrottle]
+    throttle_scope = "password-reset"
 
     def post(self, request):
         email = str(request.data.get("email", "")).strip()
@@ -421,6 +476,8 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password-reset-confirm"
 
     def post(self, request):
         uid = request.data.get("uid", "")

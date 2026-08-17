@@ -14,7 +14,7 @@ export function FinalCtaSection() {
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             to="/register"
-            className="bg-primary w-full rounded-lg px-6 py-3.5 text-center text-base font-semibold text-primary-contrast shadow-lg shadow-blue-600/20 transition-colors hover:bg-primary-hover sm:w-auto"
+            className="bg-primary w-full rounded-lg px-6 py-3.5 text-center text-base font-semibold text-primary-contrast shadow-lg shadow-violet-600/20 transition-colors hover:bg-primary-hover sm:w-auto"
           >
             🚀 Սկսել սովորել
           </Link>

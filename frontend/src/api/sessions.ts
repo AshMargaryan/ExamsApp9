@@ -18,15 +18,3 @@ export async function fetchSessions(): Promise<DeviceSession[]> {
 export async function revokeSession(id: number): Promise<void> {
   await apiClient.post(`/auth/sessions/${id}/revoke/`);
 }
-
-/** Ticket-based recovery flow for a login rejected with device_limit_reached —
- * no access token exists yet, so these go through a short-lived, narrowly
- * scoped management ticket instead (see backend apps/users/sessions.py). */
-export async function fetchManagedSessions(ticket: string): Promise<DeviceSession[]> {
-  const { data } = await apiClient.post("/auth/sessions/manage/list/", { ticket });
-  return data;
-}
-
-export async function revokeManagedSession(ticket: string, id: number): Promise<void> {
-  await apiClient.post("/auth/sessions/manage/revoke/", { ticket, session_id: id });
-}

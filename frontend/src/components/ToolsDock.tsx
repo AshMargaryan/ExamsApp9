@@ -168,8 +168,10 @@ export function ToolsDock() {
         </div>
       )}
 
+      {/* tools-dock-launcher: theme.css lifts this above the bottom tab bar in
+          the native shell, where bottom-4 would land on top of it. */}
       {!fullscreen && (
-        <div className="fixed bottom-4 left-4 z-30 flex flex-col-reverse items-center gap-3 sm:left-6">
+        <div className="tools-dock-launcher fixed bottom-4 left-4 z-30 flex flex-col-reverse items-center gap-3 sm:left-6">
           <button
             type="button"
             onClick={handleHubClick}

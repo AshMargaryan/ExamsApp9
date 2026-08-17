@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "apps.study_groups",
     "apps.todo",
     "apps.notes",
+    "apps.calls",
 ]
 
 MIDDLEWARE = [
@@ -102,6 +103,23 @@ ASGI_APPLICATION = 'config.asgi.application'
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
+# Declared explicitly (this is Django's default) because it is now
+# security-relevant, not just a performance knob: DRF's rate limiting stores
+# its counters here, so the auth throttles in REST_FRAMEWORK below are only as
+# shared as this cache is.
+#
+# Correct today — prod runs a single Daphne process (see backend/Dockerfile).
+# The same caveat as CHANNEL_LAYERS above applies: if this ever scales to
+# multiple worker processes/machines, each would keep its own private counters
+# and an attacker could effectively multiply every rate limit by the worker
+# count. Swap in Redis (django.core.cache.backends.redis.RedisCache) at that
+# point, together with the channel layer.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     },
 }
 
@@ -208,6 +226,40 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    # Rate limits for the auth endpoints (brute force / credential stuffing /
+    # email bombing). Assigned per-view via throttle_scope in
+    # apps/users/views.py.
+    #
+    # Two kinds of scope here, and the split matters:
+    #
+    #   * IP-keyed (ScopedRateThrottle) — deliberately LOOSE. Students on this
+    #     platform sit behind a school's single NAT gateway, so a whole class
+    #     shares one source IP; a tight per-IP cap would lock out the class at
+    #     the start of a lesson rather than stop an attacker.
+    #   * Identity-keyed (apps/users/throttling.py) — TIGHT, because the key
+    #     is the account/mailbox being attacked, not the network it's attacked
+    #     from. This is what actually bounds password guessing, and it holds
+    #     even against an attacker rotating IPs.
+    #
+    # Scopes on endpoints that require authentication (verify-email,
+    # resend-verification) are keyed per-user by DRF automatically, so they
+    # are unaffected by the NAT concern above.
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "30/min",                  # per IP (NAT-tolerant)
+        "login-account": "10/min",          # per username — the real brute-force bound
+        "oauth-login": "30/min",            # per IP; token is signature-verified anyway
+        "register": "10/min",               # per IP
+        # Per IP, and loose on purpose: the signup form calls this while the
+        # user types. The client debounces and caches, and taken verdicts are
+        # cached server-side, so real usage sits far below this — but a whole
+        # class signing up behind one school NAT must not trip it.
+        "username-availability": "120/min",
+        "verify-email": "10/min",           # per user — 150 tries per 15min code lifetime, of 1e6
+        "resend-verification": "3/min",     # per user
+        "password-reset": "10/min",         # per IP
+        "password-reset-email": "3/hour",   # per mailbox — anti email-bomb
+        "password-reset-confirm": "10/min",  # per IP; tokens are cryptographically strong
+    },
 }
 
 SIMPLE_JWT = {
@@ -229,6 +281,64 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=["http://localhost:3000", "http://127.0.0.1:3000"],
 )
+# Left at their defaults (both False) on purpose: an explicit origin list
+# above plus credentials-off is the safe combination. Never set
+# CORS_ALLOW_ALL_ORIGINS together with CORS_ALLOW_CREDENTIALS.
+
+# ---------------------------------------------------------------------------
+# Transport security
+# ---------------------------------------------------------------------------
+#
+# nginx sets X-Forwarded-Proto on every proxied request (see nginx/nginx.conf)
+# and always overwrites whatever the client sent, so trusting it here is safe
+# — that last part is the precondition for this setting not being a spoofable
+# way to make Django believe a plaintext request was secure.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# ⚠️ These default to OFF, and that is deliberate — NOT an oversight.
+#
+# The deployment currently terminates at nginx on port 80 with no certificate
+# (nginx/nginx.conf has no 443 listener). Enabling SECURE_SSL_REDIRECT before
+# TLS exists would redirect every request to an https:// URL that nothing is
+# listening on: a total outage rather than a hardening. Likewise the *_SECURE
+# cookie flags would tell browsers to withhold the admin session/CSRF cookies
+# over the only scheme currently available, locking admin out.
+#
+# Once a certificate and a 443 listener are in place, ALL of these should be
+# turned on in the production .env — until then the login credentials and JWTs
+# this app issues are travelling in plaintext, which no amount of hashing,
+# throttling or token rotation compensates for.
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=False)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=False)
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True)
+SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
+
+# Origins allowed to submit cookie-authenticated POSTs (Django admin). The API
+# itself is JWT-in-header, so it isn't CSRF-exposed, but the admin is.
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# Where the Django admin is mounted (see config/urls.py). Keep the trailing
+# slash. Default matches the historical path so nothing breaks; production
+# should override it — the admin login is the one credential form on this
+# deployment that no rate limit currently covers.
+ADMIN_URL_PATH = env("ADMIN_URL_PATH", default="admin/")
+
+# Hardening that costs nothing to keep explicit. Both are already Django's
+# defaults; pinned here so a future settings edit can't silently drop them.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
+# Deliberately NOT set: SECURE_BROWSER_XSS_FILTER. It emits the legacy
+# X-XSS-Protection header, which every current browser ignores and which
+# introduced its own vulnerabilities before being removed. A Content-Security
+# -Policy is the real control — see nginx/nginx.conf.
+# Cookies are not used to carry credentials for the API, but the admin's are,
+# and SameSite=Lax blocks them being sent on cross-site requests.
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_HTTPONLY = True
 
 # ---------------------------------------------------------------------------
 # OAuth (social login)
@@ -322,4 +432,11 @@ TEACHER_DEFAULT_STUDENT_LIMIT = env.int("TEACHER_DEFAULT_STUDENT_LIMIT", default
 # ---------------------------------------------------------------------------
 
 CHAT_MAX_ATTACHMENT_SIZE_MB = env.int("CHAT_MAX_ATTACHMENT_SIZE_MB", default=20)
+
+# ---------------------------------------------------------------------------
+# Help center
+# ---------------------------------------------------------------------------
+
+# Support-ticket attachment limit (see apps/helpcenter/validators.py).
+HELPCENTER_MAX_ATTACHMENT_SIZE_MB = env.int("HELPCENTER_MAX_ATTACHMENT_SIZE_MB", default=20)
 

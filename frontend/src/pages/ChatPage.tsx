@@ -88,6 +88,13 @@ export function ChatPage() {
     await chatApi.setConversationPrefs(id, { muted });
   }
 
+  async function handleLeave(id: number) {
+    if (!user) return;
+    await chatApi.removeParticipant(id, user.id);
+    setConversations((prev) => prev?.filter((c) => c.id !== id) ?? prev);
+    setSelectedId((prev) => (prev === id ? null : prev));
+  }
+
   async function handleStartChatFromSearch(userId: number) {
     await handleCreatePrivate(userId);
     setSearch("");
@@ -195,6 +202,7 @@ export function ChatPage() {
             }}
             onTogglePin={handleTogglePin}
             onToggleMute={handleToggleMute}
+            onLeave={handleLeave}
           />
         )}
       </div>

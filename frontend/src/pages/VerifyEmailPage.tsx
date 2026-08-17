@@ -4,8 +4,17 @@ import { AxiosError } from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { resendVerificationCode, verifyEmail } from "../api/auth";
 import { OtpInput } from "../components/OtpInput";
+import { MobileVerifyEmail } from "../components/mobile/auth/MobileVerifyEmail";
+import { useIsNativeApp } from "../lib/platform";
 
 export function VerifyEmailPage() {
+  // Native gets a single autofill-capable code field that submits itself; see
+  // MobileVerifyEmail. The web keeps the six-box form below.
+  if (useIsNativeApp()) return <MobileVerifyEmail />;
+  return <WebVerifyEmailPage />;
+}
+
+function WebVerifyEmailPage() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [code, setCode] = useState("");
@@ -29,7 +38,7 @@ export function VerifyEmailPage() {
     try {
       await verifyEmail(code);
       await refreshUser();
-      navigate(home);
+      navigate("/subscription");
     } catch (err) {
       if (err instanceof AxiosError && err.response?.data) {
         setError((err.response.data as { detail?: string }).detail ?? "Կոդը սխալ է։");
@@ -91,7 +100,7 @@ export function VerifyEmailPage() {
 
         <button
           type="button"
-          onClick={() => navigate(home)}
+          onClick={() => navigate("/subscription")}
           className="mt-4 w-full text-center text-sm text-text-muted hover:text-primary"
         >
           Հետագայում

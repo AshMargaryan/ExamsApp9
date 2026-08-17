@@ -24,4 +24,5 @@ export function subjectMeta(key: string | undefined): SubjectMeta | undefined {
 export const PRACTICE_SUBJECT_NAMES: Partial<Record<SubjectKey, string>> = {
   math: "Մաթեմատիկա",
   english: "Անգլերեն",
+  physics: "Ֆիզիկա",
 };

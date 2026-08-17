@@ -10,23 +10,39 @@
      e.g. a dark native textarea box on top of our light theme. */
   color-scheme: dark;
 
-  --color-bg: #1a1a1a;
-  --color-surface: #242424;
-  --color-surface-muted: #2e2e2e;
-  --color-border: #3a3a3a;
+  /*
+    Brand palette: #7C3AED on #000000, mixed at 270deg.
+
+    The surfaces are not neutral greys — each is pure black with a measured
+    amount of the brand violet mixed in, so a panel sitting on the background
+    reads as the same material lit differently rather than as a separate grey
+    UI kit dropped on a dark page. Change --color-primary and every surface,
+    border and gradient below follows it.
+  */
+  --color-bg: #000000;
+  --color-surface: color-mix(in srgb, var(--color-primary) 7%, #000000);
+  --color-surface-muted: color-mix(in srgb, var(--color-primary) 13%, #000000);
+  --color-border: color-mix(in srgb, var(--color-primary) 22%, #000000);
 
   --color-text: #ffffff;
   --color-text-muted: #a3a3a3;
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-primary: #7c3aed;
+  --color-primary-hover: #6d28d9;
   --color-primary-contrast: #ffffff;
 
   --color-accent: #14b8a6;
 
-  --color-purple: #7f24b0;
-  --color-pink: #ff5c8d;
-  --gradient-hero: linear-gradient(226deg, var(--color-primary) 0%, var(--color-purple) 55%, var(--color-pink) 100%);
+  /* Retained as tokens because a few surfaces still reference them, but both
+     are now derived from the brand violet rather than being separate hues, so
+     nothing in the default theme drifts away from violet-on-black. */
+  --color-purple: color-mix(in srgb, var(--color-primary) 80%, #000000);
+  --color-pink: color-mix(in srgb, var(--color-primary) 60%, #ffffff);
+
+  /* The one brand gradient: violet to black at 270deg (right to left). Used by
+     the hero HUD, level chips, and anything asking for --gradient-primary. */
+  --gradient-hero: linear-gradient(270deg, var(--color-primary) 0%, #000000 100%);
+  --gradient-brand: var(--gradient-hero);
 
   --color-correct: #1a9e6d;
   --color-correct-bg: #e4f7ef;
@@ -72,6 +88,60 @@
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
   --text-3xl: 2rem;
+
+  /* Hybrid/native shell geometry. env(safe-area-inset-*) resolves to 0px in a
+     desktop browser, so these are safe to use unconditionally — only the iOS
+     build (index.html sets viewport-fit=cover) gets a non-zero inset. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Heights of the two mobile-shell bars, shared by the bars themselves and by
+     the content padding that clears them — one number, never out of sync. */
+  --mobile-topbar-h: 3.25rem;
+  --mobile-tabbar-h: 3.5rem;
+}
+
+/*
+  App-only rules, gated on the data-native attribute lib/platform.ts stamps on
+  <html>. The website never matches these selectors.
+*/
+html[data-native] {
+  /* Kills the rubber-band scroll of the whole WebView, which in a Capacitor
+     app exposes the grey shell behind the page and immediately reads as
+     "this is a website in a box". Individual scroll areas still scroll. */
+  overscroll-behavior-y: none;
+}
+
+html[data-native] body {
+  -webkit-tap-highlight-color: transparent;
+  /* Long-press on a button shouldn't offer the iOS text-selection callout. */
+  -webkit-touch-callout: none;
+}
+
+/* The bottom tab bar owns the bottom edge in the app, so the floating tools
+   launcher (calculator/notepad) has to sit above it rather than on it. */
+html[data-native] .tools-dock-launcher {
+  bottom: calc(var(--safe-bottom) + var(--mobile-tabbar-h) + 0.75rem);
+}
+
+/* iOS zooms the whole page when a focused field's text is under 16px, and the
+   zoom is never undone — so every text field in the app build gets at least
+   16px, plus a thumb-sized hit area. Applied here rather than at ~40 form call
+   sites. */
+html[data-native] :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  font-size: 16px;
+  min-height: 46px;
+}
+
+/* Text the user actually reads or edits stays selectable. */
+html[data-native] input,
+html[data-native] textarea,
+html[data-native] [contenteditable="true"] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 :root[data-theme='light'] {
@@ -85,8 +155,8 @@
   --color-text: #111827;
   --color-text-muted: #6b7280;
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-primary: #7c3aed;
+  --color-primary-hover: #6d28d9;
   --color-primary-contrast: #ffffff;
 
   --color-accent: #14b8a6;
@@ -118,16 +188,25 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --color-bg: #1a1a1a;
-  --color-surface: #242424;
-  --color-surface-muted: #2e2e2e;
-  --color-border: #3a3a3a;
+  /*
+    Brand palette: #7C3AED on #000000, mixed at 270deg.
+
+    The surfaces are not neutral greys — each is pure black with a measured
+    amount of the brand violet mixed in, so a panel sitting on the background
+    reads as the same material lit differently rather than as a separate grey
+    UI kit dropped on a dark page. Change --color-primary and every surface,
+    border and gradient below follows it.
+  */
+  --color-bg: #000000;
+  --color-surface: color-mix(in srgb, var(--color-primary) 7%, #000000);
+  --color-surface-muted: color-mix(in srgb, var(--color-primary) 13%, #000000);
+  --color-border: color-mix(in srgb, var(--color-primary) 22%, #000000);
 
   --color-text: #ffffff;
   --color-text-muted: #a3a3a3;
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-primary: #7c3aed;
+  --color-primary-hover: #6d28d9;
   --color-primary-contrast: #ffffff;
 
   --color-accent: #2dd4c4;
@@ -158,16 +237,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --color-bg: #1a1a1a;
-    --color-surface: #242424;
-    --color-surface-muted: #2e2e2e;
-    --color-border: #3a3a3a;
+    /* Same brand palette as :root — violet mixed into pure black. */
+    --color-bg: #000000;
+    --color-surface: color-mix(in srgb, var(--color-primary) 7%, #000000);
+    --color-surface-muted: color-mix(in srgb, var(--color-primary) 13%, #000000);
+    --color-border: color-mix(in srgb, var(--color-primary) 22%, #000000);
 
     --color-text: #ffffff;
     --color-text-muted: #a3a3a3;
 
-    --color-primary: #2563eb;
-    --color-primary-hover: #1d4ed8;
+    --color-primary: #7c3aed;
+    --color-primary-hover: #6d28d9;
     --color-primary-contrast: #ffffff;
 
     --color-accent: #2dd4c4;

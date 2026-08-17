@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from .models import Article, Category, SearchQuery, SupportTicket, TicketStatus
+from .models import Article, Category, SearchQuery, SupportTicket, TicketAttachment, TicketStatus
 
 User = get_user_model()
 
@@ -163,3 +164,80 @@ class SupportTicketApiTests(TestCase):
 
         ticket = SupportTicket.objects.get(pk=resp.data["id"])
         self.assertEqual(ticket.diagnostic_info, {"user_agent": "Mozilla/5.0", "page": "/practice"})
+
+
+class TicketAttachmentValidationTests(TestCase):
+    """Support-ticket uploads land in MEDIA_ROOT, which nginx serves at
+    /media/ on the app's own origin — so an attachment the browser will run
+    as a document is stored XSS against every user, and the JWTs live in
+    localStorage. These uploads previously had no validation at all."""
+
+    def setUp(self):
+        self.user = _make_user()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def _post(self, upload):
+        return self.client.post(
+            "/api/help/tickets/",
+            {"category": "account", "description": "test", "files": upload},
+            format="multipart",
+        )
+
+    def test_html_attachment_is_rejected(self):
+        evil = SimpleUploadedFile(
+            "evil.html", b"<script>alert(document.domain)</script>", content_type="text/html"
+        )
+
+        response = self._post(evil)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(TicketAttachment.objects.exists())
+
+    def test_svg_attachment_is_rejected(self):
+        evil = SimpleUploadedFile(
+            "evil.svg",
+            b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+            content_type="image/svg+xml",
+        )
+
+        response = self._post(evil)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(TicketAttachment.objects.exists())
+
+    def test_html_disguised_with_an_allowed_extension_is_rejected(self):
+        """The extension allowlist alone is not enough — the real type is
+        sniffed from the bytes, so renaming the payload doesn't get it in."""
+        disguised = SimpleUploadedFile(
+            "notevil.png", b"<html><script>alert(1)</script></html>", content_type="image/png"
+        )
+
+        response = self._post(disguised)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(TicketAttachment.objects.exists())
+
+    def test_oversized_attachment_is_rejected(self):
+        huge = SimpleUploadedFile(
+            "big.png", b"\x89PNG\r\n\x1a\n" + b"0" * (21 * 1024 * 1024), content_type="image/png"
+        )
+
+        response = self._post(huge)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(TicketAttachment.objects.exists())
+
+    def test_genuine_png_is_accepted_and_stores_the_sniffed_mime(self):
+        png_bytes = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01"
+            b"\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        # Lies about its type; the stored mime must come from the bytes.
+        good = SimpleUploadedFile("real.png", png_bytes, content_type="text/html")
+
+        response = self._post(good)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(TicketAttachment.objects.get().mime_type, "image/png")

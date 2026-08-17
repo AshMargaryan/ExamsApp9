@@ -147,6 +147,38 @@ class DocumentApiTests(TestCase):
         favorites = self.client.get("/api/notes/documents/?favorite=true")
         self.assertEqual([d["id"] for d in favorites.data], [str(doc.id)])
 
+    def test_default_kind_is_rich_text(self):
+        resp = self.client.post("/api/notes/documents/", {"title": "Untyped"}, format="json")
+        self.assertEqual(resp.data["kind"], "rich_text")
+
+    def test_canvas_kind_round_trips_strokes_with_empty_search_text(self):
+        strokes_content = {
+            "strokes": [
+                {"points": [{"x": 0, "y": 0}, {"x": 10, "y": 10}], "color": "#000", "width": 4, "erase": False}
+            ]
+        }
+        create = self.client.post(
+            "/api/notes/documents/",
+            {"title": "Sketch", "kind": "canvas", "content": strokes_content},
+            format="json",
+        )
+        self.assertEqual(create.status_code, 201)
+        self.assertEqual(create.data["kind"], "canvas")
+        doc_id = create.data["id"]
+
+        fetched = self.client.get(f"/api/notes/documents/{doc_id}/")
+        self.assertEqual(fetched.data["content"], strokes_content)
+        self.assertEqual(Document.objects.get(pk=doc_id).content_text, "")
+
+        # A canvas doc's stroke data must never leak into title/content search.
+        not_found = self.client.get("/api/notes/documents/?q=strokes")
+        self.assertEqual(not_found.data, [])
+
+    def test_duplicate_preserves_kind(self):
+        doc = Document.objects.create(user=self.user, title="Sketch", kind="canvas", content={"strokes": []})
+        dup = self.client.post(f"/api/notes/documents/{doc.id}/duplicate/")
+        self.assertEqual(dup.data["kind"], "canvas")
+
     def test_soft_delete_restore_purge(self):
         doc = Document.objects.create(user=self.user, title="Temp")
         self.assertEqual(self.client.delete(f"/api/notes/documents/{doc.id}/").status_code, 204)

@@ -1,15 +1,27 @@
 from ..models import SupportTicket, TicketAttachment, TicketMessage, TicketStatus
+from ..validators import validate_attachment_file
 
 
 def _save_attachments(ticket, uploaded_by, files, message=None):
-    for f in files or []:
+    # Validate every file BEFORE creating any row, so a rejected third file
+    # doesn't leave the first two already persisted.
+    #
+    # This used to accept any file of any size and record the client-supplied
+    # f.content_type verbatim. Uploads land in MEDIA_ROOT, which nginx serves
+    # at /media/ on the app's own origin, so an .html or .svg attachment was
+    # stored script running with the app's origin — able to read the JWTs the
+    # frontend keeps in localStorage. Sniffing the real type from the bytes is
+    # what makes the extension allowlist meaningful.
+    validated = [(f, validate_attachment_file(f)) for f in files or []]
+
+    for f, mime_type in validated:
         TicketAttachment.objects.create(
             ticket=ticket,
             message=message,
             uploaded_by=uploaded_by,
             file=f,
             original_filename=f.name,
-            mime_type=f.content_type or "application/octet-stream",
+            mime_type=mime_type,
             size=f.size,
         )
 

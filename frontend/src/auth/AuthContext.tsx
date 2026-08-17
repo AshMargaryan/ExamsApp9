@@ -1,7 +1,14 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import * as authApi from "../api/auth";
 import { tokenStorage } from "../api/client";
-import type { CompleteOAuthRegistrationPayload, RegisterPayload, User } from "../api/auth";
+import type { CompleteOAuthRegistrationPayload, RegisterPayload, SignedOutDevice, User } from "../api/auth";
+
+/** A password login also reports whether another device was signed out to make
+ *  room for this one (the backend evicts the oldest at the device cap). */
+export interface PasswordLoginResult {
+  user: User;
+  signedOutDevice: SignedOutDevice | null;
+}
 
 type OAuthLoginResult =
   | { status: "logged_in"; user: User }
@@ -10,7 +17,7 @@ type OAuthLoginResult =
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<User>;
+  login: (username: string, password: string) => Promise<PasswordLoginResult>;
   register: (payload: RegisterPayload) => Promise<User>;
   loginWithGoogle: (idToken: string) => Promise<OAuthLoginResult>;
   loginWithApple: (idToken: string, firstName: string, lastName: string) => Promise<OAuthLoginResult>;
@@ -37,16 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  async function login(username: string, password: string) {
-    await authApi.login(username, password);
+  async function login(username: string, password: string): Promise<PasswordLoginResult> {
+    const signedOutDevice = await authApi.login(username, password);
     const me = await authApi.fetchMe();
     setUser(me);
-    return me;
+    return { user: me, signedOutDevice };
   }
 
   async function register(payload: RegisterPayload) {
     await authApi.register(payload);
-    return login(payload.username, payload.password);
+    const { user: me } = await login(payload.username, payload.password);
+    return me;
   }
 
   async function loginWithGoogle(idToken: string): Promise<OAuthLoginResult> {

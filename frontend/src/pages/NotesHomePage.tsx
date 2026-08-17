@@ -14,6 +14,7 @@ import {
   updateDocument,
   updateFolder,
   type DocumentSummary,
+  type DocumentKind,
   type Folder,
 } from "../api/notes";
 import { ConfirmModal } from "../components/ConfirmModal";
@@ -21,6 +22,7 @@ import { FolderTree } from "../components/notes/FolderTree";
 import { NoteCard } from "../components/notes/NoteCard";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { Button } from "../components/ui/Button";
+import { Dropdown } from "../components/ui/Dropdown";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Modal } from "../components/ui/Modal";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
@@ -85,10 +87,14 @@ export function NotesHomePage() {
     loadDocuments();
   }, [loadDocuments]);
 
-  async function handleCreateNote() {
+  async function handleCreateNote(kind: DocumentKind = "rich_text") {
     setCreatingNote(true);
     try {
-      const doc = await createDocument({ folder: tab === "notes" ? selectedFolderId : null });
+      const doc = await createDocument({
+        folder: tab === "notes" ? selectedFolderId : null,
+        kind,
+        content: kind === "canvas" ? { objects: [] } : undefined,
+      });
       navigate(`/notes/${doc.id}`);
     } catch (e) {
       showError(extractErrorMessage(e));
@@ -235,9 +241,18 @@ export function NotesHomePage() {
           >
             ➕ Նոր թղթապանակ
           </Button>
-          <Button onClick={handleCreateNote} loading={creatingNote}>
-            📝 Նոր նշում
-          </Button>
+          <Dropdown
+            align="end"
+            renderTrigger={(props) => (
+              <Button {...props} loading={creatingNote}>
+                ➕ Նոր նշում
+              </Button>
+            )}
+            items={[
+              { key: "rich_text", icon: "📝", label: "Տեքստային նշում", onSelect: () => handleCreateNote("rich_text") },
+              { key: "canvas", icon: "🖊️", label: "Նկարչություն", onSelect: () => handleCreateNote("canvas") },
+            ]}
+          />
         </div>
       </div>
 
@@ -286,7 +301,7 @@ export function NotesHomePage() {
               icon={tab === "trash" ? "🗑️" : "🗒️"}
               title={emptyTitle}
               hint={tab === "notes" ? "Ստեղծեք ձեր առաջին նշումը կամ թղթապանակը։" : undefined}
-              cta={tab === "notes" ? { label: "Նոր նշում", onClick: handleCreateNote } : undefined}
+              cta={tab === "notes" ? { label: "Նոր նշում", onClick: () => handleCreateNote("rich_text") } : undefined}
             />
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

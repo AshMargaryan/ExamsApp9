@@ -3,6 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   deleteGroup, fetchGroup, joinGroup, leaveGroup, transferLeadership, type GroupDetail,
 } from "../api/groups";
+import {
+  cancelCall, createCall, joinCall, leaveCall, listCalls, type CallRoom, type CallRoomStatus,
+} from "../api/calls";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { Button } from "../components/ui/Button";
@@ -12,6 +15,17 @@ import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { subjectMeta } from "../lib/subjects";
 import { LinkButton } from "../components/ui/LinkButton";
 
+const CALL_STATUS_LABELS: Record<CallRoomStatus, string> = {
+  waiting: "Սպասում է",
+  ready: "Պատրաստ է",
+  active: "Ընթացքի մեջ է",
+  ended: "Ավարտված է",
+};
+
+const CALL_MIN_CAPACITY = 2;
+const CALL_MAX_CAPACITY = 8;
+const CALL_DEFAULT_CAPACITY = 4;
+
 const WEEKDAY_LABELS = ["Երկուշաբթի", "Երեքշաբթի", "Չորեքշաբթի", "Հինգշաբթի", "Ուրբաթ", "Շաբաթ", "Կիրակի"];
 
 function formatTime(t: string) {
@@ -20,6 +34,75 @@ function formatTime(t: string) {
 
 function displayName(u: { first_name: string; last_name: string; username: string }) {
   return [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username;
+}
+
+function CallRoomCard({
+  call, myId, busy, onJoin, onLeave, onCancel,
+}: {
+  call: CallRoom;
+  myId: number | undefined;
+  busy: boolean;
+  onJoin: () => void;
+  onLeave: () => void;
+  onCancel: () => void;
+}) {
+  const isParticipant = call.participants.some((p) => p.user.id === myId);
+  const isCreator = call.creator.id === myId;
+
+  return (
+    <div className="flex flex-col gap-2 border-b border-border py-3 last:border-b-0">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+              call.status === "waiting"
+                ? "bg-primary/10 text-primary"
+                : call.status === "ready"
+                  ? "bg-correct-bg text-correct"
+                  : "bg-surface-muted text-text-muted"
+            }`}
+          >
+            {CALL_STATUS_LABELS[call.status]}
+          </span>
+          <span className="text-sm text-text-muted">
+            {displayName(call.creator)} սկսեց · {call.participant_count}/{call.capacity}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {!isParticipant && call.status === "waiting" && (
+            <Button size="sm" onClick={onJoin} loading={busy}>
+              Գրանցվել
+            </Button>
+          )}
+          {isParticipant && !isCreator && (
+            <Button size="sm" variant="secondary" onClick={onLeave} loading={busy}>
+              Դուրս գալ
+            </Button>
+          )}
+          {isCreator && (call.status === "waiting" || call.status === "ready") && (
+            <Button size="sm" variant="danger" onClick={onCancel} loading={busy}>
+              Չեղարկել
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {call.participants.map((p) => (
+          <span
+            key={p.user.id}
+            className="rounded-full border border-border px-2 py-0.5 text-xs text-text-muted"
+          >
+            {displayName(p.user)}
+          </span>
+        ))}
+      </div>
+      {call.status === "ready" && (
+        <p className="text-xs text-text-muted">
+          Բոլորը գրանցվել են, բայց տեսազանգի գործառույթը դեռ մշակման փուլում է — շուտով հասանելի կլինի։
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function GroupDetailPage() {
@@ -34,12 +117,23 @@ export function GroupDetailPage() {
   const [transferring, setTransferring] = useState(false);
   const [transferTarget, setTransferTarget] = useState<number | "">("");
 
+  const [calls, setCalls] = useState<CallRoom[] | null>(null);
+  const [callBusy, setCallBusy] = useState(false);
+  const [showStartCall, setShowStartCall] = useState(false);
+  const [newCallCapacity, setNewCallCapacity] = useState(CALL_DEFAULT_CAPACITY);
+
   function load() {
     setGroup(null);
     fetchGroup(Number(id)).then(setGroup);
   }
 
+  function loadCalls() {
+    if (!id) return;
+    listCalls(Number(id)).then(setCalls);
+  }
+
   useEffect(load, [id]);
+  useEffect(loadCalls, [id]);
 
   if (!group) {
     return (
@@ -113,6 +207,58 @@ export function GroupDetailPage() {
     }
   }
 
+  async function handleStartCall() {
+    if (!group) return;
+    setCallBusy(true);
+    try {
+      await createCall(group.id, newCallCapacity);
+      showSuccess("Զանգը ստեղծվեց։");
+      setShowStartCall(false);
+      loadCalls();
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    } finally {
+      setCallBusy(false);
+    }
+  }
+
+  async function handleJoinCall(callId: number) {
+    setCallBusy(true);
+    try {
+      await joinCall(callId);
+      loadCalls();
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    } finally {
+      setCallBusy(false);
+    }
+  }
+
+  async function handleLeaveCall(callId: number) {
+    setCallBusy(true);
+    try {
+      await leaveCall(callId);
+      loadCalls();
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    } finally {
+      setCallBusy(false);
+    }
+  }
+
+  async function handleCancelCall(callId: number) {
+    setCallBusy(true);
+    try {
+      await cancelCall(callId);
+      showSuccess("Զանգը չեղարկվեց։");
+      loadCalls();
+    } catch (err) {
+      showError(extractErrorMessage(err));
+    } finally {
+      setCallBusy(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <LinkButton to="/groups" className="mb-4">← Խմբեր</LinkButton>
@@ -159,6 +305,63 @@ export function GroupDetailPage() {
           ))}
         </div>
       </Card>
+
+      {isMember && (
+        <Card className="mb-6">
+          <SectionHeader
+            title="Զանգեր"
+            action={
+              !showStartCall && (
+                <Button size="sm" onClick={() => setShowStartCall(true)}>
+                  + Սկսել զանգ
+                </Button>
+              )
+            }
+          />
+
+          {showStartCall && (
+            <div className="mb-4 flex flex-wrap items-end gap-3 rounded-[var(--radius)] border border-border bg-bg p-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-text">Մասնակիցների քանակ</label>
+                <input
+                  type="number"
+                  min={CALL_MIN_CAPACITY}
+                  max={CALL_MAX_CAPACITY}
+                  value={newCallCapacity}
+                  onChange={(e) => setNewCallCapacity(Number(e.target.value))}
+                  className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-text focus:border-primary focus:outline-none"
+                />
+              </div>
+              <Button onClick={handleStartCall} loading={callBusy}>
+                Ստեղծել
+              </Button>
+              <Button variant="ghost" onClick={() => setShowStartCall(false)}>
+                Չեղարկել
+              </Button>
+            </div>
+          )}
+
+          {!calls ? (
+            <div className="h-16 animate-pulse rounded-[var(--radius)] bg-surface-muted" />
+          ) : calls.length === 0 ? (
+            <p className="text-sm text-text-muted">Ընթացիկ զանգեր չկան։</p>
+          ) : (
+            <div className="flex flex-col">
+              {calls.map((c) => (
+                <CallRoomCard
+                  key={c.id}
+                  call={c}
+                  myId={user?.id}
+                  busy={callBusy}
+                  onJoin={() => handleJoinCall(c.id)}
+                  onLeave={() => handleLeaveCall(c.id)}
+                  onCancel={() => handleCancelCall(c.id)}
+                />
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-3">
         {!isMember && !full && (

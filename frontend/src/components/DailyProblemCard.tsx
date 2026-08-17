@@ -190,7 +190,7 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
           type="button"
           onClick={handleSubmit}
           disabled={busy}
-          style={{ background: "var(--gradient-primary, linear-gradient(45deg, #1d4ed8, #2563eb))" }}
+          style={{ background: "var(--gradient-primary, linear-gradient(45deg, #6d28d9, #7c3aed))" }}
           className="mt-4 rounded-md px-5 py-2 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {busy ? "..." : "Ուղարկել պատասխանը"}

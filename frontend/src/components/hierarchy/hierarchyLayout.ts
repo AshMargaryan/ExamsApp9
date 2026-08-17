@@ -58,6 +58,10 @@ export interface NodeVisual {
   active: boolean;
   interactive: boolean;
   pct: number | null;
+  // 1-based position among its siblings, in course order — shown as a small
+  // badge so the sequence (start → end) is legible at a glance, not just
+  // implied by clockwise position around the ring.
+  order: number | null;
   onSelect: () => void;
 }
 
@@ -104,7 +108,7 @@ export function computeLayout(input: LayoutInput): LayoutResult {
   const nodes: NodeVisual[] = [];
   const links: LinkVisual[] = [];
 
-  const dSize = small ? 118 : 158;
+  const dSize = small ? 126 : 170;
   const dRx = Math.min(w * 0.33, 470);
   const dRy = Math.min(h * 0.34, 330, Math.max(120, h / 2 - dSize * 0.75 - 48));
 
@@ -158,6 +162,7 @@ export function computeLayout(input: LayoutInput): LayoutResult {
       active,
       interactive: opacity >= 0.25,
       pct: ringOn ? Math.round(d.progress.percent) : null,
+      order: i + 1,
       onSelect:
         active && level === "topic"
           ? () => input.onSelectDomain(null)
@@ -172,7 +177,7 @@ export function computeLayout(input: LayoutInput): LayoutResult {
   });
 
   if (selectedDomain) {
-    const tSize = small ? 100 : 132;
+    const tSize = small ? 108 : 142;
     const tRx = Math.min(w * 0.3, 415);
     const tRy = Math.min(h * 0.31, 300, Math.max(110, h / 2 - tSize * 0.78 - 40));
     const domainAccent = accentFor(domainIndex ?? 0);
@@ -219,13 +224,14 @@ export function computeLayout(input: LayoutInput): LayoutResult {
         active,
         interactive: opacity >= 0.25,
         pct: level === "topic" ? Math.round(t.progress.percent) : null,
+        order: i + 1,
         onSelect: active ? () => input.onSelectTopic(null) : () => input.onSelectTopic(t.id),
       });
     });
   }
 
   if (selectedDomain && selectedTopic) {
-    const sSize = small ? 96 : 124;
+    const sSize = small ? 108 : 142;
     const sRx = Math.min(w * 0.34, 460);
     const sRy = Math.min(h * 0.3, 290, Math.max(105, h / 2 - sSize * 0.8 - 40));
     const span = 292;
@@ -255,6 +261,7 @@ export function computeLayout(input: LayoutInput): LayoutResult {
         active: false,
         interactive: draw >= 0.25,
         pct: subtopicMasteryPct(s),
+        order: i + 1,
         onSelect: () => input.onSelectSubtopic(selectedTopic, s, selectedDomain),
       });
       links.push(radialLink(`topic-subtopic-${s.id}`, cx, cy, x, y, topicAccent, sSize * 0.78, sSize * 0.6, 150 + i * 85, draw));

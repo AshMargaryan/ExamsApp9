@@ -23,6 +23,7 @@ import {
   type Document as NoteDocument,
 } from "../api/notes";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { CanvasEditor } from "../components/notes/canvas/CanvasEditor";
 import { AuthenticatedImage } from "../components/notes/editor/AuthenticatedImage";
 import { EditorToolbar } from "../components/notes/editor/EditorToolbar";
 import { MathInline } from "../components/notes/editor/MathInline";
@@ -78,7 +79,7 @@ export function NoteEditorPage() {
   }, [id]);
 
   const editor = useEditor(
-    doc
+    doc && doc.kind !== "canvas"
       ? {
           extensions: [
             StarterKit,
@@ -222,7 +223,7 @@ export function NoteEditorPage() {
           : "";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className={doc.kind === "canvas" ? "mx-auto max-w-full px-4 py-6" : "mx-auto max-w-3xl px-4 py-8"}>
       {doc.deleted_at && (
         <div className="mb-4 flex items-center justify-between rounded-[var(--radius)] border border-incorrect bg-incorrect-bg px-4 py-3 text-sm text-incorrect">
           <span>Այս նշումը աղբարկղում է։</span>
@@ -296,18 +297,22 @@ export function NoteEditorPage() {
         />
       </div>
 
-      <div className="rounded-[var(--radius)] border border-border bg-surface">
-        {editor && (
-          <EditorToolbar
-            editor={editor}
-            onInsertImage={() => imageInputRef.current?.click()}
-            onInsertAttachment={() => fileInputRef.current?.click()}
-          />
-        )}
-        <div className="min-h-[50vh] px-4 py-4">
-          <EditorContent editor={editor} />
+      {doc.kind === "canvas" ? (
+        <CanvasEditor content={doc.content} onChange={(content) => persist({ content })} />
+      ) : (
+        <div className="rounded-[var(--radius)] border border-border bg-surface">
+          {editor && (
+            <EditorToolbar
+              editor={editor}
+              onInsertImage={() => imageInputRef.current?.click()}
+              onInsertAttachment={() => fileInputRef.current?.click()}
+            />
+          )}
+          <div className="min-h-[50vh] px-4 py-4">
+            <EditorContent editor={editor} />
+          </div>
         </div>
-      </div>
+      )}
 
       <input
         ref={imageInputRef}

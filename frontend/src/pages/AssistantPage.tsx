@@ -10,10 +10,19 @@ import { MessageInput } from "../components/assistant/MessageInput";
 import { WelcomeMessage } from "../components/assistant/WelcomeMessage";
 import { useConversationChat } from "../hooks/useConversationChat";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
+import { MobileAssistant } from "../components/mobile/assistant/MobileAssistant";
+import { useIsNativeApp } from "../lib/platform";
 import { Button } from "../components/ui/Button";
 import { LinkButton } from "../components/ui/LinkButton";
 
 export function AssistantPage() {
+  // Native is a chat app, not this page shrunk: bottom-sheet conversation
+  // switcher, long-press message actions, keyboard-welded composer.
+  if (useIsNativeApp()) return <MobileAssistant />;
+  return <WebAssistantPage />;
+}
+
+function WebAssistantPage() {
   useStudyActivityTracker();
 
   const { user } = useAuth();

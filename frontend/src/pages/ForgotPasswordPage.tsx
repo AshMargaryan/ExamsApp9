@@ -1,8 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { requestPasswordReset } from "../api/auth";
 import { LinkButton } from "../components/ui/LinkButton";
+import { MobileForgotPassword } from "../components/mobile/auth/MobileForgotPassword";
+import { useIsNativeApp } from "../lib/platform";
 
 export function ForgotPasswordPage() {
+  if (useIsNativeApp()) return <MobileForgotPassword />;
+  return <WebForgotPasswordPage />;
+}
+
+function WebForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);

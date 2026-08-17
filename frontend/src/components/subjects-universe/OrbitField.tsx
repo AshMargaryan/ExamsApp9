@@ -217,13 +217,19 @@ function OrbitItemContent({ item, accent, accent2 }: { item: OrbitItem; accent: 
     );
   }
   if (item.shape === "latex" && item.tex) {
-    const html = (() => {
-      try {
-        return katex.renderToString(item.tex!, { throwOnError: false, displayMode: false });
-      } catch {
-        return item.tex;
-      }
-    })();
+    // On failure the raw tex is rendered as TEXT, not fed back through
+    // dangerouslySetInnerHTML — an error path must never become an HTML
+    // injection point. KaTeX's own output is safe to inject (trust defaults
+    // to false, so \href/\url cannot emit javascript: URLs).
+    let html: string | null = null;
+    try {
+      html = katex.renderToString(item.tex, { throwOnError: false, displayMode: false });
+    } catch {
+      html = null;
+    }
+    if (html === null) {
+      return <div className={cls} style={style}>{item.tex}</div>;
+    }
     return <div className={cls} style={style} dangerouslySetInnerHTML={{ __html: html }} />;
   }
   return (

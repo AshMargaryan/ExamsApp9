@@ -137,6 +137,12 @@ def get_or_create_private(user, other_user) -> tuple[Conversation, bool]:
     key = Conversation.build_private_key(user.id, other_user.id)
     existing = Conversation.objects.filter(private_key=key).first()
     if existing is not None:
+        # `user` may have left this conversation before (active=False) —
+        # starting it again should resume it, not leave them locked out of
+        # a conversation they're the one re-initiating.
+        ConversationParticipant.objects.filter(
+            conversation=existing, user=user, active=False
+        ).update(active=True)
         return existing, False
 
     initial_status = RequestStatus.ACCEPTED if are_friends(user, other_user) else RequestStatus.PENDING

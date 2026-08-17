@@ -37,6 +37,23 @@ const CATEGORY_CLASSES: Record<ErrorCategory, string> = {
   misread_question: "border-border bg-surface-muted text-text-muted",
 };
 
+// Past-mistake review is already graded, so unlike a live mock exam it's
+// safe (and useful) to hand the AI the full answer-options list.
+function formatChoicesForAi(renderData: MistakeEntry["render_data"]): string {
+  if (renderData.choices?.length) {
+    return "Պատասխանի տարբերակներ.\n" + renderData.choices.map((c, i) => `${i + 1}. ${c.text}`).join("\n");
+  }
+  if (renderData.statements?.length) {
+    return "Պնդումներ.\n" + renderData.statements.map((s) => `${s.label}. ${s.text}`).join("\n");
+  }
+  if (renderData.left?.length || renderData.right?.length) {
+    const left = (renderData.left ?? []).map((s) => `${s.label}. ${s.text}`).join("; ");
+    const right = (renderData.right ?? []).map((c) => `${c.text}`).join("; ");
+    return `Ձախ սյունակ. ${left}\nԱջ սյունակ. ${right}`;
+  }
+  return "";
+}
+
 function groupBySubject(entries: MistakeEntry[]): [string, MistakeEntry[]][] {
   const groups = new Map<string, MistakeEntry[]>();
   for (const entry of entries) {
@@ -77,10 +94,12 @@ function MistakeCard({ entry: initialEntry }: { entry: MistakeEntry }) {
     const hint = entry.classified_at
       ? ` (հավանական պատճառ. ${entry.error_category_display})`
       : "";
+    const choicesText = formatChoicesForAi(entry.render_data);
     askAboutQuestion({
       message:
         `Ինչու՞ եմ սխալվել այս հարցում. «${entry.question_text}»: ` +
-        `Իմ պատասխանը՝ «${entry.your_answer_text}», ճիշտ պատասխանը՝ «${entry.correct_answer_text}»։${hint}`,
+        `Իմ պատասխանը՝ «${entry.your_answer_text}», ճիշտ պատասխանը՝ «${entry.correct_answer_text}»։${hint}` +
+        `${choicesText ? `\n\n${choicesText}` : ""}`,
       educationalContext: {
         subject: entry.subject_name,
         topic: entry.topic_label || undefined,

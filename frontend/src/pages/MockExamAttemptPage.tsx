@@ -20,6 +20,25 @@ import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 
 const AUTOSAVE_INTERVAL_MS = 30_000;
 
+// Builds the answer-options block sent to the AI so it can discuss the
+// actual choices the student is looking at. Deliberately omits is_correct /
+// is_true / match_target — the exam is still in progress and unsubmitted,
+// so the AI must never be able to hand back which option is right.
+function formatChoicesForAi(q: MockExamQuestion): string {
+  if (q.question_type === "single_choice" && q.choices.length) {
+    return "Պատասխանի տարբերակներ.\n" + q.choices.map((c, i) => `${i + 1}. ${c.text}`).join("\n");
+  }
+  if (q.question_type === "multi_statement" && q.statements.length) {
+    return "Պնդումներ.\n" + q.statements.map((s) => `${s.label}. ${s.text}`).join("\n");
+  }
+  if (q.question_type === "matching" && (q.statements.length || q.choices.length)) {
+    const left = q.statements.map((s) => `${s.label}. ${s.text}`).join("; ");
+    const right = q.choices.map((c) => `${c.order}. ${c.text}`).join("; ");
+    return `Ձախ սյունակ. ${left}\nԱջ սյունակ. ${right}`;
+  }
+  return "";
+}
+
 // Remembers, per attempt, whether the student wants the floating AI
 // assistant available while taking this specific test.
 const aiChoiceKey = (attemptId: number) => `mockexam_ai_choice_${attemptId}`;
@@ -179,8 +198,9 @@ export function MockExamAttemptPage() {
   const unansweredCount = questions.filter((q) => !isAnswered(answers[q.id])).length;
 
   function handleAskAi(q: MockExamQuestion) {
+    const choicesText = formatChoicesForAi(q);
     askAboutQuestion({
-      message: `Բացատրիր ինձ այս հարցը. «${q.text}»`,
+      message: `Բացատրիր ինձ այս հարցը. «${q.text}»${choicesText ? `\n\n${choicesText}` : ""}`,
       educationalContext: {
         subject: attempt.exam.title,
         topic: q.topic,

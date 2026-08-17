@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -22,6 +23,13 @@ def mock_claims(**overrides):
 
 
 class GoogleAuthViewTests(APITestCase):
+    def setUp(self):
+        # ScopedRateThrottle's counters live in the process-wide cache, which
+        # Django's test runner does not reset between tests (unlike the DB) —
+        # without this, tests run later in the suite can be spuriously
+        # throttled by requests earlier tests made to the same scope.
+        cache.clear()
+
     def test_new_user_returns_ticket_without_creating_a_user(self):
         with patch("apps.users.views.verify_google_id_token", return_value=mock_claims()):
             response = self.client.post("/api/auth/google/", {"id_token": "fake"})
@@ -77,6 +85,9 @@ def mock_apple_claims(**overrides):
 
 
 class AppleAuthViewTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+
     def test_new_user_returns_ticket_without_creating_a_user(self):
         with patch("apps.users.views.verify_apple_id_token", return_value=mock_apple_claims()):
             response = self.client.post("/api/auth/apple/", {
@@ -145,6 +156,9 @@ class AppleAuthViewTests(APITestCase):
 
 
 class OAuthCompleteRegisterViewTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+
     def _ticket(self, **overrides):
         data = {
             "provider": "google", "sub": "google-sub-123", "email": "newuser@example.com",
@@ -235,6 +249,7 @@ import threading
 from django.db import connection
 from django.test import TransactionTestCase
 from rest_framework.test import APIClient
+from rest_framework.throttling import SimpleRateThrottle
 
 from .models import UserSession
 from .utils import issue_tokens_for_user
@@ -244,6 +259,7 @@ PASSWORD = "StrongPass1"
 
 class DeviceSessionLimitTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(username="deviceuser", email="deviceuser@example.com", password=PASSWORD)
 
     def _login(self):
@@ -257,15 +273,39 @@ class DeviceSessionLimitTests(APITestCase):
         self.assertEqual(second.status_code, status.HTTP_200_OK)
         self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
 
-    def test_third_device_login_is_rejected(self):
+    def test_third_device_login_signs_out_the_first_one(self):
+        first = self._login()
+        self._login()
+        third = self._login()
+
+        self.assertEqual(third.status_code, status.HTTP_200_OK)
+        # Still capped at two — the new device took the oldest one's slot.
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
+
+        oldest = UserSession.objects.order_by("created_at").first()
+        self.assertIsNotNone(oldest.revoked_at)
+
+        # And the evicted device's token stops working immediately.
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {first.data['access']}")
+        self.assertEqual(self.client.get("/api/auth/me/").status_code, status.HTTP_401_UNAUTHORIZED)
+        self.client.credentials()
+
+    def test_login_reports_which_device_was_signed_out(self):
         self._login()
         self._login()
         third = self._login()
 
-        self.assertEqual(third.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(third.data["code"], "device_limit_reached")
-        self.assertIn("management_ticket", third.data)
-        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
+        signed_out = third.data["signed_out_device"]
+        self.assertEqual(signed_out["count"], 1)
+        self.assertEqual(signed_out["device_limit"], 2)
+        self.assertTrue(signed_out["label"])
+
+    def test_login_under_the_cap_reports_no_eviction(self):
+        first = self._login()
+        second = self._login()
+
+        self.assertNotIn("signed_out_device", first.data)
+        self.assertNotIn("signed_out_device", second.data)
 
     def test_logout_frees_a_slot(self):
         first = self._login()
@@ -304,7 +344,7 @@ class DeviceSessionLimitTests(APITestCase):
         self.assertEqual(third.status_code, status.HTTP_200_OK)
         self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
 
-    def test_google_login_respects_device_limit_for_existing_account(self):
+    def test_google_login_evicts_the_oldest_device_for_existing_account(self):
         self.user.google_id = "google-sub-device-test"
         self.user.save(update_fields=["google_id"])
         self._login()
@@ -315,10 +355,11 @@ class DeviceSessionLimitTests(APITestCase):
         )):
             response = self.client.post("/api/auth/google/", {"id_token": "fake"})
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data["code"], "device_limit_reached")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["signed_out_device"]["count"], 1)
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
 
-    def test_apple_login_respects_device_limit_for_existing_account(self):
+    def test_apple_login_evicts_the_oldest_device_for_existing_account(self):
         self.user.apple_id = "apple-sub-device-test"
         self.user.save(update_fields=["apple_id"])
         self._login()
@@ -329,13 +370,15 @@ class DeviceSessionLimitTests(APITestCase):
         )):
             response = self.client.post("/api/auth/apple/", {"id_token": "fake"})
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.data["code"], "device_limit_reached")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["signed_out_device"]["count"], 1)
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
 
-    def test_already_on_two_devices_then_different_provider_still_rejected_as_third(self):
+    def test_already_on_two_devices_then_different_provider_still_respects_the_cap(self):
         # Covers: 2 password-login devices, then a Google login for the same
-        # account (via verified-email auto-link, no prior google_id) must
-        # still be treated as a third session, not bypass the cap.
+        # account (via verified-email auto-link, no prior google_id) must still
+        # be treated as a third session — it evicts, rather than bypassing the
+        # cap and leaving three devices signed in.
         self._login()
         self._login()
 
@@ -344,10 +387,11 @@ class DeviceSessionLimitTests(APITestCase):
         )):
             response = self.client.post("/api/auth/google/", {"id_token": "fake"})
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        # Must not have auto-linked the google_id if the login didn't actually succeed.
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(UserSession.objects.filter(user=self.user, revoked_at__isnull=True).count(), 2)
+        # The login succeeded, so the auto-link must have been applied.
         self.user.refresh_from_db()
-        self.assertIsNone(self.user.google_id)
+        self.assertEqual(self.user.google_id, "google-sub-new-link")
 
     def test_repeated_requests_with_same_token_do_not_create_new_sessions(self):
         first = self._login()
@@ -377,44 +421,10 @@ class DeviceSessionLimitTests(APITestCase):
         blocked = self.client.get("/api/auth/me/")
         self.assertEqual(blocked.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_management_ticket_list_and_revoke_frees_a_slot(self):
-        self._login()
-        self._login()
-        rejected = self._login()
-        ticket = rejected.data["management_ticket"]
-
-        listing = self.client.post("/api/auth/sessions/manage/list/", {"ticket": ticket})
-        self.assertEqual(listing.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(listing.data), 2)
-
-        revoke = self.client.post("/api/auth/sessions/manage/revoke/", {
-            "ticket": ticket, "session_id": listing.data[0]["id"],
-        })
-        self.assertEqual(revoke.status_code, status.HTTP_200_OK)
-
-        retry = self._login()
-        self.assertEqual(retry.status_code, status.HTTP_200_OK)
-
-    def test_management_ticket_cannot_touch_another_users_sessions(self):
-        other = User.objects.create_user(username="otheruser", email="other@example.com", password=PASSWORD)
-        self.client.post("/api/auth/login/", {"username": "otheruser", "password": PASSWORD})
-        other_session = UserSession.objects.get(user=other)
-
-        self._login()
-        self._login()
-        rejected = self._login()
-        ticket = rejected.data["management_ticket"]
-
-        revoke = self.client.post("/api/auth/sessions/manage/revoke/", {
-            "ticket": ticket, "session_id": other_session.pk,
-        })
-        self.assertEqual(revoke.status_code, status.HTTP_404_NOT_FOUND)
-        other_session.refresh_from_db()
-        self.assertTrue(other_session.is_active)
-
 
 class ChangePasswordViewTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(username="pwuser", email="pwuser@example.com", password=PASSWORD)
         login = self.client.post("/api/auth/login/", {"username": "pwuser", "password": PASSWORD})
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
@@ -483,6 +493,9 @@ class ChangePasswordViewTests(APITestCase):
 
 
 class ConcurrentLoginRaceTests(TransactionTestCase):
+    def setUp(self):
+        cache.clear()
+
     def test_concurrent_logins_cannot_exceed_device_limit(self):
         User.objects.create_user(username="raceuser", email="race@example.com", password=PASSWORD)
         results = []
@@ -506,6 +519,150 @@ class ConcurrentLoginRaceTests(TransactionTestCase):
         for t in threads:
             t.join()
 
-        self.assertEqual(results.count(status.HTTP_200_OK), 2)
+        # Every login now succeeds — the cap is enforced by eviction, not by
+        # rejection — but the invariant that matters is unchanged: however many
+        # devices race, the account is never left with more than the limit.
+        self.assertEqual(results.count(status.HTTP_200_OK), 8)
         user = User.objects.get(username="raceuser")
         self.assertEqual(UserSession.objects.filter(user=user, revoked_at__isnull=True).count(), 2)
+
+
+# NB: patching SimpleRateThrottle.THROTTLE_RATES, not override_settings.
+# DRF binds that class attribute to the settings dict once, at import time, so
+# override_settings(REST_FRAMEWORK=...) does NOT reach it and every assertion
+# below would silently pass against the production rates instead of these.
+@patch.dict(
+    SimpleRateThrottle.THROTTLE_RATES,
+    {
+        # Low enough to exhaust in a test without issuing 30 requests.
+        "login": "100/min",           # kept high so the per-account limit is what trips
+        "login-account": "3/min",
+        "password-reset": "100/min",
+        "password-reset-email": "2/min",
+    },
+)
+class AuthThrottlingTests(APITestCase):
+    """The auth endpoints are the app's brute-force surface; these lock in
+    that the limits are actually wired up, since a throttle that silently
+    stops being applied looks exactly like one that is working."""
+
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username="throttled", email="throttled@example.com", password=PASSWORD
+        )
+
+    def _bad_login(self, **extra):
+        return self.client.post(
+            "/api/auth/login/", {"username": "throttled", "password": "WrongPass1"}, **extra
+        )
+
+    def test_repeated_failed_logins_against_one_account_are_throttled(self):
+        for _ in range(3):
+            self.assertEqual(self._bad_login().status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.assertEqual(self._bad_login().status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_account_throttle_is_not_bypassed_by_rotating_source_ip(self):
+        """The whole point of keying this limit on the username rather than
+        the client IP — a distributed brute force can change address for every
+        request, but not the account it is trying to break into."""
+        for i in range(3):
+            self._bad_login(REMOTE_ADDR=f"203.0.113.{i}")
+
+        response = self._bad_login(REMOTE_ADDR="203.0.113.99")
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_throttling_one_account_does_not_lock_out_a_different_one(self):
+        """Guards the NAT case: students sharing one school IP must not be
+        able to lock each other out."""
+        User.objects.create_user(username="classmate", email="classmate@example.com", password=PASSWORD)
+        for _ in range(4):
+            self._bad_login()
+
+        response = self.client.post(
+            "/api/auth/login/", {"username": "classmate", "password": PASSWORD}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_password_reset_is_throttled_per_mailbox(self):
+        for _ in range(2):
+            response = self.client.post("/api/auth/password-reset/", {"email": "throttled@example.com"})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.post("/api/auth/password-reset/", {"email": "throttled@example.com"})
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_password_reset_throttle_does_not_reveal_whether_an_account_exists(self):
+        """The throttle keys on the submitted address, not on a lookup, so an
+        unregistered address must throttle identically to a registered one —
+        otherwise the 429 itself becomes an account-enumeration oracle."""
+        for _ in range(2):
+            self.client.post("/api/auth/password-reset/", {"email": "nobody@example.com"})
+
+        response = self.client.post("/api/auth/password-reset/", {"email": "nobody@example.com"})
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class UsernameAvailabilityTests(APITestCase):
+    """The signup form's live "is this free?" check."""
+
+    URL = "/api/auth/username-available/"
+
+    def setUp(self):
+        # Throttle counters and the endpoint's own verdict cache share the
+        # locmem cache, so a leftover entry would leak between tests.
+        cache.clear()
+
+    def test_free_username_is_available(self):
+        response = self.client.get(self.URL, {"username": "daniel"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["available"])
+        self.assertEqual(response.data["suggestions"], [])
+
+    def test_taken_username_reports_unavailable_with_suggestions(self):
+        User.objects.create_user(username="daniel", email="d@example.com", password="unused")
+
+        response = self.client.get(self.URL, {"username": "daniel"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["available"])
+        self.assertEqual(len(response.data["suggestions"]), 4)
+        for suggestion in response.data["suggestions"]:
+            self.assertFalse(User.objects.filter(username=suggestion).exists())
+
+    def test_taken_verdict_is_served_from_cache_on_repeat(self):
+        User.objects.create_user(username="daniel", email="d@example.com", password="unused")
+        first = self.client.get(self.URL, {"username": "daniel"})
+
+        # Same suggestions back without regenerating them — proof the second
+        # call never reached the database.
+        with self.assertNumQueries(0):
+            second = self.client.get(self.URL, {"username": "daniel"})
+
+        self.assertEqual(second.data["suggestions"], first.data["suggestions"])
+        self.assertFalse(second.data["available"])
+
+    def test_available_verdict_is_not_cached(self):
+        self.client.get(self.URL, {"username": "daniel"})
+        User.objects.create_user(username="daniel", email="d@example.com", password="unused")
+
+        # Someone registered it in between: the endpoint must not keep serving
+        # a stale "free".
+        response = self.client.get(self.URL, {"username": "daniel"})
+
+        self.assertFalse(response.data["available"])
+
+    def test_invalid_username_is_rejected_without_a_db_lookup(self):
+        response = self.client.get(self.URL, {"username": "not a username!"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["available"])
+        self.assertFalse(response.data["valid"])
+        self.assertTrue(response.data["detail"])
+
+    def test_missing_username_is_a_bad_request(self):
+        response = self.client.get(self.URL)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

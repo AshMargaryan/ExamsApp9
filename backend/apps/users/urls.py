@@ -3,14 +3,15 @@ from django.urls import path
 from .views import (
     RegisterView, LoginView, LogoutView, MeView, ChangePasswordView, SessionAwareTokenRefreshView,
     GoogleAuthView, AppleAuthView, OAuthCompleteRegisterView,
-    SessionListView, SessionRevokeView, SessionManagementListView, SessionManagementRevokeView,
-    SchoolSearchView, UniversitySearchView,
+    SessionListView, SessionRevokeView,
+    SchoolSearchView, UniversitySearchView, UsernameAvailabilityView,
     VerifyEmailView, ResendVerificationCodeView,
     PasswordResetRequestView, PasswordResetConfirmView,
 )
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
+    path("username-available/", UsernameAvailabilityView.as_view(), name="username_available"),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("refresh/", SessionAwareTokenRefreshView.as_view(), name="token_refresh"),
@@ -21,8 +22,6 @@ urlpatterns = [
     path("change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("sessions/", SessionListView.as_view(), name="session_list"),
     path("sessions/<int:pk>/revoke/", SessionRevokeView.as_view(), name="session_revoke"),
-    path("sessions/manage/list/", SessionManagementListView.as_view(), name="session_management_list"),
-    path("sessions/manage/revoke/", SessionManagementRevokeView.as_view(), name="session_management_revoke"),
     path("schools/", SchoolSearchView.as_view(), name="school_search"),
     path("universities/", UniversitySearchView.as_view(), name="university_search"),
     path("verify-email/", VerifyEmailView.as_view(), name="verify_email"),
