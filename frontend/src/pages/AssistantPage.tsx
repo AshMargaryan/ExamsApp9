@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import * as assistantApi from "../api/assistant";
 import type { Conversation, EducationalContext } from "../api/assistant";
 import { useAuth } from "../auth/AuthContext";
+import { AssistantSuggestions, FOLLOW_UP_ACTIONS } from "../components/assistant/AssistantSuggestions";
 import { ConversationSidebar } from "../components/assistant/ConversationSidebar";
 import { HamburgerIcon } from "../components/assistant/icons";
 import { MessageBubble } from "../components/assistant/MessageBubble";
@@ -13,6 +14,9 @@ import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 import { MobileAssistant } from "../components/mobile/assistant/MobileAssistant";
 import { useIsNativeApp } from "../lib/platform";
 import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { LoadingRegion, SkeletonText } from "../components/ui/Skeleton";
 import { LinkButton } from "../components/ui/LinkButton";
 
 export function AssistantPage() {
@@ -33,6 +37,7 @@ function WebAssistantPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [undo, setUndo] = useState<{ id: number; title: string } | null>(null);
+  const [listError, setListError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
@@ -47,13 +52,19 @@ function WebAssistantPage() {
       archived: showArchived,
     });
     setConversations(data);
+    setListError(false);
     return data;
   }
 
   useEffect(() => {
-    refreshConversations().then((data) => {
-      if (!selectedId && data.length > 0) setSelectedId(data[0].id);
-    });
+    refreshConversations()
+      .then((data) => {
+        if (!selectedId && data.length > 0) setSelectedId(data[0].id);
+      })
+      // Without this, a failed list left the pane on "Բեռնվում է..." forever
+      // and the auto-create effect below could never fire either, so the
+      // student was stuck on a dead screen with no way to start a chat.
+      .catch(() => setListError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, showArchived]);
 
@@ -117,6 +128,14 @@ function WebAssistantPage() {
     () => conversations?.find((c) => c.id === selectedId) ?? null,
     [conversations, selectedId],
   );
+
+  // Follow-ups belong to a finished answer: shown only when the newest message
+  // is an assistant reply that has actually landed.
+  const showFollowUps = useMemo(() => {
+    if (!messages || messages.length === 0 || sending) return false;
+    const last = messages[messages.length - 1];
+    return last.role === "assistant" && last.status !== "sending" && last.id > 0;
+  }, [messages, sending]);
 
   async function handleCreate() {
     const conversation = await assistantApi.createConversation();
@@ -237,8 +256,27 @@ function WebAssistantPage() {
         </header>
 
         {!selectedId && (
-          <div className="flex flex-1 items-center justify-center text-text-muted">
-            {conversations === null || conversations.length === 0 ? "Բեռնվում է..." : "Ընտրեք զրույց կամ սկսեք նորը։"}
+          <div className="flex flex-1 items-center justify-center p-[var(--space-6)]">
+            {listError ? (
+              <ErrorState
+                title="Չհաջողվեց բեռնել զրույցները։"
+                hint="Ստուգիր կապը և փորձիր կրկին։"
+                onRetry={() => {
+                  setListError(false);
+                  void refreshConversations();
+                }}
+              />
+            ) : conversations === null ? (
+              <LoadingRegion className="w-full max-w-md">
+                <SkeletonText lines={3} />
+              </LoadingRegion>
+            ) : (
+              <EmptyState
+                title="Ընտրիր զրույց կամ սկսիր նորը։"
+                hint="Կարող ես հարցնել թեմայի բացատրություն, ակնարկ խնդրի համար կամ ստուգել գիտելիքդ։"
+                cta={{ label: "Նոր զրույց", onClick: handleCreate }}
+              />
+            )}
           </div>
         )}
 
@@ -246,7 +284,12 @@ function WebAssistantPage() {
           <>
             <div className="relative flex flex-1 min-h-0">
               <div ref={scrollRef} className="flex flex-1 flex-col space-y-4 overflow-y-auto px-4 py-4">
-                {messages === null && <p className="text-text-muted">Բեռնվում է...</p>}
+                {messages === null && (
+                  <LoadingRegion className="flex flex-col gap-[var(--space-4)]">
+                    <SkeletonText lines={2} />
+                    <SkeletonText lines={3} />
+                  </LoadingRegion>
+                )}
                 {messages?.length === 0 && (
                   <WelcomeMessage
                     username={user?.username ?? ""}
@@ -270,6 +313,19 @@ function WebAssistantPage() {
                     }
                   />
                 ))}
+
+                {/* The tutoring moves from §37, one tap each, under the latest
+                    answer. Hidden while a reply streams so they never compete
+                    with the message that is still arriving. */}
+                {showFollowUps && (
+                  <AssistantSuggestions
+                    actions={FOLLOW_UP_ACTIONS}
+                    label="Հաջորդ քայլը"
+                    disabled={sending}
+                    onPick={(prompt) => handleSend(prompt, [])}
+                    className="pt-[var(--space-1)]"
+                  />
+                )}
               </div>
 
               {showJumpToLatest && (
