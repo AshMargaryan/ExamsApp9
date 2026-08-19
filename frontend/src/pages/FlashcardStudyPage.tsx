@@ -648,6 +648,8 @@ export function FlashcardStudyPage() {
                           <img
                             src={currentCard.front_image_url}
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             className="mb-4 max-h-40 rounded-md object-contain"
                           />
                         )}
@@ -720,6 +722,8 @@ export function FlashcardStudyPage() {
                             <img
                               src={currentCard.back_image_url}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               className="mb-2 max-h-32 rounded-md object-contain"
                             />
                           )}
@@ -782,6 +786,8 @@ export function FlashcardStudyPage() {
                               <img
                                 src={currentCard.front_image_url}
                                 alt=""
+                                loading="lazy"
+                                decoding="async"
                                 className="mb-4 max-h-40 rounded-md object-contain"
                               />
                             )}
@@ -805,6 +811,8 @@ export function FlashcardStudyPage() {
                               <img
                                 src={currentCard.back_image_url}
                                 alt=""
+                                loading="lazy"
+                                decoding="async"
                                 className="mb-4 max-h-40 rounded-md object-contain"
                               />
                             )}

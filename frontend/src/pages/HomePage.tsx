@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, BookOpen, CalendarDays, Circle, ClipboardCheck,
-  Flame, HelpCircle, Sparkles, Target, TrendingUp, Trophy,
+  Flame, HelpCircle, Layers, ListTodo, Sparkles, Target, TrendingUp, Trophy,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import * as profileApi from "../api/profile";
@@ -21,7 +21,6 @@ import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { StatTile } from "../components/ui/StatTile";
 import { LinkButton } from "../components/ui/LinkButton";
-import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
 
 function ExamCountdown({ profile, onUpdated }: { profile: Profile; onUpdated: (p: Profile) => void }) {
   const [editing, setEditing] = useState(false);
@@ -104,9 +103,11 @@ const quickActionIconProps = { size: 22, strokeWidth: 1.75 };
 
 const QUICK_ACTIONS = [
   { label: "AI Օգնական", href: "/assistant", icon: <Sparkles {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface))", fg: "var(--color-primary)" },
+  { label: "Իմ խնդիրները", href: "/todo", icon: <ListTodo {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-accent) 16%, var(--color-surface))", fg: "var(--color-accent)" },
   { label: "Թեստեր", href: "/mock-exams", icon: <ClipboardCheck {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-purple) 14%, var(--color-surface))", fg: "var(--color-purple)" },
   { label: "Պարապել", href: "/practice", icon: <BookOpen {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-pink) 16%, var(--color-surface))", fg: "var(--color-pink)" },
-  { label: "Վարկանիշներ", href: "/rankings", icon: <Trophy {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface))", fg: "var(--color-primary)" },
+  { label: "Բառաքարտեր", href: "/flashcards", icon: <Layers {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface))", fg: "var(--color-primary)" },
+  { label: "Վարկանիշներ", href: "/rankings", icon: <Trophy {...quickActionIconProps} />, bg: "color-mix(in srgb, var(--color-accent) 16%, var(--color-surface))", fg: "var(--color-accent)" },
 ];
 
 function priorityTag(mistakeCount: number | null): { emoji: ReactNode; label: string; tone: "neutral" | "primary" | "incorrect" } {
@@ -146,41 +147,6 @@ function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
   );
 }
 
-function TeacherHomePage() {
-  const notifications = useAssignmentNotifications();
-  const hasUnseenAssignments = (notifications?.length ?? 0) > 0;
-
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
-      <h1 className="text-3xl font-semibold text-text">Բարի գալուստ</h1>
-
-      <div className="flex flex-wrap justify-center gap-4">
-        <Link
-          to="/teacher-dashboard"
-          className="relative rounded-md bg-primary px-8 py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-        >
-          🧑‍🏫 Ուսուցչի վահանակ
-          {hasUnseenAssignments && (
-            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-incorrect" />
-          )}
-        </Link>
-        <Link
-          to="/chat"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          💬 Հաղորդագրություններ
-        </Link>
-        <Link
-          to="/profile"
-          className="rounded-md border border-primary px-8 py-3 text-lg font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          👤 Իմ պրոֆիլը
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 /** Built from real fields only — never a generic motivational quote. */
 function greetingSubtext(insight: HomeInsight | null, profile: Profile): string | null {
   if (insight?.coach.available && insight.coach.situation) return insight.coach.situation;
@@ -215,8 +181,11 @@ export function HomePage() {
     return <Navigate to="/family" replace />;
   }
 
+  // Teachers land straight on the full dashboard — there's no separate
+  // "teacher home" content to show first, so a lighter placeholder here
+  // would just be an extra click in front of what they actually want.
   if (user?.role === "teacher") {
-    return <TeacherHomePage />;
+    return <Navigate to="/teacher-dashboard" replace />;
   }
 
   const xpPercent =
@@ -374,7 +343,7 @@ export function HomePage() {
             )}
 
             {/* Quick actions */}
-            <section className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <section className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {QUICK_ACTIONS.map((qa) => (
                 <Link
                   key={qa.href}

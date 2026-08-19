@@ -47,6 +47,9 @@ class StudyGroup(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["subject", "type"]),
+        ]
 
     def __str__(self):
         return self.title

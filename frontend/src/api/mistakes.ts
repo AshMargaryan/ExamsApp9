@@ -84,8 +84,25 @@ export interface MistakeRetryResult {
   retry_count: number;
 }
 
-export async function listMistakes(source?: MistakeSource): Promise<MistakeEntry[]> {
-  const { data } = await apiClient.get("/mistakes/", { params: source ? { source } : undefined });
+export interface MistakeFilters {
+  source?: MistakeSource;
+  /** Exact subject_name as stored on the entry. */
+  subject?: string;
+  /** Exact topic_label within that subject. */
+  topic?: string;
+  /** Drop entries already re-answered correctly. */
+  unresolved?: boolean;
+}
+
+export async function listMistakes(filters: MistakeFilters = {}): Promise<MistakeEntry[]> {
+  const params: Record<string, string> = {};
+  if (filters.source) params.source = filters.source;
+  if (filters.subject) params.subject = filters.subject;
+  if (filters.topic) params.topic = filters.topic;
+  if (filters.unresolved) params.unresolved = "1";
+  const { data } = await apiClient.get("/mistakes/", {
+    params: Object.keys(params).length > 0 ? params : undefined,
+  });
   return data;
 }
 

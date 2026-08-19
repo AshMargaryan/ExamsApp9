@@ -32,7 +32,7 @@ export function HeaderStrip() {
   const name = profile ? profile.first_name || profile.username : "";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-surface/90 pl-36 pr-2 backdrop-blur-sm sm:pr-5">
+    <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-surface/90 pl-36 pr-2 backdrop-blur-sm sm:pr-5 lg:pl-[calc(var(--rail-w)+1.25rem)]">
       {/* pl-36 clears two pre-existing fixed overlays this strip now sits behind: the
        * hamburger (left-4, 44px) and ReloadButton (left-20, 44px) — both still fixed rather
        * than moved inside the header, to keep this phase's blast radius small.

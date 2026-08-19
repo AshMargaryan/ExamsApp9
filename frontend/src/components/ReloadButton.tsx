@@ -5,7 +5,7 @@ export function ReloadButton() {
       onClick={() => window.location.reload()}
       aria-label="Թարմացնել էջը"
       title="Թարմացնել էջը"
-      className="fixed left-20 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-xl shadow-lg transition-colors hover:border-primary"
+      className="fixed left-20 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-xl shadow-lg transition-colors hover:border-primary lg:left-[calc(var(--rail-w)+1rem)]"
     >
       🔄
     </button>

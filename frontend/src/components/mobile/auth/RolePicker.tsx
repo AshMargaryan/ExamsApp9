@@ -7,8 +7,7 @@ import type { AccountRole } from "../../../api/auth";
   which product the person sees afterwards. It deserves more than three rows of
   text, so each role gets its own identity:
 
-    - its own intensity of the brand violet (the palette is #7C3AED on
-      #000000, so the roles differ by weight rather than by hue),
+    - a distinct colour drawn from the existing theme tokens (no new palette),
     - a line-art icon rather than an emoji, which renders differently on every
       OS and reads as a placeholder,
     - a one-line promise of what that role actually gets,
@@ -42,14 +41,14 @@ const ROLES: RoleOption[] = [
     title: "Ուսուցիչ",
     promise: "Տուր առաջադրանքներ և տես, թե ով որտեղ է դժվարանում։",
     icon: Presentation,
-    accent: "color-mix(in srgb, var(--color-primary) 70%, #ffffff)",
+    accent: "var(--color-accent)",
   },
   {
     role: "parent",
     title: "Ծնող",
     promise: "Հետևիր երեխայիդ առաջընթացին՝ առանց նրա ուսերին կանգնելու։",
     icon: Users,
-    accent: "color-mix(in srgb, var(--color-primary) 55%, #000000)",
+    accent: "var(--color-pink)",
   },
 ];
 

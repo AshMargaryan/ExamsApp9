@@ -44,7 +44,7 @@ function MessageBubbleImpl({
   async function handleListen() {
     if (audioRef.current) {
       // Toggle: a second click while already-generated audio is loaded just
-      // replays it, no need to hit Azure TTS again for the same text.
+      // replays it, no need to hit OpenAI TTS again for the same text.
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {});
       return;
@@ -52,7 +52,7 @@ function MessageBubbleImpl({
     setSpeakError(false);
     setSpeaking(true);
     try {
-      const blob = await synthesizeVoice(message.content, "hy-AM-AnahitNeural");
+      const blob = await synthesizeVoice(message.content, "nova");
       const audio = new Audio(URL.createObjectURL(blob));
       audioRef.current = audio;
       audio.play().catch(() => {});

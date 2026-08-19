@@ -13,7 +13,7 @@ fake number or a 0%.
 from collections import defaultdict
 from datetime import timedelta
 
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, DurationField, ExpressionWrapper, F, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -315,7 +315,7 @@ def _knowledge_breadth(user) -> float:
     return min(100.0, distinct_subtopics * 4 + distinct_subjects * 15)
 
 
-def academic_power(user) -> dict:
+def academic_power(user, growth_data: dict | None = None) -> dict:
     total_answers = _completed_answers(user).count()
     completed_mocks = _completed_mock_attempts(user).count()
     flashcard_reviews = FlashcardReview.objects.filter(user=user).count()
@@ -358,7 +358,7 @@ def academic_power(user) -> dict:
 
     components["knowledge"] = round(_knowledge_breadth(user), 1)
 
-    g = growth(user)
+    g = growth_data if growth_data is not None else growth(user)
     if g["has_enough_data"] and g["accuracy_delta"] is not None:
         # Neutral (no change) = 50; every +/-1% accuracy shifts the growth
         # component by 2.5 points, clamped to [0, 100].
@@ -385,11 +385,13 @@ def personal_records(user) -> dict:
         .order_by("-count")
         .first()
     )
-    longest_session_seconds = 0
-    for session in StudySession.objects.filter(user=user, ended_at__isnull=False):
-        duration = (session.ended_at - session.started_at).total_seconds()
-        if duration > longest_session_seconds:
-            longest_session_seconds = duration
+    longest_session = (
+        StudySession.objects.filter(user=user, ended_at__isnull=False)
+        .annotate(duration=ExpressionWrapper(F("ended_at") - F("started_at"), output_field=DurationField()))
+        .order_by("-duration")
+        .first()
+    )
+    longest_session_seconds = longest_session.duration.total_seconds() if longest_session else 0
     best_month = MonthlyXP.objects.filter(user=user).order_by("-xp").first()
     best_rank = RankHistory.objects.filter(user=user, scope="global").order_by("rank").first()
 
@@ -512,15 +514,20 @@ def _weakest_topic_mistake(user):
     return recent or TopicMistake.objects.filter(student=user).order_by("-incorrect_count").first()
 
 
-def coach(user) -> dict:
-    mistake = _weakest_topic_mistake(user)
+def coach(user, mistake=None, growth_data=None) -> dict:
+    """`mistake`/`growth_data` let a caller that already computed
+    _weakest_topic_mistake()/growth() for this request pass them in instead
+    of triggering the underlying queries a second time (both are also used
+    elsewhere in ProfileAnalyticsView/HomeInsightView)."""
+    if mistake is None:
+        mistake = _weakest_topic_mistake(user)
     if mistake is None:
         return {"available": False, "reason": "Դեռ բավարար տվյալներ չկան Ձեր վերլուծության համար։ Շարունակեք սովորել։"}
 
     total_mistakes = TopicMistake.objects.filter(student=user).aggregate(total=Sum("incorrect_count"))["total"] or 0
     share = round(mistake.incorrect_count / total_mistakes * 100) if total_mistakes else 0
 
-    g = growth(user)
+    g = growth_data if growth_data is not None else growth(user)
     situation = None
     if g["accuracy_delta"] is not None:
         if g["accuracy_delta"] > 0:
@@ -546,8 +553,12 @@ def coach(user) -> dict:
     }
 
 
-def next_mission(user) -> dict:
-    mistake = _weakest_topic_mistake(user)
+def next_mission(user, mistake=None) -> dict:
+    """`mistake` lets a caller that already ran _weakest_topic_mistake() for
+    this request (e.g. after calling coach()) pass it in instead of
+    re-running the query."""
+    if mistake is None:
+        mistake = _weakest_topic_mistake(user)
     if mistake is None:
         return {"available": False, "reason": "Դեռ բավարար տվյալներ չկան առաջադրանք առաջարկելու համար։"}
 
@@ -564,15 +575,29 @@ def next_mission(user) -> dict:
             "cta": {"type": "practice_subtopic", "subtopic_id": mistake.subtopic_id, "tier": "medium"},
         }
 
+    # No subtopic means this weak topic came from a mock exam, so there is no
+    # practice tier to send the student to. It used to fall back to the mock
+    # exam list, which contradicted the mission's own title ("review this
+    # topic") and pushed a full sitting at someone who just wanted to fix a
+    # topic. The mistake log has these exact questions, keyed by the same
+    # (subject_name, topic_label) pair — so review them.
     return {
         "available": True,
         "title": f"Վերանայեք «{mistake.topic_label}» թեման",
-        "question_count": None,
-        "estimated_minutes": None,
+        "question_count": mistake.incorrect_count,
+        "estimated_minutes": max(5, mistake.incorrect_count * 2),
         "potential_xp": None,
         "reason": f"«{mistake.topic_label}» թեմայում ունեք {mistake.incorrect_count} սխալ պատասխան փորձնական քննություններում։",
-        "cta": {"type": "mock_exams"},
+        "cta": {
+            "type": "mistake_review",
+            "subject_name": mistake.subject_name,
+            "topic_label": mistake.topic_label,
+        },
     }
+
+
+# Fallback size of the daily practice goal when the mission can't supply one.
+DEFAULT_DAILY_PRACTICE_TARGET = 5
 
 
 # ---------------------------------------------------------------------------
@@ -581,17 +606,29 @@ def next_mission(user) -> dict:
 # where available so the checklist and the mission card never disagree.
 # ---------------------------------------------------------------------------
 
-def today_checklist(user) -> dict:
+def today_checklist(user, mission=None) -> dict:
+    """`mission` lets a caller that already ran next_mission() for this
+    request (e.g. HomeInsightView) pass it in instead of re-running it."""
     today = timezone.localdate()
 
     daily_done = DailyProblemAttempt.objects.filter(user=user, date=today).exists()
 
     practice_today = _completed_answers(user).filter(answered_at__date=today).count()
-    mission = next_mission(user)
+    if mission is None:
+        mission = next_mission(user)
+    # Only a *practice* mission's question_count is a practice target. A
+    # mistake-review mission also reports a count — of mistakes to re-answer —
+    # and borrowing it here would quietly redefine "today's practice" as
+    # "however many mistakes sit in your weakest topic", which for a student
+    # with two mistakes means a two-question day.
     practice_target = (
         mission["question_count"]
-        if mission.get("available") and mission.get("question_count")
-        else 5
+        if (
+            mission.get("available")
+            and mission.get("cta", {}).get("type") == "practice_subtopic"
+            and mission.get("question_count")
+        )
+        else DEFAULT_DAILY_PRACTICE_TARGET
     )
 
     # "Open" = not successfully resolved on a *previous* day. A mistake

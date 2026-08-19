@@ -2,22 +2,10 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-/*
-  Violet-on-black (#7C3AED on #000000) is the brand, not a dark-mode variant of
-  it, so the app opens dark for everyone. Light remains available as an explicit
-  choice.
-
-  The key is deliberately not the old "theme": the previous implementation wrote
-  the OS preference to storage on mount, so almost every existing visitor has a
-  "light"/"dark" value they never actually chose. Honouring those would mean the
-  brand default never reaches them. Reading a fresh key ignores the auto-written
-  values, and only a real toggle writes to it.
-*/
-const THEME_KEY = "theme.choice";
-
-function storedChoice(): Theme | null {
-  const stored = localStorage.getItem(THEME_KEY);
-  return stored === "light" || stored === "dark" ? stored : null;
+function getInitialTheme(): Theme {
+  const stored = localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 /**
@@ -26,25 +14,23 @@ function storedChoice(): Theme | null {
  * (currently only rendered on the home page) has mounted at least once.
  */
 export function applyStoredTheme() {
-  document.documentElement.setAttribute("data-theme", storedChoice() ?? "dark");
+  const stored = localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark") {
+    document.documentElement.setAttribute("data-theme", stored);
+  }
 }
 
-/** Manual light/dark override; defaults to the brand dark theme. */
+/** Manual light/dark override, persisted in localStorage; falls back to OS preference. */
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => storedChoice() ?? "dark");
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
-  // Reflects the current theme onto <html>. Deliberately does NOT persist —
-  // writing here is what turned a passive default into a stored "choice".
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   function toggleTheme() {
-    setTheme((current) => {
-      const next = current === "dark" ? "light" : "dark";
-      localStorage.setItem(THEME_KEY, next);
-      return next;
-    });
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
   }
 
   return { theme, toggleTheme };

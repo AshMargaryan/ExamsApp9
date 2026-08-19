@@ -86,6 +86,12 @@ class GameRoom(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            # Backs the public-lobby listing (type=PUBLIC, status=WAITING) —
+            # without it, that query becomes a full table scan as finished/
+            # cancelled rooms (never purged) accumulate.
+            models.Index(fields=["type", "status"]),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.room_code})"

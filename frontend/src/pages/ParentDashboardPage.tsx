@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookOpen, CalendarDays, Flame, Target } from "lucide-react";
+import { BookOpen, CalendarDays, Clock, Flame, Plus, Target } from "lucide-react";
 import { API_ORIGIN } from "../api/client";
 import * as parentsApi from "../api/parents";
 import type {
@@ -16,8 +16,13 @@ import { SkillColumn } from "../components/dashboard/SkillColumn";
 import { SkillsMasteryDonut } from "../components/dashboard/SkillsMasteryDonut";
 import { SubjectRadarChart } from "../components/dashboard/SubjectRadarChart";
 import { useAuth } from "../auth/AuthContext";
+import { Avatar } from "../components/ui/Avatar";
 import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
+import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
+import { Tabs } from "../components/ui/Tabs";
 
 const GOAL_TYPES: GoalType[] = ["lessons_per_week", "xp_per_month", "subject_accuracy"];
 
@@ -78,7 +83,7 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-dashed border-border bg-surface-muted p-5">
+    <Card className="flex flex-col gap-3 border-dashed bg-surface-muted">
       <div>
         <label className="mb-1 block text-sm font-medium text-text">Կապել երեխայի հաշիվը</label>
         <p className="mb-2 text-xs text-text-muted">
@@ -95,39 +100,29 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
 
       {error && <p className="text-sm text-incorrect">{error}</p>}
 
-      {searching && <p className="text-sm text-text-muted">Փնտրվում է...</p>}
+      {searching && <SkeletonRows count={2} trailing={false} />}
 
       {results !== null && !searching && (
         <div className="flex flex-col gap-2">
-          {results.length === 0 && <p className="text-sm text-text-muted">Ոչինչ չի գտնվել։</p>}
+          {results.length === 0 && <EmptyState size="sm" title="Ոչինչ չի գտնվել" />}
           {results.map((r) => {
             const label = RELATIONSHIP_LABEL(r.relationship_status);
+            const name = [r.first_name, r.last_name].filter(Boolean).join(" ") || r.username;
             return (
               <div key={r.id} className="flex items-center justify-between rounded-md border border-border bg-surface p-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-xs font-semibold text-text-muted">
-                    {r.avatar ? (
-                      <img src={r.avatar} alt={r.username} className="h-full w-full object-cover" />
-                    ) : (
-                      (r.first_name || r.username).slice(0, 1).toUpperCase()
-                    )}
-                  </div>
+                  <Avatar src={r.avatar} name={name} size="sm" />
                   <div>
-                    <p className="text-sm text-text">{[r.first_name, r.last_name].filter(Boolean).join(" ") || r.username}</p>
+                    <p className="text-sm text-text">{name}</p>
                     <p className="text-xs text-text-muted">@{r.username}</p>
                   </div>
                 </div>
                 {label ? (
                   <span className="text-xs text-text-muted">{label}</span>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleSend(r.id)}
-                    disabled={sendingId === r.id}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-                  >
-                    {sendingId === r.id ? "..." : "Ուղարկել հարցում"}
-                  </button>
+                  <Button size="sm" onClick={() => handleSend(r.id)} loading={sendingId === r.id}>
+                    Ուղարկել հարցում
+                  </Button>
                 )}
               </div>
             );
@@ -142,13 +137,9 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
             {outgoing.map((req) => (
               <div key={req.id} className="flex items-center justify-between rounded-md border border-border bg-surface p-2.5">
                 <span className="text-sm text-text">@{req.child.username}</span>
-                <button
-                  type="button"
-                  onClick={() => handleCancel(req.id)}
-                  className="text-xs text-text-muted hover:text-incorrect"
-                >
+                <Button variant="ghost" size="sm" onClick={() => handleCancel(req.id)} className="h-7 px-2 text-xs">
                   Չեղարկել
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -163,7 +154,7 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
       >
         ↻ Թարմացնել երեխաների ցուցակը
       </button>
-    </div>
+    </Card>
   );
 }
 
@@ -237,13 +228,9 @@ function GoalForm({
           className="w-24 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary"
         />
       </div>
-      <button
-        type="submit"
-        disabled={busy}
-        className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-      >
-        {busy ? "..." : "Ավելացնել նպատակ"}
-      </button>
+      <Button type="submit" size="sm" loading={busy}>
+        Ավելացնել նպատակ
+      </Button>
       {error && <p className="w-full text-sm text-incorrect">{error}</p>}
     </form>
   );
@@ -294,7 +281,15 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
   }
 
   if (!dashboard) {
-    return <p className="text-text-muted">Բեռնվում է...</p>;
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-40 w-full rounded-[calc(var(--radius)*1.15)]" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
   }
 
   const { overview, subject_performance, skills_mastery, weekly_progress, activity_calendar, recent_achievements, predicted_exam_score, best_study_hour } = dashboard;
@@ -308,17 +303,12 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
       >
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/40 bg-white/10 text-2xl font-semibold text-white">
-              {overview.avatar ? (
-                <img
-                  src={overview.avatar.startsWith("/") ? `${API_ORIGIN}${overview.avatar}` : overview.avatar}
-                  alt={overview.username}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                (overview.first_name || overview.username).slice(0, 1).toUpperCase()
-              )}
-            </div>
+            <Avatar
+              src={overview.avatar ? (overview.avatar.startsWith("/") ? `${API_ORIGIN}${overview.avatar}` : overview.avatar) : null}
+              name={[overview.first_name, overview.last_name].filter(Boolean).join(" ") || overview.username}
+              size="lg"
+              className="border-2 border-white/40 bg-white/10"
+            />
             <div>
               <p className="text-lg font-semibold text-white">
                 {[overview.first_name, overview.last_name].filter(Boolean).join(" ") || overview.username}
@@ -333,7 +323,9 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
           </div>
           <div className="flex items-center gap-6">
             <div className="text-center">
-              <p className="text-2xl font-semibold text-text">🔥 {overview.current_streak}</p>
+              <p className="flex items-center justify-center gap-1.5 text-2xl font-semibold text-white">
+                <Flame size={20} strokeWidth={1.75} /> {overview.current_streak}
+              </p>
               <p className="text-xs text-white/70">օրյա շարք</p>
             </div>
             <div className="text-center">
@@ -350,8 +342,8 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/20 pt-4 text-sm">
           {best_study_hour !== null && (
-            <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
-              ⏰ Լավագույն ժամ՝ <strong className="text-text">{best_study_hour}:00</strong>
+            <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-white/80">
+              <Clock size={14} strokeWidth={1.75} /> Լավագույն ժամ՝ <strong className="text-white">{best_study_hour}:00</strong>
             </span>
           )}
           <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
@@ -364,12 +356,12 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
       </section>
 
       {/* Subject performance */}
-      <section className="rounded-[var(--radius)] border border-border bg-surface p-5">
+      <Card as="section">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
           <BookOpen size={18} strokeWidth={1.75} /> Առարկայական առաջընթաց
         </h2>
         {subject_performance.length === 0 ? (
-          <p className="text-text-muted">Տվյալներ դեռ չկան։</p>
+          <EmptyState size="sm" title="Տվյալներ դեռ չկան" />
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <SubjectRadarChart subjects={subject_performance} />
@@ -389,10 +381,10 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
             </div>
           </div>
         )}
-      </section>
+      </Card>
 
       {/* Skills mastery */}
-      <section className="rounded-[var(--radius)] border border-border bg-surface p-5">
+      <Card as="section">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
           <Target size={18} strokeWidth={1.75} /> Հմտությունների յուրացում
         </h2>
@@ -410,11 +402,11 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
           <SkillColumn title="Պարապում է" color="🟡" items={skills_mastery.practicing} />
           <SkillColumn title="Կարիք ունի ուշադրության" color="🔴" items={skills_mastery.needs_improvement} />
         </div>
-      </section>
+      </Card>
 
       {/* Weekly progress + activity calendar */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
+        <Card>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
             <CalendarDays size={18} strokeWidth={1.75} /> Առաջընթաց ըստ շաբաթների
           </h2>
@@ -430,31 +422,31 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
               { key: "correct", label: "Ճիշտ", color: "var(--color-accent)" },
             ]}
           />
-        </div>
-        <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
+        </Card>
+        <Card>
           <h2 className="mb-3 text-lg font-semibold text-text">Ակտիվության օրացույց (30 օր)</h2>
           <ActivityHeatmap
             points={activity_calendar.map((p) => ({ ...p, tooltip: `${p.date}՝ ${p.count} հարց` }))}
             rangeDays={30}
           />
-        </div>
+        </Card>
       </section>
 
       {/* Achievements */}
       <section>
         <h2 className="mb-3 text-lg font-semibold text-text">Վերջին նվաճումները</h2>
         {recent_achievements.length === 0 ? (
-          <p className="text-text-muted">Դեռ նվաճումներ չկան։</p>
+          <EmptyState tone="positive" size="sm" title="Դեռ նվաճումներ չկան" />
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {recent_achievements.map((ua) => (
-              <div key={ua.id} className="rounded-[var(--radius)] border border-border bg-surface p-4 text-center">
+              <Card key={ua.id} className="text-center">
                 <p className="text-2xl">{ua.achievement.icon || "🏆"}</p>
                 <p className="mt-1 text-sm font-medium text-text">{ua.achievement.name}</p>
                 <p className="mt-1 text-xs font-medium" style={{ color: RARITY_COLORS[ua.achievement.rarity] }}>
                   {RARITY_LABELS[ua.achievement.rarity]}
                 </p>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -465,7 +457,7 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
         <h2 className="mb-3 text-lg font-semibold text-text">Ուսումնական նպատակներ</h2>
         <div className="flex flex-col gap-3">
           {goals?.map((g) => (
-            <div key={g.id} className="flex items-center gap-4 rounded-[var(--radius)] border border-border bg-surface p-4">
+            <Card key={g.id} className="flex items-center gap-4">
               <ProgressRing value={g.progress.current} max={g.progress.target} size={48} strokeWidth={5} color="var(--color-accent)" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-text">
@@ -475,12 +467,12 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
                   {g.progress.current} / {g.progress.target}
                 </p>
               </div>
-              <button onClick={() => handleDeleteGoal(g.id)} className="text-xs text-text-muted hover:text-incorrect">
+              <Button variant="ghost" size="sm" onClick={() => handleDeleteGoal(g.id)} className="h-7 px-2 text-xs">
                 Ջնջել
-              </button>
-            </div>
+              </Button>
+            </Card>
           ))}
-          {goals?.length === 0 && <p className="text-text-muted">Դեռ նպատակներ չկան։</p>}
+          {goals?.length === 0 && <EmptyState size="sm" title="Դեռ նպատակներ չկան" />}
           <GoalForm childId={child.id} subjects={subjects} onCreated={handleCreateGoal} />
         </div>
       </section>
@@ -488,26 +480,18 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
       {/* Weekly AI report */}
       <section>
         <h2 className="mb-3 text-lg font-semibold text-text">Շաբաթական AI հաշվետվություն</h2>
-        <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
+        <Card>
           {report && <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-text">{report}</p>}
           {emailSent && <p className="mb-3 text-sm text-correct">Ուղարկվեց ձեր էլ. փոստին։</p>}
           <div className="flex gap-3">
-            <button
-              onClick={() => handleGenerateReport(false)}
-              disabled={reportBusy}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-            >
-              {reportBusy ? "..." : report ? "Թարմացնել" : "Ստեղծել հաշվետվություն"}
-            </button>
-            <button
-              onClick={() => handleGenerateReport(true)}
-              disabled={reportBusy}
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:border-primary disabled:opacity-60"
-            >
+            <Button size="sm" onClick={() => handleGenerateReport(false)} loading={reportBusy}>
+              {report ? "Թարմացնել" : "Ստեղծել հաշվետվություն"}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => handleGenerateReport(true)} loading={reportBusy}>
               Ուղարկել իմ էլ. փոստին
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </section>
     </div>
   );
@@ -541,16 +525,13 @@ function NotificationsPanel() {
         )}
       </div>
       {notifications.length === 0 ? (
-        <p className="text-text-muted">Ծանուցումներ դեռ չկան։</p>
+        <EmptyState tone="positive" size="sm" title="Ծանուցումներ դեռ չկան" />
       ) : (
         <div className="flex flex-col gap-2">
           {notifications.slice(0, 10).map((n) => (
-            <div
-              key={n.id}
-              className={`rounded-[var(--radius)] border border-border bg-surface p-3 text-sm ${n.is_read ? "text-text-muted" : "text-text"}`}
-            >
+            <Card key={n.id} className={`p-3 text-sm ${n.is_read ? "text-text-muted" : "text-text"}`}>
               <span className="font-medium">{n.child_name}</span>: {n.message}
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -580,13 +561,13 @@ export function ParentDashboardPage() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <LinkButton to="/profile">← Պրոֆիլ</LinkButton>
-          <h1 className="text-xl font-semibold text-text">👨‍👩‍👧 Ծնողական վահանակ</h1>
+          <h1 className="text-xl font-semibold text-text">Ծնողական վահանակ</h1>
           <Button variant="secondary" size="sm" onClick={logout}>
             Ելք
           </Button>
         </div>
 
-        {children === null && <p className="text-text-muted">Բեռնվում է...</p>}
+        {children === null && <Skeleton className="mb-6 h-10 w-full" />}
 
         {children !== null && children.length === 0 && (
           <div className="mb-6">
@@ -597,25 +578,15 @@ export function ParentDashboardPage() {
         {children && children.length > 0 && (
           <>
             <div className="mb-6 flex flex-wrap items-center gap-2">
-              {children.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedId(c.id)}
-                  className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                    selectedId === c.id
-                      ? "border-primary bg-surface-muted text-primary"
-                      : "border-border text-text-muted hover:border-primary"
-                  }`}
-                >
-                  {c.first_name || c.username}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowInvite((v) => !v)}
-                className="rounded-full border border-dashed border-border px-4 py-1.5 text-sm text-text-muted hover:border-primary"
-              >
-                + Ավելացնել
-              </button>
+              <Tabs
+                label="Երեխաներ"
+                value={String(selectedId)}
+                onChange={(v) => setSelectedId(Number(v))}
+                items={children.map((c) => ({ value: String(c.id), label: c.first_name || c.username }))}
+              />
+              <Button variant="ghost" size="sm" iconLeft={<Plus size={16} strokeWidth={1.75} />} onClick={() => setShowInvite((v) => !v)}>
+                Ավելացնել
+              </Button>
             </div>
 
             {showInvite && (

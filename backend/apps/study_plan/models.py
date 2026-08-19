@@ -49,7 +49,11 @@ class StudyTask(models.Model):
     topic_label = models.CharField(max_length=200, blank=True, default="")
     title = models.CharField(max_length=300)
     blurb = models.TextField(blank=True, default="")
-    link_path = models.CharField(max_length=200)
+    # A path, sometimes with a query string built by urlencode()-ing
+    # subject/topic labels — Armenian text's multi-byte UTF-8 percent-encoding
+    # can push that well past a couple hundred characters, so this is
+    # unbounded rather than a CharField.
+    link_path = models.TextField()
 
     # The underlying deck/subtopic/mistake/exam id this task points at — used
     # only by completion_status() to look up live activity, never rendered.

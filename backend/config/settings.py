@@ -96,30 +96,37 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-# In-memory channel layer: correct and simple for a single-process deployment
-# (which is what this app runs today). If this ever scales to multiple
-# worker processes/machines, swap this for channels_redis's RedisChannelLayer
-# so group broadcasts reach every process, not just the one that sent them.
+# Base Redis connection string, no trailing DB index — CHANNEL_LAYERS and
+# CACHES below each pick their own DB index off of this so they don't share
+# keyspace with each other.
+REDIS_URL = env("REDIS_URL", default="redis://redis:6379")
+
+# Redis-backed so group broadcasts (chat, notifications, games) reach every
+# worker process/machine, not just the one that sent them — required the
+# moment more than one Daphne process is running.
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [f"{REDIS_URL}/0"],
+        },
     },
 }
 
-# Declared explicitly (this is Django's default) because it is now
+# Declared explicitly (this is Django's default) because it is
 # security-relevant, not just a performance knob: DRF's rate limiting stores
 # its counters here, so the auth throttles in REST_FRAMEWORK below are only as
-# shared as this cache is.
-#
-# Correct today — prod runs a single Daphne process (see backend/Dockerfile).
-# The same caveat as CHANNEL_LAYERS above applies: if this ever scales to
-# multiple worker processes/machines, each would keep its own private counters
-# and an attacker could effectively multiply every rate limit by the worker
-# count. Swap in Redis (django.core.cache.backends.redis.RedisCache) at that
-# point, together with the channel layer.
+# shared as this cache is. Redis-backed so every worker process/machine
+# shares the same counters — with a per-process cache (e.g. LocMemCache),
+# each worker keeps a private counter and an attacker can effectively
+# multiply every rate limit by the worker count.
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"{REDIS_URL}/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
     },
 }
 
@@ -135,6 +142,11 @@ DATABASES = {
         "PASSWORD": env("DB_PASSWORD"),
         "HOST": env("DB_HOST"),
         "PORT": env("DB_PORT"),
+        # Reuse connections across requests instead of opening/closing a new
+        # Postgres connection every time — without this every request pays a
+        # fresh TCP+auth handshake, which adds up fast under concurrent load.
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
@@ -259,6 +271,15 @@ REST_FRAMEWORK = {
         "password-reset": "10/min",         # per IP
         "password-reset-email": "3/hour",   # per mailbox — anti email-bomb
         "password-reset-confirm": "10/min",  # per IP; tokens are cryptographically strong
+        # Per authenticated user (ScopedRateThrottle keys on request.user.pk
+        # once authenticated). Every one of these views makes a billed
+        # OpenAI call per request — without a limit here, one compromised or
+        # malicious account can run up unbounded API spend by looping the
+        # endpoint. Rates are generous enough for real chat/voice use (a
+        # human sending messages or recording voice notes stays far below
+        # them) but bound a scripted loop.
+        "ai-assistant": "30/min",   # chat send/regenerate/ask-ai/classify/report generation
+        "ai-voice": "20/min",       # STT/TTS proxy calls (voice_benchmark sidecar, itself billed)
     },
 }
 
@@ -391,6 +412,9 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 OLLAMA_BASE_URL = env("OLLAMA_BASE_URL", default="http://localhost:11434")
 OLLAMA_MODEL = env("OLLAMA_MODEL", default="qwen3:8b")
 OLLAMA_TIMEOUT_SECONDS = env.int("OLLAMA_TIMEOUT_SECONDS", default=120)
+# Bounded because AI calls happen inside page requests (the daily study plan
+# narrates itself during the first GET of the day). The SDK default is 600s.
+OPENAI_TIMEOUT_SECONDS = env.int("OPENAI_TIMEOUT_SECONDS", default=45)
 OLLAMA_THINK = env.bool("OLLAMA_THINK", default=False)
 
 # Armenian voice (STT/TTS) sidecar service — see voice_benchmark/ at the repo

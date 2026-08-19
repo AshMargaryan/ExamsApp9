@@ -1,11 +1,14 @@
 import type { WeakSpot } from "../../api/teaching";
+import { EmptyState } from "../ui/EmptyState";
 
 export function WeakSpotsPanel({ spots }: { spots: WeakSpot[] }) {
   if (spots.length === 0) {
     return (
-      <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-        Դեռ բավարար տվյալ չկա դասարանի սխալների վերաբերյալ։
-      </p>
+      <EmptyState
+        size="sm"
+        title="Դեռ բավարար տվյալ չկա"
+        hint="Թույլ կողմերը հայտնվում են, երբ աշակերտները սկսում են խնդիրներ լուծել։"
+      />
     );
   }
 

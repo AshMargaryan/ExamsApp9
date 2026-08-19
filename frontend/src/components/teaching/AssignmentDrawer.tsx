@@ -3,6 +3,8 @@ import { ClipboardCheck } from "lucide-react";
 import * as teachingApi from "../../api/teaching";
 import type { Assignment } from "../../api/teaching";
 import { useOnClickOutside } from "../../hooks/useOnClickOutside";
+import { EmptyState } from "../ui/EmptyState";
+import { SkeletonRows } from "../ui/Skeleton";
 import { AssignmentCard } from "./AssignmentCard";
 
 // assigned/in_progress are the same "still open" group — clicking "Կատարել"
@@ -84,9 +86,9 @@ export function AssignmentDrawer() {
 
       {open && (
         <div className="absolute right-0 top-full z-40 mt-2 max-h-[65vh] w-[min(92vw,24rem)] overflow-y-auto rounded-[var(--radius)] border border-border bg-surface p-3 shadow-xl">
-          {assignments === null && <p className="p-3 text-sm text-text-muted">Բեռնվում է...</p>}
+          {assignments === null && <SkeletonRows count={2} />}
           {assignments !== null && sorted.length === 0 && (
-            <p className="p-3 text-sm text-text-muted">Ընթացիկ առաջադրանքներ չկան։</p>
+            <EmptyState tone="positive" size="sm" title="Ընթացիկ առաջադրանքներ չկան" />
           )}
           <div className="flex flex-col gap-2">
             {sorted.map((a) => (

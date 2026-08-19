@@ -10,19 +10,10 @@
      e.g. a dark native textarea box on top of our light theme. */
   color-scheme: dark;
 
-  /*
-    Brand palette: #7C3AED on #000000, mixed at 270deg.
-
-    The surfaces are not neutral greys — each is pure black with a measured
-    amount of the brand violet mixed in, so a panel sitting on the background
-    reads as the same material lit differently rather than as a separate grey
-    UI kit dropped on a dark page. Change --color-primary and every surface,
-    border and gradient below follows it.
-  */
-  --color-bg: #000000;
-  --color-surface: color-mix(in srgb, var(--color-primary) 7%, #000000);
-  --color-surface-muted: color-mix(in srgb, var(--color-primary) 13%, #000000);
-  --color-border: color-mix(in srgb, var(--color-primary) 22%, #000000);
+  --color-bg: #1a1a1a;
+  --color-surface: #242424;
+  --color-surface-muted: #2e2e2e;
+  --color-border: #3a3a3a;
 
   --color-text: #ffffff;
   --color-text-muted: #a3a3a3;
@@ -33,16 +24,9 @@
 
   --color-accent: #14b8a6;
 
-  /* Retained as tokens because a few surfaces still reference them, but both
-     are now derived from the brand violet rather than being separate hues, so
-     nothing in the default theme drifts away from violet-on-black. */
-  --color-purple: color-mix(in srgb, var(--color-primary) 80%, #000000);
-  --color-pink: color-mix(in srgb, var(--color-primary) 60%, #ffffff);
-
-  /* The one brand gradient: violet to black at 270deg (right to left). Used by
-     the hero HUD, level chips, and anything asking for --gradient-primary. */
-  --gradient-hero: linear-gradient(270deg, var(--color-primary) 0%, #000000 100%);
-  --gradient-brand: var(--gradient-hero);
+  --color-purple: #7f24b0;
+  --color-pink: #ff5c8d;
+  --gradient-hero: linear-gradient(226deg, var(--color-primary) 0%, var(--color-purple) 55%, var(--color-pink) 100%);
 
   --color-correct: #1a9e6d;
   --color-correct-bg: #e4f7ef;
@@ -101,6 +85,26 @@
      the content padding that clears them — one number, never out of sync. */
   --mobile-topbar-h: 3.25rem;
   --mobile-tabbar-h: 3.5rem;
+
+  /* Width of the persistent desktop navigation rail. Zero below the lg
+     breakpoint, where navigation collapses back into the drawer — so every
+     element that has to clear the rail (page content, header strip, the
+     reload button, the floating tools dock) can offset by this one value
+     unconditionally and simply get 0 on smaller screens. */
+  --rail-w: 0px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --rail-w: 16rem;
+  }
+
+  /* User-toggled icon-only rail (AppSidebar's collapse button), persisted via
+     useSidebarCollapsed. Every element offsetting by --rail-w follows this
+     automatically — nothing else needs to know the rail can collapse. */
+  html[data-rail-collapsed='true'] {
+    --rail-w: 4.5rem;
+  }
 }
 
 /*
@@ -112,6 +116,11 @@ html[data-native] {
      app exposes the grey shell behind the page and immediately reads as
      "this is a website in a box". Individual scroll areas still scroll. */
   overscroll-behavior-y: none;
+
+  /* The app navigates with the bottom tab bar and never renders the desktop
+     rail, so the rail offset must stay zero even on a landscape iPad, whose
+     viewport is wide enough to match the lg breakpoint above. */
+  --rail-w: 0px;
 }
 
 html[data-native] body {
@@ -188,19 +197,10 @@ html[data-native] [contenteditable="true"] {
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  /*
-    Brand palette: #7C3AED on #000000, mixed at 270deg.
-
-    The surfaces are not neutral greys — each is pure black with a measured
-    amount of the brand violet mixed in, so a panel sitting on the background
-    reads as the same material lit differently rather than as a separate grey
-    UI kit dropped on a dark page. Change --color-primary and every surface,
-    border and gradient below follows it.
-  */
-  --color-bg: #000000;
-  --color-surface: color-mix(in srgb, var(--color-primary) 7%, #000000);
-  --color-surface-muted: color-mix(in srgb, var(--color-primary) 13%, #000000);
-  --color-border: color-mix(in srgb, var(--color-primary) 22%, #000000);
+  --color-bg: #1a1a1a;
+  --color-surface: #242424;
+  --color-surface-muted: #2e2e2e;
+  --color-border: #3a3a3a;
 
   --color-text: #ffffff;
   --color-text-muted: #a3a3a3;
@@ -237,11 +237,10 @@ html[data-native] [contenteditable="true"] {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    /* Same brand palette as :root — violet mixed into pure black. */
-    --color-bg: #000000;
-    --color-surface: color-mix(in srgb, var(--color-primary) 7%, #000000);
-    --color-surface-muted: color-mix(in srgb, var(--color-primary) 13%, #000000);
-    --color-border: color-mix(in srgb, var(--color-primary) 22%, #000000);
+    --color-bg: #1a1a1a;
+    --color-surface: #242424;
+    --color-surface-muted: #2e2e2e;
+    --color-border: #3a3a3a;
 
     --color-text: #ffffff;
     --color-text-muted: #a3a3a3;

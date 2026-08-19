@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Gem, HelpCircle, MoreHorizontal, Settings, User, X } from "lucide-react";
+import { MoreHorizontal, X } from "lucide-react";
 import type { AccountRole } from "../../api/auth";
-import { useNavItems, type NavItem } from "../nav/navItems";
+import { accountNavLinks, isNavItemActive, useNavItems, type NavItem } from "../nav/navItems";
 
 /*
   The native shell's primary navigation: four role-appropriate destinations
@@ -16,7 +16,7 @@ import { useNavItems, type NavItem } from "../nav/navItems";
  *  listed here still exists — it moves into the More sheet. */
 const PRIMARY_TAB_PATHS: Record<AccountRole, string[]> = {
   student: ["/", "/subjects", "/assistant", "/chat"],
-  teacher: ["/", "/teacher-dashboard", "/notes", "/chat"],
+  teacher: ["/", "/teacher-dashboard", "/rankings", "/chat"],
   parent: ["/", "/notepad", "/notes", "/chat"],
 };
 
@@ -29,18 +29,8 @@ const TAB_LABELS: Record<string, string> = {
   "/notes": "Նշումներ",
   "/notepad": "Նշումներ",
   "/teacher-dashboard": "Վահանակ",
+  "/rankings": "Դասակարգում",
 };
-
-const ACCOUNT_LINKS = [
-  { to: "/profile", icon: <User size={19} strokeWidth={1.75} />, label: "Պրոֆիլ" },
-  { to: "/subscription", icon: <Gem size={19} strokeWidth={1.75} />, label: "Բաժանորդագրություն" },
-  { to: "/settings", icon: <Settings size={19} strokeWidth={1.75} />, label: "Կարգավորումներ" },
-  { to: "/help", icon: <HelpCircle size={19} strokeWidth={1.75} />, label: "Օգնություն" },
-];
-
-function isActive(pathname: string, to: string) {
-  return to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
-}
 
 function Badge({ count }: { count: number }) {
   return (
@@ -92,7 +82,7 @@ function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }
               to={item.to}
               onClick={onClose}
               className={`relative flex items-center gap-2.5 rounded-2xl border p-3.5 text-[14px] font-medium ${
-                isActive(pathname, item.to)
+                isNavItemActive(pathname, item.to)
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border bg-bg text-text"
               }`}
@@ -109,7 +99,7 @@ function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }
         </div>
 
         <div className="mt-5 border-t border-border px-4 pt-3">
-          {ACCOUNT_LINKS.map((link) => (
+          {accountNavLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
@@ -152,7 +142,7 @@ export function MobileTabBar({ role }: { role: AccountRole }) {
         style={{ paddingBottom: "var(--safe-bottom)" }}
       >
         {tabs.map((item) => {
-          const active = isActive(pathname, item.to);
+          const active = isNavItemActive(pathname, item.to);
           return (
             <Link
               key={item.to}

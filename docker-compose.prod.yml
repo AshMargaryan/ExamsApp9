@@ -35,6 +35,20 @@ services:
     networks:
       - examsapp-network
 
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - examsapp-network
+
   backend:
     build:
       context: ./backend
@@ -47,6 +61,7 @@ services:
       # but inside the Docker network Postgres is reachable at the `db`
       # service name, not localhost.
       DB_HOST: db
+      REDIS_URL: redis://redis:6379
       # Production must run with DEBUG=false regardless of what's left in
       # backend/.env (that file is also used for local/dev runs) — this is
       # what switches Whitenoise to serving the collected, hashed,
@@ -68,6 +83,8 @@ services:
     # backend is reachable from other containers at backend:8000.
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -129,6 +146,8 @@ volumes:
     name: examsapp9_prod_postgres_data
   backend_media:
     name: examsapp9_prod_backend_media
+  redis_data:
+    name: examsapp9_prod_redis_data
 
 networks:
   examsapp-network:

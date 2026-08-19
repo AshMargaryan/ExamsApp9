@@ -1,0 +1,37 @@
+# Local-only infrastructure for the isolated `haygit-redesign-work` stack.
+# Deliberately UNTRACKED — do not commit.
+#
+# Two non-obvious things this file has to handle:
+#
+# 1. Compose CONCATENATES `ports:` lists across files rather than replacing
+#    them. A naive override adding "3003:3000" would keep the base file's
+#    "3000:3000" too, colliding with the already-running main dev stack.
+#    `!override` (Compose Spec merge control, v2.24+) forces a full replace.
+#
+# 2. The base docker-compose.yml pins its named volumes to FIXED names
+#    (examsapp9_dev_postgres_data / examsapp9_dev_frontend_node_modules)
+#    that are global, not project-scoped. Without distinct names below, this
+#    stack's Postgres would mount the very same data directory the main dev
+#    stack's Postgres is actively using — two postgres processes on one data
+#    dir, which risks corrupting the real dev database. The names below keep
+#    this stack's data fully separate, so `down -v` here can never destroy
+#    another stack's data.
+services:
+  db:
+    ports: !override
+      - "5436:5432"
+  backend:
+    ports: !override
+      - "8003:8000"
+  frontend:
+    build:
+      args:
+        VITE_API_URL: http://localhost:8003/api
+    ports: !override
+      - "3003:3000"
+
+volumes:
+  postgres_data:
+    name: haygit_redesign_work_postgres_data
+  frontend_node_modules:
+    name: haygit_redesign_work_frontend_node_modules

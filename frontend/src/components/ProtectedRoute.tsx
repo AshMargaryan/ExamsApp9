@@ -9,21 +9,18 @@ import { AppSidebar } from "./AppSidebar";
 import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
 import { FloatingChatWidget } from "./chat/FloatingChatWidget";
 import { HeaderStrip } from "./HeaderStrip";
-import { HomeLogoButton } from "./HomeLogoButton";
 import { MobileShell } from "./mobile/MobileShell";
 import { ReloadButton } from "./ReloadButton";
 import { ToolsDock } from "./ToolsDock";
 
-/** Shared chrome for any authenticated page. On the web that's the header strip,
- * sidebar drawer, and floating widgets — the full header strip only renders on "/",
- * every other page gets a single small logo button back to home instead. Inside the
- * native shell it's MobileShell (top bar + bottom tab bar) instead; the providers
- * wrap both, since pages consume them regardless of platform. */
+/** Shared chrome for any authenticated page. On the web that's the persistent header
+ * strip, sidebar drawer, and floating widgets — the theme toggle, notifications, and
+ * profile menu need to be reachable from every page, not just "/". Inside the native
+ * shell it's MobileShell (top bar + bottom tab bar) instead; the providers wrap both,
+ * since pages consume them regardless of platform. */
 export function AppChrome({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { pathname } = useLocation();
   const isNative = useIsNativeApp();
-  const isHome = pathname === "/";
   // AI assistant, calculator, and notepad are study tools for students — parents
   // have no use for them on their read-only family dashboard.
   const showStudyTools = user?.role !== "parent";
@@ -36,11 +33,11 @@ export function AppChrome({ children }: { children: ReactNode }) {
             <MobileShell>{children}</MobileShell>
           ) : (
             <>
-              {isHome ? <HeaderStrip /> : <HomeLogoButton />}
+              <HeaderStrip />
               <AppSidebar />
-              {/* Clears the persistent top strip (h-16) only where it's actually rendered —
-               * non-home pages have no header strip to clear. */}
-              <div className={isHome ? "pt-16" : undefined}>{children}</div>
+              {/* Clears the persistent top strip (h-16) and the desktop nav rail,
+               * which is 0-width below lg (see --rail-w in theme.css). */}
+              <div className="pl-[var(--rail-w)] pt-16">{children}</div>
               <ReloadButton />
               {showStudyTools && <FloatingAssistantWidget />}
               {showStudyTools && <ToolsDock />}

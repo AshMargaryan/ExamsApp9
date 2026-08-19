@@ -127,6 +127,6 @@ class SendMessageResponseSerializer(serializers.Serializer):
 class VoiceSynthesizeSerializer(serializers.Serializer):
     text = serializers.CharField(allow_blank=False, trim_whitespace=True, max_length=4000)
     voice = serializers.ChoiceField(
-        choices=["hy-AM-AnahitNeural", "hy-AM-HaykNeural"],
-        required=False, default="hy-AM-AnahitNeural",
+        choices=["nova", "onyx"],
+        required=False, default="nova",
     )

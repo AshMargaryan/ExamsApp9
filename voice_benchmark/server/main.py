@@ -25,6 +25,12 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv()
 
 from .azure_stt import transcribe_with_azure  # noqa: E402
+from .openai_voice import (  # noqa: E402
+    OPENAI_TTS_VOICES,
+    openai_configured,
+    synthesize_with_openai,
+    transcribe_with_openai,
+)
 from .stt import ARMENIAN_MODELS, run_single_model  # noqa: E402  (after load_dotenv)
 from .tts import ARMENIAN_TTS_VOICES, azure_tts_configured, synthesize_speech  # noqa: E402
 
@@ -57,6 +63,8 @@ def health() -> dict:
         "ram_available_gb": round(psutil.virtual_memory().available / (1024**3), 1),
         "azure_tts_configured": azure_tts_configured(),
         "azure_tts_voices": ARMENIAN_TTS_VOICES,
+        "openai_configured": openai_configured(),
+        "openai_tts_voices": OPENAI_TTS_VOICES,
     }
 
 
@@ -95,12 +103,10 @@ async def stt_benchmark(audio: UploadFile = File(...)) -> dict:
 
 @app.post("/api/stt/transcribe")
 async def stt_transcribe(audio: UploadFile = File(...)) -> dict:
-    """Production-facing endpoint: small_v2 only, not the full 3-way benchmark.
-
-    Called by the real Django AI assistant (backend/apps/ai_assistant), not
-    by the benchmark UI. Large-v3-turbo and Azure are benchmark-only — they
-    were dramatically slower/costlier in testing, and running all three per
-    request would make voice input in the real app unusably slow.
+    """Production-facing endpoint: OpenAI gpt-4o-mini-transcribe, not the full
+    benchmark. Called by the real Django AI assistant (backend/apps/ai_assistant),
+    not by the benchmark UI. Local Whisper models and Azure remain available
+    under /api/stt/benchmark for comparison only.
     """
     suffix = Path(audio.filename or "audio").suffix or ".webm"
     with tempfile.NamedTemporaryFile(
@@ -110,9 +116,7 @@ async def stt_transcribe(audio: UploadFile = File(...)) -> dict:
         tmp_path = tmp.name
 
     try:
-        result = await run_in_threadpool(
-            run_single_model, ARMENIAN_MODELS["small_v2"], "small_v2", tmp_path
-        )
+        result = await run_in_threadpool(transcribe_with_openai, tmp_path)
         if not result.ok:
             raise HTTPException(status_code=502, detail=result.error or "Transcription failed")
         return asdict(result)
@@ -122,13 +126,13 @@ async def stt_transcribe(audio: UploadFile = File(...)) -> dict:
 
 @app.post("/api/tts/synthesize")
 async def tts_synthesize(text: str = Form(...), voice: str = Form(None)) -> FileResponse:
-    if not azure_tts_configured():
+    if not openai_configured():
         raise HTTPException(
             status_code=400,
-            detail="Azure TTS not configured. Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION in .env.",
+            detail="OpenAI not configured. Set OPENAI_API_KEY in .env.",
         )
 
-    result = await run_in_threadpool(synthesize_speech, text, TMP_AUDIO_DIR, voice or None)
+    result = await run_in_threadpool(synthesize_with_openai, text, TMP_AUDIO_DIR, voice or None)
     if not result.ok or not result.audio_path:
         raise HTTPException(status_code=502, detail=result.error or "TTS synthesis failed")
 

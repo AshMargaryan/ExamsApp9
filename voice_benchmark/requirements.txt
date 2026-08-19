@@ -12,7 +12,7 @@ python-dotenv==1.0.1
 # transformers+torch+huggingface_hub are needed once, to download the original
 # HF models and convert them to CTranslate2 via ct2-transformers-converter.
 faster-whisper==1.0.3
-ctranslate2==4.4.0
+ctranslate2==4.8.1
 transformers==4.44.2
 torch==2.4.1
 huggingface_hub==0.24.6
@@ -22,8 +22,9 @@ accelerate==0.33.0
 soundfile==0.12.1
 pydub==0.25.1
 
-# TTS
+# TTS / STT (production path)
 azure-cognitiveservices-speech==1.40.0
+openai==1.59.7
 
 # Resource usage reporting in the benchmark UI
 psutil==6.0.0

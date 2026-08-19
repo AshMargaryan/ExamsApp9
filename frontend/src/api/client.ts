@@ -23,7 +23,11 @@ export const tokenStorage = {
   },
 };
 
-export const apiClient = axios.create({ baseURL: API_BASE_URL });
+// Without a timeout, a stalled backend/proxy/network leaves requests (and
+// their callers' loading states) hanging indefinitely. 20s comfortably
+// covers normal API calls; long-running work (AI assistant chat) uses SSE
+// via fetch() instead of this client, so it isn't affected.
+export const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 20000 });
 
 apiClient.interceptors.request.use((config) => {
   const token = tokenStorage.getAccess();

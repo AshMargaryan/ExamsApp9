@@ -267,6 +267,196 @@ body {
   transform: scale(0.82);
   transition-duration: 90ms;
 }
+/*
+  Scrollable without a visible scrollbar — navigation rails, section-nav
+  strips, filter rows. The content still scrolls (and still scrolls by
+  keyboard and wheel); only the painted bar is suppressed, because a
+  permanent grey gutter down the side of the nav reads as chrome the design
+  never asked for.
+*/
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+  Dual-thumb range (ui/RangeSlider) — one control for a min/max pair.
+
+  Two stacked native inputs rather than a hand-rolled div: each thumb keeps
+  arrow/Home/End stepping, touch dragging and its own aria-valuenow, which a
+  div would have to fake. The inputs themselves are transparent and
+  pointer-transparent; only the thumbs take pointer events, so a click on the
+  track never yanks the wrong handle.
+*/
+.ui-dual {
+  position: relative;
+  height: 24px;
+}
+.ui-dual__track,
+.ui-dual__fill {
+  position: absolute;
+  top: 50%;
+  height: 6px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  pointer-events: none;
+}
+.ui-dual__track {
+  left: 0;
+  right: 0;
+  background: var(--color-surface-muted);
+}
+.ui-dual__fill {
+  background: var(--color-primary);
+}
+.ui-dual input[type="range"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+.ui-dual input[type="range"]::-webkit-slider-runnable-track {
+  height: 24px;
+  background: transparent;
+  border: none;
+}
+.ui-dual input[type="range"]::-moz-range-track {
+  height: 24px;
+  background: transparent;
+  border: none;
+}
+.ui-dual input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  height: 20px;
+  width: 20px;
+  margin-top: 2px; /* centres a 20px thumb on the 24px track box */
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  transition: transform var(--motion-micro) var(--ease-out);
+}
+.ui-dual input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  transition: transform var(--motion-micro) var(--ease-out);
+}
+.ui-dual input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+  cursor: grabbing;
+}
+.ui-dual input[type="range"]:active::-moz-range-thumb {
+  transform: scale(1.15);
+  cursor: grabbing;
+}
+.ui-dual input[type="range"]:focus-visible {
+  outline: none;
+}
+.ui-dual input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.ui-dual input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/*
+  Fully custom range slider (ui/RangeField).
+
+  Kept as a real <input type="range"> — it is the only element that gives
+  arrow-key stepping, Home/End, aria-valuenow and touch dragging for free — but
+  every painted part is replaced, so nothing of the browser's default widget
+  survives. The filled portion is drawn as a background gradient on the input
+  itself, sized from a --range-fill custom property React writes per render.
+*/
+.ui-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+.ui-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.ui-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0 var(--range-fill, 0%),
+    var(--color-surface-muted) var(--range-fill, 0%) 100%
+  );
+}
+.ui-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+}
+.ui-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+.ui-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  margin-top: -6px; /* centres an 18px thumb on a 6px track */
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--motion-micro) var(--ease-out);
+}
+.ui-range::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--motion-micro) var(--ease-out);
+}
+.ui-range:hover::-webkit-slider-thumb,
+.ui-range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.ui-range:hover::-moz-range-thumb,
+.ui-range:active::-moz-range-thumb {
+  transform: scale(1.12);
+}
+.ui-range:focus-visible {
+  outline: none;
+}
+.ui-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.ui-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
 /* Notes editor content — Tiptap emits plain semantic HTML with no styling
    of its own; this is the only place that HTML gets visual treatment. */
 .ProseMirror {

@@ -10,7 +10,13 @@ function ImageNodeView({ node }: ReactNodeViewProps) {
       {error ? (
         <span className="text-sm text-text-muted">Նկարը հասանելի չէ</span>
       ) : src ? (
-        <img src={src} alt={node.attrs.alt ?? ""} className="max-w-full rounded-[var(--radius)]" />
+        <img
+          src={src}
+          alt={node.attrs.alt ?? ""}
+          loading="lazy"
+          decoding="async"
+          className="max-w-full rounded-[var(--radius)]"
+        />
       ) : (
         <span className="inline-block h-24 w-24 animate-pulse rounded bg-surface-muted" />
       )}

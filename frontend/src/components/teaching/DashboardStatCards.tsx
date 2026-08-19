@@ -1,56 +1,75 @@
+import { CircleAlert, Clock, GraduationCap, Inbox, Radio } from "lucide-react";
 import type { DashboardStats } from "../../api/teaching";
+import { StatTile } from "../ui/StatTile";
 
-function StatCard({
-  label,
-  value,
-  tone = "default",
-  pulse = false,
+/*
+  The teacher's metrics band.
+
+  Deliberately not five identical boxes: "how many students need me right now"
+  is the one number that changes what a teacher does next, so it gets the hero
+  treatment and everything else reads as supporting detail.
+*/
+
+export function DashboardStatCards({
+  stats,
+  attentionCount,
 }: {
-  label: string;
-  value: number;
-  tone?: "default" | "primary" | "danger" | "success";
-  pulse?: boolean;
+  stats: DashboardStats;
+  /** null while the needs-attention request is still in flight. */
+  attentionCount: number | null;
 }) {
-  const toneClass =
-    tone === "danger"
-      ? "text-incorrect"
-      : tone === "success"
-        ? "text-correct"
-        : tone === "primary"
-          ? "text-primary"
-          : "text-text";
-
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-4">
-      <p className="flex items-center gap-2 text-sm text-text-muted">
-        {label}
-        {pulse && value > 0 && (
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-correct opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-correct" />
-          </span>
-        )}
-      </p>
-      <p className={`mt-1 text-3xl font-bold ${toneClass}`}>{value}</p>
-    </div>
-  );
-}
+    <div className="grid gap-3 lg:grid-cols-3">
+      <StatTile
+        size="hero"
+        align="start"
+        tone={attentionCount ? "incorrect" : "correct"}
+        icon={<CircleAlert size={22} strokeWidth={1.75} />}
+        label="Ուշադրության կարիք ունեն"
+        value={attentionCount === null ? "—" : String(attentionCount)}
+        hint={
+          attentionCount === null
+            ? "Հաշվարկվում է..."
+            : attentionCount === 0
+              ? "Բոլորը լավ առաջընթաց ունեն"
+              : "Տես ցանկը ներքևում"
+        }
+        className="justify-center"
+      />
 
-export function DashboardStatCards({ stats }: { stats: DashboardStats }) {
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatCard label="Աշակերտներ" value={stats.student_count} />
-      <StatCard
-        label="Սպասում է հաստատման"
-        value={stats.pending_review_count}
-        tone={stats.pending_review_count > 0 ? "primary" : "default"}
-      />
-      <StatCard
-        label="Ուշացած առաջադրանք"
-        value={stats.overdue_count}
-        tone={stats.overdue_count > 0 ? "danger" : "default"}
-      />
-      <StatCard label="Հիմա սովորում են" value={stats.online_now_count} tone="success" pulse />
+      <div className="grid grid-cols-2 gap-3 lg:col-span-2">
+        <StatTile
+          size="sm"
+          align="start"
+          icon={<GraduationCap size={18} strokeWidth={1.75} />}
+          label="Աշակերտներ"
+          value={String(stats.student_count)}
+        />
+        <StatTile
+          size="sm"
+          align="start"
+          tone={stats.online_now_count > 0 ? "correct" : "default"}
+          icon={<Radio size={18} strokeWidth={1.75} />}
+          label="Հիմա սովորում են"
+          value={String(stats.online_now_count)}
+        />
+        <StatTile
+          size="sm"
+          align="start"
+          tone={stats.pending_review_count > 0 ? "primary" : "default"}
+          icon={<Inbox size={18} strokeWidth={1.75} />}
+          label="Սպասում է հաստատման"
+          value={String(stats.pending_review_count)}
+        />
+        <StatTile
+          size="sm"
+          align="start"
+          tone={stats.overdue_count > 0 ? "incorrect" : "default"}
+          icon={<Clock size={18} strokeWidth={1.75} />}
+          label="Ուշացած առաջադրանք"
+          value={String(stats.overdue_count)}
+        />
+      </div>
     </div>
   );
 }

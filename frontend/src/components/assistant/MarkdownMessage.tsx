@@ -81,6 +81,8 @@ export function MarkdownMessage({
               {...props}
               src={resolveImageSrc(props.src)}
               alt={alt ?? ""}
+              loading="lazy"
+              decoding="async"
               className="float-right ml-5 mb-4 w-full max-w-[560px] rounded-[var(--radius)] border border-border shadow-sm md:w-[55%] lg:max-w-[680px]"
             />
           ),

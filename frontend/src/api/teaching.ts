@@ -241,6 +241,60 @@ export interface DashboardSummary {
   activity_feed: ActivityEvent[];
 }
 
+export type TrendRange = "week" | "month" | "semester";
+
+/** One time bucket of class activity. `accuracy` and `exam_avg_score` are null
+ *  — not zero — when nothing happened in the bucket, so a chart can render a
+ *  genuine gap instead of implying the class scored nothing. */
+export interface TrendBucket {
+  date: string;
+  questions: number;
+  correct: number;
+  accuracy: number | null;
+  study_minutes: number;
+  active_students: number;
+  mistakes: number;
+  exam_avg_score: number | null;
+  exam_count: number;
+}
+
+export interface ClassTrends {
+  range: TrendRange;
+  granularity: "day" | "week";
+  buckets: TrendBucket[];
+}
+
+export type AttentionKind =
+  | "never_active"
+  | "inactive"
+  | "accuracy_drop"
+  | "repeated_mistakes"
+  | "weak_topic"
+  | "low_test_score"
+  | "overdue_assignment";
+
+export interface AttentionSignal {
+  kind: AttentionKind;
+  label: string;
+  value: number | null;
+  detail: string;
+}
+
+export interface StudentAttention {
+  student: FriendUser;
+  signals: AttentionSignal[];
+}
+
+export async function fetchClassTrends(range: TrendRange): Promise<ClassTrends> {
+  const { data } = await apiClient.get("/teaching/analytics/class-trends/", { params: { range } });
+  return data;
+}
+
+export async function fetchNeedsAttention(): Promise<StudentAttention[]> {
+  const { data } = await apiClient.get("/teaching/students/needs-attention/");
+  return data;
+}
+
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
   const { data } = await apiClient.get("/teaching/dashboard/summary/");
   return data;

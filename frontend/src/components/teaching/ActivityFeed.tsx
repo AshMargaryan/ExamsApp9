@@ -1,11 +1,23 @@
+import { CornerUpLeft, Check, UserPlus, Upload } from "lucide-react";
 import type { ActivityEvent } from "../../api/teaching";
 import { formatRelativeTime } from "../../lib/relativeTime";
+import { EmptyState } from "../ui/EmptyState";
 
-const ICON: Record<ActivityEvent["type"], string> = {
-  submitted: "📤",
-  approved: "✅",
-  rejected: "↩️",
-  joined: "👋",
+/*
+  Recent class events.
+
+  Rendered as a continuous timeline rather than a stack of bordered cards:
+  it sits next to the weak-spots panel and the review queue, and three
+  identical row lists side by side read as one undifferentiated blur. The
+  density here is deliberately lighter — this is glanceable history, not a
+  worklist.
+*/
+
+const ICON: Record<ActivityEvent["type"], { icon: typeof Check; className: string }> = {
+  submitted: { icon: Upload, className: "text-primary" },
+  approved: { icon: Check, className: "text-correct" },
+  rejected: { icon: CornerUpLeft, className: "text-text-muted" },
+  joined: { icon: UserPlus, className: "text-accent" },
 };
 
 function eventText(e: ActivityEvent): string {
@@ -24,22 +36,26 @@ function eventText(e: ActivityEvent): string {
 
 export function ActivityFeed({ events }: { events: ActivityEvent[] }) {
   if (events.length === 0) {
-    return (
-      <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-        Դեռ ակտիվություն չկա։
-      </p>
-    );
+    return <EmptyState size="sm" title="Դեռ ակտիվություն չկա" hint="Աշակերտների գործողությունները կհայտնվեն այստեղ։" />;
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {events.map((e, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-3">
-          <span className="shrink-0 text-lg">{ICON[e.type]}</span>
-          <p className="min-w-0 flex-1 truncate text-sm text-text">{eventText(e)}</p>
-          <span className="shrink-0 text-xs text-text-muted">{formatRelativeTime(e.at)}</span>
-        </div>
-      ))}
-    </div>
+    <ol className="relative flex flex-col gap-4 border-l border-border pl-5">
+      {events.map((e, i) => {
+        const { icon: Icon, className } = ICON[e.type];
+        return (
+          <li key={i} className="relative">
+            <span
+              aria-hidden="true"
+              className={`absolute -left-[1.72rem] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface ${className}`}
+            >
+              <Icon size={11} strokeWidth={2} />
+            </span>
+            <p className="text-sm leading-snug text-text">{eventText(e)}</p>
+            <p className="mt-0.5 text-xs text-text-muted">{formatRelativeTime(e.at)}</p>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

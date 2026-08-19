@@ -2,6 +2,7 @@ import { useState } from "react";
 import * as teachingApi from "../../api/teaching";
 import type { Assignment } from "../../api/teaching";
 import { ConfirmModal } from "../ConfirmModal";
+import { Button } from "../ui/Button";
 
 export function AssignmentSubmitForm({
   assignment,
@@ -49,14 +50,9 @@ export function AssignmentSubmitForm({
         onChange={(e) => setExplanation(e.target.value)}
       />
       {error && <p className="mb-2 text-sm text-incorrect">{error}</p>}
-      <button
-        type="button"
-        onClick={handleRequestSubmit}
-        disabled={submitting}
-        className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-      >
-        {submitting ? "..." : "Ավարտել և ուղարկել"}
-      </button>
+      <Button size="sm" onClick={handleRequestSubmit} loading={submitting}>
+        Ավարտել և ուղարկել
+      </Button>
 
       {confirming && (
         <ConfirmModal

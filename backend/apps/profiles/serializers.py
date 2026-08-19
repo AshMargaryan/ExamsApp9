@@ -20,6 +20,7 @@ from apps.users.utils import suggest_usernames
 from . import analytics
 from .leveling import xp_progress
 from .models import (
+    CoachPreferences,
     Achievement,
     GoalType,
     LearningEvent,
@@ -543,3 +544,42 @@ class ShowcaseUpdateSerializer(serializers.Serializer):
             ShowcaseSlot(user=user, achievement_id=aid, position=i)
             for i, aid in enumerate(self.validated_data["achievement_ids"])
         ])
+
+
+class CoachPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoachPreferences
+        fields = [
+            "mock_exams_per_week", "preferred_test_days", "preferred_test_time",
+            "configured_at", "updated_at",
+        ]
+        read_only_fields = ["configured_at", "updated_at"]
+
+    def update(self, instance, validated_data):
+        # Any save is a deliberate choice — including "the defaults are fine",
+        # which is otherwise indistinguishable from never having looked.
+        if instance.configured_at is None:
+            validated_data["configured_at"] = timezone.now()
+        return super().update(instance, validated_data)
+
+    def validate_preferred_test_days(self, value):
+        if not isinstance(value, list) or any(not isinstance(d, int) or d < 0 or d > 6 for d in value):
+            raise serializers.ValidationError(
+                "preferred_test_days must be a list of integers 0-6 (Monday-Sunday)."
+            )
+        return sorted(set(value))
+
+    def validate(self, attrs):
+        # Model.clean() isn't run by DRF, and the "can't pick more test days
+        # than exams per week" rule has to hold across a PATCH that touches
+        # only one of the two fields — so both sides are resolved here first.
+        per_week = attrs.get(
+            "mock_exams_per_week",
+            getattr(self.instance, "mock_exams_per_week", 1),
+        )
+        days = attrs.get("preferred_test_days", getattr(self.instance, "preferred_test_days", []))
+        if per_week and len(days) > per_week:
+            raise serializers.ValidationError(
+                {"preferred_test_days": "Ընտրված օրերը չեն կարող ավելի շատ լինել, քան շաբաթական թեստերի քանակը։"}
+            )
+        return attrs

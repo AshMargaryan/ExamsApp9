@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { Circle, CheckCircle2, Flame, Play, Target } from "lucide-react";
 import type { HomeInsight } from "../api/profile";
 import type { LearningStreak } from "../api/streaks";
+import { missionHrefOrFallback } from "../lib/missionHref";
+import type { NextMission } from "../api/profile";
 import { Card } from "./ui/Card";
 
 const CHECKLIST_LABELS: Record<string, string> = {
@@ -10,8 +12,18 @@ const CHECKLIST_LABELS: Record<string, string> = {
   daily_problem: "Օրվա խնդիրը",
 };
 
-function missionCtaHref(cta: { type: "practice_subtopic"; subtopic_id: number; tier: string } | { type: "mock_exams" }) {
-  return cta.type === "practice_subtopic" ? `/practice/subtopic/${cta.subtopic_id}/${cta.tier}` : "/mock-exams";
+/** The button should name the thing it opens. A single generic label was how
+ *  "start today's practice" ended up launching a full mock-exam list. */
+function missionCtaLabel(mission: NextMission): string {
+  if (!mission.available) return "Սկսել";
+  switch (mission.cta.type) {
+    case "mistake_review":
+      return "Վերանայել սխալները";
+    case "mock_exams":
+      return "Անցնել ամբողջական թեստ";
+    default:
+      return "Սկսել այսօրվա պարապմունքը";
+  }
 }
 
 export function TodayMissionHero({
@@ -128,10 +140,10 @@ export function TodayMissionHero({
         </div>
 
         <Link
-          to={missionCtaHref(mission.cta)}
+          to={missionHrefOrFallback(mission)}
           className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 font-semibold text-[var(--color-primary)] transition-opacity hover:opacity-90"
         >
-          <Play size={16} strokeWidth={1.75} /> Սկսել այսօրվա պարապմունքը
+          <Play size={16} strokeWidth={1.75} /> {missionCtaLabel(mission)}
         </Link>
       </div>
 

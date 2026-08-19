@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import katex from "katex";
 import { useNotepadOptional } from "../context/NotepadContext";
 
@@ -59,8 +59,20 @@ export function MathText({
   const notepad = useNotepadOptional();
   const parts = useMemo(() => text.split(MATH_SPLIT).filter((p) => p !== ""), [text]);
 
-  const onInsert =
-    allowInsert && notepad ? (latex: string) => notepad.requestInsertEquation(latex) : null;
+  const requestInsertEquation = notepad?.requestInsertEquation;
+  const onInsert = useCallback(
+    (latex: string) => requestInsertEquation?.(latex),
+    [requestInsertEquation],
+  );
+  const hasInsert = allowInsert && !!notepad;
 
-  return <span className={className}>{parts.map((part, i) => renderSegment(part, i, onInsert))}</span>;
+  // KaTeX rendering (renderSegment) is real work per segment — memoize the
+  // rendered nodes so a parent re-render (e.g. a countdown timer tick)
+  // doesn't re-run katex.renderToString for unchanged text.
+  const rendered = useMemo(
+    () => parts.map((part, i) => renderSegment(part, i, hasInsert ? onInsert : null)),
+    [parts, hasInsert, onInsert],
+  );
+
+  return <span className={className}>{rendered}</span>;
 }

@@ -20,11 +20,8 @@ import { FaqSection } from "../components/landing/FaqSection";
 import { FinalCtaSection } from "../components/landing/FinalCtaSection";
 import { LandingFooter } from "../components/landing/LandingFooter";
 
-// The brand gradient: #7C3AED into #000000 at 270deg. Overrides
-// --gradient-primary for this page's buttons; theme.css defines the same ramp
-// as --gradient-hero for everything else.
 const BRAND_GRADIENT = {
-  "--gradient-primary": "linear-gradient(270deg, #7C3AED 0%, #000000 100%)",
+  "--gradient-primary": "linear-gradient(226deg, #7C3AED, #7F24B0, #FF5C8D)",
 } as CSSProperties;
 
 export function LandingPage() {

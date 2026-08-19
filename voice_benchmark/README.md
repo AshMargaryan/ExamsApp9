@@ -52,12 +52,33 @@ backend running in Docker can reach this service via
 service has no auth and isn't meant to be exposed beyond your own machine;
 don't run it this way anywhere network-reachable by others.
 
-## Azure TTS credentials
+## OpenAI credentials (production path)
 
-Not set yet on this machine (`AZURE_SPEECH_KEY` / `AZURE_SPEECH_REGION` are
-empty in `.env`). Without them, the STT half of the benchmark still runs
-fine; the TTS section will return a 400 explaining what to set. To enable
-it:
+`/api/stt/transcribe` and `/api/tts/synthesize` — the two endpoints the real
+Django app calls — use OpenAI (`gpt-4o-mini-transcribe` for STT,
+`gpt-4o-mini-tts` for TTS), not Azure or the local Whisper models. Without
+`OPENAI_API_KEY` set, both return an error explaining what to set.
+
+1. Get a key at platform.openai.com.
+2. Add it to `voice_benchmark/.env`:
+   ```
+   OPENAI_API_KEY=<your key>
+   ```
+3. Restart the server.
+
+Read from environment variables only (via `python-dotenv`), following the
+same `KEY=` / `.env` convention as `backend/.env.example` — never
+hard-coded, never sent to the browser. The browser only ever receives the
+generated audio bytes from `/api/tts/synthesize`; the key never leaves the
+server process.
+
+## Azure TTS credentials (benchmark-only)
+
+`AZURE_SPEECH_KEY` / `AZURE_SPEECH_REGION` are only used by
+`/api/stt/benchmark` (as a third comparison model) and are no longer on the
+production request path. Without them, `/api/stt/benchmark` still runs with
+just the two local Whisper models, and the TTS benchmark section explains
+what to set. To enable it:
 
 1. Create (or reuse) an Azure Speech resource in the Azure portal.
 2. Copy its key and region into `voice_benchmark/.env`:
@@ -66,12 +87,6 @@ it:
    AZURE_SPEECH_REGION=<e.g. westeurope>
    ```
 3. Restart the server.
-
-These are read from environment variables only (via `python-dotenv`),
-following the same `KEY=` / `.env` convention as `backend/.env.example` —
-never hard-coded, never sent to the browser. The browser only ever receives
-the generated audio bytes from `/api/tts/synthesize`; the Azure key never
-leaves the server process.
 
 ## Running an STT test
 

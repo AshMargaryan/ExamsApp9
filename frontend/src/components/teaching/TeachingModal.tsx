@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import * as teachingApi from "../../api/teaching";
 import type { StudentSearchResult, TeacherStudentConnection } from "../../api/teaching";
 import type { AccountRole } from "../../api/auth";
+import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
+import { EmptyState } from "../ui/EmptyState";
+import { Modal } from "../ui/Modal";
+import { SkeletonRows } from "../ui/Skeleton";
+import { Tabs, TabPanel } from "../ui/Tabs";
 
 type Tab = "invitations" | "search";
 
@@ -12,29 +17,40 @@ function displayName(u: { username: string; first_name: string; last_name: strin
   return full || u.username;
 }
 
-function Avatar({
-  user,
-  onClick,
+function PersonRow({
+  person,
+  onOpenProfile,
+  action,
 }: {
-  user: { id: number; username: string; first_name: string; avatar: string | null };
-  onClick: () => void;
+  person: { id: number; username: string; first_name: string; last_name: string; avatar: string | null };
+  onOpenProfile: () => void;
+  action?: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title="Տեսնել պրոֆիլը"
-      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted transition-colors hover:border-primary"
-    >
-      {user.avatar ? (
-        <img src={user.avatar} alt={user.username} className="h-full w-full object-cover" />
-      ) : (
-        (user.first_name || user.username).slice(0, 1).toUpperCase()
-      )}
-    </button>
+    <div className="flex items-center justify-between border-b border-border py-2.5 last:border-0">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onOpenProfile}
+          title="Տեսնել պրոֆիլը"
+          className="shrink-0 rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          <Avatar src={person.avatar} name={displayName(person)} size="sm" />
+        </button>
+        <div className="min-w-0">
+          <p className="truncate text-text">{displayName(person)}</p>
+          <p className="truncate text-xs text-text-muted">@{person.username}</p>
+        </div>
+      </div>
+      {action}
+    </div>
   );
 }
 
+/** Rendered by parents as `{teachingOpen && <TeachingModal onClose={...} />}` — mounted
+ *  only while open, so its invitation fetch and search-debounce effect don't run on
+ *  every dashboard load. Modal itself always gets `open`, since Radix's close animation
+ *  needs a render where `open` flips to false before the parent unmounts it. */
 export function TeachingModal({
   role,
   onClose,
@@ -103,130 +119,103 @@ export function TeachingModal({
     loadInvitations();
   }
 
-  function tabClass(t: Tab) {
-    return `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-      tab === t ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
-    }`;
-  }
+  const invitationsPanel = (
+    <>
+      {invitations === null && <SkeletonRows count={3} />}
+      {invitations?.length === 0 && (
+        <EmptyState size="sm" title={role === "teacher" ? "Ուղարկված հրավերներ չկան։" : "Հրավերներ չկան։"} />
+      )}
+      {invitations?.map((inv) => {
+        const person = role === "teacher" ? inv.student : inv.teacher;
+        return (
+          <PersonRow
+            key={inv.id}
+            person={person}
+            onOpenProfile={() => navigate(`/profile/${person.id}`)}
+            action={
+              role === "teacher" ? (
+                <Button variant="ghost" size="sm" onClick={() => handleCancel(inv.id)} className="h-7 px-2 text-xs">
+                  Չեղարկել
+                </Button>
+              ) : (
+                <div className="flex shrink-0 gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => handleRespond(inv.id, "accept")} className="h-7 px-2 text-xs">
+                    Ընդունել
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleRespond(inv.id, "decline")} className="h-7 px-2 text-xs">
+                    Մերժել
+                  </Button>
+                </div>
+              )
+            }
+          />
+        );
+      })}
+    </>
+  );
+
+  const searchPanel = (
+    <>
+      <input
+        autoFocus
+        className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+        placeholder="Փնտրեք օգտանունով..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      {searching && <SkeletonRows count={2} />}
+      {!searching && query && results?.length === 0 && <EmptyState size="sm" title="Ոչինչ չի գտնվել։" />}
+      {!searching &&
+        results?.map((u) => (
+          <PersonRow
+            key={u.id}
+            person={u}
+            onOpenProfile={() => navigate(`/profile/${u.id}`)}
+            action={
+              u.connection_status === "none" ? (
+                <Button variant="secondary" size="sm" onClick={() => handleSend(u.id)} className="h-7 px-2 text-xs">
+                  Հրավիրել
+                </Button>
+              ) : (
+                <span className="shrink-0 text-sm text-text-muted">
+                  {u.connection_status === "pending" ? "Ուղարկված է" : "Կապակցված է"}
+                </span>
+              )
+            }
+          />
+        ))}
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div
-        className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-[var(--radius)] border border-border bg-surface p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text">
-            {role === "teacher" ? "Աշակերտների հրավերներ" : "Ուսուցիչների հրավերներ"}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Փակել"
-            className="text-lg text-text-muted transition-colors hover:text-text"
-          >
-            ✕
-          </button>
-        </div>
-
-        {role === "teacher" && (
-          <div className="mb-4 flex gap-2">
-            <button type="button" className={tabClass("invitations")} onClick={() => setTab("invitations")}>
-              Ուղարկված {invitations ? `(${invitations.length})` : ""}
-            </button>
-            <button type="button" className={tabClass("search")} onClick={() => setTab("search")}>
-              Հրավիրել աշակերտի
-            </button>
+    <Modal
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      title={role === "teacher" ? "Աշակերտների հրավերներ" : "Ուսուցիչների հրավերներ"}
+      className="max-w-lg"
+    >
+      {role === "teacher" ? (
+        <Tabs
+          label="Հրավերների բաժիններ"
+          value={tab}
+          onChange={setTab}
+          items={[
+            { value: "invitations", label: `Ուղարկված${invitations ? ` (${invitations.length})` : ""}` },
+            { value: "search", label: "Հրավիրել աշակերտի" },
+          ]}
+        >
+          <div className="mt-4 max-h-[55vh] overflow-y-auto">
+            <TabPanel value="invitations">{invitationsPanel}</TabPanel>
+            <TabPanel value="search">{searchPanel}</TabPanel>
           </div>
-        )}
+        </Tabs>
+      ) : (
+        <div className="max-h-[55vh] overflow-y-auto">{invitationsPanel}</div>
+      )}
 
-        <div className="flex-1 overflow-y-auto">
-          {tab === "invitations" && (
-            <>
-              {invitations === null && <p className="text-text-muted">Բեռնվում է...</p>}
-              {invitations?.length === 0 && (
-                <p className="text-text-muted">
-                  {role === "teacher" ? "Ուղարկված հրավերներ չկան։" : "Հրավերներ չկան։"}
-                </p>
-              )}
-              {invitations?.map((inv) => {
-                const person = role === "teacher" ? inv.student : inv.teacher;
-                return (
-                  <div
-                    key={inv.id}
-                    className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar user={person} onClick={() => navigate(`/profile/${person.id}`)} />
-                      <div>
-                        <p className="text-text">{displayName(person)}</p>
-                        <p className="text-xs text-text-muted">@{person.username}</p>
-                      </div>
-                    </div>
-                    {role === "teacher" ? (
-                      <Button variant="ghost" size="sm" onClick={() => handleCancel(inv.id)} className="h-7 px-2 text-xs">
-                        Չեղարկել
-                      </Button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" onClick={() => handleRespond(inv.id, "accept")} className="h-7 px-2 text-xs">
-                          Ընդունել
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleRespond(inv.id, "decline")} className="h-7 px-2 text-xs">
-                          Մերժել
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
-
-          {tab === "search" && role === "teacher" && (
-            <>
-              <input
-                autoFocus
-                className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
-                placeholder="Փնտրեք օգտանունով..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              {searching && <p className="text-text-muted">Փնտրվում է...</p>}
-              {!searching && query && results?.length === 0 && (
-                <p className="text-text-muted">Ոչինչ չի գտնվել։</p>
-              )}
-              {results?.map((u) => (
-                <div
-                  key={u.id}
-                  className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar user={u} onClick={() => navigate(`/profile/${u.id}`)} />
-                    <div>
-                      <p className="text-text">{displayName(u)}</p>
-                      <p className="text-xs text-text-muted">@{u.username}</p>
-                    </div>
-                  </div>
-                  {u.connection_status === "none" && (
-                    <Button variant="secondary" size="sm" onClick={() => handleSend(u.id)} className="h-7 px-2 text-xs">
-                      Հրավիրել
-                    </Button>
-                  )}
-                  {u.connection_status === "pending" && (
-                    <span className="text-sm text-text-muted">Ուղարկված է</span>
-                  )}
-                  {u.connection_status === "accepted" && (
-                    <span className="text-sm text-text-muted">Կապակցված է</span>
-                  )}
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-
-        {error && <p className="mt-3 text-sm text-incorrect">{error}</p>}
-      </div>
-    </div>
+      {error && <p className="mt-3 text-sm text-incorrect">{error}</p>}
+    </Modal>
   );
 }

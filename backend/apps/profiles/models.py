@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -425,3 +426,68 @@ class LearningEvent(models.Model):
 
     def __str__(self):
         return f"{self.user} / {self.get_event_type_display()} @ {self.occurred_at:%Y-%m-%d %H:%M}"
+
+
+class CoachPreferences(models.Model):
+    """
+    How often, and when, the student wants the coach to push a *full mock
+    exam* at them — as opposed to the short daily work the plan is made of.
+
+    Separate from StudyAvailability on purpose. Availability answers "when am
+    I free to study at all"; this answers "how hard should the coach push, and
+    on which days is a 60-minute sitting actually realistic". A student can be
+    free every evening and still only want one full exam a week.
+
+    Consumed by apps.study_plan.services._mock_exam_candidates: outside the
+    chosen days, or once the weekly quota is spent, the daily plan proposes
+    short work instead of a full sitting.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="coach_preferences"
+    )
+    mock_exams_per_week = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[MaxValueValidator(7)],
+        help_text="How many full mock exams the coach may propose in a week. 0 disables them entirely.",
+    )
+    preferred_test_days = models.JSONField(
+        default=list, blank=True,
+        help_text="ISO weekday ints a full exam is welcome on, 0=Monday..6=Sunday. Empty = any day.",
+    )
+    preferred_test_time = models.TimeField(
+        null=True, blank=True, help_text="Time of day the student prefers to sit a full exam.",
+    )
+    configured_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text=(
+            "When the student first saved this deliberately. The row itself is "
+            "created on read with working defaults, so its existence proves "
+            "nothing; without this, a student who genuinely wants the default "
+            "cadence can never satisfy the profile-completeness prompt asking "
+            "them to choose one."
+        ),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if not isinstance(self.preferred_test_days, list) or any(
+            not isinstance(d, int) or d < 0 or d > 6 for d in self.preferred_test_days
+        ):
+            raise ValidationError({"preferred_test_days": "Weekday values must be integers between 0 and 6."})
+        if self.mock_exams_per_week and len(self.preferred_test_days) > self.mock_exams_per_week:
+            raise ValidationError(
+                {"preferred_test_days": "Cannot pick more test days than exams per week."}
+            )
+
+    def allows_mock_exam_on(self, weekday: int) -> bool:
+        """True when a full exam may be proposed on this ISO weekday
+        (0=Monday). No chosen days means 'any day is fine'."""
+        if self.mock_exams_per_week == 0:
+            return False
+        if not self.preferred_test_days:
+            return True
+        return weekday in self.preferred_test_days
+
+    def __str__(self):
+        return f"CoachPreferences({self.user}) — {self.mock_exams_per_week}/week"

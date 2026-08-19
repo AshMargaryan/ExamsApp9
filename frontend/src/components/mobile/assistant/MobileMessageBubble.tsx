@@ -73,7 +73,7 @@ function MobileMessageBubbleImpl({
     }
     setSpeaking(true);
     try {
-      const blob = await synthesizeVoice(message.content, "hy-AM-AnahitNeural");
+      const blob = await synthesizeVoice(message.content, "nova");
       const audio = new Audio(URL.createObjectURL(blob));
       audioRef.current = audio;
       audio.play().catch(() => {});

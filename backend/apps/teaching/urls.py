@@ -17,6 +17,8 @@ from .views import (
     SendInvitationView,
     StudentSearchView,
     TeacherClassLeaderboardView,
+    TeacherClassTrendsView,
+    TeacherNeedsAttentionView,
     TeacherDashboardSummaryView,
     TeacherStudentDashboardView,
     TeacherStudentRankHistoryView,
@@ -28,6 +30,12 @@ urlpatterns = [
     path("students/", TeacherStudentRosterView.as_view(), name="teacher_student_roster"),
     path("students/search/", StudentSearchView.as_view(), name="student_search"),
     path("students/leaderboard/", TeacherClassLeaderboardView.as_view(), name="teacher_class_leaderboard"),
+    path(
+        "students/needs-attention/",
+        TeacherNeedsAttentionView.as_view(),
+        name="teacher_needs_attention",
+    ),
+    path("analytics/class-trends/", TeacherClassTrendsView.as_view(), name="teacher_class_trends"),
     path(
         "students/<int:student_id>/dashboard/",
         TeacherStudentDashboardView.as_view(),

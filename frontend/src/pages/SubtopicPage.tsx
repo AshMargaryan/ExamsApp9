@@ -5,11 +5,13 @@ import {
   type SubjectNode, type DomainNode, type TopicNode, type SubtopicNode,
   type SubtopicMaterial, type Tier,
 } from "../api/practice";
+import { Send } from "lucide-react";
 import * as teachingApi from "../api/teaching";
+import type { StudentRosterEntry } from "../api/teaching";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
 import { SpeakOnSelect } from "../components/SpeakOnSelect";
-import { ToolsDock } from "../components/ToolsDock";
-import { NotepadProvider } from "../context/NotepadContext";
+import { AssignmentPicker } from "../components/teaching/AssignmentPicker";
+import { Button } from "../components/ui/Button";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 import { useAuth } from "../auth/AuthContext";
 
@@ -126,12 +128,14 @@ function findSubtopicContext(
 }
 
 function SubtopicContent({
-  subtopic, trackAssignmentId, backHref, breadcrumb,
+  subtopic, trackAssignmentId, backHref, breadcrumb, onAssignClick,
 }: {
   subtopic: SubtopicNode;
   trackAssignmentId?: number;
   backHref: string;
   breadcrumb: string;
+  /** Present only for a teacher — opens the assignment picker preset to this subtopic. */
+  onAssignClick?: () => void;
 }) {
   const [material, setMaterial] = useState<SubtopicMaterial | null>(null);
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -171,15 +175,27 @@ function SubtopicContent({
         ← {breadcrumb}
       </Link>
 
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold text-text">{subtopic.name}</h1>
-        <button
-          type="button"
-          onClick={() => exercisesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          className="shrink-0 rounded-[var(--radius)] border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary hover:text-primary-contrast"
-        >
-          Անցնել վարժություններին
-        </button>
+        <div className="flex shrink-0 gap-2">
+          {onAssignClick && (
+            <Button
+              variant="secondary"
+              size="sm"
+              iconLeft={<Send size={15} strokeWidth={1.75} />}
+              onClick={onAssignClick}
+            >
+              Հանձնարարել աշակերտի
+            </Button>
+          )}
+          <button
+            type="button"
+            onClick={() => exercisesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="rounded-[var(--radius)] border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary hover:text-primary-contrast"
+          >
+            Անցնել վարժություններին
+          </button>
+        </div>
       </div>
 
       {subtopic.has_learning_material ? (
@@ -273,6 +289,8 @@ export function SubtopicPage() {
   const [context, setContext] = useState<ReturnType<typeof findSubtopicContext>>(null);
   const [notFound, setNotFound] = useState(false);
   const [trackAssignmentId, setTrackAssignmentId] = useState<number | undefined>(undefined);
+  const [roster, setRoster] = useState<StudentRosterEntry[] | null>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   useEffect(() => {
     setContext(null);
@@ -296,6 +314,11 @@ export function SubtopicPage() {
       setTrackAssignmentId(match?.id);
     });
   }, [user, id]);
+
+  useEffect(() => {
+    if (user?.role !== "teacher") return;
+    teachingApi.fetchStudentRoster().then(setRoster);
+  }, [user]);
 
   if (notFound) {
     return (
@@ -323,15 +346,21 @@ export function SubtopicPage() {
       trackAssignmentId={trackAssignmentId}
       backHref={backHref}
       breadcrumb={breadcrumb}
+      onAssignClick={user?.role === "teacher" ? () => setAssignOpen(true) : undefined}
     />
   );
 
   return (
-    <NotepadProvider>
-      <div className="mx-auto max-w-4xl px-8 py-8">
-        {isMath ? content : <SpeakOnSelect>{content}</SpeakOnSelect>}
-      </div>
-      {isMath && <ToolsDock />}
-    </NotepadProvider>
+    <div className="mx-auto max-w-4xl px-8 py-8">
+      {isMath ? content : <SpeakOnSelect>{content}</SpeakOnSelect>}
+      {user?.role === "teacher" && (
+        <AssignmentPicker
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+          roster={roster ?? []}
+          presetContent={{ assignment_type: "subtopic", id: subtopic.id, label: subtopic.name }}
+        />
+      )}
+    </div>
   );
 }

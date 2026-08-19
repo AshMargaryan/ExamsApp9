@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import Attachment, AttachmentType, Conversation, ConversationType, Message, MessageReport
@@ -351,10 +352,14 @@ class ConversationFilesView(APIView):
 
     permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
 
+    # A long-lived, active group chat accumulates attachments without bound —
+    # cap the response instead of serializing every file ever sent.
+    MAX_FILES = 500
+
     def get(self, request, pk):
         conversation = get_object_or_404(Conversation, pk=pk)
         self.check_object_permissions(request, conversation)
-        files = conversation.attachments.filter(message__isnull=False).order_by("-uploaded_at")
+        files = conversation.attachments.filter(message__isnull=False).order_by("-uploaded_at")[: self.MAX_FILES]
         return Response(AttachmentSerializer(files, many=True, context={"request": request}).data)
 
 
@@ -528,6 +533,9 @@ class AskAIView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+    # Bills an OpenAI call per request — see DEFAULT_THROTTLE_RATES["ai-assistant"].
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-assistant"
 
     def post(self, request, pk):
         conversation = get_object_or_404(Conversation, pk=pk)

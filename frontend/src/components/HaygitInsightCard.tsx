@@ -1,13 +1,7 @@
 import type { Coach, NextMission } from "../api/profile";
+import { missionHref } from "../lib/missionHref";
 import { Card } from "./ui/Card";
 import { LinkButton } from "./ui/LinkButton";
-
-function missionCtaHref(mission: NextMission) {
-  if (!mission.available) return null;
-  return mission.cta.type === "practice_subtopic"
-    ? `/practice/subtopic/${mission.cta.subtopic_id}/${mission.cta.tier}`
-    : "/mock-exams";
-}
 
 export function HaygitInsightCard({
   coach,
@@ -31,7 +25,7 @@ export function HaygitInsightCard({
     );
   }
 
-  const href = coach.available ? missionCtaHref(mission) : null;
+  const href = coach.available ? missionHref(mission) : null;
 
   return (
     <div

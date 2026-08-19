@@ -240,7 +240,10 @@ export type NextMission =
       estimated_minutes: number | null;
       potential_xp: number | null;
       reason: string;
-      cta: { type: "practice_subtopic"; subtopic_id: number; tier: string } | { type: "mock_exams" };
+      cta:
+        | { type: "practice_subtopic"; subtopic_id: number; tier: string }
+        | { type: "mistake_review"; subject_name: string; topic_label: string }
+        | { type: "mock_exams" };
     };
 
 export interface ProfileAnalytics {
@@ -587,5 +590,31 @@ export async function updateLearningPreferences(
   payload: Partial<LearningPreferences>,
 ): Promise<LearningPreferences> {
   const { data } = await apiClient.patch("/profile/learning-preferences/", payload);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Coach cadence — how hard, and how often, the coach may push a full exam
+// ---------------------------------------------------------------------------
+
+export interface CoachPreferences {
+  mock_exams_per_week: number;
+  /** ISO weekday ints, 0=Monday..6=Sunday. Empty = any day. */
+  preferred_test_days: number[];
+  preferred_test_time: string | null;
+  /** Set the first time the student saves deliberately; null = never chosen. */
+  configured_at: string | null;
+  updated_at: string;
+}
+
+export async function fetchCoachPreferences(): Promise<CoachPreferences> {
+  const { data } = await apiClient.get("/profile/coach-preferences/");
+  return data;
+}
+
+export async function updateCoachPreferences(
+  payload: Partial<CoachPreferences>,
+): Promise<CoachPreferences> {
+  const { data } = await apiClient.patch("/profile/coach-preferences/", payload);
   return data;
 }

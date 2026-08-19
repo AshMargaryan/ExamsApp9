@@ -2,26 +2,61 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .classification import classify_mistake
 from .models import MistakeEntry, MistakeEntrySource
 from .serializers import MistakeEntrySerializer, MistakeRetryInputSerializer
 
+# A long-time student's mistake log is append-only and unbounded — cap a
+# single response instead of serializing the entire table. Plain slicing
+# (not pagination_class) keeps the response a flat array, matching every
+# existing caller's expectations.
+MAX_MISTAKES_RETURNED = 500
+
 
 class MistakeListView(generics.ListAPIView):
-    """GET /api/mistakes/ — this user's full mistake log, newest first.
-    Optional ?source=practice|mock_exam|flashcard filter."""
+    """
+    GET /api/mistakes/ — this user's mistake log, newest first.
+
+    Filters (all optional, all combinable):
+      ?source=practice|mock_exam|flashcard
+      ?subject=<subject_name>     exact subject, as stored on the entry
+      ?topic=<topic_label>        exact topic within that subject
+      ?unresolved=1               drop entries already re-answered correctly
+
+    `subject`/`topic` exist so a study-plan task can deep-link straight to the
+    exact set of mistakes it is about (see apps.study_plan.services
+    ._mistake_candidates, which builds the same pair into the task's
+    link_path). Matching is on the denormalised label columns rather than a FK
+    because MistakeEntry deliberately stores those as text — a mistake outlives
+    the question it came from.
+    """
     serializer_class = MistakeEntrySerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
     def get_queryset(self):
+        params = self.request.query_params
         qs = MistakeEntry.objects.filter(user=self.request.user).select_related("content_type")
-        source = self.request.query_params.get("source")
+
+        source = params.get("source")
         if source:
             qs = qs.filter(source=source)
-        return qs
+
+        subject = params.get("subject")
+        if subject:
+            qs = qs.filter(subject_name=subject)
+
+        topic = params.get("topic")
+        if topic:
+            qs = qs.filter(topic_label=topic)
+
+        if params.get("unresolved") in ("1", "true"):
+            qs = qs.exclude(last_retry_correct=True)
+
+        return qs[:MAX_MISTAKES_RETURNED]
 
 
 class MistakeRetryView(APIView):
@@ -73,6 +108,10 @@ class MistakeClassifyView(APIView):
     just returns the current state — never re-bills the AI call."""
 
     permission_classes = [permissions.IsAuthenticated]
+    # First classification of any given entry bills an AI call (repeats are a
+    # cached no-op — see docstring above) — see DEFAULT_THROTTLE_RATES["ai-assistant"].
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-assistant"
 
     def post(self, request, pk):
         entry = get_object_or_404(MistakeEntry, pk=pk, user=request.user)

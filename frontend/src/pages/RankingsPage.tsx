@@ -17,6 +17,7 @@ import { SeasonHistoryList } from "../components/rankings/SeasonHistoryList";
 import { StickyOwnRow } from "../components/rankings/StickyOwnRow";
 import { YourPositionCard } from "../components/rankings/YourPositionCard";
 import { LinkButton } from "../components/ui/LinkButton";
+import { SkeletonText } from "../components/ui/Skeleton";
 
 function SidePanelSection({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -87,6 +88,13 @@ export function RankingsPage() {
   const [privacy, setPrivacy] = useState<PrivacySettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The boards themselves are useful to any role — a teacher watching their
+  // class, for instance — but "your position", "your records" and "your season
+  // history" only mean something for a student who competes on them. For
+  // everyone else they'd be three permanently empty cards, so they aren't
+  // rendered and their requests are never made.
+  const isCompetitor = user?.role === "student";
+
   useEffect(() => {
     const fail = () => setError("Չհաջողվեց բեռնել դասակարգումը։");
     rankingsApi.fetchGlobalRanking().then(setGlobal).catch(fail);
@@ -94,11 +102,12 @@ export function RankingsPage() {
     rankingsApi.fetchClassRanking().then(setClassBoard).catch(fail);
     rankingsApi.fetchFriendsRanking().then(setFriends).catch(fail);
     rankingsApi.fetchSchoolComparison().then(setSchools).catch(fail);
+    if (!isCompetitor) return;
     rankingsApi.fetchRankHistory("global").then(setRankHistory).catch(fail);
     rankingsApi.fetchMyRankingAwards().then(setAwards).catch(fail);
     profileApi.fetchAnalytics().then((a) => setPersonalRecords(a.personal_records)).catch(fail);
     profileApi.fetchPrivacySettings().then(setPrivacy).catch(fail);
-  }, []);
+  }, [isCompetitor]);
 
   useEffect(() => {
     if (!activeSubject || subjectBoards[activeSubject]) return;
@@ -135,7 +144,13 @@ export function RankingsPage() {
 
       {mainTab !== "schools" && board && (
         <div className="mb-6 overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
-          <YourPositionCard board={board} meId={user?.id} hidden={privacy ? !privacy.show_on_leaderboard : false} />
+          {isCompetitor && (
+            <YourPositionCard
+              board={board}
+              meId={user?.id}
+              hidden={privacy ? !privacy.show_on_leaderboard : false}
+            />
+          )}
           <Podium top3={top3} meId={user?.id} />
           <RankingList board={board} meId={user?.id} />
         </div>
@@ -148,7 +163,7 @@ export function RankingsPage() {
         onSubjectChange={setActiveSubject}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className={`grid gap-6 ${isCompetitor ? "lg:grid-cols-[1fr_320px]" : ""}`}>
         <div>
           {mainTab === "schools" && !activeSubject ? (
             schools ? (
@@ -169,23 +184,25 @@ export function RankingsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-6">
-          <SidePanelSection title={<><TrendingUp size={13} strokeWidth={1.75} /> Սեզոնի առաջընթաց</>}>
-            <RankProgressChart points={rankHistory ?? []} />
-          </SidePanelSection>
+        {isCompetitor && (
+          <div className="flex flex-col gap-6">
+            <SidePanelSection title={<><TrendingUp size={13} strokeWidth={1.75} /> Սեզոնի առաջընթաց</>}>
+              <RankProgressChart points={rankHistory ?? []} />
+            </SidePanelSection>
 
-          <SidePanelSection title={<><Award size={13} strokeWidth={1.75} /> Անձնական ռեկորդներ</>}>
-            {personalRecords ? (
-              <PersonalRecordsCard records={personalRecords} />
-            ) : (
-              <p className="text-sm text-text-muted">Բեռնվում է...</p>
-            )}
-          </SidePanelSection>
+            <SidePanelSection title={<><Award size={13} strokeWidth={1.75} /> Անձնական ռեկորդներ</>}>
+              {personalRecords ? (
+                <PersonalRecordsCard records={personalRecords} />
+              ) : (
+                <SkeletonText lines={4} />
+              )}
+            </SidePanelSection>
 
-          <SidePanelSection title={<><History size={13} strokeWidth={1.75} /> Սեզոնների պատմություն</>}>
-            {awards ? <SeasonHistoryList awards={awards} /> : <p className="text-sm text-text-muted">Բեռնվում է...</p>}
-          </SidePanelSection>
-        </div>
+            <SidePanelSection title={<><History size={13} strokeWidth={1.75} /> Սեզոնների պատմություն</>}>
+              {awards ? <SeasonHistoryList awards={awards} /> : <SkeletonText lines={3} />}
+            </SidePanelSection>
+          </div>
+        )}
       </div>
     </div>
   );

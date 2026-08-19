@@ -709,3 +709,96 @@ class NextMissionAnalyticsTests(TestCase):
 
         self.assertTrue(mission["available"])
         self.assertEqual(mission["potential_xp"], mission["question_count"] * XP_PER_CORRECT_PRACTICE_ANSWER)
+
+
+class CoachPreferencesApiTests(TestCase):
+    """The cadence the student declares is what apps.study_plan reads before
+    proposing a full mock exam, so the endpoint has to refuse states the
+    planner couldn't honour."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="cadence", email="cadence@example.com", password="pw123456",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+        self.url = "/api/profile/coach-preferences/"
+
+    def test_get_creates_a_working_default(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["mock_exams_per_week"], 1)
+        self.assertEqual(response.json()["preferred_test_days"], [])
+
+    def test_saves_cadence_and_sorts_deduplicated_days(self):
+        response = self.client.patch(
+            self.url,
+            {"mock_exams_per_week": 3, "preferred_test_days": [5, 2, 2], "preferred_test_time": "19:30"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["preferred_test_days"], [2, 5])
+        self.assertEqual(response.json()["preferred_test_time"], "19:30:00")
+
+    def test_rejects_more_test_days_than_exams_per_week(self):
+        response = self.client.patch(
+            self.url, {"mock_exams_per_week": 1, "preferred_test_days": [0, 1]}, format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("preferred_test_days", response.json())
+
+    def test_rejects_out_of_range_weekdays(self):
+        response = self.client.patch(self.url, {"preferred_test_days": [9]}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_cross_field_rule_holds_when_only_one_side_is_patched(self):
+        self.client.patch(
+            self.url, {"mock_exams_per_week": 3, "preferred_test_days": [0, 1, 2]}, format="json",
+        )
+        # Lowering the allowance alone would strand three days on a one-a-week
+        # cadence, so it must be refused rather than silently stored.
+        response = self.client.patch(self.url, {"mock_exams_per_week": 1}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_cadence_reaches_the_learner_context(self):
+        self.client.patch(
+            self.url, {"mock_exams_per_week": 2, "preferred_test_days": [1, 4]}, format="json",
+        )
+        context = get_learner_context(self.user, include_events=False)
+        self.assertEqual(context["coach_preferences"]["mock_exams_per_week"], 2)
+        self.assertEqual(context["coach_preferences"]["preferred_test_days"], [1, 4])
+
+
+class NextMissionAndChecklistTests(TestCase):
+    """A weak topic with no practice subtopic (i.e. one that came from a mock
+    exam) must route to reviewing those mistakes — not to the exam list, which
+    contradicted the mission's own 'review this topic' title."""
+
+    def setUp(self):
+        from apps.practice.models import TopicMistake
+
+        self.user = User.objects.create_user(
+            username="mission", email="mission@example.com", password="pw123456",
+        )
+        self.mistake = TopicMistake.objects.create(
+            student=self.user, source="mock_exam", subject_name="Մաթեմատիկա",
+            topic_label="Թվերի տեսություն", subtopic=None, incorrect_count=2,
+            last_incorrect_at=timezone.now(),
+        )
+
+    def test_subtopic_less_weak_topic_routes_to_its_mistake_review(self):
+        mission = analytics.next_mission(self.user)
+
+        self.assertTrue(mission["available"])
+        self.assertEqual(mission["cta"]["type"], "mistake_review")
+        self.assertEqual(mission["cta"]["subject_name"], "Մաթեմատիկա")
+        self.assertEqual(mission["cta"]["topic_label"], "Թվերի տեսություն")
+
+    def test_mistake_review_count_does_not_shrink_the_daily_practice_goal(self):
+        # The mission reports 2 (mistakes to re-answer). Borrowing that as the
+        # practice target would turn the whole day into a two-question day.
+        checklist = analytics.today_checklist(self.user)
+        practice = next(i for i in checklist["items"] if i["key"] == "practice")
+
+        self.assertEqual(practice["target"], analytics.DEFAULT_DAILY_PRACTICE_TARGET)
+        self.assertNotEqual(practice["target"], self.mistake.incorrect_count)

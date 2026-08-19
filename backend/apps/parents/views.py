@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import LearningGoal, ParentChildRequest
@@ -133,6 +134,9 @@ class WeeklyReportView(APIView):
     {"email": true} to also send it to the parent's email address.
     """
     permission_classes = [permissions.IsAuthenticated]
+    # Bills an OpenAI call per request — see DEFAULT_THROTTLE_RATES["ai-assistant"].
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-assistant"
 
     def post(self, request, child_id):
         child = get_linked_child_or_none(request.user, child_id)

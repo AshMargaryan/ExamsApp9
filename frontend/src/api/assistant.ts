@@ -156,7 +156,7 @@ export async function deleteAttachment(id: number): Promise<void> {
   await apiClient.delete(`/assistant/attachments/${id}/`);
 }
 
-export type ArmenianVoice = "hy-AM-AnahitNeural" | "hy-AM-HaykNeural";
+export type OpenAIVoice = "nova" | "onyx";
 
 export async function transcribeVoice(file: File): Promise<string> {
   const form = new FormData();
@@ -167,7 +167,7 @@ export async function transcribeVoice(file: File): Promise<string> {
   return data.text as string;
 }
 
-export async function synthesizeVoice(text: string, voice: ArmenianVoice): Promise<Blob> {
+export async function synthesizeVoice(text: string, voice: OpenAIVoice): Promise<Blob> {
   const { data } = await apiClient.post(
     "/assistant/voice/synthesize/",
     { text, voice },

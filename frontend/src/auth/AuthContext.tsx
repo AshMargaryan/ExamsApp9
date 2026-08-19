@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import * as authApi from "../api/auth";
 import { tokenStorage } from "../api/client";
 import type { CompleteOAuthRegistrationPayload, RegisterPayload, SignedOutDevice, User } from "../api/auth";
@@ -44,20 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  async function login(username: string, password: string): Promise<PasswordLoginResult> {
+  const login = useCallback(async (username: string, password: string): Promise<PasswordLoginResult> => {
     const signedOutDevice = await authApi.login(username, password);
     const me = await authApi.fetchMe();
     setUser(me);
     return { user: me, signedOutDevice };
-  }
+  }, []);
 
-  async function register(payload: RegisterPayload) {
+  const register = useCallback(async (payload: RegisterPayload) => {
     await authApi.register(payload);
     const { user: me } = await login(payload.username, payload.password);
     return me;
-  }
+  }, [login]);
 
-  async function loginWithGoogle(idToken: string): Promise<OAuthLoginResult> {
+  const loginWithGoogle = useCallback(async (idToken: string): Promise<OAuthLoginResult> => {
     const newUser = await authApi.googleAuth(idToken);
     if (newUser) {
       return { status: "needs_registration", ...newUser };
@@ -65,45 +65,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const me = await authApi.fetchMe();
     setUser(me);
     return { status: "logged_in", user: me };
-  }
+  }, []);
 
-  async function loginWithApple(idToken: string, firstName: string, lastName: string): Promise<OAuthLoginResult> {
-    const newUser = await authApi.appleAuth(idToken, firstName, lastName);
-    if (newUser) {
-      return { status: "needs_registration", ...newUser };
-    }
-    const me = await authApi.fetchMe();
-    setUser(me);
-    return { status: "logged_in", user: me };
-  }
+  const loginWithApple = useCallback(
+    async (idToken: string, firstName: string, lastName: string): Promise<OAuthLoginResult> => {
+      const newUser = await authApi.appleAuth(idToken, firstName, lastName);
+      if (newUser) {
+        return { status: "needs_registration", ...newUser };
+      }
+      const me = await authApi.fetchMe();
+      setUser(me);
+      return { status: "logged_in", user: me };
+    },
+    [],
+  );
 
-  async function completeOAuthRegistration(payload: CompleteOAuthRegistrationPayload) {
+  const completeOAuthRegistration = useCallback(async (payload: CompleteOAuthRegistrationPayload) => {
     await authApi.completeOAuthRegistration(payload);
     const me = await authApi.fetchMe();
     setUser(me);
     return me;
-  }
+  }, []);
 
-  async function refreshUser() {
+  const refreshUser = useCallback(async () => {
     setUser(await authApi.fetchMe());
-  }
+  }, []);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
-  }
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user, isLoading, login, register,
-        loginWithGoogle, loginWithApple, completeOAuthRegistration,
-        logout, refreshUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user, isLoading, login, register,
+      loginWithGoogle, loginWithApple, completeOAuthRegistration,
+      logout, refreshUser,
+    }),
+    [user, isLoading, login, register, loginWithGoogle, loginWithApple, completeOAuthRegistration, logout, refreshUser],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

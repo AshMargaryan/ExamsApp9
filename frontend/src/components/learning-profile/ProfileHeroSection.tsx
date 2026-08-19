@@ -1,163 +1,245 @@
-import { useEffect, useState } from "react";
-import { Target } from "lucide-react";
-import * as profileApi from "../../api/profile";
-import type { PersonalGoal, StudentExam, StudentSubjectInterest } from "../../api/profile";
-import * as knowledgeApi from "../../api/knowledge";
-import type { MasteryScore } from "../../api/knowledge";
-import { extractErrorMessage, useToast } from "../../context/ToastContext";
+import { ArrowRight, Check, Target } from "lucide-react";
+import { Link } from "react-router-dom";
 import { SUBJECTS } from "../../lib/subjects";
+import { MASTERY_BAND_COLOR, MASTERY_BAND_LABEL, masteryBand } from "../../lib/mastery";
+import { Button } from "../ui/Button";
+import { ErrorState } from "../ui/ErrorState";
+import { Metric } from "../ui/Metric";
+import { ProgressRing } from "../ui/ProgressRing";
+import { Skeleton } from "../ui/Skeleton";
+import { scrollToSection } from "../ui/SectionNav";
+import {
+  completenessSteps,
+  focusedAverageMastery,
+  hasDeclaredAvailability,
+  hasChosenCadence,
+  nextUpcomingExam,
+  useLearningProfileData,
+} from "./LearningProfileData";
 
-function daysUntil(dateStr: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr);
-  return Math.round((target.getTime() - today.getTime()) / 86400000);
-}
+/*
+  The page's answer to "where am I, where am I going, what should I do next" —
+  in that order, above the fold.
 
-const ORBIT_RADIUS = 118;
+  The old hero carried a decorative orbit of all five subject glyphs whether or
+  not the student studied them. It's replaced by the subjects they actually
+  chose, each showing its real score, because that is what the average in the
+  ring is made of. If a visual can't be made to mean something, it shouldn't
+  survive a redesign.
+*/
 
-function scrollToGoals() {
-  document.getElementById("goals-section")?.scrollIntoView({ behavior: "smooth" });
+function HeroSkeleton() {
+  return (
+    <div className="rounded-[calc(var(--radius)*1.15)] border border-border bg-surface p-7 sm:p-9">
+      <div className="grid gap-8 sm:grid-cols-[1.15fr_auto]">
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-11 w-52" />
+          <div className="mt-2 flex gap-8">
+            <Skeleton className="h-12 w-20" />
+            <Skeleton className="h-12 w-20" />
+            <Skeleton className="h-12 w-20" />
+          </div>
+        </div>
+        <Skeleton className="mx-auto hidden h-[172px] w-[172px] rounded-full sm:block" />
+      </div>
+    </div>
+  );
 }
 
 export function ProfileHeroSection() {
-  const { showError } = useToast();
-  const [interests, setInterests] = useState<StudentSubjectInterest[] | null>(null);
-  const [scores, setScores] = useState<MasteryScore[] | null>(null);
-  const [goals, setGoals] = useState<PersonalGoal[] | null>(null);
-  const [exams, setExams] = useState<StudentExam[] | null>(null);
+  const { status, reload, interests, scores, goals, exams, availability, coachPreferences } =
+    useLearningProfileData();
 
-  useEffect(() => {
-    Promise.all([
-      profileApi.fetchSubjectInterests(),
-      knowledgeApi.fetchSubjectMasteryScores(),
-      profileApi.fetchGoals(),
-      profileApi.fetchExams(),
-    ])
-      .then(([i, s, g, e]) => {
-        setInterests(i);
-        setScores(s);
-        setGoals(g);
-        setExams(e);
-      })
-      .catch((err) => showError(extractErrorMessage(err)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loaded = interests !== null && scores !== null && goals !== null && exams !== null;
-
-  if (!loaded) {
+  if (status === "loading") return <HeroSkeleton />;
+  if (status === "error") {
     return (
-      <div className="rounded-[calc(var(--radius)*1.15)] border border-border bg-surface p-7">
-        <p className="text-sm text-text-muted">Բեռնվում է...</p>
-      </div>
+      <ErrorState
+        title="Չհաջողվեց բեռնել քո ուսումնական պրոֆիլը։"
+        hint="Սա սովորաբար ժամանակավոր խնդիր է։ Տվյալներդ տեղում են։"
+        onRetry={reload}
+      />
     );
   }
 
+  const overallMastery = focusedAverageMastery(interests, scores);
+  const next = nextUpcomingExam(exams);
+  const activeGoals = goals.filter((g) => !g.completed_at);
+
+  const steps = completenessSteps({
+    interests,
+    goals,
+    exams,
+    hasAvailability: hasDeclaredAvailability(availability),
+    hasCadence: hasChosenCadence(coachPreferences),
+  });
+  const doneSteps = steps.filter((s) => s.done);
+  const completionPct = Math.round((doneSteps.length / steps.length) * 100);
+  const firstMissing = steps.find((s) => !s.done);
+
   const scoreByKey = new Map(scores.map((s) => [s.subject_key, s]));
-  const focusedScored = interests
+  const focused = interests
     .filter((i) => i.is_active)
-    .map((i) => scoreByKey.get(i.subject_key))
-    .filter((s): s is MasteryScore => !!s && s.mastery_score != null);
-  const overallMastery = focusedScored.length
-    ? Math.round(focusedScored.reduce((sum, s) => sum + (s.mastery_score ?? 0), 0) / focusedScored.length)
-    : null;
-
-  const upcomingExamDays = exams
-    .filter((e) => e.status === "upcoming")
-    .map((e) => daysUntil(e.exam_date))
-    .filter((d) => d >= 0)
-    .sort((a, b) => a - b)[0];
-
-  const isEmpty = interests.length === 0 && goals.length === 0 && exams.length === 0;
-
-  const orbitAngles = SUBJECTS.map((_, i) => (360 / SUBJECTS.length) * i);
+    .map((i) => ({
+      meta: SUBJECTS.find((s) => s.key === i.subject_key),
+      score: scoreByKey.get(i.subject_key)?.mastery_score ?? null,
+    }))
+    .filter((f) => f.meta)
+    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
 
   return (
-    <div className="lp-rise-in relative overflow-hidden rounded-[calc(var(--radius)*1.15)] border border-border bg-surface p-7 sm:p-9">
+    <div className="lp-rise-in relative overflow-hidden rounded-[calc(var(--radius)*1.15)] border border-border bg-surface">
       <div
-        className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full opacity-40 blur-3xl"
+        className="pointer-events-none absolute -top-32 -right-24 h-72 w-72 rounded-full opacity-25 blur-3xl"
         style={{ background: "var(--color-primary)" }}
         aria-hidden="true"
       />
-      <div
-        className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full opacity-30 blur-3xl"
-        style={{ background: "var(--color-pink)" }}
-        aria-hidden="true"
-      />
 
-      <div className="relative grid items-center gap-8 sm:grid-cols-[1.1fr_auto]">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold text-text sm:text-3xl">
-            <Target size={26} strokeWidth={1.75} /> Իմ ուսումնական պրոֆիլը
+      <div className="relative grid items-center gap-8 p-7 sm:p-9 lg:grid-cols-[1.15fr_auto]">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold tracking-[0.14em] text-text-muted">ՈՒՍՈՒՄՆԱԿԱՆ ՊՐՈՖԻԼ</p>
+          <h1 className="mt-2 flex items-center gap-2.5 text-[26px] leading-tight font-semibold text-text sm:text-[32px]">
+            <Target size={26} strokeWidth={1.75} className="shrink-0 text-primary" />
+            Իմ ուսումնական պրոֆիլը
           </h1>
-          <p className="mt-1.5 max-w-md text-sm text-text-muted">
-            Ձեր նպատակները, առարկաները և ուսումնական սովորությունները՝ մեկ խելացի համակարգում։
+          <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-text-muted">
+            Այստեղ Haygit-ը սովորում է քեզ ճանաչել՝ առարկաներդ, նպատակներդ, քննություններդ և
+            ժամանակդ։ Ինչքան շատ գիտի, այնքան ճշգրիտ է քո ամենօրյա պլանը։
           </p>
 
-          {isEmpty ? (
-            <button
-              type="button"
-              onClick={scrollToGoals}
-              className="mt-5 inline-block rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-            >
-              Սկսել →
-            </button>
-          ) : (
-            <div className="mt-5 flex flex-wrap gap-7">
-              <div>
-                <div className="text-3xl font-semibold text-text">{overallMastery ?? "—"}{overallMastery != null && "%"}</div>
-                <div className="text-xs text-text-muted">միջին իմացություն</div>
-              </div>
-              <div>
-                <div className="text-3xl font-semibold text-text">{goals.length}</div>
-                <div className="text-xs text-text-muted">ակտիվ նպատակ</div>
-              </div>
-              <div>
-                <div className="text-3xl font-semibold text-text">{upcomingExamDays != null ? upcomingExamDays : "—"}{upcomingExamDays != null && " օր"}</div>
-                <div className="text-xs text-text-muted">հաջորդ քննությունը</div>
-              </div>
-            </div>
-          )}
-        </div>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {firstMissing ? (
+              <Button
+                size="md"
+                onClick={() => scrollToSection(firstMissing.target)}
+                iconRight={<ArrowRight size={16} strokeWidth={2} />}
+              >
+                {firstMissing.label}
+              </Button>
+            ) : (
+              <Link
+                to="/study-plan"
+                className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] bg-primary px-5 text-[15px] font-medium text-primary-contrast shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              >
+                Անցնել այսօրվա պլանին
+                <ArrowRight size={16} strokeWidth={2} />
+              </Link>
+            )}
+            {firstMissing && (
+              <Link
+                to="/study-plan"
+                className="text-sm font-medium text-text-muted underline-offset-4 transition-colors hover:text-primary hover:underline"
+              >
+                Այսօրվա պլանը →
+              </Link>
+            )}
+          </div>
 
-        <div className="mx-auto hidden h-[220px] w-[220px] items-center justify-center sm:flex">
-          <div className="relative flex h-[220px] w-[220px] items-center justify-center">
-            <div
-              className="flex h-[150px] w-[150px] items-center justify-center rounded-full shadow-[var(--shadow-md)]"
-              style={
-                overallMastery != null
-                  ? { background: `conic-gradient(from -90deg, var(--color-primary) 0%, var(--color-purple) ${overallMastery / 2}%, var(--color-pink) ${overallMastery}%, var(--color-surface-muted) 0)` }
-                  : { background: "repeating-conic-gradient(var(--color-surface-muted) 0deg 8deg, transparent 8deg 16deg)" }
-              }
-            >
-              <div className="flex h-[118px] w-[118px] flex-col items-center justify-center gap-0.5 rounded-full bg-bg text-center">
-                <span className="text-3xl font-semibold text-text">{overallMastery != null ? `${overallMastery}%` : "—"}</span>
-                <span className="max-w-[90px] text-[11px] text-text-muted">
-                  {overallMastery != null ? "միջին իմացություն" : "տվյալներ դեռ չկան"}
-                </span>
-              </div>
-            </div>
-
-            <div className="lp-orbit-ring pointer-events-none absolute inset-0" aria-hidden="true">
-              {SUBJECTS.map((subject, i) => (
-                <div
-                  key={subject.key}
-                  className="absolute top-1/2 left-1/2"
-                  style={{ transform: `translate(-50%, -50%) rotate(${orbitAngles[i]}deg) translate(${ORBIT_RADIUS}px) rotate(-${orbitAngles[i]}deg)` }}
-                >
-                  <div
-                    className="lp-orbit-chip flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-base shadow-[var(--shadow-sm)]"
-                    title={subject.label}
-                  >
-                    {subject.icon}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="mt-7 flex flex-wrap gap-x-9 gap-y-4">
+            <Metric
+              label="միջին իմացություն"
+              value={overallMastery != null ? `${overallMastery}%` : "—"}
+              hint={overallMastery != null ? `${focused.length} ընտրված առարկա` : "ընտրիր առարկա"}
+              size="lg"
+            />
+            <Metric
+              label="ակտիվ նպատակ"
+              value={activeGoals.length}
+              hint={activeGoals.length === 0 ? "դեռ չկա" : undefined}
+              size="lg"
+            />
+            <Metric
+              label="հաջորդ քննությունը"
+              value={next ? `${next.daysLeft} օր` : "—"}
+              hint={next ? next.exam.name : "դեռ չկա"}
+              size="lg"
+              tone={next && next.daysLeft <= 10 ? "incorrect" : "default"}
+            />
           </div>
         </div>
+
+        <div className="mx-auto flex flex-col items-center gap-4">
+          <ProgressRing value={overallMastery} size={172} thickness={11} label="Միջին իմացություն">
+            <span className="text-[34px] leading-none font-semibold tabular-nums text-text">
+              {overallMastery != null ? `${overallMastery}%` : "—"}
+            </span>
+            <span className="mt-1.5 max-w-[104px] text-[11px] leading-snug text-text-muted">
+              {overallMastery != null ? "միջին իմացություն" : "տվյալներ դեռ չկան"}
+            </span>
+          </ProgressRing>
+
+          {focused.length > 0 && (
+            <ul className="flex max-w-[260px] flex-wrap justify-center gap-1.5">
+              {focused.map((f) => {
+                const band = masteryBand(f.score);
+                return (
+                  <li
+                    key={f.meta!.key}
+                    className="flex items-center gap-1.5 rounded-full border border-border bg-bg px-2.5 py-1 text-[11px]"
+                    title={`${f.meta!.label} — ${MASTERY_BAND_LABEL[band]}`}
+                  >
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: MASTERY_BAND_COLOR[band] }}
+                    />
+                    <span className="text-text-muted">{f.meta!.label}</span>
+                    <span className="font-semibold tabular-nums text-text">
+                      {f.score != null ? `${f.score}%` : "—"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
+
+      {firstMissing && (
+        <div className="relative border-t border-border bg-surface-muted/40 px-7 py-5 sm:px-9">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <p className="text-sm font-medium text-text">
+              Պրոֆիլդ {completionPct}% պատրաստ է
+            </p>
+            <p className="text-xs text-text-muted">
+              {doneSteps.length} / {steps.length} քայլ
+            </p>
+          </div>
+          <div className="mt-2.5 flex gap-1" aria-hidden="true">
+            {steps.map((s) => (
+              <span
+                key={s.key}
+                className="h-1 flex-1 rounded-full transition-colors duration-[var(--motion-normal)]"
+                style={{ background: s.done ? "var(--color-primary)" : "var(--color-surface-muted)" }}
+              />
+            ))}
+          </div>
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {steps.map((step) => (
+              <li key={step.key}>
+                {step.done ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-correct/35 bg-correct/10 px-3 py-1.5 text-[12.5px] font-medium text-correct">
+                    <Check size={13} strokeWidth={2.5} />
+                    {step.label}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection(step.target)}
+                    title={step.hint}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-[12.5px] font-medium text-text-muted transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    {step.label}
+                    <ArrowRight size={12} strokeWidth={2} />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

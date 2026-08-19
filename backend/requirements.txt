@@ -15,4 +15,12 @@ cryptography==43.0.0
 gunicorn==22.0.0
 whitenoise==6.6.0
 channels==4.3.2
+channels_redis==4.2.1
 daphne==4.2.3
+django-redis==5.4.0
+# Pinned: redis-py >=6 changes async connection/timeout handling in a way
+# that makes channels_redis' blocking group-receive loop raise
+# "TimeoutError: Timeout reading from redis" under normal websocket
+# traffic (confirmed live against redis:7-alpine). 5.0.1 is the last
+# known-good major version with channels_redis==4.2.1.
+redis==5.0.1

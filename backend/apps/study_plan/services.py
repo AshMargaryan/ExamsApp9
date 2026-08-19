@@ -10,6 +10,7 @@ whenever the provider's response can't be parsed as the requested JSON
 import json
 from collections import defaultdict
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q
@@ -21,6 +22,8 @@ from apps.mistakes.models import ErrorCategory, MistakeEntry
 from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus
 from apps.practice.models import PracticeAttempt
 from apps.practice.services import get_recommended_subtopics
+from apps.profiles.context import get_learner_context
+from apps.profiles.subjects import canonical_key_for_practice_subject, subject_key_for_name
 
 from .models import CheckInFeeling, DailyStudyPlan, StudyTask, StudyTaskType, TaskCheckIn
 
@@ -28,6 +31,12 @@ MAX_PER_TYPE = 2
 MAX_TASKS = 6
 MISTAKE_LOOKBACK_DAYS = 30
 CHECK_IN_BOOST_DAYS = 3
+
+# Declared StudentSubject.priority -> sort rank (lower sorts first). A
+# candidate whose subject isn't declared at all (or couldn't be resolved to
+# a canonical key) is treated as medium — neither boosted nor penalized.
+SUBJECT_PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
+_DEFAULT_PRIORITY_RANK = SUBJECT_PRIORITY_RANK["medium"]
 
 FALLBACK_HEADLINE = "Այսօրվա անհատական ուսումնական պլանը պատրաստ է՝ կենտրոնացած քո թույլ կողմերի վրա։"
 
@@ -94,6 +103,7 @@ def _flashcard_candidates(user, limit=MAX_PER_TYPE):
         candidates.append({
             "task_type": StudyTaskType.FLASHCARD_REVIEW,
             "subject_name": deck.get_subject_display(),
+            "subject_key": deck.subject,
             "topic_label": deck.title,
             "title": f"Կրկնիր {count} բառաքարտ «{deck.title}» խմբից",
             "blurb": "Այս քարտերը ժամանակն է կրկնելու։",
@@ -140,6 +150,7 @@ def _practice_candidates(user, limit=MAX_PER_TYPE):
         candidates.append({
             "task_type": StudyTaskType.PRACTICE_WEAK_TOPIC,
             "subject_name": r["subject_name"],
+            "subject_key": r.get("subject_key"),
             "topic_label": r["subtopic_name"],
             "title": f"Լուծիր վարժություններ «{r['subtopic_name']}» թեմայից",
             "blurb": blurb,
@@ -173,6 +184,7 @@ def _due_review_candidates(user, limit=MAX_PER_TYPE, exclude_subtopic_ids=()):
         candidates.append({
             "task_type": StudyTaskType.PRACTICE_WEAK_TOPIC,
             "subject_name": s.topic.domain.subject.name,
+            "subject_key": canonical_key_for_practice_subject(s.topic.domain.subject),
             "topic_label": s.name,
             "title": f"Կրկնիր «{s.name}» թեման",
             "blurb": "Ժամանակն է կրկնել այս թեման՝ չմոռանալու համար։",
@@ -190,6 +202,12 @@ def _mistake_candidates(user, limit=MAX_PER_TYPE):
     entries = (
         MistakeEntry.objects
         .filter(user=user, created_at__gte=since)
+        # A mistake that has since been re-answered correctly is done with.
+        # Without this the plan kept billing it for the full 30-day window:
+        # "Կրկնիր 12 սխալ" when 10 of the 12 were already fixed, every day,
+        # no matter how much work the student put in. _practice_candidates
+        # already guards the equivalent case via MASTERED_SCORE_THRESHOLD.
+        .exclude(last_retry_correct=True)
         .order_by("-created_at")
     )
     grouped = defaultdict(list)
@@ -205,13 +223,21 @@ def _mistake_candidates(user, limit=MAX_PER_TYPE):
         candidates.append({
             "task_type": StudyTaskType.MISTAKE_RETRY,
             "subject_name": subject_name,
+            "subject_key": subject_key_for_name(subject_name),
             "topic_label": topic_label,
             "title": f"Կրկնիր {len(group)} սխալ «{label}» թեմայից",
             "blurb": blurb,
-            "link_path": "/mistake-notebook",
+            # Deep-link into a review session scoped to this exact
+            # (subject, topic) pair rather than dropping the student at the
+            # whole notebook. Scoped by label, not by this group's entry ids,
+            # so the link stays correct as new mistakes land in the topic
+            # between plan generation and the student actually opening it.
+            "link_path": f"/mistake-notebook/review?{urlencode({'subject': subject_name, 'topic': topic_label})}",
             "target_id": group[0].id,
-            "target_count": None,
-            "estimated_minutes": 5,
+            # The title promises N mistakes, so N is the denominator — one
+            # retry used to mark the whole task done and show no progress.
+            "target_count": len(group),
+            "estimated_minutes": max(5, len(group)),
             "params": {"entry_ids": [e.id for e in group]},
         })
     return candidates
@@ -249,6 +275,7 @@ def _mock_exam_candidates(user, limit=MAX_PER_TYPE):
         candidates.append({
             "task_type": StudyTaskType.MOCK_EXAM_RETAKE,
             "subject_name": exam.get_subject_display(),
+            "subject_key": exam.subject,
             "topic_label": exam.title,
             "title": f"Նորից փորձիր «{exam.title}»",
             "blurb": f"Վերջին փորձում ամենաթույլ արդյունքը եղել է {band_name} մակարդակի հարցերում։",
@@ -273,25 +300,131 @@ def _recently_struggled_topics(user, days=CHECK_IN_BOOST_DAYS):
     )
 
 
-def build_candidates(user):
+def _filter_to_active_subjects(candidates, active_subjects):
+    """Drop candidates for a subject the student has explicitly deactivated
+    on /learning-profile. A candidate whose subject_key couldn't be resolved
+    is kept — we can't safely filter what we can't identify. No-op when the
+    student hasn't declared any subjects yet, so brand-new students (who
+    haven't visited the profile page) still get a full plan."""
+    if not active_subjects:
+        return candidates
+    return [c for c in candidates if c.get("subject_key") is None or c["subject_key"] in active_subjects]
+
+
+def _order_by_subject_priority(candidates, active_subjects):
+    """Stable-sort so declared high-priority subjects lead and low-priority
+    ones trail, preserving the existing type-based ordering (mistakes >
+    weak practice > due review > flashcards > mock exams) within each
+    priority tier."""
+    if not active_subjects:
+        return candidates
+    return sorted(
+        candidates,
+        key=lambda c: SUBJECT_PRIORITY_RANK.get(active_subjects.get(c.get("subject_key")), _DEFAULT_PRIORITY_RANK),
+    )
+
+
+def _cap_to_daily_minutes(candidates, max_daily_minutes):
+    """Stop adding tasks once the running total would exceed the student's
+    declared daily maximum — but always keep at least one task, so a single
+    long candidate (e.g. a 60-minute mock exam retake) can't zero out the
+    plan for a student who capped their day at 30 minutes."""
+    if not max_daily_minutes:
+        return candidates
+    capped, total = [], 0
+    for c in candidates:
+        if capped and total + c["estimated_minutes"] > max_daily_minutes:
+            break
+        capped.append(c)
+        total += c["estimated_minutes"]
+    return capped
+
+
+def _mock_exams_allowed_today(user, coach_preferences):
+    """Whether today's plan may include a full mock exam.
+
+    A full sitting is an hour of a student's evening, and proposing one every
+    single day is how a daily plan stops being credible. The student declares
+    the cadence on /learning-profile (apps.profiles.CoachPreferences); this
+    honours it on two axes:
+
+      * day — outside the chosen weekdays, no exam is proposed at all;
+      * quota — once this week's completed sittings reach the declared
+        number, no more are proposed until the week rolls over.
+
+    Absent preferences mean "no opinion yet", which stays the old behaviour
+    rather than silently switching a student's plan off.
+    """
+    if coach_preferences is None:
+        return True
+
+    per_week = coach_preferences.get("mock_exams_per_week")
+    if per_week == 0:
+        return False
+
+    today = timezone.localdate()
+    chosen_days = coach_preferences.get("preferred_test_days") or []
+    if chosen_days and today.weekday() not in chosen_days:
+        return False
+
+    if per_week:
+        # ISO weeks start Monday, matching the 0=Monday weekday convention
+        # used by preferred_test_days and StudyAvailability.preferred_days.
+        week_start = today - timedelta(days=today.weekday())
+        taken_this_week = (
+            MockExamAttempt.objects
+            .filter(
+                user=user,
+                status=MockExamAttemptStatus.COMPLETED,
+                completed_at__date__gte=week_start,
+            )
+            .count()
+        )
+        if taken_this_week >= per_week:
+            return False
+
+    return True
+
+
+def build_candidates(user, learner_context=None):
     """Mistakes first (most urgent/recent), then weak practice topics, then
-    topics due for spaced review, then flashcards, then mock exam retakes —
-    capped to MAX_TASKS overall so the list stays a real daily plan, not a
-    dump of every weak signal. Any topic recently marked 'struggled' via a
-    check-in is then bumped to the front, preserving relative order
-    otherwise (stable sort)."""
+    topics due for spaced review, then flashcards, then mock exam retakes.
+    The declared learner profile (/learning-profile) then reshapes that base
+    order: candidates for a deactivated subject are dropped, candidates for
+    a higher-priority subject are bumped up (stable, so ties keep their
+    original order), and the list is trimmed to fit the student's declared
+    max_daily_minutes before the final MAX_TASKS cap. Any topic recently
+    marked 'struggled' via a check-in is then bumped to the very front,
+    ahead of subject priority — a fresh negative signal about real work
+    outranks a standing preference."""
+    context = learner_context if learner_context is not None else get_learner_context(user, include_events=False)
+    active_subjects = {a["subject_key"]: a["priority"] for a in context["active_subjects"]}
+    availability = context["study_availability"]
+    max_daily_minutes = availability["max_daily_minutes"] if availability else None
+
     practice = _practice_candidates(user)
     due_review = _due_review_candidates(user, exclude_subtopic_ids={c["target_id"] for c in practice})
+    mock_exams = (
+        _mock_exam_candidates(user)
+        if _mock_exams_allowed_today(user, context.get("coach_preferences"))
+        else []
+    )
     candidates = (
         _mistake_candidates(user)
         + practice
         + due_review
         + _flashcard_candidates(user)
-        + _mock_exam_candidates(user)
+        + mock_exams
     )
+
+    candidates = _filter_to_active_subjects(candidates, active_subjects)
+    candidates = _order_by_subject_priority(candidates, active_subjects)
+
     struggled = _recently_struggled_topics(user)
     if struggled:
         candidates.sort(key=lambda c: (c["subject_name"], c["topic_label"]) not in struggled)
+
+    candidates = _cap_to_daily_minutes(candidates, max_daily_minutes)
     return candidates[:MAX_TASKS]
 
 
@@ -342,8 +475,15 @@ def _student_context_lines(user):
         created_at__gte=timezone.now() - timedelta(days=MISTAKE_LOOKBACK_DAYS),
     )
     dominant_category = _dominant_error_category(list(recent_mistakes))
-    if dominant_category:
-        lines.append(f"Սխալների հիմնական տեսակը վերջերս. {ERROR_CATEGORY_LABELS_HY[dominant_category]}։")
+    # .get(), not [] — an entry marked classified while still carrying
+    # UNCLASSIFIED has no label here, and a KeyError in this helper takes down
+    # *all* plan generation with a 500 rather than losing one line of coaching
+    # context. classify_mistake() never writes that combination today, but the
+    # blast radius is far too wide to depend on that (the sibling lookup in
+    # _mistake_candidates is already defensive for the same reason).
+    category_label = ERROR_CATEGORY_LABELS_HY.get(dominant_category) if dominant_category else None
+    if category_label:
+        lines.append(f"Սխալների հիմնական տեսակը վերջերս. {category_label}։")
 
     return lines
 
@@ -396,6 +536,28 @@ def _ai_narrate(user, candidates):
 # Plan generation (get-or-create per user/day) and live completion status.
 # ---------------------------------------------------------------------------
 
+def _create_tasks(plan, candidates, blurbs):
+    """Materialise candidates as this plan's tasks. Shared by the fresh-plan
+    and refill-an-empty-plan paths so the two can't drift."""
+    StudyTask.objects.bulk_create([
+        StudyTask(
+            plan=plan,
+            order=i,
+            task_type=c["task_type"],
+            subject_name=c["subject_name"],
+            topic_label=c["topic_label"],
+            title=c["title"],
+            blurb=blurbs.get(i, c["blurb"]),
+            link_path=c["link_path"],
+            target_id=c["target_id"],
+            target_count=c["target_count"],
+            estimated_minutes=c["estimated_minutes"],
+            params=c["params"],
+        )
+        for i, c in enumerate(candidates)
+    ])
+
+
 def generate_daily_plan(user, date=None):
     date = date or timezone.localdate()
     existing = (
@@ -404,35 +566,43 @@ def generate_daily_plan(user, date=None):
         .prefetch_related("tasks")
         .first()
     )
-    if existing:
+    if existing and existing.tasks.exists():
         return existing
 
+    # An *empty* plan is worth retrying, unlike a populated one.
+    #
+    # A student who opens the page before they have any history gets a plan
+    # with zero tasks, and the get-or-create above then served that same empty
+    # plan for the rest of the day — while the empty state told them the plan
+    # would appear once they solved a few exercises. It couldn't: the row
+    # already existed. Now the first load after they generate some signal
+    # fills the plan they were promised, in place, on the same row (so the
+    # unique (user, date) constraint still holds).
     candidates = build_candidates(user)
+    if existing and not candidates:
+        return existing
+
     narrated = _ai_narrate(user, candidates)
     headline, coach_message, blurbs = narrated if narrated else (FALLBACK_HEADLINE, "", {})
+
+    if existing:
+        with transaction.atomic():
+            existing.headline = headline
+            existing.coach_message = coach_message
+            existing.save(update_fields=["headline", "coach_message"])
+            _create_tasks(existing, candidates, blurbs)
+        # Re-fetch rather than returning `existing`: it was loaded with
+        # prefetch_related("tasks"), and that cache still holds the empty list
+        # we just filled — the serializer iterates plan.tasks.all() and would
+        # hand the student back the very empty plan this branch exists to fix.
+        return DailyStudyPlan.objects.prefetch_related("tasks").get(pk=existing.pk)
 
     try:
         with transaction.atomic():
             plan = DailyStudyPlan.objects.create(
                 user=user, date=date, headline=headline, coach_message=coach_message,
             )
-            StudyTask.objects.bulk_create([
-                StudyTask(
-                    plan=plan,
-                    order=i,
-                    task_type=c["task_type"],
-                    subject_name=c["subject_name"],
-                    topic_label=c["topic_label"],
-                    title=c["title"],
-                    blurb=blurbs.get(i, c["blurb"]),
-                    link_path=c["link_path"],
-                    target_id=c["target_id"],
-                    target_count=c["target_count"],
-                    estimated_minutes=c["estimated_minutes"],
-                    params=c["params"],
-                )
-                for i, c in enumerate(candidates)
-            ])
+            _create_tasks(plan, candidates, blurbs)
     except IntegrityError:
         # Lost a race against a concurrent request for the same (user, date).
         return DailyStudyPlan.objects.prefetch_related("tasks").get(user=user, date=date)
@@ -465,10 +635,12 @@ def completion_status(task):
 
     if task.task_type == StudyTaskType.MISTAKE_RETRY:
         entry_ids = task.params.get("entry_ids") or [task.target_id]
-        done = MistakeEntry.objects.filter(
+        total = task.target_count or len(entry_ids)
+        retried = MistakeEntry.objects.filter(
             id__in=entry_ids, user=user, last_retried_at__date=plan_date,
-        ).exists()
-        return {"done": done, "progress": None}
+        ).count()
+        done_count = min(retried, total)
+        return {"done": done_count >= total, "progress": f"{done_count}/{total}"}
 
     if task.task_type == StudyTaskType.MOCK_EXAM_RETAKE:
         done = MockExamAttempt.objects.filter(

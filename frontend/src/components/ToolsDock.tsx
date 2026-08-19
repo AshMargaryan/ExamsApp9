@@ -96,7 +96,7 @@ export function ToolsDock() {
         <div
           className={
             fullscreen
-              ? "fixed top-20 right-4 bottom-4 left-4 z-30 flex flex-col rounded-[var(--radius)] border border-border bg-surface p-4 shadow-xl"
+              ? "fixed top-20 right-4 bottom-4 left-4 z-30 flex flex-col rounded-[var(--radius)] border border-border bg-surface p-4 shadow-xl lg:left-[calc(var(--rail-w)+1rem)]"
               : `fixed z-30 flex w-[min(92vw,26rem)] flex-col rounded-[var(--radius)] border border-border bg-surface p-4 shadow-xl ${
                   panel === "notepad" ? "h-[65vh]" : "max-h-[70vh]"
                 }`
@@ -106,7 +106,8 @@ export function ToolsDock() {
               ? undefined
               : {
                   bottom: PANEL_BOTTOM,
-                  left: PANEL_LEFT,
+                  // Clears the desktop nav rail; --rail-w is 0 below lg.
+                  left: `calc(var(--rail-w) + ${PANEL_LEFT}px)`,
                   transform: `translate(${offset.x}px, ${offset.y}px)`,
                 }
           }
@@ -171,7 +172,7 @@ export function ToolsDock() {
       {/* tools-dock-launcher: theme.css lifts this above the bottom tab bar in
           the native shell, where bottom-4 would land on top of it. */}
       {!fullscreen && (
-        <div className="tools-dock-launcher fixed bottom-4 left-4 z-30 flex flex-col-reverse items-center gap-3 sm:left-6">
+        <div className="tools-dock-launcher fixed bottom-4 left-4 z-30 flex flex-col-reverse items-center gap-3 sm:left-6 lg:left-[calc(var(--rail-w)+1.5rem)]">
           <button
             type="button"
             onClick={handleHubClick}
