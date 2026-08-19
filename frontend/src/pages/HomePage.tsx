@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, BookOpen, CalendarDays, Circle, ClipboardCheck,
-  Flame, Layers, ListTodo, Sparkles, Target, TrendingUp, Trophy,
+  Flame, Layers, ListTodo, Sparkles, Target, Trophy,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import * as profileApi from "../api/profile";
@@ -128,16 +128,21 @@ function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
       state={{ subtopicName: item.subtopic_name }}
       className="flex flex-col gap-[var(--space-2)] rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)] transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary hover:shadow-[var(--shadow-md)]"
     >
+      {/* The subtopic name is what the student is actually choosing between, so
+          it leads. The subject/domain/topic breadcrumb used to sit above it in
+          three lines of small grey text, which inverted the hierarchy — the
+          metadata dominated the card and the choice itself came second. It is
+          now a single clamped line of context underneath. */}
       <div className="flex items-start justify-between gap-[var(--space-2)]">
-        <p className="text-[length:var(--text-xs)] leading-[var(--leading-snug)] text-text-muted">
-          {item.subject_name} · {item.domain_name} · {item.topic_name}
-        </p>
+        <p className="font-medium leading-[var(--leading-snug)] text-text">{item.subtopic_name}</p>
         <Badge tone={priority.tone}>
           {priority.icon} {priority.label}
         </Badge>
       </div>
-      <p className="font-medium leading-[var(--leading-snug)] text-text">{item.subtopic_name}</p>
-      <div className="mt-[var(--space-1)] flex items-center justify-between gap-[var(--space-2)]">
+      <p className="line-clamp-2 text-[length:var(--text-xs)] leading-[var(--leading-snug)] text-text-muted">
+        {item.subject_name} · {item.domain_name} · {item.topic_name}
+      </p>
+      <div className="mt-auto flex items-center justify-between gap-[var(--space-2)] pt-[var(--space-2)]">
         <span className="text-[length:var(--text-xs)] text-text-muted">
           {item.mistake_count === null ? "Դեռ չսկսված" : `Սխալների քանակ՝ ${item.mistake_count}`}
         </span>
@@ -358,11 +363,9 @@ export function HomePage() {
             {/* ── Zone 4: Progress ───────────────────────────────────────── */}
             <Section
               spacing="loose"
-              title={
-                <span className="flex items-center gap-[var(--space-2)]">
-                  <TrendingUp size={20} strokeWidth={1.75} /> Քո առաջընթացը
-                </span>
-              }
+              /* No leading icon: the other section headings have none, and a
+                 TrendingUp glyph here would be decoration rather than meaning. */
+              title="Քո առաջընթացը"
               description="Վերջին 8 շաբաթվա պարապմունքները։"
             >
               <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] sm:p-[var(--space-7)]">
