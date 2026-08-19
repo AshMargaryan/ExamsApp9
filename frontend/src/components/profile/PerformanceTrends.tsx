@@ -1,8 +1,12 @@
 import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { ActivityDay } from "../../api/profile";
+import { TrendingUp } from "lucide-react";
 import { bucketActivity, TREND_RANGE_LABELS, type TrendRange } from "../../lib/performanceTrends";
 import { EmptyState } from "../ui/EmptyState";
+import { FilterChips } from "../ui/FilterChips";
+import { SkeletonRows } from "../ui/Skeleton";
+import { ProfileCard } from "./ProfileCard";
 
 type Metric = "accuracy" | "minutes" | "questions" | "tests";
 
@@ -23,44 +27,37 @@ export function PerformanceTrends({ activityDays }: { activityDays: ActivityDay[
   const hasActivity = points.some((p) => p.questions > 0 || p.minutes > 0 || p.tests > 0);
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-text">📈 Առաջընթացի դինամիկա</p>
-        <div className="flex gap-1">
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRange(r)}
-              className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                range === r ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
-              }`}
-            >
-              {TREND_RANGE_LABELS[r]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-3 flex flex-wrap gap-1">
-        {(Object.keys(METRIC_LABELS) as Metric[]).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMetric(m)}
-            className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-              metric === m ? "border-primary text-primary" : "border-border text-text-muted"
-            }`}
-          >
-            {METRIC_LABELS[m]}
-          </button>
-        ))}
-      </div>
+    <ProfileCard
+      icon={TrendingUp}
+      title="Առաջընթացի դինամիկա"
+      description={`${METRIC_LABELS[metric]}՝ ${TREND_RANGE_LABELS[range].toLowerCase()}`}
+      action={
+        <FilterChips
+          label="Ժամանակահատված"
+          size="sm"
+          options={RANGES.map((r) => ({ value: r, label: TREND_RANGE_LABELS[r] }))}
+          value={range}
+          onChange={setRange}
+        />
+      }
+    >
+      <FilterChips
+        label="Ցուցանիշ"
+        size="sm"
+        className="mb-[var(--space-4)]"
+        options={(Object.keys(METRIC_LABELS) as Metric[]).map((m) => ({ value: m, label: METRIC_LABELS[m] }))}
+        value={metric}
+        onChange={setMetric}
+      />
 
       {activityDays === null ? (
-        <p className="text-sm text-text-muted">Բեռնվում է...</p>
+        <SkeletonRows count={4} trailing={false} />
       ) : !hasActivity ? (
-        <EmptyState icon="📈" title="Դեռ բավարար տվյալներ չկան այս ժամանակահատվածի համար" />
+        <EmptyState
+          icon={<TrendingUp size={22} strokeWidth={1.75} />}
+          title="Դեռ բավարար տվյալներ չկան այս ժամանակահատվածի համար"
+          hint="Ընտրեք ավելի երկար ժամանակահատված կամ շարունակեք պարապել։"
+        />
       ) : (
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -84,6 +81,6 @@ export function PerformanceTrends({ activityDays }: { activityDays: ActivityDay[
           </ResponsiveContainer>
         </div>
       )}
-    </div>
+    </ProfileCard>
   );
 }

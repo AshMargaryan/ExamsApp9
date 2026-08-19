@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Library } from "lucide-react";
 import type { SubjectMastery } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
 import { ProgressBar } from "../ui/ProgressBar";
+import { ProfileCard } from "./ProfileCard";
 import { SkillMapDrilldown } from "./SkillMapDrilldown";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -27,11 +29,16 @@ export function SubjectMasteryCard({ subjects }: { subjects: SubjectMastery[] })
   const withData = subjects.filter((s) => s.has_data);
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-3 text-sm font-semibold text-text">📚 Առարկաների տիրապետում</p>
-
+    <ProfileCard
+      icon={Library}
+      title="Առարկաների տիրապետում"
+      description="Բացեք առարկան՝ թեմա առ թեմա տեսնելու համար"
+    >
       {withData.length === 0 ? (
-        <EmptyState icon="📚" title="Սկսեք սովորել՝ ձեր տիրապետումը հետևելու համար" />
+        <EmptyState
+          icon={<Library size={22} strokeWidth={1.75} />}
+          title="Սկսեք սովորել՝ ձեր տիրապետումը հետևելու համար"
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {withData.map((s) => {
@@ -67,6 +74,6 @@ export function SubjectMasteryCard({ subjects }: { subjects: SubjectMastery[] })
           })}
         </div>
       )}
-    </div>
+    </ProfileCard>
   );
 }

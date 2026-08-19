@@ -1,6 +1,8 @@
+import { Zap } from "lucide-react";
 import type { AcademicPower } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
 import { ProgressBar } from "../ui/ProgressBar";
+import { ProfileCard } from "./ProfileCard";
 
 const COMPONENT_LABELS: Record<string, string> = {
   accuracy: "Ճշգրտություն",
@@ -13,19 +15,22 @@ const COMPONENT_LABELS: Record<string, string> = {
 export function AcademicPowerCard({ power }: { power: AcademicPower }) {
   if (!power.available) {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-        <p className="mb-3 text-sm font-semibold text-text">⚡ Ակադեմիական հզորություն</p>
-        <EmptyState icon="⚡" title="Սկսեք սովորել՝ ձեր ցուցանիշը հաշվարկելու համար" />
-      </div>
+      <ProfileCard icon={Zap} title="Ակադեմիական հզորություն">
+        <EmptyState
+          icon={<Zap size={22} strokeWidth={1.75} />}
+          title="Սկսեք սովորել՝ ձեր ցուցանիշը հաշվարկելու համար"
+        />
+      </ProfileCard>
     );
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-1 text-sm font-semibold text-text">⚡ Ակադեմիական հզորություն</p>
-      <p className="mb-3 text-xs text-text-muted">Gitus-ի ներքին ցուցանիշ, ոչ պաշտոնական գնահատական</p>
-
-      <p className="text-3xl font-bold text-text">
+    <ProfileCard
+      icon={Zap}
+      title="Ակադեմիական հզորություն"
+      description="Gitus-ի ներքին ցուցանիշ, ոչ պաշտոնական գնահատական"
+    >
+      <p className="font-display text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-display)] text-text">
         {power.power} <span className="text-base font-normal text-text-muted">/ 1000</span>
       </p>
       <div className="mt-2">
@@ -43,6 +48,6 @@ export function AcademicPowerCard({ power }: { power: AcademicPower }) {
           </div>
         ))}
       </div>
-    </div>
+    </ProfileCard>
   );
 }

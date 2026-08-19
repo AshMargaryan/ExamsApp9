@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/cn";
+import { scrollToElement } from "../../lib/scrollToElement";
 
 /*
   Scroll-spy section navigation for long single-column pages.
@@ -59,10 +60,15 @@ export function useScrollSpy(ids: string[]): string | null {
 /** Scroll a page section into view and move focus to it. Exported so a CTA
  *  elsewhere on the page ("finish setting up your schedule") can jump to the
  *  same place the section nav would. */
-export function scrollToSection(id: string) {
+export function scrollToSection(id: string, offset = 96) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Not scrollIntoView: `behavior: "smooth"` is a silent no-op in some
+  // Chromium configurations and under reduced motion, which would make this
+  // nav do nothing at all. scrollToElement requests the animated scroll and
+  // falls back to an instant one if the page did not actually move. The
+  // offset clears the sticky nav bar this component usually lives in.
+  scrollToElement(el, offset);
   // Move focus too, so keyboard and screen-reader users land where sighted
   // users just scrolled. tabIndex=-1 is set on the section by the page.
   el.focus({ preventScroll: true });

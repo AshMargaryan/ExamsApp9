@@ -73,7 +73,49 @@
 
   --color-purple: #4a3c8f;
   --color-pink: #b0611a;
-  --gradient-hero: linear-gradient(226deg, var(--color-primary) 0%, var(--color-purple) 55%, var(--color-accent) 100%);
+
+  /*
+    THE BRAND BAND — deliberately theme-invariant.
+
+    `--gradient-hero` used to be built from `var(--color-primary)`,
+    `--color-purple` and `--color-accent`. That was safe while the primary was
+    a dark violet, and it broke the moment the identity work made the primary
+    *invert* in dark mode: dark's primary is a light indigo (#8098f0) and its
+    accent a light apricot (#f0a85c), so every surface painting white text on
+    this gradient — the profile hero, the sidebar mark, the XP chip, avatars,
+    the parent dashboard band, the study-plan journey — dropped to between
+    1.7:1 and 2.7:1 in dark mode. Measured, not guessed.
+
+    The fix is not to stop using a band; it is to recognise that "a strong
+    branded ground that carries white text" is a *different concept* from "the
+    primary action colour", and must not follow it. These stops are fixed
+    literals in both themes: lapis → indigo → plum → burnt apricot, so the
+    band keeps the identity's warm terminal note while holding white at
+    8.3:1–11.7:1 throughout. `--color-on-brand-muted` is the dimmest secondary
+    that still clears 5.1:1 on the lightest stop.
+
+    Anything painting text on `--gradient-brand` must use `--color-on-brand`
+    / `--color-on-brand-muted`, never `--color-text`, which flips with theme.
+  */
+  --color-brand-1: #35479b;
+  --color-brand-2: #2d3f8f;
+  --color-brand-3: #3b2d70;
+  --color-brand-4: #5a3320;
+  --gradient-brand: linear-gradient(
+    226deg,
+    var(--color-brand-1) 0%,
+    var(--color-brand-2) 38%,
+    var(--color-brand-3) 72%,
+    var(--color-brand-4) 100%
+  );
+  --color-on-brand: #ffffff;
+  --color-on-brand-muted: rgba(255, 255, 255, 0.72);
+  /* Glass panels laid over the band. */
+  --color-on-brand-fill: rgba(255, 255, 255, 0.12);
+  --color-on-brand-line: rgba(255, 255, 255, 0.22);
+
+  /* Retained as the name eight call sites already use. */
+  --gradient-hero: var(--gradient-brand);
 
   --color-correct: #1a9e6d;
   --color-correct-bg: #e4f7ef;
@@ -534,6 +576,12 @@ html[data-native] [contenteditable="true"] {
   --font-display: var(--font-display);
   --color-purple: var(--color-purple);
   --color-pink: var(--color-pink);
+  /* So `text-on-brand`, `border-on-brand-line`, `bg-on-brand-fill` are real
+     utilities and nothing painting on the band has to hand-roll white/xx. */
+  --color-on-brand: var(--color-on-brand);
+  --color-on-brand-muted: var(--color-on-brand-muted);
+  --color-on-brand-fill: var(--color-on-brand-fill);
+  --color-on-brand-line: var(--color-on-brand-line);
   --color-success: var(--color-success);
   --color-success-bg: var(--color-success-bg);
   --color-warning: var(--color-warning);

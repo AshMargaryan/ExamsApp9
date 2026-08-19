@@ -1,6 +1,7 @@
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Target } from "lucide-react";
 import type { AcademicPower, Profile, SubjectMastery } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
+import { ProfileCard } from "./ProfileCard";
 
 export function AcademicIdentityCard({
   profile,
@@ -21,26 +22,20 @@ export function AcademicIdentityCard({
 
   if (!profile.university && !profile.target_major) {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-        <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-text">
-          <GraduationCap size={16} strokeWidth={1.75} /> Ակադեմիական ինքնություն
-        </p>
+      <ProfileCard icon={GraduationCap} title="Ակադեմիական ինքնություն">
         <EmptyState
-          icon="🎯"
+          icon={<Target size={22} strokeWidth={1.75} />}
           title="Ընտրեք ձեր նպատակային բուհը"
           hint="Ասացեք Gitus-ին, թե ուր եք գնում։"
           cta={{ label: "Սահմանել նպատակ", onClick: onSetGoal }}
         />
-      </div>
+      </ProfileCard>
     );
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-text">
-        <GraduationCap size={16} strokeWidth={1.75} /> Ակադեմիական ինքնություն
-      </p>
-      <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+    <ProfileCard icon={GraduationCap} title="Ակադեմիական ինքնություն">
+      <div className="grid grid-cols-2 gap-[var(--space-4)] text-[length:var(--text-sm)] sm:grid-cols-3">
         {profile.target_major && (
           <div>
             <p className="text-text-muted">Մասնագիտություն</p>
@@ -78,6 +73,6 @@ export function AcademicIdentityCard({
           </div>
         )}
       </div>
-    </div>
+    </ProfileCard>
   );
 }

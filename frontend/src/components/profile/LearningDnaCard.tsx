@@ -1,6 +1,8 @@
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
+import { Brain, Lock } from "lucide-react";
 import type { DnaMetric, LearningDna } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
+import { ProfileCard } from "./ProfileCard";
 
 const DIMENSION_LABELS: Record<keyof LearningDna, string> = {
   accuracy: "Ճշգրտություն",
@@ -21,10 +23,12 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
 
   if (unlocked.length === 0) {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-        <p className="mb-3 text-sm font-semibold text-text">🧠 Ուսումնական ԴՆԹ</p>
-        <EmptyState icon="🧠" title="Շարունակեք սովորել՝ բացելու համար ձեր Ուսումնական ԴՆԹ-ն" />
-      </div>
+      <ProfileCard icon={Brain} title="Ուսումնական ԴՆԹ">
+        <EmptyState
+          icon={<Brain size={22} strokeWidth={1.75} />}
+          title="Շարունակեք սովորել՝ բացելու համար ձեր Ուսումնական ԴՆԹ-ն"
+        />
+      </ProfileCard>
     );
   }
 
@@ -34,10 +38,11 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
   }));
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-1 text-sm font-semibold text-text">🧠 Ուսումնական ԴՆԹ</p>
-      <p className="mb-3 text-xs text-text-muted">Հաշվարկված է ձեր իրական ուսումնական վարքագծից</p>
-
+    <ProfileCard
+      icon={Brain}
+      title="Ուսումնական ԴՆԹ"
+      description="Հաշվարկված է ձեր իրական ուսումնական վարքագծից"
+    >
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData} outerRadius="75%">
@@ -67,14 +72,18 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
           <div className="flex flex-wrap gap-1.5">
             {locked.map(([key, m]) =>
               isLocked(m) ? (
-                <span key={key} title={m.reason} className="rounded-full border border-border px-2 py-0.5 text-xs text-text-muted">
-                  🔒 {DIMENSION_LABELS[key]}
+                <span
+                  key={key}
+                  title={m.reason}
+                  className="flex items-center gap-1 rounded-[var(--radius-full)] border border-border px-[var(--space-2)] py-[2px] text-[length:var(--text-xs)] text-text-muted"
+                >
+                  <Lock size={11} strokeWidth={2.25} aria-hidden="true" /> {DIMENSION_LABELS[key]}
                 </span>
               ) : null
             )}
           </div>
         </div>
       )}
-    </div>
+    </ProfileCard>
   );
 }

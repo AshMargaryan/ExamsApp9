@@ -1,11 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { School, Trophy } from "lucide-react";
 import * as rankingsApi from "../../api/rankings";
 import type { RankingBoard, RankingEntry, RankingScope } from "../../api/rankings";
 import { useAuth } from "../../auth/AuthContext";
+import { useAsyncResource } from "../../hooks/useAsyncResource";
 import { EmptyState } from "../ui/EmptyState";
+import { ErrorState } from "../ui/ErrorState";
+import { FilterChips } from "../ui/FilterChips";
 import { LinkButton } from "../ui/LinkButton";
+import { SkeletonRows } from "../ui/Skeleton";
+import { RankBadge } from "../ui/RankBadge";
+import { ProfileCard } from "./ProfileCard";
 
-const MEDALS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 const TAB_LABELS: Record<RankingScope, string> = { global: "Համաշխարհային", school: "Դպրոց", class: "Դասարան", friends: "Ընկերներ" };
 
 const FETCHERS: Record<RankingScope, () => Promise<RankingBoard>> = {
@@ -18,9 +24,7 @@ const FETCHERS: Record<RankingScope, () => Promise<RankingBoard>> = {
 function Row({ entry, isMe }: { entry: RankingEntry; isMe: boolean }) {
   return (
     <div className={`flex items-center gap-3 rounded-md px-2 py-1.5 ${isMe ? "bg-primary/10" : ""}`}>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center text-sm font-semibold text-text-muted">
-        {MEDALS[entry.rank] ?? `#${entry.rank}`}
-      </span>
+      <RankBadge rank={entry.rank} />
       {entry.avatar ? (
         <img src={entry.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
       ) : (
@@ -39,47 +43,54 @@ function Row({ entry, isMe }: { entry: RankingEntry; isMe: boolean }) {
 export function MonthlyRankingCard() {
   const { user } = useAuth();
   const [scope, setScope] = useState<RankingScope>("global");
-  const [board, setBoard] = useState<RankingBoard | null>(null);
-
-  useEffect(() => {
-    setBoard(null);
-    FETCHERS[scope]().then(setBoard);
-  }, [scope]);
+  const boardResource = useAsyncResource<RankingBoard>(
+    useCallback(() => FETCHERS[scope](), [scope]),
+    [scope],
+  );
+  const board = boardResource.data;
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-text">🏆 Ամսվա մրցույթ</p>
-        <LinkButton to="/rankings">
-          Ամբողջը →
-        </LinkButton>
-      </div>
+    <ProfileCard
+      icon={Trophy}
+      title="Ամսվա մրցույթ"
+      action={<LinkButton to="/rankings">Ամբողջը →</LinkButton>}
+    >
+      <FilterChips
+        label="Դասակարգման շրջանակ"
+        size="sm"
+        className="mb-[var(--space-4)]"
+        options={(Object.keys(TAB_LABELS) as RankingScope[]).map((s) => ({ value: s, label: TAB_LABELS[s] }))}
+        value={scope}
+        onChange={setScope}
+      />
 
-      <div className="mb-3 flex gap-1">
-        {(Object.keys(TAB_LABELS) as RankingScope[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setScope(s)}
-            className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-              scope === s ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
-            }`}
-          >
-            {TAB_LABELS[s]}
-          </button>
-        ))}
-      </div>
+      {boardResource.isLoading && <SkeletonRows count={4} />}
 
-      {board === null && <p className="text-sm text-text-muted">Բեռնվում է...</p>}
+      {boardResource.error !== null && !boardResource.isLoading && (
+        <ErrorState size="sm" title="Չհաջողվեց բեռնել դասակարգումը։" onRetry={boardResource.retry} />
+      )}
 
-      {board?.no_school && <EmptyState icon="🏫" title="Նշեք ձեր դպրոցը՝ այս դասակարգումը տեսնելու համար" />}
-      {board?.no_grade && <EmptyState icon="🏫" title="Նշեք ձեր դասարանը՝ այս դասակարգումը տեսնելու համար" />}
+      {board?.no_school && (
+        <EmptyState
+          size="sm"
+          icon={<School size={22} strokeWidth={1.75} />}
+          title="Նշեք ձեր դպրոցը՝ այս դասակարգումը տեսնելու համար"
+        />
+      )}
+      {board?.no_grade && (
+        <EmptyState
+          size="sm"
+          icon={<School size={22} strokeWidth={1.75} />}
+          title="Նշեք ձեր դասարանը՝ այս դասակարգումը տեսնելու համար"
+        />
+      )}
 
       {board && !board.no_school && !board.no_grade && (
         <>
           {board.my_rank === null ? (
             <EmptyState
-              icon="🏆"
+              size="sm"
+              icon={<Trophy size={22} strokeWidth={1.75} />}
               title="Դեռ մրցույթի մեջ չեք"
               hint={scope === "friends" ? "Ավելացրեք ընկերներ՝ մրցելու համար։" : "Լուծեք հարցեր՝ XP վաստակելու համար։"}
             />
@@ -92,6 +103,6 @@ export function MonthlyRankingCard() {
           )}
         </>
       )}
-    </div>
+    </ProfileCard>
   );
 }

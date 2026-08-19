@@ -1,7 +1,11 @@
 import { useState } from "react";
 import type { Achievement, AchievementRarity, UserAchievement } from "../../api/profile";
+import { Trophy } from "lucide-react";
 import { AchievementCard } from "../AchievementCard";
-import { SectionHeader } from "../ui/SectionHeader";
+import { EmptyState } from "../ui/EmptyState";
+import { FilterChips } from "../ui/FilterChips";
+import { SkeletonRows } from "../ui/Skeleton";
+import { ProfileCard } from "./ProfileCard";
 
 type Filter = "all" | "unlocked" | "locked" | AchievementRarity;
 
@@ -36,28 +40,30 @@ export function AchievementsSection({
   });
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <SectionHeader title={`🏆 Նվաճումներ ${achievements ? `(${trophiesCount}/${achievements.length})` : ""}`} />
+    <ProfileCard
+      icon={Trophy}
+      title="Նվաճումներ"
+      description={achievements ? `Բացված է ${trophiesCount} ${achievements.length}-ից` : undefined}
+    >
+      <FilterChips
+        label="Նվաճումների զտիչ"
+        size="sm"
+        className="mb-[var(--space-4)]"
+        options={(Object.keys(FILTER_LABELS) as Filter[]).map((f) => ({ value: f, label: FILTER_LABELS[f] }))}
+        value={filter}
+        onChange={setFilter}
+      />
 
-      <div className="mb-3 flex flex-wrap gap-1">
-        {(Object.keys(FILTER_LABELS) as Filter[]).map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-              filter === f ? "border-primary text-primary" : "border-border text-text-muted"
-            }`}
-          >
-            {FILTER_LABELS[f]}
-          </button>
-        ))}
-      </div>
-
-      {achievements === null && <p className="text-sm text-text-muted">Բեռնվում է...</p>}
+      {achievements === null && <SkeletonRows count={3} />}
 
       {achievements !== null && filtered.length === 0 && (
-        <p className="text-sm text-text-muted">Այս զտիչով նվաճումներ չկան։</p>
+        <EmptyState
+          icon={<Trophy size={22} strokeWidth={1.75} />}
+          title="Այս զտիչով նվաճումներ չկան"
+          hint="Փոխեք զտիչը՝ մնացած նվաճումները տեսնելու համար։"
+          size="sm"
+          cta={{ label: "Ցույց տալ բոլորը", onClick: () => setFilter("all") }}
+        />
       )}
 
       {filtered.length > 0 && (
@@ -67,6 +73,6 @@ export function AchievementsSection({
           ))}
         </div>
       )}
-    </div>
+    </ProfileCard>
   );
 }

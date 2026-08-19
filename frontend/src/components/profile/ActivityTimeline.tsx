@@ -1,7 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { Award, BookOpen, History, Medal } from "lucide-react";
 import * as profileApi from "../../api/profile";
 import type { TimelineEntry } from "../../api/profile";
+import { useAsyncResource } from "../../hooks/useAsyncResource";
 import { EmptyState } from "../ui/EmptyState";
+import { ErrorState } from "../ui/ErrorState";
+import { FilterChips } from "../ui/FilterChips";
+import { SkeletonRows } from "../ui/Skeleton";
+import { ProfileCard } from "./ProfileCard";
 
 type Filter = "all" | "study_day" | "achievement" | "ranking_award";
 
@@ -16,7 +22,9 @@ function EntryRow({ entry }: { entry: TimelineEntry }) {
   if (entry.type === "achievement") {
     return (
       <div className="flex items-center gap-3 py-2">
-        <span className="text-xl">{entry.icon}</span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-primary-bg text-primary">
+          <Award size={16} strokeWidth={2} aria-hidden="true" />
+        </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-text">{entry.title}</p>
           <p className="text-xs text-text-muted">{entry.date}</p>
@@ -28,7 +36,9 @@ function EntryRow({ entry }: { entry: TimelineEntry }) {
   if (entry.type === "ranking_award") {
     return (
       <div className="flex items-center gap-3 py-2">
-        <span className="text-xl">🏅</span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-accent-bg text-accent">
+          <Medal size={16} strokeWidth={2} aria-hidden="true" />
+        </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-text">{entry.title}</p>
           <p className="text-xs text-text-muted">{entry.date}</p>
@@ -38,7 +48,9 @@ function EntryRow({ entry }: { entry: TimelineEntry }) {
   }
   return (
     <div className="flex items-center gap-3 py-2">
-      <span className="text-xl">📚</span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-surface-muted text-text-muted">
+        <BookOpen size={16} strokeWidth={2} aria-hidden="true" />
+      </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-text">
           {entry.minutes} րոպե ուսումնառություն
@@ -52,38 +64,46 @@ function EntryRow({ entry }: { entry: TimelineEntry }) {
 }
 
 export function ActivityTimeline() {
-  const [entries, setEntries] = useState<TimelineEntry[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
-
-  useEffect(() => {
-    profileApi.fetchTimeline().then(setEntries);
-  }, []);
+  // Was a bare `.then(setEntries)` with no catch and no cleanup: a failed
+  // request left this card reading "Բեռնվում է..." forever.
+  const timeline = useAsyncResource<TimelineEntry[]>(useCallback(() => profileApi.fetchTimeline(), []));
+  const entries = timeline.data;
 
   const filtered = entries?.filter((e) => filter === "all" || e.type === filter) ?? [];
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-3 text-sm font-semibold text-text">🕓 Վերջին ակտիվություն</p>
+    <ProfileCard icon={History} title="Վերջին ակտիվություն">
+      <FilterChips
+        label="Ակտիվության զտիչ"
+        size="sm"
+        className="mb-[var(--space-4)]"
+        options={(Object.keys(FILTER_LABELS) as Filter[]).map((f) => ({ value: f, label: FILTER_LABELS[f] }))}
+        value={filter}
+        onChange={setFilter}
+      />
 
-      <div className="mb-2 flex flex-wrap gap-1">
-        {(Object.keys(FILTER_LABELS) as Filter[]).map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-              filter === f ? "border-primary text-primary" : "border-border text-text-muted"
-            }`}
-          >
-            {FILTER_LABELS[f]}
-          </button>
-        ))}
-      </div>
+      {timeline.isLoading && <SkeletonRows count={4} />}
 
-      {entries === null && <p className="text-sm text-text-muted">Բեռնվում է...</p>}
+      {timeline.error !== null && !timeline.isLoading && (
+        <ErrorState
+          size="sm"
+          title="Չհաջողվեց բեռնել ակտիվությունը։"
+          onRetry={timeline.retry}
+        />
+      )}
 
-      {entries !== null && filtered.length === 0 && (
-        <EmptyState icon="📚" title="Ձեր ճամփորդությունն սկսվում է այստեղ" hint="Ավարտեք ձեր առաջին ուսումնական պարապմունքը։" />
+      {entries !== null && timeline.error === null && filtered.length === 0 && (
+        <EmptyState
+          icon={<BookOpen size={22} strokeWidth={1.75} />}
+          title={filter === "all" ? "Ձեր ճամփորդությունն սկսվում է այստեղ" : "Այս զտիչով գրառումներ չկան"}
+          hint={
+            filter === "all"
+              ? "Ավարտեք ձեր առաջին ուսումնական պարապմունքը։"
+              : "Փոխեք զտիչը՝ մնացած գրառումները տեսնելու համար։"
+          }
+          size="sm"
+        />
       )}
 
       {filtered.length > 0 && (
@@ -93,6 +113,6 @@ export function ActivityTimeline() {
           ))}
         </div>
       )}
-    </div>
+    </ProfileCard>
   );
 }

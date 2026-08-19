@@ -1,4 +1,6 @@
+import { Medal } from "lucide-react";
 import type { PersonalRecords } from "../../api/profile";
+import { ProfileCard } from "./ProfileCard";
 
 function formatSeconds(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -17,8 +19,7 @@ export function PersonalRecordsCard({ records }: { records: PersonalRecords }) {
   const hasAny = rows.some((r) => r.value !== null);
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-3 text-sm font-semibold text-text">🏅 Անձնական ռեկորդներ</p>
+    <ProfileCard icon={Medal} title="Անձնական ռեկորդներ">
       {!hasAny ? (
         <p className="text-sm text-text-muted">Սովորեք, որպեսզի սահմանեք ձեր առաջին ռեկորդը։</p>
       ) : (
@@ -33,6 +34,6 @@ export function PersonalRecordsCard({ records }: { records: PersonalRecords }) {
             ))}
         </div>
       )}
-    </div>
+    </ProfileCard>
   );
 }
