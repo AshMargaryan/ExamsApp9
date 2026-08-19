@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getHierarchy, getSubtopicMaterial, TIER_LABELS, MATH_SUBJECT_NAME,
@@ -11,9 +11,17 @@ import type { StudentRosterEntry } from "../api/teaching";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
 import { SpeakOnSelect } from "../components/SpeakOnSelect";
 import { AssignmentPicker } from "../components/teaching/AssignmentPicker";
+import { nextTier, tierSummary } from "../components/practice/TierStatus";
 import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Section } from "../components/ui/Section";
+import { LoadingRegion, Skeleton, SkeletonText } from "../components/ui/Skeleton";
+import { useAsyncResource } from "../hooks/useAsyncResource";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 import { useAuth } from "../auth/AuthContext";
+import { cn } from "../lib/cn";
 
 const TIERS: Tier[] = ["easy", "medium", "hard"];
 
@@ -137,17 +145,21 @@ function SubtopicContent({
   /** Present only for a teacher — opens the assignment picker preset to this subtopic. */
   onAssignClick?: () => void;
 }) {
-  const [material, setMaterial] = useState<SubtopicMaterial | null>(null);
   const [sectionIndex, setSectionIndex] = useState(0);
   const exercisesRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setMaterial(null);
-    setSectionIndex(0);
-    if (subtopic.has_learning_material) {
-      getSubtopicMaterial(subtopic.id).then(setMaterial);
-    }
-  }, [subtopic.id, subtopic.has_learning_material]);
+  const fetchMaterial = useCallback(
+    (): Promise<SubtopicMaterial | null> =>
+      subtopic.has_learning_material ? getSubtopicMaterial(subtopic.id) : Promise.resolve(null),
+    [subtopic.id, subtopic.has_learning_material],
+  );
+
+  const {
+    data: material,
+    isLoading: materialLoading,
+    error: materialError,
+    retry: retryMaterial,
+  } = useAsyncResource(fetchMaterial, [subtopic.id, subtopic.has_learning_material]);
 
   const sections = material ? splitIntoSections(material.learning_material) : [];
 
@@ -169,111 +181,168 @@ function SubtopicContent({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  const { done, total } = tierSummary(subtopic.tier_scores);
+  const next = nextTier(subtopic.tier_scores);
+
   return (
     <div>
-      <Link to={backHref} className="mb-4 inline-block text-sm text-primary hover:underline">
-        ← {breadcrumb}
-      </Link>
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold text-text">{subtopic.name}</h1>
-        <div className="flex shrink-0 gap-2">
-          {onAssignClick && (
+      <PageHeader
+        eyebrow={breadcrumb}
+        title={subtopic.name}
+        back={{ to: backHref, label: "Թեմա" }}
+        description={
+          done === 0
+            ? "Կարդա նյութը, ապա անցիր վարժություններին։"
+            : done === total
+              ? "Երեք մակարդակն էլ անցած են։ Կարող ես կրկնել ցանկացածը։"
+              : `${done}/${total} մակարդակ անցած է։`
+        }
+        actions={
+          <>
+            {onAssignClick && (
+              <Button
+                variant="secondary"
+                size="sm"
+                iconLeft={<Send size={15} strokeWidth={1.75} />}
+                onClick={onAssignClick}
+              >
+                Հանձնարարել աշակերտի
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"
-              iconLeft={<Send size={15} strokeWidth={1.75} />}
-              onClick={onAssignClick}
+              onClick={() => exercisesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
             >
-              Հանձնարարել աշակերտի
+              Անցնել վարժություններին
             </Button>
+          </>
+        }
+      />
+
+      {!subtopic.has_learning_material ? (
+        <EmptyState
+          title="Ուսումնական նյութը կավելացվի ավելի ուշ։"
+          hint="Վարժությունները արդեն հասանելի են՝ ներքևում։"
+        />
+      ) : materialLoading ? (
+        <LoadingRegion>
+          <Skeleton className="h-8 w-2/3" />
+          <SkeletonText lines={6} className="mt-[var(--space-5)]" />
+        </LoadingRegion>
+      ) : materialError ? (
+        <ErrorState
+          title="Չհաջողվեց բեռնել ուսումնական նյութը։"
+          hint="Վարժությունները դրանից անկախ հասանելի են՝ ներքևում։"
+          onRetry={retryMaterial}
+        />
+      ) : material ? (
+        <div>
+          {/*
+            Section pills are a step indicator, not a filter row: they are the
+            student's position in the lesson. The active one is filled, and the
+            count beneath the body says how far through the material they are.
+          */}
+          {sections.length > 1 && (
+            <div className="mb-[var(--space-5)] flex flex-wrap gap-[var(--space-2)]">
+              {sections.map((section, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  aria-current={index === sectionIndex ? "step" : undefined}
+                  onClick={() => goToSection(index)}
+                  className={cn(
+                    "rounded-full border px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-sm)] transition-colors",
+                    index === sectionIndex
+                      ? "border-primary bg-primary text-primary-contrast"
+                      : "border-border text-text-muted hover:border-primary hover:text-text",
+                  )}
+                >
+                  {section.heading || `Մաս ${index + 1}`}
+                </button>
+              ))}
+            </div>
           )}
-          <button
-            type="button"
-            onClick={() => exercisesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className="rounded-[var(--radius)] border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary hover:text-primary-contrast"
-          >
-            Անցնել վարժություններին
-          </button>
+
+          <MarkdownMessage
+            className="max-w-[var(--measure-base)] text-[length:var(--text-lg)] leading-[var(--leading-relaxed)]"
+            content={sections[sectionIndex].body}
+          />
+
+          {sections.length > 1 && (
+            <div className="mt-[var(--space-6)] flex items-center justify-between gap-[var(--space-4)] border-t border-border pt-[var(--space-4)]">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={sectionIndex === 0}
+                onClick={() => goToSection(sectionIndex - 1)}
+              >
+                ← Նախորդ
+              </Button>
+              <span className="text-[length:var(--text-sm)] text-text-muted">
+                {sectionIndex + 1} / {sections.length}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={sectionIndex === sections.length - 1}
+                onClick={() => goToSection(sectionIndex + 1)}
+              >
+                Հաջորդ →
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+      ) : null}
 
-      {subtopic.has_learning_material ? (
-        material ? (
-          <div>
-            {sections.length > 1 && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {sections.map((section, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => goToSection(index)}
-                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                      index === sectionIndex
-                        ? "border-primary bg-primary text-primary-contrast"
-                        : "border-border text-text-muted hover:border-primary hover:text-text"
-                    }`}
-                  >
-                    {section.heading || `Մաս ${index + 1}`}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <MarkdownMessage className="text-xl leading-relaxed" content={sections[sectionIndex].body} />
-
-            {sections.length > 1 && (
-              <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-4">
-                <button
-                  type="button"
-                  disabled={sectionIndex === 0}
-                  onClick={() => goToSection(sectionIndex - 1)}
-                  className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-medium text-text hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
-                >
-                  ← Նախորդ
-                </button>
-                <span className="text-sm text-text-muted">
-                  {sectionIndex + 1} / {sections.length}
-                </span>
-                <button
-                  type="button"
-                  disabled={sectionIndex === sections.length - 1}
-                  onClick={() => goToSection(sectionIndex + 1)}
-                  className="rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-medium text-text hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
-                >
-                  Հաջորդ →
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-lg text-text-muted">Բեռնվում է...</p>
-        )
-      ) : (
-        <p className="text-lg text-text-muted">Ուսումնական նյութը կավելացվի ավելի ուշ։</p>
-      )}
-
-      <div ref={exercisesRef} className="mt-8 grid scroll-mt-8 gap-4 pt-2 sm:grid-cols-3">
-        {TIERS.map((tier) => {
-          const score = subtopic.tier_scores[tier];
-          const done = score !== null;
-          return (
-            <Link
-              key={tier}
-              to={`/practice/subtopic/${subtopic.id}/${tier}`}
-              state={{ subtopicName: subtopic.name }}
-              className="rounded-[var(--radius)] border border-border bg-surface p-6 text-center transition-colors hover:border-primary"
-            >
-              <div
-                className="mx-auto mb-3 h-2 w-12 rounded-full"
-                style={{ backgroundColor: `var(--color-${tier})` }}
-              />
-              <p className="text-lg font-medium text-text">{TIER_LABELS[tier]}</p>
-              <p className="text-text-muted">{done ? `Ավարտված ✓ (${score}%)` : "Չսկսված"}</p>
-            </Link>
-          );
-        })}
-      </div>
+      {/*
+        The three tiers are a sequence, not three equal options, so exactly one
+        of them is marked as the one to do next. Previously every card looked
+        identical and a completed tier read "Ավարտված ✓ (33%)" — a tick labelled
+        "completed" directly beside a failing score, which told the student the
+        opposite of what the number meant.
+      */}
+      <Section
+        title="Վարժություններ"
+        description="Երեք մակարդակ՝ հեշտից դժվար։"
+        className="scroll-mt-8"
+      >
+        <div ref={exercisesRef} className="grid gap-[var(--space-4)] sm:grid-cols-3">
+          {TIERS.map((tier) => {
+            const score = subtopic.tier_scores[tier];
+            const attempted = score !== null;
+            const isNext = tier === next;
+            return (
+              <Link
+                key={tier}
+                to={`/practice/subtopic/${subtopic.id}/${tier}`}
+                state={{ subtopicName: subtopic.name }}
+                className={cn(
+                  "flex flex-col rounded-[var(--radius-lg)] border bg-surface p-[var(--space-5)] transition-colors",
+                  isNext ? "border-primary" : "border-border hover:border-primary",
+                )}
+              >
+                <div className="flex items-center justify-between gap-[var(--space-2)]">
+                  <span
+                    className="h-2 w-10 shrink-0 rounded-full"
+                    style={{ backgroundColor: `var(--color-${tier})` }}
+                    aria-hidden
+                  />
+                  {isNext && (
+                    <span className="text-[length:var(--text-xs)] font-medium text-primary">Հաջորդը</span>
+                  )}
+                </div>
+                <p className="mt-[var(--space-3)] text-[length:var(--text-lg)] font-medium text-text">
+                  {TIER_LABELS[tier]}
+                </p>
+                <p className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-text-muted">
+                  {attempted ? `Վերջին արդյունքը՝ ${score}%` : "Դեռ չսկսված"}
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      </Section>
     </div>
   );
 }
@@ -286,53 +355,75 @@ export function SubtopicPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [context, setContext] = useState<ReturnType<typeof findSubtopicContext>>(null);
-  const [notFound, setNotFound] = useState(false);
   const [trackAssignmentId, setTrackAssignmentId] = useState<number | undefined>(undefined);
   const [roster, setRoster] = useState<StudentRosterEntry[] | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
 
-  useEffect(() => {
-    setContext(null);
-    setNotFound(false);
-    getHierarchy().then((subjects) => {
-      const found = findSubtopicContext(subjects, id);
-      setContext(found);
-      setNotFound(!found);
-    });
-  }, [id]);
+  const fetchContext = useCallback(
+    async () => findSubtopicContext(await getHierarchy(), id),
+    [id],
+  );
+  const { data: context, isLoading, error, retry } = useAsyncResource(fetchContext, [id]);
 
   useEffect(() => {
     if (user?.role !== "student") return;
-    teachingApi.fetchAssignments().then((list) => {
-      const match = list.find(
-        (a) =>
-          a.assignment_type === "subtopic" &&
-          (a.status === "assigned" || a.status === "in_progress") &&
-          a.subtopic?.id === id
-      );
-      setTrackAssignmentId(match?.id);
-    });
+    teachingApi
+      .fetchAssignments()
+      .then((list) => {
+        const match = list.find(
+          (a) =>
+            a.assignment_type === "subtopic" &&
+            (a.status === "assigned" || a.status === "in_progress") &&
+            a.subtopic?.id === id
+        );
+        setTrackAssignmentId(match?.id);
+      })
+      // Assignment tracking is a side feature here — if it fails, the lesson
+      // itself must still open.
+      .catch(() => setTrackAssignmentId(undefined));
   }, [user, id]);
 
   useEffect(() => {
     if (user?.role !== "teacher") return;
-    teachingApi.fetchStudentRoster().then(setRoster);
+    teachingApi.fetchStudentRoster().then(setRoster).catch(() => setRoster([]));
   }, [user]);
 
-  if (notFound) {
+  if (isLoading) {
     return (
-      <div className="p-8">
-        <p className="text-lg text-text-muted">Ենթաթեման չի գտնվել։</p>
-        <button type="button" onClick={() => navigate("/practice")} className="text-sm text-primary hover:underline">
-          ← Առարկաներ
-        </button>
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="mt-[var(--space-3)] h-9 w-2/3" />
+        <LoadingRegion className="mt-[var(--space-7)]">
+          <SkeletonText lines={7} />
+        </LoadingRegion>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <PageHeader title="Ենթաթեմա" back={{ to: "/practice", label: "Առարկաներ" }} />
+        <ErrorState
+          title="Չհաջողվեց բեռնել ենթաթեման։"
+          hint="Ստուգիր կապը և փորձիր կրկին։"
+          onRetry={retry}
+        />
       </div>
     );
   }
 
   if (!context) {
-    return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
+    return (
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <PageHeader title="Ենթաթեման չի գտնվել" back={{ to: "/practice", label: "Առարկաներ" }} />
+        <EmptyState
+          title="Այս ենթաթեման հասանելի չէ։"
+          hint="Հնարավոր է հղումը հնացած է։"
+          cta={{ label: "Բոլոր առարկաները", onClick: () => navigate("/practice") }}
+        />
+      </div>
+    );
   }
 
   const { subject, domain, topic, subtopic } = context;

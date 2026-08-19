@@ -1,6 +1,0 @@
-/* Scoped to the knowledge-hierarchy spatial map — imported only by
-   PracticeSubjectPage. Hover-only effects that can't be expressed as
-   inline React styles. */
-.hierarchy-node-face:hover {
-  filter: brightness(1.14) saturate(1.05);
-}
