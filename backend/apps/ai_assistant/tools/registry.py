@@ -7,6 +7,7 @@ raising, so one bad/hallucinated call never breaks the whole chat turn.
 """
 
 from . import handlers
+from .handlers import UnknownSubject
 
 TOOLS = {
     "get_profile": handlers.get_profile,
@@ -24,6 +25,11 @@ def execute(tool_name: str, arguments: dict, *, user) -> dict:
     arguments = {k: v for k, v in (arguments or {}).items() if k != "user"}
     try:
         return handler(user=user, **arguments)
+    except UnknownSubject as exc:
+        # Surfaced verbatim (no "failed" wrapper) because it names the valid
+        # values — the model can fix the argument and retry within the same
+        # turn instead of reporting an outage to the student.
+        return {"error": str(exc)}
     except TypeError as exc:
         return {"error": f"Invalid arguments for '{tool_name}': {exc}"}
     except Exception as exc:  # noqa: BLE001 - a tool failure must never 500 the turn

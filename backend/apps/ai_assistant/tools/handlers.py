@@ -12,15 +12,60 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from apps.mistakes.models import MistakeEntry
-from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus
+from apps.mistakes.models import MistakeEntry, MistakeType
+from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus, MockExamSubject
 from apps.practice.services import get_recommended_subtopics
 from apps.profiles.leveling import xp_progress
 from apps.profiles.models import Profile, UserAchievement
+from apps.profiles.subjects import SUBJECT_LABELS, subject_key_for_name
 from apps.streaks.models import LearningStreak
 from apps.study_plan.services import completion_status, generate_daily_plan
 
 MISTAKE_LOOKBACK_DAYS = 30
+
+# Every stored subject string a canonical key can appear as. MistakeEntry
+# snapshots a *display name* whose language depends on where the mistake came
+# from (Armenian for practice, English for mock exams/flashcards — see
+# apps.profiles.subjects), so a single key has to match both.
+_ENGLISH_LABELS = dict(MockExamSubject.choices)
+
+
+class UnknownSubject(ValueError):
+    """The model passed a `subject` we can't map to a canonical key. Raised
+    rather than silently filtering to nothing: an empty result reads to the
+    model as 'this student has no mistakes', which is how a filter typo
+    turns into a confidently wrong answer."""
+
+
+def _resolve_subject_key(subject) -> str | None:
+    """Anything the model might plausibly send -> canonical subject key.
+
+    The tool schema asks for a key, but a model that has been reading
+    Armenian question text will sometimes send 'Մաթեմատիկա' or
+    'Mathematics' anyway, and both of those are also what's stored in the
+    database, so accept all three shapes."""
+    if not subject:
+        return None
+    value = str(subject).strip()
+    if value.casefold() in SUBJECT_LABELS:
+        return value.casefold()
+    key = subject_key_for_name(value)
+    if key:
+        return key
+    for candidate, label in SUBJECT_LABELS.items():
+        if label.casefold() == value.casefold():
+            return candidate
+    raise UnknownSubject(
+        f"Unknown subject '{subject}'. Use one of: {', '.join(sorted(SUBJECT_LABELS))}."
+    )
+
+
+def _subject_names_for_key(key: str) -> list[str]:
+    names = [SUBJECT_LABELS[key]]
+    english = _ENGLISH_LABELS.get(key)
+    if english:
+        names.append(english)
+    return names
 
 
 def get_profile(*, user):
@@ -48,6 +93,12 @@ def get_profile(*, user):
 
 
 def get_progress(*, user, subject=None):
+    # Both sides of this used to compare the model's `subject` string against
+    # a display name — but weak topics carry Armenian practice names while
+    # mock exams render English ones, so ANY single string silently matched
+    # at most one of the two halves. Compare canonical keys instead.
+    subject_key = _resolve_subject_key(subject)
+
     weak_topics = [
         {
             "subject_name": r["subject_name"],
@@ -56,7 +107,7 @@ def get_progress(*, user, subject=None):
             "suggested_tier": r["suggested_tier"],
         }
         for r in get_recommended_subtopics(user, limit=5)
-        if not subject or r["subject_name"] == subject
+        if not subject_key or r["subject_key"] == subject_key
     ]
 
     attempts = (
@@ -65,10 +116,10 @@ def get_progress(*, user, subject=None):
         .select_related("exam")
         .order_by("exam_id", "-completed_at")
     )
+    if subject_key:
+        attempts = attempts.filter(exam__subject=subject_key)
     latest_by_exam = {}
     for attempt in attempts:
-        if subject and attempt.exam.get_subject_display() != subject:
-            continue
         latest_by_exam.setdefault(attempt.exam_id, attempt)
 
     mock_exam_breakdown = []
@@ -98,14 +149,20 @@ def get_progress(*, user, subject=None):
 
 
 def get_mistakes(*, user, subject=None, limit=10):
+    subject_key = _resolve_subject_key(subject)
     since = timezone.now() - timedelta(days=MISTAKE_LOOKBACK_DAYS)
     entries = MistakeEntry.objects.filter(user=user, created_at__gte=since)
-    if subject:
-        entries = entries.filter(subject_name=subject)
+    if subject_key:
+        entries = entries.filter(subject_name__in=_subject_names_for_key(subject_key))
 
     grouped = defaultdict(list)
     for entry in entries:
-        grouped[(entry.subject_name, entry.topic_label)].append(entry)
+        # Group by canonical key, not by the stored display name: the same
+        # subject is spelled 'Մաթեմատիկա' by practice and 'Mathematics' by
+        # mock exams, which used to split one topic into two "weakest" rows.
+        key = subject_key_for_name(entry.subject_name)
+        label = SUBJECT_LABELS.get(key, entry.subject_name)
+        grouped[(label, entry.topic_label)].append(entry)
 
     ranked = sorted(grouped.items(), key=lambda kv: -len(kv[1]))[:limit]
     return {
@@ -115,6 +172,13 @@ def get_mistakes(*, user, subject=None, limit=10):
                 "subject_name": subject_name,
                 "topic_label": topic_label,
                 "mistake_count": len(group),
+                # A blank answer is logged here too (MistakeType.NOT_ATTEMPTED).
+                # It counts as a gap, but it is not a wrong answer — split it
+                # out so the tutor doesn't tell a student they "got these
+                # wrong" when they ran out of time and left them empty.
+                "not_attempted_count": sum(
+                    1 for e in group if e.mistake_type == MistakeType.NOT_ATTEMPTED
+                ),
                 "last_mistake_at": max(e.created_at for e in group).isoformat(),
             }
             for (subject_name, topic_label), group in ranked

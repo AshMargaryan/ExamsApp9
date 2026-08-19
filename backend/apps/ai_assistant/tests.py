@@ -248,7 +248,9 @@ class ToolCallingTests(TestCase):
         tool_calls = _terminal_event(_parse_sse_events(resp))["message"]["tool_calls"]
         self.assertEqual(tool_calls[0]["tool_name"], "get_mistakes")
         self.assertEqual(tool_calls[0]["status"], "success")
-        self.assertEqual(tool_calls[0]["result"]["groups"][0]["subject_name"], "Mathematics")
+        # Canonicalized to the Armenian label the student actually sees,
+        # whichever spelling the source app snapshotted.
+        self.assertEqual(tool_calls[0]["result"]["groups"][0]["subject_name"], "Մաթեմատիկա")
 
     def test_get_progress_tool_call(self):
         resp = self._send("Ինչպիսի՞ առաջընթաց ունեմ, ո՞ր թեմաներում եմ թույլ")
@@ -359,13 +361,13 @@ class PromptBuilderTutorModeTests(TestCase):
 
     def test_why_am_i_wrong_framing_is_included(self):
         prompt = self._system_prompt_for_mode("why_am_i_wrong")
-        self.assertIn("misunderstood", prompt)
+        self.assertIn("misconception", prompt)
         self.assertIn("error category", prompt)
 
     def test_unknown_mode_is_silently_ignored(self):
         prompt = self._system_prompt_for_mode("not_a_real_mode")
         self.assertNotIn("Feynman", prompt)
-        self.assertNotIn("misunderstood", prompt)
+        self.assertNotIn("RIGHT NOW", prompt)
 
     def test_learner_context_appears_when_present(self):
         from apps.profiles.models import StudentSubject
@@ -471,3 +473,190 @@ class LearningEventRecordingTests(TestCase):
         _parse_sse_events(resp)  # drives the (lazy) generator so side effects actually run
         event = LearningEvent.objects.get(user=self.user, event_type=LearningEventType.EXPLANATION_REQUESTED)
         self.assertEqual(event.subject_key, "")
+
+
+class LearnerContextFormattingTests(TestCase):
+    """The learner briefing goes into the system prompt of every single turn,
+    so anything malformed in it is paid for on every message. These lock down
+    the two things that were wrong: a raw dict repr leaking into the prompt,
+    and an activity line the tutor couldn't act on."""
+
+    def setUp(self):
+        self.user = _make_user()
+        self.conversation = Conversation.objects.create(owner=self.user)
+
+    def _system_prompt(self):
+        from .services.prompt_builder import PromptBuilder
+        from .services.rag_service import EducationalContext
+
+        return PromptBuilder().build(
+            self.conversation, "help", EducationalContext(), []
+        ).system_prompt
+
+    def test_goal_progress_is_rendered_as_numbers_not_a_dict_repr(self):
+        from apps.profiles.models import GoalType, PersonalGoal
+
+        PersonalGoal.objects.create(user=self.user, goal_type=GoalType.STREAK_DAYS, target_value=14)
+        prompt = self._system_prompt()
+        self.assertIn("streak_days", prompt)
+        self.assertIn("/14", prompt)
+        # analytics.goal_progress() returns a dict; it used to be interpolated
+        # straight into the prompt as "{'current': 5, ...}% done".
+        self.assertNotIn("'is_complete'", prompt)
+        self.assertNotIn("'percent'", prompt)
+
+    def test_grade_is_included_so_the_tutor_can_pitch_the_level(self):
+        self.user.grade = 9
+        self.user.save(update_fields=["grade"])
+        self.assertIn("School grade: 9", self._system_prompt())
+
+    def test_recent_events_carry_topic_and_result_not_just_a_type(self):
+        from apps.profiles.models import LearningEvent, LearningEventType
+
+        LearningEvent.objects.create(
+            user=self.user, event_type=LearningEventType.QUESTION_ANSWERED,
+            subject_key="math", topic_label="Ածանցյալ", result="incorrect",
+        )
+        prompt = self._system_prompt()
+        self.assertIn("question_answered (Ածանցյալ): incorrect", prompt)
+
+    def test_conversation_mode_is_the_last_thing_in_the_prompt(self):
+        """The per-message mode is the narrowest rule in the prompt and the
+        one the model is most likely to drop, so it sits closest to the
+        student's message — and, being the only volatile section, last is
+        also where it costs the least cached prefix."""
+        from apps.profiles.models import StudentSubject
+        from .services.prompt_builder import PromptBuilder
+        from .services.rag_service import EducationalContext
+
+        StudentSubject.objects.create(user=self.user, subject_key="math", priority="high")
+        prompt = PromptBuilder().build(
+            self.conversation, "help",
+            EducationalContext(conversation_mode="solving_question"), [],
+        ).system_prompt
+        self.assertGreater(prompt.index("RIGHT NOW"), prompt.index("--- Student profile ---"))
+
+
+class ToolSubjectFilterTests(TestCase):
+    """A `subject` filter that matched a display name silently returned an
+    empty result for at least one of its two data sources, whichever name was
+    passed — and an empty result reads to the model as "this student has no
+    mistakes", which is how it ends up inventing a list of weak topics."""
+
+    def setUp(self):
+        self.user = _make_user()
+
+    def _mistake(self, subject_name, topic, mistake_type=None):
+        from apps.mistakes.models import MistakeType
+
+        return MistakeEntry.objects.create(
+            user=self.user, source=MistakeEntrySource.PRACTICE,
+            mistake_type=mistake_type or MistakeType.INCORRECT,
+            subject_name=subject_name, topic_label=topic,
+            question_type="multiple_choice", question_text="2+2=?",
+            your_answer_text="5", correct_answer_text="4",
+        )
+
+    def test_every_spelling_of_a_subject_resolves_to_the_same_key(self):
+        from .tools.handlers import _resolve_subject_key
+
+        for value in ["math", "Math", "Mathematics", "Մաթեմատիկա"]:
+            self.assertEqual(_resolve_subject_key(value), "math", value)
+        self.assertEqual(_resolve_subject_key("Կենսաբանություն"), "biology")
+        self.assertIsNone(_resolve_subject_key(None))
+
+    def test_unknown_subject_reports_the_valid_keys_instead_of_filtering_to_nothing(self):
+        from .tools import registry
+
+        result = registry.execute("get_mistakes", {"subject": "Հանրահաշիվ"}, user=self.user)
+        self.assertIn("error", result)
+        self.assertIn("math", result["error"])
+
+    def test_mistakes_filter_matches_both_stored_spellings(self):
+        from .tools import handlers
+
+        self._mistake("Մաթեմատիկա", "Անհավասարումներ")
+        self._mistake("Mathematics", "Անհավասարումներ")
+        self._mistake("Ֆիզիկա", "Ուժեր")
+
+        groups = handlers.get_mistakes(user=self.user, subject="math")["groups"]
+        self.assertEqual(len(groups), 1, groups)
+        # Same subject, two spellings, one group — not two half-sized ones.
+        self.assertEqual(groups[0]["subject_name"], "Մաթեմատիկա")
+        self.assertEqual(groups[0]["mistake_count"], 2)
+
+    def test_blank_answers_are_counted_separately_from_wrong_ones(self):
+        from apps.mistakes.models import MistakeType
+
+        from .tools import handlers
+
+        self._mistake("Մաթեմատիկա", "Անհավասարումներ")
+        self._mistake("Մաթեմատիկա", "Անհավասարումներ", MistakeType.NOT_ATTEMPTED)
+
+        group = handlers.get_mistakes(user=self.user, subject="math")["groups"][0]
+        self.assertEqual(group["mistake_count"], 2)
+        self.assertEqual(group["not_attempted_count"], 1)
+
+    def test_progress_filters_mock_exams_by_key_not_display_name(self):
+        from apps.mock_exams.models import (
+            MockExam, MockExamAttempt, MockExamAttemptStatus, MockExamSubject,
+        )
+
+        from .tools import handlers
+
+        for key in [MockExamSubject.MATH, MockExamSubject.PHYSICS]:
+            exam = MockExam.objects.create(
+                exam_id=f"{key}-1", title=f"{key} exam", subject=key, question_count=65,
+            )
+            MockExamAttempt.objects.create(
+                user=self.user, exam=exam, status=MockExamAttemptStatus.COMPLETED,
+                scaled_score=10,
+            )
+
+        result = handlers.get_progress(user=self.user, subject="math")
+        self.assertEqual(len(result["recent_mock_exams"]), 1)
+        self.assertEqual(result["recent_mock_exams"][0]["subject_name"], "Mathematics")
+
+    def test_subject_arguments_are_declared_as_an_enum_of_keys(self):
+        from .tools.definitions import SUBJECT_KEYS, TOOL_DEFINITIONS
+
+        self.assertEqual(SUBJECT_KEYS, ["biology", "chemistry", "english", "math", "physics"])
+        for definition in TOOL_DEFINITIONS:
+            subject = definition["function"]["parameters"]["properties"].get("subject")
+            if subject is not None:
+                self.assertEqual(subject["enum"], SUBJECT_KEYS, definition["function"]["name"])
+
+
+class RenderingContractTests(TestCase):
+    """The prompt is one half of a contract with the frontend renderer. If
+    these names drift apart, the student sees raw `:::` markers or literal
+    LaTeX — so the contract is asserted here rather than left to review.
+
+    Frontend side: frontend/src/lib/assistantContent/parse.ts (CALLOUT_NAMES,
+    DIAGNOSIS_STEPS, NEXT_MAX_ITEM_CHARS) and frontend/src/components/
+    MathText.tsx (MATH_SPLIT)."""
+
+    def test_every_directive_the_renderer_understands_is_documented(self):
+        from .prompts import BASE_SYSTEM_PROMPT
+
+        for name in ["concept", "example", "mistake", "tip", "important",
+                     "checkpoint", "diagnosis", "next"]:
+            self.assertIn(f":::{name}", BASE_SYSTEM_PROMPT, name)
+        for sub_marker in ["::hint", "::answer", "::drift", "::correct", "::practice"]:
+            self.assertIn(f"`{sub_marker}`", BASE_SYSTEM_PROMPT, sub_marker)
+        self.assertIn("under 40 ", BASE_SYSTEM_PROMPT)
+
+    def test_math_delimiters_match_the_renderer_and_nothing_contradicts_them(self):
+        from .prompts import BASE_SYSTEM_PROMPT
+
+        self.assertIn("`$...$`", BASE_SYSTEM_PROMPT)
+        self.assertIn("`$$...$$`", BASE_SYSTEM_PROMPT)
+        # The old VOICE section told the model to put formulas in code
+        # fences, which is exactly where the renderer refuses to see math.
+        self.assertIn("never for formulas", BASE_SYSTEM_PROMPT)
+        self.assertIn("never put math inside a code fence", BASE_SYSTEM_PROMPT)
+
+    def test_armenian_is_the_default_output_language(self):
+        from .prompts import BASE_SYSTEM_PROMPT
+
+        self.assertIn("answer in Armenian by default", BASE_SYSTEM_PROMPT)

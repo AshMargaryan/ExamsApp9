@@ -7,6 +7,14 @@ none of them accept a user/student identifier as a parameter, so the model
 can never ask for another student's data (see tools/registry.py).
 """
 
+from apps.profiles.subjects import SUBJECT_LABELS
+
+# The five canonical keys (apps.profiles.subjects). Declared as an enum on
+# every `subject` argument so the model can't invent a display name: the
+# stored data spells the same subject differently depending on which app
+# wrote it, so a free-text subject filter silently matched nothing.
+SUBJECT_KEYS = sorted(SUBJECT_LABELS)
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -27,19 +35,27 @@ TOOL_DEFINITIONS = [
         "function": {
             "name": "get_progress",
             "description": (
-                "Get the student's learning progress: overall accuracy, "
-                "their weakest and strongest subtopics, and a per-difficulty "
-                "breakdown (easy/medium/hard) from their most recent mock "
-                "exams. Call this when the student asks how they're doing, "
-                "what to study next, or which topics they're weak or strong "
-                "in."
+                "Get the student's learning progress: the subtopics they "
+                "should work on next (weakest first, with a suggested "
+                "difficulty tier), and for each of their most recent mock "
+                "exams the scaled score plus an easy/medium/hard breakdown. "
+                "Call this when the student asks how they're doing, what to "
+                "study next, or which topics they're weak in. It does NOT "
+                "return an overall accuracy percentage or a list of their "
+                "strongest topics — don't promise either."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "subject": {
                         "type": "string",
-                        "description": "Optional subject name to filter to, e.g. 'Mathematics'.",
+                        "enum": SUBJECT_KEYS,
+                        "description": (
+                            "Optional canonical subject key to filter to. Must be one "
+                            "of the listed keys — not a display name like "
+                            "'Mathematics' or 'Մաթեմատիկա'. Omit it to cover every "
+                            "subject."
+                        ),
                     },
                 },
                 "required": [],
@@ -51,17 +67,24 @@ TOOL_DEFINITIONS = [
         "function": {
             "name": "get_mistakes",
             "description": (
-                "Get a summary of the student's recent mistakes, grouped by "
-                "subject and topic. Call this when the student asks about "
-                "mistakes they've made or wants to review what they got "
-                "wrong."
+                "Get a summary of the student's mistakes over the last 30 "
+                "days, grouped by subject and topic. Each group reports how "
+                "many entries it holds and how many of those were questions "
+                "left blank rather than answered wrongly "
+                "(not_attempted_count) — don't call a blank answer a "
+                "mistake. Call this when the student asks about mistakes "
+                "they've made or wants to review what they got wrong."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "subject": {
                         "type": "string",
-                        "description": "Optional subject name to filter to.",
+                        "enum": SUBJECT_KEYS,
+                        "description": (
+                            "Optional canonical subject key to filter to (not a "
+                            "display name). Omit it to cover every subject."
+                        ),
                     },
                     "limit": {
                         "type": "integer",
