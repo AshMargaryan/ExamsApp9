@@ -330,3 +330,187 @@ that produced this document: log in as the seeded student, walk the flow end to
 end, and look specifically for the practice-loop equivalent of the dashboard's
 duplicate-recommendation problem — places where the interface asks the student
 to make the same decision more than once.
+
+---
+
+## Session 2 — Identity + the core learning surfaces
+
+Session 1 was scoped to one surface, which was the wrong scope: only the home
+page visibly changed. This session establishes a real visual identity and then
+works through the §64 priority order, committing each surface as it lands.
+
+**Brief change mid-session.** The restraint bias in §55/§75 was explicitly
+overridden by the user: Haygit should look like a deliberate, distinctive
+education product rather than a tidied-up version of generic Tailwind. What
+did *not* change, and still binds: no functional regressions, Armenian copy
+and Armenian typographic quality untouchable, accessibility (contrast, focus,
+never colour-alone, reduced motion) intact, no heavy dependencies. Restraint in
+*execution* still applies — the identity should be strong, the interface still
+calm enough to study in for three hours.
+
+### The identity
+
+**Colour — Armenian manuscript ink.** The old palette was Tailwind's defaults
+verbatim: violet-600 on gray-200 borders over gray-900 text. Two structural
+problems, not just taste:
+
+1. `--color-bg` and `--color-surface` were **both `#ffffff`**. A card had no
+   ground to sit on and was defined solely by a 1px hairline — the main reason
+   the light theme read as flat and cheap.
+2. Every neutral was blue-cast slate, so the whole UI sat in one cold corner
+   of the wheel with no warmth anywhere.
+
+Now: a deep lapis indigo primary (`#2d3f8f`) — the colour of study rather than
+of a startup landing page — answered by **apricot (ծիրան)** as the accent, the
+flag's third band and essentially unused in edtech. Light mode has a warm paper
+ground (`#faf8f5`) under white surfaces, so elevation is real. Dark mode carries
+the ink's blue (`#12141c`/`#191c26`) instead of flat neutral greys.
+
+The primary **inverts in dark mode**: a `#2d3f8f` fill on near-black does not
+read as an action, so dark uses a light indigo fill (`#8098f0`) with dark text,
+and `--color-primary-contrast` moves with it. Every `bg-primary` /
+`text-primary-contrast` pair follows automatically — there were zero hardcoded
+`text-white on bg-primary` sites, which is what made this safe.
+
+Contrast was computed, not eyeballed: primary 9.4:1 on white (AAA), muted text
+5.9:1, accent 4.6:1, and both dark-mode directions 6.7:1.
+
+**Typography — serif display over sans body.** Body stays **Noto Sans
+Armenian**; Armenian rendering quality is not negotiable for a display
+flourish. Display headings take **Noto Serif Armenian**, which `index.html`
+already loaded, so it costs no new request and has the same complete Armenian
+coverage. Same family, harmonious letterforms, and — the actual point — a
+heading now reads as a different *level* rather than as larger body text. The
+old ramp had a 12% step between body and "large". The scale opens up at the top
+(`--text-xl` 1.25→1.375, `2xl` 1.5→1.75, `3xl` 2→2.25, `4xl` 2.5→3, new `5xl`)
+and is unchanged at the bottom where dense UI lives.
+
+Verified with `document.fonts.check('600 36px "Noto Serif Armenian"', 'Պարապել')`
+rather than by eye.
+
+**Elevation** is tinted with the ink rather than neutral slate — a warm-paper
+theme under cold grey shadows looks dirty rather than lifted.
+
+New tokens: `--color-primary-bg`/`-line`, `--color-accent-bg`/`-line`,
+`--font-sans`, `--font-display`, `--text-5xl`. `font-display`/`font-sans` are
+registered in `@theme inline` so they are real utilities.
+
+### New shared components
+
+- **`ui/PageHeader`** — back link, eyebrow, title, description, actions. Every
+  page hand-rolled this and disagreed on all four parts: three different back
+  affordances, `text-3xl` vs `text-2xl` titles, `mt-2 mb-6` vs `mb-8` vs `mb-1`.
+  Carries the display face, so adopting it is what makes a page look new.
+- **`practice/TierStatus`** — one subtopic's three tiers. Three surfaces
+  reported the same fact three different ways. Status is never colour-alone.
+- **`mockexam/QuestionNavigator`** — the map of an exam in progress.
+- **`mockexam/ExamTimer`** — time remaining with quiet/warning/critical states.
+- **`assistant/AssistantSuggestions`** — the §37 tutoring moves as one tap each.
+- **`lib/scrollToElement`** — see the scroll finding below.
+
+### Surfaces taken through the loop
+
+**Practice** (`redesign: rebuild the practice loop around the question`)
+
+The navigator was a fixed, full-viewport radial constellation. It photographed
+well and failed as an interface. `position:fixed; inset:0; overflow:hidden`
+with nodes on a radius meant that at 375×812 the ring did not fit and nodes
+below the fold were **clipped away with no scroll — a topic could be literally
+unreachable on a phone**. Names were set in Space Grotesk / JetBrains Mono,
+neither of which has Armenian glyphs (the font tag's own comment admitted
+Armenian "falls back to system-ui per-glyph"), inside fixed-diameter circles,
+so six of eight labels broke mid-word into orphans: "Հանրահաշի / վ",
+"Հավասարում / ներ". The layout centred on `window.innerWidth` while the 256px
+rail covered the left edge, so it sat 128px off-centre. It painted a hard-coded
+`#06070b` over any theme.
+
+Replaced by a navigator that scrolls, uses the type system, shows progress
+beside every choice, and reveals subtopics inline — removing a whole navigation
+from the path to a question. `?domain=&topic=` URL contract preserved exactly,
+so assignment deep-links and back/forward are unchanged.
+
+The **solving screen** carried the loop's version of the dashboard's duplicate
+decision: two identically weighted `bg-primary` buttons, `Ստուգել` and
+`Հաջորդը →`, where `Հաջորդը` did not advance to a next question at all — it
+silently submitted the whole set and scored it. Now one primary action whose
+label says what it does; submitting with blanks asks first; answers autosave
+per subtopic+tier so an interruption does not discard work.
+
+**Mock exams** (`redesign: make the mock exam runner a real exam interface`)
+
+The worst affordance defect found: **two buttons on the same screen both
+labelled `Ավարտել`** — one saved a draft, the other irreversibly ended a timed
+exam. Renamed the save action; only finish is primary.
+
+Question navigation, answered/unanswered state and flagged questions — all
+three required by §36 — did not exist. A 65-question exam was one flat scroll
+whose only progress signal was a line of text at the very bottom. All three now
+exist. The timer was `text-lg font-semibold`, identical at sixty minutes and
+thirty seconds; it now has quiet / 5-minute / 1-minute states.
+
+Two interruption defects (§40): a student returning to an expired attempt had
+it auto-submitted the instant the page mounted, landing on 0/20 with no
+explanation — arriving late now explains and offers the result; and exiting a
+live exam explained itself only through a `title` tooltip, which touch devices
+never show.
+
+**AI assistant** (`ux: make the AI assistant behave like a tutor, not a chat box`)
+
+Structurally sound but a generic chat clone, which §37 explicitly forbids. None
+of "give me a hint / explain differently / similar problem / test me" existed;
+each required the student to compose the request themselves, in Armenian, while
+stuck. All four are now one tap under the latest finished answer. A new
+conversation offered an empty box under "Ինչի՞ մասին խոսենք այսօր" — the least
+helpful possible prompt for someone who does not know how to ask — and now
+offers four concrete openings.
+
+**Flashcards** (`redesign: surface what is actually due in flashcards`)
+
+"How much is due right now, and where" was answerable only by reading a badge
+inside each of seventeen deck buttons and summing. Now stated at the top (the
+seeded account: 84 cards across 17 decks), and each deck's action names its own
+count. The page also defined a **local `EmptyState` shadowing the kit component
+of the same name**, plus its own skeleton and six pill-button variants, and used
+the trap-less `ConfirmModal` to confirm deleting a deck and all its cards.
+
+### Findings worth keeping
+
+**`behavior: "smooth"` cannot be relied on.** While verifying the exam
+navigator, `window.scrollTo({top: 5000, behavior: "smooth"})` left `scrollY` at
+**0**, while the identical call with `behavior: "auto"` moved to 5000 — and
+`prefers-reduced-motion` was *false*. So the exam's jump-to-question did nothing
+at all. `lib/scrollToElement` now requests the animated scroll, verifies it
+moved, and applies it instantly if the browser ignored it. Any new scripted
+scroll should go through it rather than calling `scrollIntoView` directly.
+
+**Adoption, not absence, is the recurring problem.** `useAsyncResource` existed
+from session 1 and was used in exactly **one** file while **45** files still
+rendered bare `Բեռնվում է...`, most with the same unguarded-promise defect that
+leaves a page loading forever on any failure. The same story holds for the UI
+kit. Each surface's real work is adoption plus the one or two genuine UX
+problems underneath.
+
+**Screenshot capture fails past a few thousand pixels of scroll** on very tall
+pages (the 65-question exam is ~30,000px). Verify deep-scroll state with DOM
+assertions — `getBoundingClientRect`, `elementFromPoint` — not screenshots.
+
+### Remaining debt (carried forward)
+
+Session 1's list still stands except items 2 (practice — done) and 5 (emoji —
+partly done). Added:
+
+1. **The floating tools dock and chat launcher overlap page content** at the
+   bottom corners on every page, including interactive controls (they cover
+   exam navigator chips at 375px). This is app-shell furniture and needs a
+   layout answer, not a per-page one.
+2. **`SubtopicPage`'s lesson stepper renders 7+ long Armenian pills** that wrap
+   to four rows above the content, dominating the page before any material is
+   read.
+3. **`SubjectsPage` (`/subjects`) is a second, parallel subject picker** — a
+   dark full-screen "universe" with hardcoded `#05050a`, Spectral/Work Sans and
+   inline styles, reaching the same practice content as `/practice` by a
+   different route. Two entry points to one destination, in two visual
+   languages. It needs an IA decision, not a restyle.
+4. `MockExamHistoryPage`, `MockExamResultsPage`, `MockExamDetailPage`,
+   `FlashcardStudyPage`, `FlashcardEditorPage`, `FlashcardDeckManagePage` were
+   not taken through the loop this session.
