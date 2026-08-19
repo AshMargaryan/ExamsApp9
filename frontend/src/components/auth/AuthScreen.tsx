@@ -1,6 +1,8 @@
 import type { FormEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
+import { Logo } from "../Logo";
+import { Button } from "../ui/Button";
 import { useIsNativeApp } from "../../lib/platform";
 
 /*
@@ -47,17 +49,42 @@ export function AuthScreen({
 
   if (!isNative) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-10">
+        {/*
+          The logged-out screens used to be an unbranded `max-w-sm` box with a
+          one-word title in it. A first-time visitor arriving at /login saw a
+          generic form and no indication of what they were signing in to. The
+          mark and the one-line statement of what Gitus is cost 60px and are
+          the only thing on this screen that says the product is real.
+        */}
+        <div className="mb-[var(--space-6)] flex flex-col items-center gap-[var(--space-2)] text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] text-on-brand" style={{ background: "var(--gradient-brand)" }}>
+            <Logo className="h-6 w-6" />
+          </span>
+          <p className="font-display text-[length:var(--text-xl)] font-semibold tracking-[var(--tracking-tight)] text-text">
+            Gitus
+          </p>
+          <p className="max-w-[18rem] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
+            Միասնական քննությունների նախապատրաստում՝ պարապմունք, փորձնական քննություններ և AI օգնական
+          </p>
+        </div>
+
         <Body
           {...bodyProps}
-          className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm"
+          className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-[var(--shadow-sm)]"
         >
           <div className="mb-6">
             <div className="flex items-center justify-between gap-3">
-              <h1 className="text-2xl font-semibold text-text">{title}</h1>
+              <h1 className="font-display text-[length:var(--text-2xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text">
+                {title}
+              </h1>
               {headerAction}
             </div>
-            {subtitle && <p className="mt-2 text-sm text-text-muted">{subtitle}</p>}
+            {subtitle && (
+              <p className="mt-2 text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
+                {subtitle}
+              </p>
+            )}
           </div>
           {children}
         </Body>
@@ -103,21 +130,34 @@ export function AuthScreen({
   );
 }
 
-/** Full-width primary action sized for a thumb — used by the auth screens so
- *  the button doesn't have to be restyled per platform at each call site. */
-export function AuthSubmitButton({ children, disabled }: { children: ReactNode; disabled?: boolean }) {
+/*
+  Full-width primary action sized for a thumb.
+
+  `loading` rather than a `disabled` button whose label becomes "..." — the
+  old version replaced the verb with three dots, which tells a screen reader
+  nothing and tells a sighted user only that something is different. ui/Button
+  already renders a spinner and keeps the label, so the submit state is
+  announced and readable.
+*/
+export function AuthSubmitButton({
+  children,
+  loading,
+  disabled,
+}: {
+  children: ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+}) {
   const isNative = useIsNativeApp();
   return (
-    <button
+    <Button
       type="submit"
+      loading={loading}
       disabled={disabled}
-      className={
-        isNative
-          ? "bg-primary w-full rounded-2xl py-4 text-[17px] font-semibold text-primary-contrast disabled:opacity-60"
-          : "w-full rounded-md bg-primary py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-      }
+      size={isNative ? "lg" : "md"}
+      className={isNative ? "w-full rounded-2xl py-4 text-[17px]" : "w-full"}
     >
       {children}
-    </button>
+    </Button>
   );
 }

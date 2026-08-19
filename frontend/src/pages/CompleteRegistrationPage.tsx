@@ -111,9 +111,7 @@ export function CompleteRegistrationPage() {
               onClick={() => setRole(card.role)}
               className="mb-4 w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary last:mb-0"
             >
-              <span className="block font-medium text-text">
-                {card.icon} {card.title}
-              </span>
+              <span className="block font-medium text-text">{card.title}</span>
               <span className="mt-1 block text-sm text-text-muted">{card.description}</span>
             </button>
           ))}

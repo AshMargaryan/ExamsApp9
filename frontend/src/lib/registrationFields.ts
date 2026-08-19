@@ -9,22 +9,26 @@ export interface Option {
   sublabel?: string;
 }
 
-export const ROLE_CARDS: { role: AccountRole; icon: string; title: string; description: string }[] = [
+/*
+  The web register screen's role picker. `icon` was an emoji rendered inline
+  before the role title ("🎓 Աշակերտ"); the native picker has always used
+  lucide icons (see mobile/auth/RolePicker), so the web one was the odd
+  platform out. The field is gone rather than translated, because the picker
+  reads perfectly well as three titled descriptions.
+*/
+export const ROLE_CARDS: { role: AccountRole; title: string; description: string }[] = [
   {
     role: "student",
-    icon: "🎓",
     title: "Աշակերտ",
     description: "Ես ուզում եմ սովորել և պատրաստվել քննություններին",
   },
   {
     role: "teacher",
-    icon: "🧑‍🏫",
     title: "Ուսուցիչ",
     description: "Ես ուզում եմ դասավանդել և հետևել աշակերտների առաջընթացին",
   },
   {
     role: "parent",
-    icon: "👨‍👩‍👧",
     title: "Ծնող",
     description: "Ես ուզում եմ հետևել իմ երեխայի առաջընթացին",
   },

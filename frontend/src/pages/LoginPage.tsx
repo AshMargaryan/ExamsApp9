@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { MessageModal } from "../components/MessageModal";
 import { AuthScreen, AuthSubmitButton } from "../components/auth/AuthScreen";
+import { Field, FormAlert, PasswordField } from "../components/ui/Field";
 import { OAuthButtons } from "../components/auth/OAuthButtons";
 import { LinkButton } from "../components/ui/LinkButton";
 import { MobileLogin } from "../components/mobile/auth/MobileLogin";
@@ -55,30 +55,35 @@ function WebLoginPage() {
   }
 
   return (
-    <AuthScreen
-      title="Մուտք"
-      onSubmit={handleSubmit}
-      overlay={error ? <MessageModal message={error} onClose={() => setError(null)} /> : null}
-    >
-      <label className="mb-1 block text-sm text-text-muted">Օգտանուն</label>
-      <input
-        className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+    /*
+      The error used to open a `MessageModal` — a full overlay, for a wrong
+      password. Getting back to the field you had to fix meant dismissing a
+      dialog first. It is an inline alert above the submit button now, and the
+      form keeps everything you typed.
+    */
+    <AuthScreen title="Մուտք" onSubmit={handleSubmit}>
+      {error && <FormAlert message={error} />}
+
+      <Field
+        label="Օգտանուն"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
+        autoComplete="username"
+        name="username"
         autoFocus
         required
       />
 
-      <label className="mb-1 block text-sm text-text-muted">Գաղտնաբառ</label>
-      <input
-        type="password"
-        className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+      <PasswordField
+        label="Գաղտնաբառ"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={setPassword}
+        autoComplete="current-password"
+        name="password"
         required
       />
 
-      <AuthSubmitButton disabled={submitting}>{submitting ? "..." : "Մուտք գործել"}</AuthSubmitButton>
+      <AuthSubmitButton loading={submitting}>Մուտք գործել</AuthSubmitButton>
 
       <p className="mt-3 flex justify-center">
         <LinkButton to="/forgot-password">Մոռացե՞լ եք գաղտնաբառը</LinkButton>
