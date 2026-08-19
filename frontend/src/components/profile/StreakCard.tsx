@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
 import { Check, Flame } from "lucide-react";
 import { ProgressBar } from "../ui/ProgressBar";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 const MILESTONES = [7, 14, 30, 60, 100, 365];
 
@@ -35,7 +35,7 @@ export function StreakCard({ currentStreak, longestStreak }: { currentStreak: nu
   }, [currentStreak]);
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Flame}
       title="Ուսումնական շարք"
       description={`Լավագույն շարք՝ ${longestStreak} օր`}
@@ -80,6 +80,6 @@ export function StreakCard({ currentStreak, longestStreak }: { currentStreak: nu
           );
         })}
       </ul>
-    </ProfileCard>
+    </DataCard>
   );
 }

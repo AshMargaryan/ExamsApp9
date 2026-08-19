@@ -10,7 +10,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
 import { SkeletonRows } from "../ui/Skeleton";
 import { FriendsModal } from "../friends/FriendsModal";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 const PREVIEW_COUNT = 6;
 
@@ -26,7 +26,7 @@ export function FriendsSection() {
   }
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Users}
       title="Ընկերներ"
       description={friends ? `${friends.length} ընկեր` : undefined}
@@ -68,6 +68,6 @@ export function FriendsSection() {
       </>
 
       {modalOpen && <FriendsModal onClose={handleModalClose} />}
-    </ProfileCard>
+    </DataCard>
   );
 }

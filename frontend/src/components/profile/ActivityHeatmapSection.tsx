@@ -4,7 +4,7 @@ import type { ActivityDay } from "../../api/profile";
 import { ActivityHeatmap } from "../ActivityHeatmap";
 import { EmptyState } from "../ui/EmptyState";
 import { SkeletonRows } from "../ui/Skeleton";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 export function ActivityHeatmapSection({ activityDays }: { activityDays: ActivityDay[] | null }) {
   const stats = useMemo(() => {
@@ -25,7 +25,7 @@ export function ActivityHeatmapSection({ activityDays }: { activityDays: Activit
     })) ?? [];
 
   return (
-    <ProfileCard
+    <DataCard
       icon={CalendarDays}
       title="Ակտիվության քարտեզ"
       description="Վերջին 365 օրը"
@@ -49,6 +49,6 @@ export function ActivityHeatmapSection({ activityDays }: { activityDays: Activit
           )}
         </>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

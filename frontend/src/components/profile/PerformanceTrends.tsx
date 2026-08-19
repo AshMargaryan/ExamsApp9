@@ -6,7 +6,7 @@ import { bucketActivity, TREND_RANGE_LABELS, type TrendRange } from "../../lib/p
 import { EmptyState } from "../ui/EmptyState";
 import { FilterChips } from "../ui/FilterChips";
 import { SkeletonRows } from "../ui/Skeleton";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 type Metric = "accuracy" | "minutes" | "questions" | "tests";
 
@@ -27,7 +27,7 @@ export function PerformanceTrends({ activityDays }: { activityDays: ActivityDay[
   const hasActivity = points.some((p) => p.questions > 0 || p.minutes > 0 || p.tests > 0);
 
   return (
-    <ProfileCard
+    <DataCard
       icon={TrendingUp}
       title="Առաջընթացի դինամիկա"
       description={`${METRIC_LABELS[metric]}՝ ${TREND_RANGE_LABELS[range].toLowerCase()}`}
@@ -81,6 +81,6 @@ export function PerformanceTrends({ activityDays }: { activityDays: ActivityDay[
           </ResponsiveContainer>
         </div>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

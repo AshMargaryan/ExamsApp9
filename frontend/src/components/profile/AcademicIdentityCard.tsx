@@ -1,7 +1,7 @@
 import { GraduationCap, Target } from "lucide-react";
 import type { AcademicPower, Profile, SubjectMastery } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 export function AcademicIdentityCard({
   profile,
@@ -22,19 +22,19 @@ export function AcademicIdentityCard({
 
   if (!profile.university && !profile.target_major) {
     return (
-      <ProfileCard icon={GraduationCap} title="Ակադեմիական ինքնություն">
+      <DataCard icon={GraduationCap} title="Ակադեմիական ինքնություն">
         <EmptyState
           icon={<Target size={22} strokeWidth={1.75} />}
           title="Ընտրեք ձեր նպատակային բուհը"
           hint="Ասացեք Gitus-ին, թե ուր եք գնում։"
           cta={{ label: "Սահմանել նպատակ", onClick: onSetGoal }}
         />
-      </ProfileCard>
+      </DataCard>
     );
   }
 
   return (
-    <ProfileCard icon={GraduationCap} title="Ակադեմիական ինքնություն">
+    <DataCard icon={GraduationCap} title="Ակադեմիական ինքնություն">
       <div className="grid grid-cols-2 gap-[var(--space-4)] text-[length:var(--text-sm)] sm:grid-cols-3">
         {profile.target_major && (
           <div>
@@ -73,6 +73,6 @@ export function AcademicIdentityCard({
           </div>
         )}
       </div>
-    </ProfileCard>
+    </DataCard>
   );
 }

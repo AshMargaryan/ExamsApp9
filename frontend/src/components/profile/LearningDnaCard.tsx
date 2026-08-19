@@ -2,7 +2,7 @@ import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } fro
 import { Brain, Lock } from "lucide-react";
 import type { DnaMetric, LearningDna } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 const DIMENSION_LABELS: Record<keyof LearningDna, string> = {
   accuracy: "Ճշգրտություն",
@@ -23,12 +23,12 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
 
   if (unlocked.length === 0) {
     return (
-      <ProfileCard icon={Brain} title="Ուսումնական ԴՆԹ">
+      <DataCard icon={Brain} title="Ուսումնական ԴՆԹ">
         <EmptyState
           icon={<Brain size={22} strokeWidth={1.75} />}
           title="Շարունակեք սովորել՝ բացելու համար ձեր Ուսումնական ԴՆԹ-ն"
         />
-      </ProfileCard>
+      </DataCard>
     );
   }
 
@@ -38,7 +38,7 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
   }));
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Brain}
       title="Ուսումնական ԴՆԹ"
       description="Հաշվարկված է ձեր իրական ուսումնական վարքագծից"
@@ -84,6 +84,6 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
           </div>
         </div>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

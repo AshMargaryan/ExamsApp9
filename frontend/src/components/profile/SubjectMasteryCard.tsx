@@ -3,7 +3,7 @@ import { Library } from "lucide-react";
 import type { SubjectMastery } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
 import { ProgressBar } from "../ui/ProgressBar";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 import { SkillMapDrilldown } from "./SkillMapDrilldown";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -29,7 +29,7 @@ export function SubjectMasteryCard({ subjects }: { subjects: SubjectMastery[] })
   const withData = subjects.filter((s) => s.has_data);
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Library}
       title="Առարկաների տիրապետում"
       description="Բացեք առարկան՝ թեմա առ թեմա տեսնելու համար"
@@ -74,6 +74,6 @@ export function SubjectMasteryCard({ subjects }: { subjects: SubjectMastery[] })
           })}
         </div>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

@@ -2,7 +2,8 @@ import type { ComponentType, ReactNode } from "react";
 import { cn } from "../../lib/cn";
 
 /*
-  One analytics card on the profile.
+  One card of data: an icon, a title, a line of context, an optional trailing
+  control, and a body.
 
   Why this exists
   ---------------
@@ -24,9 +25,13 @@ import { cn } from "../../lib/cn";
   gone. `action` is the trailing control some cards need (a range switch, a
   "see all" link) and sits on the header row rather than being invented
   separately by each card.
+
+  It started life as `profile/ProfileCard` and moved into the kit once the
+  rankings page needed the same thing and had invented its own
+  `SidePanelSection` — a fourth card-header language on the same product.
 */
 
-export function ProfileCard({
+export function DataCard({
   icon: Icon,
   title,
   description,

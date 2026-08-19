@@ -1,6 +1,6 @@
 import type { RankingEntry } from "../../api/rankings";
 import { Avatar } from "./Avatar";
-import { RankBadge } from "./RankBadge";
+import { RankBadge } from "../ui/RankBadge";
 
 export function RankingRow({ entry, isMe }: { entry: RankingEntry; isMe: boolean }) {
   return (

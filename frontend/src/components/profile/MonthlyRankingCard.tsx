@@ -10,7 +10,7 @@ import { FilterChips } from "../ui/FilterChips";
 import { LinkButton } from "../ui/LinkButton";
 import { SkeletonRows } from "../ui/Skeleton";
 import { RankBadge } from "../ui/RankBadge";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 const TAB_LABELS: Record<RankingScope, string> = { global: "Համաշխարհային", school: "Դպրոց", class: "Դասարան", friends: "Ընկերներ" };
 
@@ -50,7 +50,7 @@ export function MonthlyRankingCard() {
   const board = boardResource.data;
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Trophy}
       title="Ամսվա մրցույթ"
       action={<LinkButton to="/rankings">Ամբողջը →</LinkButton>}
@@ -103,6 +103,6 @@ export function MonthlyRankingCard() {
           )}
         </>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

@@ -2,7 +2,7 @@ import { Zap } from "lucide-react";
 import type { AcademicPower } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
 import { ProgressBar } from "../ui/ProgressBar";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 const COMPONENT_LABELS: Record<string, string> = {
   accuracy: "Ճշգրտություն",
@@ -15,17 +15,17 @@ const COMPONENT_LABELS: Record<string, string> = {
 export function AcademicPowerCard({ power }: { power: AcademicPower }) {
   if (!power.available) {
     return (
-      <ProfileCard icon={Zap} title="Ակադեմիական հզորություն">
+      <DataCard icon={Zap} title="Ակադեմիական հզորություն">
         <EmptyState
           icon={<Zap size={22} strokeWidth={1.75} />}
           title="Սկսեք սովորել՝ ձեր ցուցանիշը հաշվարկելու համար"
         />
-      </ProfileCard>
+      </DataCard>
     );
   }
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Zap}
       title="Ակադեմիական հզորություն"
       description="Gitus-ի ներքին ցուցանիշ, ոչ պաշտոնական գնահատական"
@@ -48,6 +48,6 @@ export function AcademicPowerCard({ power }: { power: AcademicPower }) {
           </div>
         ))}
       </div>
-    </ProfileCard>
+    </DataCard>
   );
 }

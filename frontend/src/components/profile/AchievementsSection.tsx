@@ -5,7 +5,7 @@ import { AchievementCard } from "../AchievementCard";
 import { EmptyState } from "../ui/EmptyState";
 import { FilterChips } from "../ui/FilterChips";
 import { SkeletonRows } from "../ui/Skeleton";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 type Filter = "all" | "unlocked" | "locked" | AchievementRarity;
 
@@ -40,7 +40,7 @@ export function AchievementsSection({
   });
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Trophy}
       title="Նվաճումներ"
       description={achievements ? `Բացված է ${trophiesCount} ${achievements.length}-ից` : undefined}
@@ -73,6 +73,6 @@ export function AchievementsSection({
           ))}
         </div>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

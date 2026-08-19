@@ -1,7 +1,7 @@
 import { BarChart3 } from "lucide-react";
 import type { Growth, LearningStats } from "../../api/profile";
 import { StatTile } from "../ui/StatTile";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 /*
   The profile's answer to "how am I doing".
@@ -36,7 +36,7 @@ export function PerformanceOverview({ stats, growth }: { stats: LearningStats; g
   const studyHours = stats.weekly_study_seconds / 3600;
 
   return (
-    <ProfileCard
+    <DataCard
       icon={BarChart3}
       title="Կատարողականություն"
       description={hasDeltas ? "Փոփոխությունը՝ նախորդ ամսվա համեմատ" : "Ընդհանուր՝ սկզբից ի վեր"}
@@ -75,6 +75,6 @@ export function PerformanceOverview({ stats, growth }: { stats: LearningStats; g
             : "Համեմատության համար բավարար տվյալներ դեռ չկան — շարունակեք սովորել առաջիկա շաբաթներին։"}
         </p>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

@@ -7,7 +7,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
 import { FilterChips } from "../ui/FilterChips";
 import { SkeletonRows } from "../ui/Skeleton";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 type Filter = "all" | "study_day" | "achievement" | "ranking_award";
 
@@ -73,7 +73,7 @@ export function ActivityTimeline() {
   const filtered = entries?.filter((e) => filter === "all" || e.type === filter) ?? [];
 
   return (
-    <ProfileCard icon={History} title="Վերջին ակտիվություն">
+    <DataCard icon={History} title="Վերջին ակտիվություն">
       <FilterChips
         label="Ակտիվության զտիչ"
         size="sm"
@@ -113,6 +113,6 @@ export function ActivityTimeline() {
           ))}
         </div>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

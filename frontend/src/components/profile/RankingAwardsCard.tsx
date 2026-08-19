@@ -4,7 +4,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
 import { RankBadge } from "../ui/RankBadge";
 import { SkeletonRows } from "../ui/Skeleton";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 /*
   Season medals. Extracted out of ProfilePage, where it was the one module
@@ -25,7 +25,7 @@ export function RankingAwardsCard({
   onRetry: () => void;
 }) {
   return (
-    <ProfileCard
+    <DataCard
       icon={Medal}
       title="Դասակարգման մեդալներ"
       description={awards && awards.length > 0 ? `Ընդամենը՝ ${awards.length}` : undefined}
@@ -60,6 +60,6 @@ export function RankingAwardsCard({
           ))}
         </ul>
       )}
-    </ProfileCard>
+    </DataCard>
   );
 }

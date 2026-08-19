@@ -6,7 +6,7 @@ import { PersonBox } from "../PersonBox";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 import { TeachingModal } from "../teaching/TeachingModal";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 export function TeachersSection({ profile, onProfileChange }: { profile: Profile; onProfileChange: () => void }) {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export function TeachersSection({ profile, onProfileChange }: { profile: Profile
   }
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Icon}
       title={title}
       description={`${count} ${isTeacher ? "աշակերտ" : "ուսուցիչ"}`}
@@ -51,6 +51,6 @@ export function TeachersSection({ profile, onProfileChange }: { profile: Profile
       )}
 
       {teachingOpen && <TeachingModal role={profile.role} onClose={handleTeachingClose} onChange={onProfileChange} />}
-    </ProfileCard>
+    </DataCard>
   );
 }

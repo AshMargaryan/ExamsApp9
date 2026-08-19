@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 import type { ProfileCompletion } from "../../api/profile";
 import { Button } from "../ui/Button";
 import { ProgressBar } from "../ui/ProgressBar";
-import { ProfileCard } from "./ProfileCard";
+import { DataCard } from "../ui/DataCard";
 
 export function ProfileCompletionCard({
   completion,
@@ -14,7 +14,7 @@ export function ProfileCompletionCard({
   if (completion.percent >= 100) return null;
 
   return (
-    <ProfileCard
+    <DataCard
       icon={Sparkles}
       title="Լրացրեք պրոֆիլը"
       description={`Մնացել է՝ ${completion.missing.join(", ")}`}
@@ -24,6 +24,6 @@ export function ProfileCompletionCard({
       <Button variant="secondary" size="sm" onClick={onEdit} className="mt-[var(--space-4)]">
         Լրացնել հիմա →
       </Button>
-    </ProfileCard>
+    </DataCard>
   );
 }
