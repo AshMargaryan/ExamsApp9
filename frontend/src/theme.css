@@ -3,20 +3,33 @@
   Semantic names (not "blue-500") so swapping the palette never means
   hunting through components.
 */
+/*
+  The bare :root block is the LIGHT palette, and the
+  `@media (prefers-color-scheme: dark)` block further down supplies dark.
+
+  It used to be the dark palette, which produced a real first-visit bug:
+  applyStoredTheme() only stamps data-theme when localStorage already holds a
+  choice, so a brand-new visitor whose OS prefers *light* matched neither
+  [data-theme] block nor the dark media query, and fell through to this one —
+  landing on a dark background that contradicted their OS preference, and
+  carrying this block's light-mode --color-correct-bg (#e4f7ef, a pale mint)
+  on top of it. Defining light here makes the CSS agree with
+  getInitialTheme()'s own "no stored value → follow the OS" rule.
+*/
 :root {
   /* Tells the browser which palette to use for native form controls
      (inputs, textareas, scrollbars) — without this, Chromium renders them
      per the OS/browser's own preference instead of following data-theme,
      e.g. a dark native textarea box on top of our light theme. */
-  color-scheme: dark;
+  color-scheme: light;
 
-  --color-bg: #1a1a1a;
-  --color-surface: #242424;
-  --color-surface-muted: #2e2e2e;
-  --color-border: #3a3a3a;
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f4f6;
+  --color-border: #e5e7eb;
 
-  --color-text: #ffffff;
-  --color-text-muted: #a3a3a3;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
 
   --color-primary: #7c3aed;
   --color-primary-hover: #6d28d9;
@@ -33,6 +46,23 @@
   --color-incorrect: #d64545;
   --color-incorrect-bg: #fbe8e8;
 
+  /*
+    Status colours, distinct from answer-correctness above.
+
+    Previously only correct/incorrect existed, so a warning banner or a neutral
+    notice had to borrow a colour that already meant "you got this wrong" —
+    which is why a few surfaces read as errors when nothing was wrong.
+    `success` is deliberately a separate token from `correct`: one means "the
+    operation worked", the other means "this answer was right", and they should
+    be free to diverge.
+  */
+  --color-success: #1a9e6d;
+  --color-success-bg: #e4f7ef;
+  --color-warning: #b47613;
+  --color-warning-bg: #fdf3e0;
+  --color-info: #2563eb;
+  --color-info-bg: #e6eefc;
+
   --color-easy: #1a9e6d;
   --color-medium: #d69a1a;
   --color-hard: #d64545;
@@ -40,22 +70,55 @@
   /* Rank-tier accents — reserved for #1/#2/#3 placement moments (podium,
      medals, trophy case). Never used as a general-purpose accent, so a gold
      highlight always means "you placed," not just "this is important." */
-  --color-gold: #e7c374;
-  --color-gold-bg: #2c2517;
-  --color-gold-line: #8a6a2c;
-  --color-silver: #c7cbd1;
-  --color-silver-bg: #24262a;
-  --color-silver-line: #52565e;
-  --color-bronze: #d99a68;
-  --color-bronze-bg: #2a2019;
-  --color-bronze-line: #8a5a34;
+  --color-gold: #a8790f;
+  --color-gold-bg: #f7ecd3;
+  --color-gold-line: #d9b768;
+  --color-silver: #5a5f66;
+  --color-silver-bg: #eceef0;
+  --color-silver-line: #b9bec6;
+  --color-bronze: #a15a30;
+  --color-bronze-bg: #f3e3d6;
+  --color-bronze-line: #cf9868;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+  /* Surface that sits *on* a surface — nested cards, popovers, the raised row
+     inside an already-elevated panel. Before this existed, every such case
+     hand-rolled its own color-mix(). */
+  --color-surface-raised: #f9fafb;
 
-  --radius: 0.75rem;
+  --shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
 
+  /*
+    Radius scale.
+
+    There was one radius token and eight radii in the wild: `rounded-md`
+    (0.375rem) and `rounded-[var(--radius)]` (0.75rem) were each used ~300
+    times for the same kinds of element, plus 2xl/xl/lg/3xl and four arbitrary
+    pixel values. A scale gives each size a reason to exist:
+
+      xs  chips, tags, inline code
+      sm  inputs, small buttons, table cells
+      md  buttons, list rows
+      lg  cards, panels           <- --radius aliases this
+      xl  page-level containers, modals
+      2xl heroes, feature panels
+
+    --radius stays an alias of lg so all ~300 existing
+    `rounded-[var(--radius)]` sites render exactly as they do today.
+  */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+  --radius: var(--radius-lg);
+
+  /* 4px-based ramp. 7 and 8 were 2rem/2.5rem, which skipped 1.75rem and made
+     the top of the scale unpredictable; the named steps below are contiguous. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -64,6 +127,14 @@
   --space-6: 1.5rem;
   --space-7: 2rem;
   --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 4rem;
+
+  /* Space *between* sections, as opposed to --space-* for space within them.
+     Keeping these separate is what stops a page from becoming an undifferentiated
+     stack of identically-spaced blocks. */
+  --section-gap: 2rem;
+  --section-gap-lg: 3rem;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -72,6 +143,48 @@
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
   --text-3xl: 2rem;
+  --text-4xl: 2.5rem;
+
+  /*
+    Line heights, tuned for Armenian rather than inherited from a Latin scale.
+
+    Noto Sans Armenian has a tall x-height and a high frequency of both
+    descenders (ղ ը պ ց ջ դ) and full-height ascenders (Հ Ա Մ Ք). At Latin
+    display leading (~1.1) the descenders of one line collide with the
+    ascenders of the next, which is exactly the kind of problem that gets
+    "fixed" by shrinking the font. Display steps therefore stay at 1.2–1.25,
+    and body copy sits at 1.6 rather than 1.5.
+  */
+  --leading-display: 1.2;
+  --leading-heading: 1.3;
+  --leading-snug: 1.45;
+  --leading-body: 1.6;
+  --leading-relaxed: 1.75;
+
+  /* Armenian words are long and the script has no small-caps tradition, so
+     positive tracking on uppercase eyebrows is the only place tracking helps;
+     everywhere else it hurts legibility. */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.08em;
+
+  /* Max line length. Armenian averages longer words than English, so the
+     comfortable measure is a little wider than the usual 65ch advice. */
+  --measure-narrow: 48ch;
+  --measure-base: 72ch;
+
+  /*
+    Focus.
+
+    Only 41 of 321 component files declared a focus style, across 561
+    button/link sites, and `focus-visible:outline-none` appeared 57 times —
+    sometimes with nothing put back. The global rule further down this file
+    gives every interactive element a visible indicator by default, so no
+    call site has to remember.
+  */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-primary);
 
   /* Hybrid/native shell geometry. env(safe-area-inset-*) resolves to 0px in a
      desktop browser, so these are safe to use unconditionally — only the iOS
@@ -159,6 +272,7 @@ html[data-native] [contenteditable="true"] {
   --color-bg: #ffffff;
   --color-surface: #ffffff;
   --color-surface-muted: #f3f4f6;
+  --color-surface-raised: #f9fafb;
   --color-border: #e5e7eb;
 
   --color-text: #111827;
@@ -175,6 +289,13 @@ html[data-native] [contenteditable="true"] {
   --color-incorrect: #d64545;
   --color-incorrect-bg: #fbe8e8;
 
+  --color-success: #1a9e6d;
+  --color-success-bg: #e4f7ef;
+  --color-warning: #b47613;
+  --color-warning-bg: #fdf3e0;
+  --color-info: #2563eb;
+  --color-info-bg: #e6eefc;
+
   --color-easy: #1a9e6d;
   --color-medium: #d69a1a;
   --color-hard: #d64545;
@@ -189,6 +310,7 @@ html[data-native] [contenteditable="true"] {
   --color-bronze-bg: #f3e3d6;
   --color-bronze-line: #cf9868;
 
+  --shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.04);
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
@@ -200,6 +322,7 @@ html[data-native] [contenteditable="true"] {
   --color-bg: #1a1a1a;
   --color-surface: #242424;
   --color-surface-muted: #2e2e2e;
+  --color-surface-raised: #333333;
   --color-border: #3a3a3a;
 
   --color-text: #ffffff;
@@ -216,6 +339,13 @@ html[data-native] [contenteditable="true"] {
   --color-incorrect: #f2726e;
   --color-incorrect-bg: #3a1717;
 
+  --color-success: #4ade9a;
+  --color-success-bg: #12301f;
+  --color-warning: #f0be5a;
+  --color-warning-bg: #33270f;
+  --color-info: #7aa7f5;
+  --color-info-bg: #16223a;
+
   --color-easy: #4ade9a;
   --color-medium: #f0be5a;
   --color-hard: #f2726e;
@@ -230,6 +360,7 @@ html[data-native] [contenteditable="true"] {
   --color-bronze-bg: #2a2019;
   --color-bronze-line: #8a5a34;
 
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.2);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
@@ -237,9 +368,12 @@ html[data-native] [contenteditable="true"] {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
+    color-scheme: dark;
+
     --color-bg: #1a1a1a;
     --color-surface: #242424;
     --color-surface-muted: #2e2e2e;
+    --color-surface-raised: #333333;
     --color-border: #3a3a3a;
 
     --color-text: #ffffff;
@@ -256,6 +390,13 @@ html[data-native] [contenteditable="true"] {
     --color-incorrect: #f2726e;
     --color-incorrect-bg: #3a1717;
 
+    --color-success: #4ade9a;
+    --color-success-bg: #12301f;
+    --color-warning: #f0be5a;
+    --color-warning-bg: #33270f;
+    --color-info: #7aa7f5;
+    --color-info-bg: #16223a;
+
     --color-easy: #4ade9a;
     --color-medium: #f0be5a;
     --color-hard: #f2726e;
@@ -270,6 +411,7 @@ html[data-native] [contenteditable="true"] {
     --color-bronze-bg: #2a2019;
     --color-bronze-line: #8a5a34;
 
+    --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.2);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
@@ -280,6 +422,7 @@ html[data-native] [contenteditable="true"] {
   --color-bg: var(--color-bg);
   --color-surface: var(--color-surface);
   --color-surface-muted: var(--color-surface-muted);
+  --color-surface-raised: var(--color-surface-raised);
   --color-border: var(--color-border);
   --color-text: var(--color-text);
   --color-text-muted: var(--color-text-muted);
@@ -289,6 +432,12 @@ html[data-native] [contenteditable="true"] {
   --color-accent: var(--color-accent);
   --color-purple: var(--color-purple);
   --color-pink: var(--color-pink);
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-info: var(--color-info);
+  --color-info-bg: var(--color-info-bg);
   --color-correct: var(--color-correct);
   --color-correct-bg: var(--color-correct-bg);
   --color-incorrect: var(--color-incorrect);
@@ -305,6 +454,33 @@ html[data-native] [contenteditable="true"] {
   --color-bronze: var(--color-bronze);
   --color-bronze-bg: var(--color-bronze-bg);
   --color-bronze-line: var(--color-bronze-line);
+}
+
+/*
+  One visible focus indicator for the whole app.
+
+  Audit before this rule: 41 of 321 component files declared any focus style,
+  across 561 button/link call sites, split between two idioms
+  (`focus-visible:ring-2 ring-primary` and `focus-visible:outline-2
+  outline-primary`) — with `focus-visible:outline-none` appearing 57 times,
+  sometimes with no replacement. Keyboard users could not reliably see where
+  they were.
+
+  Declaring it once here means a new component is accessible by default rather
+  than by remembering. `:focus-visible` (not `:focus`) keeps the ring off
+  mouse clicks. Components that need a different treatment can still override
+  locally — this is a floor, not a ceiling.
+
+  NOTE: the radius scale above is deliberately NOT registered in `@theme
+  inline`. Tailwind v4 maps the `--radius-*` namespace onto its own
+  `rounded-*` utilities, so doing that would silently repoint the ~300
+  existing `rounded-md` call sites from 0.375rem to this scale's 0.5rem.
+  New code opts in explicitly with `rounded-[var(--radius-md)]`.
+*/
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: inherit;
 }
 
 /*
