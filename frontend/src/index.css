@@ -4,6 +4,9 @@
 /* Native/Capacitor overrides — must follow theme.css so it can retune its
    tokens, and be late enough to win over the base component styles below. */
 @import "./styles/native.css";
+/* Assistant-scoped token subset, layered on theme.css — see the header of
+   that file for why it is a layer rather than a rewrite. */
+@import "./styles/assistant.css";
 @import "./components/learning-profile/learningProfile.css";
 @import "katex/dist/katex.min.css";
 

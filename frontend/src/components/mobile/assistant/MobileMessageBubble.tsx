@@ -3,7 +3,7 @@ import { StopCircle } from "lucide-react";
 import { synthesizeVoice, type Message } from "../../../api/assistant";
 import { hapticStep } from "../../../lib/haptics";
 import { AttachmentChip } from "../../assistant/AttachmentChip";
-import { MarkdownMessage } from "../../assistant/MarkdownMessage";
+import { AssistantContent } from "../../assistant/content/AssistantContent";
 import { TypingIndicator } from "../../assistant/TypingIndicator";
 import { MessageActionSheet, type MessageAction } from "./MessageActionSheet";
 
@@ -173,7 +173,7 @@ function MobileMessageBubbleImpl({
             <TypingIndicator label={activityLabel} />
           ) : failed || stopped ? (
             <div className="flex flex-col gap-1.5">
-              {message.content && <MarkdownMessage content={message.content} />}
+              {message.content && <AssistantContent content={message.content} />}
               {failed ? (
                 <p className="text-[14px] text-incorrect">
                   ⚠️ Չհաջողվեց ստանալ պատասխան{message.error_message ? `. ${message.error_message}` : "։"}
@@ -187,7 +187,7 @@ function MobileMessageBubbleImpl({
           ) : isUser ? (
             <p className="text-[16px] leading-relaxed break-words whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <MarkdownMessage content={message.content} />
+            <AssistantContent content={message.content} streaming={pending} />
           )}
         </div>
 

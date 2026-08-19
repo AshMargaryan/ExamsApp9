@@ -2,7 +2,7 @@ import { memo, useRef, useState } from "react";
 import { StopCircle } from "lucide-react";
 import { synthesizeVoice, type Message } from "../../api/assistant";
 import { AttachmentChip } from "./AttachmentChip";
-import { MarkdownMessage } from "./MarkdownMessage";
+import { AssistantContent } from "./content/AssistantContent";
 import { TypingIndicator } from "./TypingIndicator";
 
 function formatTime(iso: string): string {
@@ -124,7 +124,7 @@ function MessageBubbleImpl({
           <TypingIndicator label={activityLabel} />
         ) : message.status === "failed" || message.status === "stopped" ? (
           <div className="flex flex-col gap-2">
-            {message.content && <MarkdownMessage content={message.content} />}
+            {message.content && <AssistantContent content={message.content} />}
             {message.status === "failed" ? (
               <p className="text-incorrect">
                 ⚠️ Չհաջողվեց ստանալ պատասխան{message.error_message ? `. ${message.error_message}` : "։"}
@@ -140,7 +140,7 @@ function MessageBubbleImpl({
             {message.content}
           </p>
         ) : (
-          <MarkdownMessage content={message.content} />
+          <AssistantContent content={message.content} streaming={pending} />
         )}
       </div>
 
