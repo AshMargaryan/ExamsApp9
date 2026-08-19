@@ -22,6 +22,7 @@ import { useAsyncResource } from "../hooks/useAsyncResource";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
 import { useAuth } from "../auth/AuthContext";
 import { cn } from "../lib/cn";
+import { scrollToElement, scrollWindowToTop } from "../lib/scrollToElement";
 
 const TIERS: Tier[] = ["easy", "medium", "hard"];
 
@@ -178,7 +179,7 @@ function SubtopicContent({
 
   function goToSection(index: number) {
     setSectionIndex(index);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollWindowToTop();
   }
 
   const { done, total } = tierSummary(subtopic.tier_scores);
@@ -212,7 +213,7 @@ function SubtopicContent({
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => exercisesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onClick={() => scrollToElement(exercisesRef.current)}
             >
               Անցնել վարժություններին
             </Button>
