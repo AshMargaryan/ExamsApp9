@@ -1,75 +1,53 @@
-import { CircleAlert, Clock, GraduationCap, Inbox, Radio } from "lucide-react";
+import { Clock, GraduationCap, Radio } from "lucide-react";
 import type { DashboardStats } from "../../api/teaching";
 import { StatTile } from "../ui/StatTile";
 
 /*
   The teacher's metrics band.
 
-  Deliberately not five identical boxes: "how many students need me right now"
-  is the one number that changes what a teacher does next, so it gets the hero
-  treatment and everything else reads as supporting detail.
+  It used to be five tiles, of which two restated a section rendered on the
+  same screen. "Ուշադրության կարիք ունեն" was a full-width hero tile whose own
+  hint read "Տես ցանկը ներքևում" — and that list was 150px below it; and
+  "Սպասում է հաստատման" counted the review queue further down the page. A
+  number whose whole job is to label a list already on screen is a heading,
+  not a statistic, so both counts moved onto their section headings.
+
+  What is left are the three figures with no list on this page. That also
+  fixed a presentation problem: on a real teacher account four of the five
+  tiles read 0, and a band of zeros reads as broken rather than as calm.
+
+  Tone still does the work of the old hero treatment — a non-zero overdue
+  count is the one number here that changes what a teacher does next, so it
+  is the only one that can turn red.
 */
 
-export function DashboardStatCards({
-  stats,
-  attentionCount,
-}: {
-  stats: DashboardStats;
-  /** null while the needs-attention request is still in flight. */
-  attentionCount: number | null;
-}) {
+export function DashboardStatCards({ stats }: { stats: DashboardStats }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <StatTile
-        size="hero"
+        size="sm"
         align="start"
-        tone={attentionCount ? "incorrect" : "correct"}
-        icon={<CircleAlert size={22} strokeWidth={1.75} />}
-        label="Ուշադրության կարիք ունեն"
-        value={attentionCount === null ? "—" : String(attentionCount)}
-        hint={
-          attentionCount === null
-            ? "Հաշվարկվում է..."
-            : attentionCount === 0
-              ? "Բոլորը լավ առաջընթաց ունեն"
-              : "Տես ցանկը ներքևում"
-        }
-        className="justify-center"
+        icon={<GraduationCap size={18} strokeWidth={1.75} />}
+        label="Աշակերտներ"
+        value={String(stats.student_count)}
       />
-
-      <div className="grid grid-cols-2 gap-3 lg:col-span-2">
-        <StatTile
-          size="sm"
-          align="start"
-          icon={<GraduationCap size={18} strokeWidth={1.75} />}
-          label="Աշակերտներ"
-          value={String(stats.student_count)}
-        />
-        <StatTile
-          size="sm"
-          align="start"
-          tone={stats.online_now_count > 0 ? "correct" : "default"}
-          icon={<Radio size={18} strokeWidth={1.75} />}
-          label="Հիմա սովորում են"
-          value={String(stats.online_now_count)}
-        />
-        <StatTile
-          size="sm"
-          align="start"
-          tone={stats.pending_review_count > 0 ? "primary" : "default"}
-          icon={<Inbox size={18} strokeWidth={1.75} />}
-          label="Սպասում է հաստատման"
-          value={String(stats.pending_review_count)}
-        />
-        <StatTile
-          size="sm"
-          align="start"
-          tone={stats.overdue_count > 0 ? "incorrect" : "default"}
-          icon={<Clock size={18} strokeWidth={1.75} />}
-          label="Ուշացած առաջադրանք"
-          value={String(stats.overdue_count)}
-        />
-      </div>
+      <StatTile
+        size="sm"
+        align="start"
+        tone={stats.online_now_count > 0 ? "correct" : "default"}
+        icon={<Radio size={18} strokeWidth={1.75} />}
+        label="Հիմա սովորում են"
+        value={String(stats.online_now_count)}
+      />
+      <StatTile
+        size="sm"
+        align="start"
+        tone={stats.overdue_count > 0 ? "incorrect" : "default"}
+        icon={<Clock size={18} strokeWidth={1.75} />}
+        label="Ուշացած առաջադրանք"
+        value={String(stats.overdue_count)}
+        className="col-span-2 sm:col-span-1"
+      />
     </div>
   );
 }

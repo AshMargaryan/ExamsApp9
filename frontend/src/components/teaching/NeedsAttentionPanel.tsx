@@ -4,6 +4,7 @@ import {
   CalendarX,
   CircleHelp,
   MoonStar,
+  PartyPopper,
   Repeat2,
   TrendingDown,
   Target,
@@ -44,7 +45,7 @@ function SignalChip({ signal }: { signal: AttentionSignal }) {
       title={signal.detail}
       className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
         urgent
-          ? "border-incorrect/40 bg-incorrect/10 text-incorrect"
+          ? "border-[color-mix(in_srgb,var(--color-incorrect)_45%,transparent)] bg-incorrect-bg text-incorrect"
           : "border-border bg-surface-muted text-text-muted"
       }`}
     >
@@ -59,7 +60,7 @@ export function NeedsAttentionPanel({ rows }: { rows: StudentAttention[] }) {
     return (
       <EmptyState
         tone="positive"
-        icon="🎉"
+        icon={<PartyPopper size={26} strokeWidth={1.5} />}
         title="Ոչ ոք ուշադրության կարիք չունի"
         hint="Բոլոր աշակերտներն ակտիվ են և առաջընթաց ունեն։ Այստեղ կհայտնվեն նրանք, ում մոտ խնդիր նկատվի։"
       />

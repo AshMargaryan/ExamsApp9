@@ -10,7 +10,7 @@ import { useAuth } from "../auth/AuthContext";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { SectionHeader } from "../components/ui/SectionHeader";
+import { Section } from "../components/ui/Section";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { subjectMeta } from "../lib/subjects";
 import { LinkButton } from "../components/ui/LinkButton";
@@ -283,15 +283,20 @@ export function GroupDetailPage() {
       )}
 
       <Card className="mb-6">
-        <SectionHeader title="Ժամանակացույց" />
+        <Section spacing="none" level={3} title="Ժամանակացույց">
         <p className="text-text">
           {WEEKDAY_LABELS[group.schedule_day]}, {formatTime(group.schedule_start_time)}–
           {formatTime(group.schedule_end_time)}
         </p>
+        </Section>
       </Card>
 
       <Card className="mb-6">
-        <SectionHeader title={`Անդամներ (${group.members.length}/${group.max_members})`} />
+        <Section
+          spacing="none"
+          level={3}
+          title={`Անդամներ (${group.members.length}/${group.max_members})`}
+        >
         <div className="flex flex-col divide-y divide-border">
           {group.members.map((m) => (
             <div key={m.user.id} className="flex items-center justify-between py-2.5">
@@ -304,20 +309,23 @@ export function GroupDetailPage() {
             </div>
           ))}
         </div>
+        </Section>
       </Card>
 
       {isMember && (
         <Card className="mb-6">
-          <SectionHeader
+          <Section
+            spacing="none"
+            level={3}
             title="Զանգեր"
             action={
-              !showStartCall && (
+              !showStartCall ? (
                 <Button size="sm" onClick={() => setShowStartCall(true)}>
                   + Սկսել զանգ
                 </Button>
-              )
+              ) : null
             }
-          />
+          >
 
           {showStartCall && (
             <div className="mb-4 flex flex-wrap items-end gap-3 rounded-[var(--radius)] border border-border bg-bg p-4">
@@ -360,6 +368,7 @@ export function GroupDetailPage() {
               ))}
             </div>
           )}
+          </Section>
         </Card>
       )}
 

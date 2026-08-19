@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -24,9 +24,57 @@ import { WeakSpotsPanel } from "../components/teaching/WeakSpotsPanel";
 import { Avatar } from "../components/ui/Avatar";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { SectionHeader } from "../components/ui/SectionHeader";
+import { ErrorState } from "../components/ui/ErrorState";
+import { Section } from "../components/ui/Section";
 import { LoadingRegion, Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { TabPanel, Tabs, type TabItem } from "../components/ui/Tabs";
+import { useAsyncResource } from "../hooks/useAsyncResource";
+import { cn } from "../lib/cn";
+
+/*
+  THE TEACHER'S VAHANAK
+
+  This page had already been through a redesign and is structurally sound.
+  Three things were still wrong.
+
+  1. **Two of the five stat tiles restated a section on the same screen.**
+     "Ուշադրության կարիք ունեն: 1" was a full-width hero tile whose own hint
+     read "Տես ցանկը ներքևում" — and that list sat 150px below it. Likewise
+     "Սպասում է հաստատման" counted the queue rendered further down. A number
+     whose entire job is to label a list that is already visible is not a
+     statistic; it is a heading. Both counts moved into their section
+     headings, and the band is now the three figures that have no list on
+     this page.
+
+     That also thinned out a wall of zeros: on a real teacher account four of
+     the five tiles read 0, which made the band look broken rather than calm.
+
+  2. **Three unguarded `.then(setX)` calls.** Any failure left the whole
+     dashboard on skeletons forever, with no error and no retry.
+
+  3. `SectionHeader` — a `title` + `action` box with no description, no
+     spacing control and no heading level — was used seven times here. The
+     page is on `ui/Section` now, and `SectionHeader` is gone from the
+     codebase.
+*/
+
+/** A count shown beside a section heading, so a number and the list it
+ *  counts occupy one place instead of two. */
+function CountBadge({ value, tone = "neutral" }: { value: number; tone?: "neutral" | "alert" }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 min-w-6 items-center justify-center rounded-[var(--radius-full)] px-[var(--space-2)]",
+        "text-[length:var(--text-xs)] font-semibold tabular-nums",
+        tone === "alert" && value > 0
+          ? "bg-incorrect-bg text-incorrect"
+          : "bg-surface-muted text-text-muted",
+      )}
+    >
+      {value}
+    </span>
+  );
+}
 
 type TeacherTab = "overview" | "roster" | "leaderboard";
 
@@ -60,30 +108,32 @@ function StudentBox({ entry, onClick }: { entry: StudentRosterEntry; onClick: ()
 
 export function TeacherDashboardPage() {
   const navigate = useNavigate();
-  const [roster, setRoster] = useState<StudentRosterEntry[] | null>(null);
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [attention, setAttention] = useState<StudentAttention[] | null>(null);
   const [tab, setTab] = useState<TeacherTab>("overview");
   const [teachingOpen, setTeachingOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
 
-  function refreshRoster() {
-    teachingApi.fetchStudentRoster().then(setRoster);
-  }
+  const rosterResource = useAsyncResource<StudentRosterEntry[]>(
+    useCallback(() => teachingApi.fetchStudentRoster(), []),
+  );
+  const summaryResource = useAsyncResource<DashboardSummary>(
+    useCallback(() => teachingApi.fetchDashboardSummary(), []),
+  );
+  const attentionResource = useAsyncResource<StudentAttention[]>(
+    useCallback(() => teachingApi.fetchNeedsAttention(), []),
+  );
 
-  function refreshSummary() {
-    teachingApi.fetchDashboardSummary().then(setSummary);
-    teachingApi.fetchNeedsAttention().then(setAttention);
-  }
+  const roster = rosterResource.data;
+  const summary = summaryResource.data;
+  const attention = attentionResource.data;
 
-  useEffect(() => {
-    refreshRoster();
-    refreshSummary();
-  }, []);
+  const refreshSummary = useCallback(() => {
+    summaryResource.retry();
+    attentionResource.retry();
+  }, [summaryResource, attentionResource]);
 
   function handleTeachingClose() {
     setTeachingOpen(false);
-    refreshRoster();
+    rosterResource.retry();
     refreshSummary();
   }
 
@@ -92,8 +142,10 @@ export function TeacherDashboardPage() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-text">Ուսուցչի վահանակ</h1>
-            <p className="mt-0.5 text-sm text-text-muted">
+            <h1 className="font-display text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text">
+              Ուսուցչի վահանակ
+            </h1>
+            <p className="mt-[var(--space-2)] text-[length:var(--text-base)] text-text-muted">
               Ձեր դասարանի վիճակը մեկ հայացքով
             </p>
           </div>
@@ -120,58 +172,71 @@ export function TeacherDashboardPage() {
         <Tabs items={TABS} value={tab} onChange={setTab} label="Վահանակի բաժիններ" className="mb-6">
           <TabPanel value="overview">
             <div className="flex flex-col gap-8">
-              {summary ? (
-                <DashboardStatCards stats={summary.stats} attentionCount={attention?.length ?? null} />
+              {summaryResource.error !== null && attentionResource.error !== null ? (
+                <ErrorState
+                  title="Չհաջողվեց բեռնել վահանակը։"
+                  hint="Ձեր աշակերտների ցանկը մնում է հասանելի «Աշակերտներ» բաժնում։"
+                  onRetry={refreshSummary}
+                />
+              ) : summary ? (
+                <DashboardStatCards stats={summary.stats} />
               ) : (
-                <LoadingRegion className="grid gap-3 lg:grid-cols-3">
-                  <Skeleton className="h-32" />
-                  <div className="grid grid-cols-2 gap-3 lg:col-span-2">
-                    {[0, 1, 2, 3].map((i) => (
-                      <Skeleton key={i} className="h-[74px]" />
-                    ))}
-                  </div>
+                <LoadingRegion className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {[0, 1, 2].map((i) => (
+                    <Skeleton key={i} className="h-[74px]" />
+                  ))}
                 </LoadingRegion>
               )}
 
-              <section>
-                <SectionHeader
-                  title={
-                    <span className="flex items-center gap-2">
-                      <Target size={18} strokeWidth={1.75} className="text-text-muted" />
-                      Ուշադրության կարիք ունեն
-                    </span>
-                  }
-                />
-                {attention ? (
+              <Section
+                spacing="none"
+                title={
+                  <span className="flex items-center gap-2">
+                    <Target size={18} strokeWidth={1.75} className="text-text-muted" />
+                    Ուշադրության կարիք ունեն
+                  </span>
+                }
+                description="Ում մոտ Gitus-ը խնդիր է նկատել, և ինչու"
+                action={attention ? <CountBadge value={attention.length} tone="alert" /> : null}
+              >
+                {attentionResource.error !== null ? (
+                  <ErrorState
+                    size="sm"
+                    title="Չհաջողվեց բեռնել ցանկը։"
+                    onRetry={attentionResource.retry}
+                  />
+                ) : attention ? (
                   <NeedsAttentionPanel rows={attention} />
                 ) : (
                   <LoadingRegion>
                     <SkeletonRows count={2} trailing={false} />
                   </LoadingRegion>
                 )}
-              </section>
+              </Section>
 
-              <section>
-                <SectionHeader
-                  title={
-                    <span className="flex items-center gap-2">
-                      <BarChart3 size={18} strokeWidth={1.75} className="text-text-muted" />
-                      Դասարանի առաջընթաց
-                    </span>
-                  }
-                />
+              <Section
+                spacing="none"
+                title={
+                  <span className="flex items-center gap-2">
+                    <BarChart3 size={18} strokeWidth={1.75} className="text-text-muted" />
+                    Դասարանի առաջընթաց
+                  </span>
+                }
+              >
                 <ClassTrendsPanel />
-              </section>
+              </Section>
 
-              <section>
-                <SectionHeader
-                  title={
-                    <span className="flex items-center gap-2">
-                      <Inbox size={18} strokeWidth={1.75} className="text-text-muted" />
-                      Ստուգման սպասող
-                    </span>
-                  }
-                />
+              <Section
+                spacing="none"
+                title={
+                  <span className="flex items-center gap-2">
+                    <Inbox size={18} strokeWidth={1.75} className="text-text-muted" />
+                    Ստուգման սպասող
+                  </span>
+                }
+                description="Աշակերտների ուղարկած աշխատանքները"
+                action={summary ? <CountBadge value={summary.pending_review.length} /> : null}
+              >
                 {summary ? (
                   <PendingReviewQueue items={summary.pending_review} />
                 ) : (
@@ -179,18 +244,19 @@ export function TeacherDashboardPage() {
                     <SkeletonRows count={2} />
                   </LoadingRegion>
                 )}
-              </section>
+              </Section>
 
               <div className="grid gap-8 lg:grid-cols-2">
-                <section>
-                  <SectionHeader
-                    title={
-                      <span className="flex items-center gap-2">
-                        <Target size={18} strokeWidth={1.75} className="text-text-muted" />
-                        Դասարանի թույլ կողմերը
-                      </span>
-                    }
-                  />
+                <Section
+                  spacing="none"
+                  level={3}
+                  title={
+                    <span className="flex items-center gap-2">
+                      <Target size={18} strokeWidth={1.75} className="text-text-muted" />
+                      Դասարանի թույլ կողմերը
+                    </span>
+                  }
+                >
                   {summary ? (
                     <WeakSpotsPanel spots={summary.weak_spots} />
                   ) : (
@@ -198,17 +264,18 @@ export function TeacherDashboardPage() {
                       <SkeletonRows count={3} trailing={false} />
                     </LoadingRegion>
                   )}
-                </section>
+                </Section>
 
-                <section>
-                  <SectionHeader
-                    title={
-                      <span className="flex items-center gap-2">
-                        <Activity size={18} strokeWidth={1.75} className="text-text-muted" />
-                        Վերջին ակտիվությունը
-                      </span>
-                    }
-                  />
+                <Section
+                  spacing="none"
+                  level={3}
+                  title={
+                    <span className="flex items-center gap-2">
+                      <Activity size={18} strokeWidth={1.75} className="text-text-muted" />
+                      Վերջին ակտիվությունը
+                    </span>
+                  }
+                >
                   {summary ? (
                     <ActivityFeed events={summary.activity_feed} />
                   ) : (
@@ -216,14 +283,20 @@ export function TeacherDashboardPage() {
                       <SkeletonRows count={3} trailing={false} />
                     </LoadingRegion>
                   )}
-                </section>
+                </Section>
               </div>
             </div>
           </TabPanel>
 
           <TabPanel value="roster">
-            <SectionHeader title={`Աշակերտներ (${roster?.length ?? 0})`} />
-            {!roster ? (
+            <Section
+              spacing="none"
+              title="Աշակերտներ"
+              action={roster ? <CountBadge value={roster.length} /> : null}
+            >
+            {rosterResource.error !== null ? (
+              <ErrorState title="Չհաջողվեց բեռնել աշակերտների ցանկը։" onRetry={rosterResource.retry} />
+            ) : !roster ? (
               <LoadingRegion className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {[0, 1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-36" />
@@ -247,11 +320,13 @@ export function TeacherDashboardPage() {
                 cta={{ label: "Հրավիրել աշակերտ", onClick: () => setTeachingOpen(true) }}
               />
             )}
+            </Section>
           </TabPanel>
 
           <TabPanel value="leaderboard">
-            <SectionHeader title="Դասարանի դասակարգում (այս ամիս)" />
-            <ClassLeaderboard onSelectStudent={(id) => navigate(`/profile/${id}`)} />
+            <Section spacing="none" title="Դասարանի դասակարգում" description="Այս ամսվա XP-ն ձեր աշակերտների միջև">
+              <ClassLeaderboard onSelectStudent={(id) => navigate(`/profile/${id}`)} />
+            </Section>
           </TabPanel>
         </Tabs>
       </div>
@@ -264,7 +339,7 @@ export function TeacherDashboardPage() {
       />
 
       {teachingOpen && (
-        <TeachingModal role="teacher" onClose={handleTeachingClose} onChange={refreshRoster} />
+        <TeachingModal role="teacher" onClose={handleTeachingClose} onChange={rosterResource.retry} />
       )}
     </div>
   );

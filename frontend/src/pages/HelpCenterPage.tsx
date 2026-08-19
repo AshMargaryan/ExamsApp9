@@ -6,7 +6,7 @@ import {
   type ArticleSummary, type Category,
 } from "../api/help";
 import { Card } from "../components/ui/Card";
-import { SectionHeader } from "../components/ui/SectionHeader";
+import { Section } from "../components/ui/Section";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
 
@@ -75,8 +75,7 @@ export function HelpCenterPage() {
       />
 
       {searchResults ? (
-        <div className="flex flex-col gap-3">
-          <SectionHeader title={`Արդյունքներ՝ "${debouncedQuery}"`} />
+        <Section spacing="none" title={`Արդյունքներ՝ "${debouncedQuery}"`}>
           {searchResults.length === 0 ? (
             <EmptyState
               icon={<SearchX size={26} strokeWidth={1.75} />}
@@ -85,13 +84,16 @@ export function HelpCenterPage() {
               cta={{ label: "Բացել հարցում", onClick: () => (window.location.href = "/help/tickets") }}
             />
           ) : (
-            searchResults.map((a) => <ArticleRow key={a.id} article={a} />)
+            <div className="flex flex-col gap-3">
+              {searchResults.map((a) => (
+                <ArticleRow key={a.id} article={a} />
+              ))}
+            </div>
           )}
-        </div>
+        </Section>
       ) : (
         <div className="flex flex-col gap-8">
-          <div>
-            <SectionHeader title="Կատեգորիաներ" />
+          <Section spacing="none" title="Կատեգորիաներ">
             {!categories ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {[...Array(6)].map((_, i) => (
@@ -113,10 +115,9 @@ export function HelpCenterPage() {
                 ))}
               </div>
             )}
-          </div>
+          </Section>
 
-          <div>
-            <SectionHeader title="Հաճախ դիտվող հոդվածներ" />
+          <Section spacing="none" title="Հաճախ դիտվող հոդվածներ">
             {!popular ? (
               <div className="flex flex-col gap-3">
                 {[...Array(3)].map((_, i) => (
@@ -130,7 +131,7 @@ export function HelpCenterPage() {
                 {popular.map((a) => <ArticleRow key={a.id} article={a} />)}
               </div>
             )}
-          </div>
+          </Section>
 
           <Card className="flex flex-col items-start gap-2">
             <p className="font-medium text-text">Չգտա՞ք ինչ փնտրում էիք</p>

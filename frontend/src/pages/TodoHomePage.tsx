@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AlarmClock, CalendarClock, CalendarDays, CheckCircle2, FolderKanban, Star } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import {
   deleteTask, duplicateTask, getDashboard, toggleTaskComplete, type Task, type TodoDashboard,
@@ -11,7 +12,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Modal } from "../components/ui/Modal";
 import { ProgressBar } from "../components/ui/ProgressBar";
-import { SectionHeader } from "../components/ui/SectionHeader";
+import { Section } from "../components/ui/Section";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 
 function greeting(): string {
@@ -142,16 +143,14 @@ export function TodoHomePage() {
       ) : (
         <div className="flex flex-col gap-6">
           {dashboard.overdue.length > 0 && (
-            <section>
-              <SectionHeader title={`⏰ Ուշացած (${dashboard.overdue.length})`} />
+            <Section spacing="none" level={3} title={<span className="flex items-center gap-2"><AlarmClock size={17} strokeWidth={1.75} className="text-incorrect" />Ուշացած ({dashboard.overdue.length})</span>}>
               <div className="flex flex-col gap-2">
                 {dashboard.overdue.map((t) => <TaskCard key={t.id} task={t} {...cardProps} />)}
               </div>
-            </section>
+            </Section>
           )}
 
-          <section>
-            <SectionHeader title={`📅 Այսօր (${dashboard.today.length})`} />
+          <Section spacing="none" level={3} title={<span className="flex items-center gap-2"><CalendarDays size={17} strokeWidth={1.75} className="text-text-muted" />Այսօր ({dashboard.today.length})</span>}>
             {dashboard.today.length === 0 ? (
               <p className="text-sm text-text-muted">Այսօրվա համար առաջադրանքներ չկան։</p>
             ) : (
@@ -159,32 +158,31 @@ export function TodoHomePage() {
                 {dashboard.today.map((t) => <TaskCard key={t.id} task={t} {...cardProps} />)}
               </div>
             )}
-          </section>
+          </Section>
 
           {dashboard.important.length > 0 && (
-            <section>
-              <SectionHeader title="⭐ Կարևոր" />
+            <Section spacing="none" level={3} title={<span className="flex items-center gap-2"><Star size={17} strokeWidth={1.75} className="text-text-muted" />Կարևոր</span>}>
               <div className="flex flex-col gap-2">
                 {dashboard.important.map((t) => <TaskCard key={t.id} task={t} {...cardProps} />)}
               </div>
-            </section>
+            </Section>
           )}
 
           {dashboard.upcoming.length > 0 && (
-            <section>
-              <SectionHeader title="🔜 Առաջիկա 7 օրում" />
+            <Section spacing="none" level={3} title={<span className="flex items-center gap-2"><CalendarClock size={17} strokeWidth={1.75} className="text-text-muted" />Առաջիկա 7 օրում</span>}>
               <div className="flex flex-col gap-2">
                 {dashboard.upcoming.map((t) => <TaskCard key={t.id} task={t} {...cardProps} />)}
               </div>
-            </section>
+            </Section>
           )}
 
           {dashboard.by_project.length > 0 && (
-            <section>
-              <SectionHeader
-                title="📁 Ըստ նախագծերի"
+            <Section
+                spacing="none"
+                level={3}
+                title={<span className="flex items-center gap-2"><FolderKanban size={17} strokeWidth={1.75} className="text-text-muted" />Ըստ նախագծերի</span>}
                 action={<LinkButton to="/todo/projects">Բոլորը</LinkButton>}
-              />
+              >
               <div className="flex flex-col gap-4">
                 {dashboard.by_project.map(({ project, tasks }) => (
                   <div key={project.id}>
@@ -195,16 +193,15 @@ export function TodoHomePage() {
                   </div>
                 ))}
               </div>
-            </section>
+            </Section>
           )}
 
           {dashboard.completed_today.length > 0 && (
-            <section>
-              <SectionHeader title={`✅ Կատարված այսօր (${dashboard.completed_today.length})`} />
+            <Section spacing="none" level={3} title={<span className="flex items-center gap-2"><CheckCircle2 size={17} strokeWidth={1.75} className="text-correct" />Կատարված այսօր ({dashboard.completed_today.length})</span>}>
               <div className="flex flex-col gap-2">
                 {dashboard.completed_today.map((t) => <TaskCard key={t.id} task={t} {...cardProps} />)}
               </div>
-            </section>
+            </Section>
           )}
         </div>
       )}
