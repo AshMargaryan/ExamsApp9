@@ -97,9 +97,9 @@ function TeacherProgressSection({ studentId }: { studentId: number }) {
           }}
         />
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <SkillColumn title="Յուրացված" color="🟢" items={skills_mastery.mastered} />
-          <SkillColumn title="Պարապում է" color="🟡" items={skills_mastery.practicing} />
-          <SkillColumn title="Կարիք ունի ուշադրության" color="🔴" items={skills_mastery.needs_improvement} />
+          <SkillColumn title="Յուրացված" tone="mastered" items={skills_mastery.mastered} />
+          <SkillColumn title="Պարապում է" tone="practicing" items={skills_mastery.practicing} />
+          <SkillColumn title="Կարիք ունի ուշադրության" tone="needs_improvement" items={skills_mastery.needs_improvement} />
         </div>
       </div>
 

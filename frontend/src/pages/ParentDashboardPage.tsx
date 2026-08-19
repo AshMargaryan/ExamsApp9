@@ -1,5 +1,17 @@
-import { useEffect, useState } from "react";
-import { BookOpen, CalendarDays, Clock, Flame, Plus, Target } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Award,
+  Bell,
+  BookOpen,
+  CalendarDays,
+  ChevronDown,
+  Clock,
+  Flame,
+  MoreHorizontal,
+  Plus,
+  Target,
+  Unlink,
+} from "lucide-react";
 import { API_ORIGIN } from "../api/client";
 import * as parentsApi from "../api/parents";
 import type {
@@ -19,10 +31,39 @@ import { useAuth } from "../auth/AuthContext";
 import { Avatar } from "../components/ui/Avatar";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { DataCard } from "../components/ui/DataCard";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Dropdown } from "../components/ui/Dropdown";
+import { ErrorState } from "../components/ui/ErrorState";
+import { Section } from "../components/ui/Section";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { Tabs } from "../components/ui/Tabs";
+import { useAsyncResource } from "../hooks/useAsyncResource";
+import { cn } from "../lib/cn";
+
+/*
+  THE PARENT'S VAHANAK
+
+  The child was below the fold, and a machine log was above it. Ten raw
+  event lines — "daniel: Ավարտեց «Ծանրության ուժ և մարմնի քաշը» թեման
+  (easy մակարդակ), 75.0% արդյունքով" — filled the entire first screen of
+  the page whose whole purpose is to answer "how is my child doing".
+  Several of them were near-duplicates of each other and two were byte
+  identical, because the backend emits one per tier completed.
+
+  A parent opening this page wants the child first. The feed moved below
+  the dashboard, is deduplicated on its text, and shows five entries with
+  the rest behind a disclosure. The one thing the feed was genuinely good
+  for — "is there anything new?" — is now an unread count in the header,
+  where it costs one line instead of one screen.
+
+  The other serious problem was that unlinking a child — permanently
+  ending a parent/child relationship — was an unstyled text link inside a
+  coloured band, behind a native `confirm()` with untranslated OK/Cancel,
+  followed by `window.location.reload()`.
+*/
 
 const GOAL_TYPES: GoalType[] = ["lessons_per_week", "xp_per_month", "subject_accuracy"];
 
@@ -236,21 +277,26 @@ function GoalForm({
   );
 }
 
-function ChildDashboardView({ child }: { child: ChildSummary }) {
-  const [dashboard, setDashboard] = useState<ChildDashboard | null>(null);
+function ChildDashboardView({ child, onUnlinked }: { child: ChildSummary; onUnlinked: () => void }) {
   const [goals, setGoals] = useState<LearningGoal[] | null>(null);
   const [subjects, setSubjects] = useState<SubjectNode[]>([]);
   const [report, setReport] = useState<string | null>(null);
   const [reportBusy, setReportBusy] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+
+  const dashboardResource = useAsyncResource<ChildDashboard>(
+    useCallback(() => parentsApi.getChildDashboard(child.id), [child.id]),
+    [child.id],
+  );
+  const dashboard = dashboardResource.data;
 
   useEffect(() => {
-    setDashboard(null);
     setGoals(null);
     setReport(null);
-    parentsApi.getChildDashboard(child.id).then(setDashboard);
-    parentsApi.getChildGoals(child.id).then(setGoals);
-    getHierarchy().then(setSubjects);
+    parentsApi.getChildGoals(child.id).then(setGoals).catch(() => setGoals([]));
+    getHierarchy().then(setSubjects).catch(() => setSubjects([]));
   }, [child.id]);
 
   async function handleGenerateReport(email: boolean) {
@@ -274,10 +320,33 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
     setGoals((prev) => (prev ?? []).filter((g) => g.id !== id));
   }
 
+  /*
+    Unlinking permanently ends a parent/child relationship. It used to be an
+    unstyled text link inside the coloured hero band, behind a native
+    `confirm()` — a browser dialog with untranslated OK/Cancel buttons, no
+    focus trap and no explanation of what is lost — followed by a full
+    `window.location.reload()`. It is now behind the child's overflow menu,
+    with a real dialog that says what happens, and it refreshes state
+    instead of reloading the application.
+  */
   async function handleUnlink() {
-    if (!confirm(`Հեռացնե՞լ ${child.first_name || child.username}-ի կապը։`)) return;
-    await parentsApi.unlinkChild(child.id);
-    window.location.reload();
+    setUnlinking(true);
+    try {
+      await parentsApi.unlinkChild(child.id);
+      setConfirmUnlink(false);
+      onUnlinked();
+    } finally {
+      setUnlinking(false);
+    }
+  }
+
+  if (dashboardResource.error !== null && !dashboardResource.isLoading) {
+    return (
+      <ErrorState
+        title={`Չհաջողվեց բեռնել ${child.first_name || child.username}-ի տվյալները։`}
+        onRetry={dashboardResource.retry}
+      />
+    );
   }
 
   if (!dashboard) {
@@ -299,7 +368,7 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
       {/* Hero */}
       <section
         className="rounded-[calc(var(--radius)*1.15)] p-6 sm:p-7"
-        style={{ background: "var(--gradient-hero)", boxShadow: "0 12px 30px rgba(0,0,0,0.18)" }}
+        style={{ background: "var(--gradient-brand)", boxShadow: "var(--shadow-lg)" }}
       >
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -307,59 +376,76 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
               src={overview.avatar ? (overview.avatar.startsWith("/") ? `${API_ORIGIN}${overview.avatar}` : overview.avatar) : null}
               name={[overview.first_name, overview.last_name].filter(Boolean).join(" ") || overview.username}
               size="lg"
-              className="border-2 border-white/40 bg-white/10"
+              className="border-2 border-on-brand-line bg-on-brand-fill"
             />
             <div>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-on-brand">
                 {[overview.first_name, overview.last_name].filter(Boolean).join(" ") || overview.username}
               </p>
-              <p className="text-sm text-white/80">
+              <p className="text-sm text-on-brand-muted">
                 {[overview.grade ? `${overview.grade}-րդ դասարան` : null, overview.school].filter(Boolean).join(" · ")}
               </p>
-              <p className="text-xs text-white/70">
+              <p className="text-xs text-on-brand-muted">
                 Վերջին ակտիվություն՝ {overview.last_active_date ?? "դեռ չկա"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-6">
             <div className="text-center">
-              <p className="flex items-center justify-center gap-1.5 text-2xl font-semibold text-white">
+              <p className="flex items-center justify-center gap-1.5 text-2xl font-semibold text-on-brand">
                 <Flame size={20} strokeWidth={1.75} /> {overview.current_streak}
               </p>
-              <p className="text-xs text-white/70">օրյա շարք</p>
+              <p className="text-xs text-on-brand-muted">օրյա շարք</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-semibold text-white">{overview.level}</p>
-              <p className="text-xs text-white/70">{overview.total_xp} XP</p>
+              <p className="text-2xl font-semibold text-on-brand">{overview.level}</p>
+              <p className="text-xs text-on-brand-muted">{overview.total_xp} XP</p>
             </div>
             {predicted_exam_score !== null && (
               <div className="flex flex-col items-center gap-1">
-                <ProgressRing value={predicted_exam_score} max={100} size={56} color="#fff" />
-                <p className="text-[10px] text-white/70">կանխ. միավոր</p>
+                <ProgressRing value={predicted_exam_score} max={100} size={56} color="var(--color-on-brand)" />
+                <p className="text-[10px] text-on-brand-muted">կանխ. միավոր</p>
               </div>
             )}
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/20 pt-4 text-sm">
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-on-brand-line pt-4 text-sm">
           {best_study_hour !== null && (
-            <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-white/80">
-              <Clock size={14} strokeWidth={1.75} /> Լավագույն ժամ՝ <strong className="text-white">{best_study_hour}:00</strong>
+            <span className="flex items-center gap-1.5 rounded-[var(--radius-full)] bg-on-brand-fill px-3 py-1 text-on-brand-muted">
+              <Clock size={14} strokeWidth={1.75} /> Լավագույն ժամ՝ <strong className="text-on-brand">{best_study_hour}:00</strong>
             </span>
           )}
-          <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
-            <Flame className="inline" size={14} strokeWidth={1.75} /> Ռեկորդային շարք՝ <strong className="text-white">{overview.longest_streak}</strong> օր
+          <span className="rounded-[var(--radius-full)] bg-on-brand-fill px-3 py-1 text-on-brand-muted">
+            <Flame className="inline" size={14} strokeWidth={1.75} /> Ռեկորդային շարք՝ <strong className="text-on-brand">{overview.longest_streak}</strong> օր
           </span>
-          <button onClick={handleUnlink} className="ml-auto text-xs text-white/70 hover:text-white">
-            Հեռացնել կապը
-          </button>
+          <div className="ml-auto">
+            <Dropdown
+              align="end"
+              renderTrigger={(props) => (
+                <button
+                  {...props}
+                  aria-label="Երեխայի կարգավորումներ"
+                  className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-on-brand-line text-on-brand-muted transition-colors hover:bg-on-brand-fill hover:text-on-brand"
+                >
+                  <MoreHorizontal size={16} strokeWidth={2} />
+                </button>
+              )}
+              items={[
+                {
+                  key: "unlink",
+                  label: "Հեռացնել կապը",
+                  tone: "danger",
+                  icon: <Unlink size={15} strokeWidth={1.75} />,
+                  onSelect: () => setConfirmUnlink(true),
+                },
+              ]}
+            />
+          </div>
         </div>
       </section>
 
       {/* Subject performance */}
-      <Card as="section">
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
-          <BookOpen size={18} strokeWidth={1.75} /> Առարկայական առաջընթաց
-        </h2>
+      <DataCard icon={BookOpen} title="Առարկայական առաջընթաց" description="Ինչ առարկաներով է աշխատում, և ինչ արդյունքով">
         {subject_performance.length === 0 ? (
           <EmptyState size="sm" title="Տվյալներ դեռ չկան" />
         ) : (
@@ -381,13 +467,10 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
             </div>
           </div>
         )}
-      </Card>
+      </DataCard>
 
       {/* Skills mastery */}
-      <Card as="section">
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
-          <Target size={18} strokeWidth={1.75} /> Հմտությունների յուրացում
-        </h2>
+      <DataCard icon={Target} title="Հմտությունների յուրացում" description="Որ թեմաներն են արդեն ամուր, և որոնց վրա արժե աշխատել">
         <div className="mb-4">
           <SkillsMasteryDonut
             counts={{
@@ -398,18 +481,19 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
           />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SkillColumn title="Յուրացված" color="🟢" items={skills_mastery.mastered} />
-          <SkillColumn title="Պարապում է" color="🟡" items={skills_mastery.practicing} />
-          <SkillColumn title="Կարիք ունի ուշադրության" color="🔴" items={skills_mastery.needs_improvement} />
+          <SkillColumn title="Յուրացված" tone="mastered" items={skills_mastery.mastered} />
+          <SkillColumn title="Պարապում է" tone="practicing" items={skills_mastery.practicing} />
+          <SkillColumn
+            title="Կարիք ունի ուշադրության"
+            tone="needs_improvement"
+            items={skills_mastery.needs_improvement}
+          />
         </div>
-      </Card>
+      </DataCard>
 
       {/* Weekly progress + activity calendar */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-text">
-            <CalendarDays size={18} strokeWidth={1.75} /> Առաջընթաց ըստ շաբաթների
-          </h2>
+        <DataCard icon={CalendarDays} title="Առաջընթաց ըստ շաբաթների">
           <Chart
             data={weekly_progress.map((p) => ({
               week: new Date(p.week_start).toLocaleDateString("hy-AM", { day: "numeric", month: "short" }),
@@ -422,26 +506,28 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
               { key: "correct", label: "Ճիշտ", color: "var(--color-accent)" },
             ]}
           />
-        </Card>
-        <Card>
-          <h2 className="mb-3 text-lg font-semibold text-text">Ակտիվության օրացույց (30 օր)</h2>
+        </DataCard>
+        <DataCard icon={Flame} title="Ակտիվության օրացույց" description="Վերջին 30 օրը">
           <ActivityHeatmap
             points={activity_calendar.map((p) => ({ ...p, tooltip: `${p.date}՝ ${p.count} հարց` }))}
             rangeDays={30}
           />
-        </Card>
+        </DataCard>
       </section>
 
       {/* Achievements */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-text">Վերջին նվաճումները</h2>
+      <Section spacing="none" title="Վերջին նվաճումները">
         {recent_achievements.length === 0 ? (
           <EmptyState tone="positive" size="sm" title="Դեռ նվաճումներ չկան" />
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {recent_achievements.map((ua) => (
               <Card key={ua.id} className="text-center">
-                <p className="text-2xl">{ua.achievement.icon || "🏆"}</p>
+                <p className="flex justify-center text-2xl">
+                  {/* The achievement's own icon is content set per achievement;
+                      only the *fallback* was a hardcoded emoji. */}
+                  {ua.achievement.icon || <Award size={24} strokeWidth={1.75} className="text-text-muted" />}
+                </p>
                 <p className="mt-1 text-sm font-medium text-text">{ua.achievement.name}</p>
                 <p className="mt-1 text-xs font-medium" style={{ color: RARITY_COLORS[ua.achievement.rarity] }}>
                   {RARITY_LABELS[ua.achievement.rarity]}
@@ -450,11 +536,14 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
             ))}
           </div>
         )}
-      </section>
+      </Section>
 
       {/* Goals */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-text">Ուսումնական նպատակներ</h2>
+      <Section
+        spacing="none"
+        title="Ուսումնական նպատակներ"
+        description="Ձեր սահմանած նպատակները, և որքան է մնացել դրանց"
+      >
         <div className="flex flex-col gap-3">
           {goals?.map((g) => (
             <Card key={g.id} className="flex items-center gap-4">
@@ -475,15 +564,20 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
           {goals?.length === 0 && <EmptyState size="sm" title="Դեռ նպատակներ չկան" />}
           <GoalForm childId={child.id} subjects={subjects} onCreated={handleCreateGoal} />
         </div>
-      </section>
+      </Section>
 
       {/* Weekly AI report */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-text">Շաբաթական AI հաշվետվություն</h2>
+      <Section
+        spacing="none"
+        title="Շաբաթական AI հաշվետվություն"
+        description="Gitus-ի ամփոփումը ձեր երեխայի շաբաթվա մասին՝ սովորական լեզվով"
+      >
         <Card>
           {report && <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-text">{report}</p>}
           {emailSent && <p className="mb-3 text-sm text-correct">Ուղարկվեց ձեր էլ. փոստին։</p>}
-          <div className="flex gap-3">
+          {/* flex-wrap: the two Armenian button labels together are 455px
+              wide, which pushed the page 80px off a 375px screen. */}
+          <div className="flex flex-wrap gap-[var(--space-3)]">
             <Button size="sm" onClick={() => handleGenerateReport(false)} loading={reportBusy}>
               {report ? "Թարմացնել" : "Ստեղծել հաշվետվություն"}
             </Button>
@@ -492,86 +586,225 @@ function ChildDashboardView({ child }: { child: ChildSummary }) {
             </Button>
           </div>
         </Card>
-      </section>
+      </Section>
+
+      <ConfirmDialog
+        open={confirmUnlink}
+        onOpenChange={setConfirmUnlink}
+        title={`Հեռացնե՞լ ${child.first_name || child.username}-ի կապը`}
+        description="Դուք այլևս չեք տեսնի նրա առաջընթացը, և ձեր սահմանած նպատակները կջնջվեն։ Երեխայի հաշիվն ու տվյալները մնում են անփոփոխ, և կապը կարելի է վերականգնել նոր հարցումով։"
+        confirmLabel="Հեռացնել"
+        busy={unlinking}
+        onConfirm={handleUnlink}
+      />
     </div>
   );
 }
 
-function NotificationsPanel() {
-  const [notifications, setNotifications] = useState<Notification[] | null>(null);
+/*
+  The activity feed.
 
-  useEffect(() => {
-    parentsApi.getNotifications().then(setNotifications);
-  }, []);
+  Three changes from the version that used to sit above the child:
 
-  async function handleMarkAllRead() {
-    await parentsApi.markNotificationsRead();
-    setNotifications((prev) => (prev ?? []).map((n) => ({ ...n, is_read: true })));
+  1. **Deduplicated.** The backend emits one notification per tier
+     completed, so a child finishing three tiers of one topic produced
+     three lines, two of them byte identical. Collapsing on the rendered
+     text turns that back into one line with a count.
+  2. **Capped at five**, with the rest behind a disclosure. Ten log lines
+     is not information, it is a wall.
+  3. It is the last section on the page rather than the first, because the
+     question a parent came to answer is about the child, not about the
+     event stream.
+*/
+const FEED_PREVIEW = 5;
+
+interface FeedEntry {
+  key: string;
+  childName: string;
+  message: string;
+  unread: boolean;
+  count: number;
+}
+
+function dedupe(notifications: Notification[]): FeedEntry[] {
+  const seen = new Map<string, FeedEntry>();
+  for (const n of notifications) {
+    const key = `${n.child_name}::${n.message}`;
+    const existing = seen.get(key);
+    if (existing) {
+      existing.count += 1;
+      existing.unread = existing.unread || !n.is_read;
+    } else {
+      seen.set(key, {
+        key,
+        childName: n.child_name,
+        message: n.message,
+        unread: !n.is_read,
+        count: 1,
+      });
+    }
   }
+  return [...seen.values()];
+}
 
-  if (!notifications) return null;
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+function NotificationsPanel({
+  notifications,
+  isLoading,
+  error,
+  onRetry,
+  onMarkAllRead,
+}: {
+  notifications: Notification[] | null;
+  isLoading: boolean;
+  error: unknown | null;
+  onRetry: () => void;
+  onMarkAllRead: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const entries = useMemo(() => dedupe(notifications ?? []), [notifications]);
+  const unreadCount = entries.filter((e) => e.unread).length;
+  const shown = expanded ? entries : entries.slice(0, FEED_PREVIEW);
 
   return (
-    <section className="mb-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-text">
-          Ծանուցումներ {unreadCount > 0 ? `(${unreadCount})` : ""}
-        </h2>
-        {unreadCount > 0 && (
-          <Button variant="secondary" size="sm" onClick={handleMarkAllRead}>
+    <Section
+      title={
+        <span className="flex items-center gap-2">
+          <Bell size={18} strokeWidth={1.75} className="text-text-muted" />
+          Վերջին իրադարձությունները
+        </span>
+      }
+      description="Ինչ է արել ձեր երեխան Gitus-ում"
+      action={
+        unreadCount > 0 ? (
+          <Button variant="secondary" size="sm" onClick={onMarkAllRead}>
             Նշել բոլորը կարդացված
           </Button>
-        )}
-      </div>
-      {notifications.length === 0 ? (
+        ) : null
+      }
+    >
+      {isLoading ? (
+        <SkeletonRows count={3} />
+      ) : error !== null ? (
+        <ErrorState size="sm" title="Չհաջողվեց բեռնել իրադարձությունները։" onRetry={onRetry} />
+      ) : entries.length === 0 ? (
         <EmptyState tone="positive" size="sm" title="Ծանուցումներ դեռ չկան" />
       ) : (
-        <div className="flex flex-col gap-2">
-          {notifications.slice(0, 10).map((n) => (
-            <Card key={n.id} className={`p-3 text-sm ${n.is_read ? "text-text-muted" : "text-text"}`}>
-              <span className="font-medium">{n.child_name}</span>: {n.message}
-            </Card>
-          ))}
-        </div>
+        <>
+          <ul className="flex flex-col gap-[var(--space-2)]">
+            {shown.map((entry) => (
+              <li
+                key={entry.key}
+                className={cn(
+                  "flex items-start gap-[var(--space-3)] rounded-[var(--radius)] border border-border",
+                  "bg-surface p-[var(--space-3)] text-[length:var(--text-sm)]",
+                  entry.unread ? "text-text" : "text-text-muted",
+                )}
+              >
+                {entry.unread && (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="mt-[7px] h-2 w-2 shrink-0 rounded-[var(--radius-full)] bg-primary"
+                    />
+                    <span className="sr-only">Չկարդացված</span>
+                  </>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">{entry.childName}</span>: {entry.message}
+                  {entry.count > 1 && (
+                    <span className="ml-[var(--space-2)] text-[length:var(--text-xs)] text-text-muted">
+                      ×{entry.count}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {entries.length > FEED_PREVIEW && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-[var(--space-3)]"
+              iconLeft={
+                <ChevronDown
+                  size={15}
+                  strokeWidth={1.75}
+                  className={cn("transition-transform", expanded && "rotate-180")}
+                />
+              }
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? "Ցույց տալ ավելի քիչ" : `Ցույց տալ բոլորը (${entries.length})`}
+            </Button>
+          )}
+        </>
       )}
-    </section>
+    </Section>
   );
 }
 
 export function ParentDashboardPage() {
   const { logout } = useAuth();
-  const [children, setChildren] = useState<ChildSummary[] | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showInvite, setShowInvite] = useState(false);
 
-  function refreshChildren() {
-    parentsApi.getChildren().then((cs) => {
-      setChildren(cs);
-      setSelectedId((prev) => prev ?? (cs.length > 0 ? cs[0].id : null));
-    });
-  }
+  const childrenResource = useAsyncResource<ChildSummary[]>(
+    useCallback(() => parentsApi.getChildren(), []),
+  );
+  const children = childrenResource.data;
 
-  useEffect(refreshChildren, []);
+  const notificationsResource = useAsyncResource<Notification[]>(
+    useCallback(() => parentsApi.getNotifications(), []),
+  );
+
+  useEffect(() => {
+    if (children && children.length > 0) {
+      setSelectedId((prev) => prev ?? children[0].id);
+    }
+  }, [children]);
 
   const selected = children?.find((c) => c.id === selectedId) ?? null;
+  const unreadCount = (notificationsResource.data ?? []).filter((n) => !n.is_read).length;
+
+  async function handleMarkAllRead() {
+    await parentsApi.markNotificationsRead();
+    notificationsResource.retry();
+  }
 
   return (
     <div className="min-h-screen bg-bg px-4 py-6">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <LinkButton to="/profile">← Պրոֆիլ</LinkButton>
-          <h1 className="text-xl font-semibold text-text">Ծնողական վահանակ</h1>
-          <Button variant="secondary" size="sm" onClick={logout}>
-            Ելք
-          </Button>
+        <div className="mb-[var(--space-6)] flex flex-wrap items-center justify-between gap-[var(--space-3)]">
+          <div className="min-w-0">
+            <LinkButton to="/profile">← Պրոֆիլ</LinkButton>
+            <h1 className="mt-[var(--space-2)] font-display text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text">
+              Ծնողական վահանակ
+            </h1>
+          </div>
+          <div className="flex items-center gap-[var(--space-3)]">
+            {/* "Is there anything new" used to cost an entire screen of log
+                lines above the child. Here it costs one line. */}
+            {unreadCount > 0 && (
+              <span className="flex items-center gap-[var(--space-2)] rounded-[var(--radius-full)] border border-primary-line bg-primary-bg px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-sm)] font-medium text-primary">
+                <Bell size={14} strokeWidth={2} aria-hidden="true" />
+                {unreadCount} նոր
+              </span>
+            )}
+            <Button variant="secondary" size="sm" onClick={logout}>
+              Ելք
+            </Button>
+          </div>
         </div>
 
-        {children === null && <Skeleton className="mb-6 h-10 w-full" />}
+        {childrenResource.isLoading && <Skeleton className="mb-6 h-10 w-full" />}
+
+        {childrenResource.error !== null && !childrenResource.isLoading && (
+          <ErrorState title="Չհաջողվեց բեռնել ձեր երեխաների ցանկը։" onRetry={childrenResource.retry} />
+        )}
 
         {children !== null && children.length === 0 && (
           <div className="mb-6">
-            <SendRequestCard onRefreshChildren={refreshChildren} />
+            <SendRequestCard onRefreshChildren={childrenResource.retry} />
           </div>
         )}
 
@@ -584,20 +817,34 @@ export function ParentDashboardPage() {
                 onChange={(v) => setSelectedId(Number(v))}
                 items={children.map((c) => ({ value: String(c.id), label: c.first_name || c.username }))}
               />
-              <Button variant="ghost" size="sm" iconLeft={<Plus size={16} strokeWidth={1.75} />} onClick={() => setShowInvite((v) => !v)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                iconLeft={<Plus size={16} strokeWidth={1.75} />}
+                onClick={() => setShowInvite((v) => !v)}
+              >
                 Ավելացնել
               </Button>
             </div>
 
             {showInvite && (
               <div className="mb-6">
-                <SendRequestCard onRefreshChildren={refreshChildren} />
+                <SendRequestCard onRefreshChildren={childrenResource.retry} />
               </div>
             )}
 
-            <NotificationsPanel />
+            {/* The child first, the event log last. */}
+            {selected && (
+              <ChildDashboardView key={selected.id} child={selected} onUnlinked={childrenResource.retry} />
+            )}
 
-            {selected && <ChildDashboardView key={selected.id} child={selected} />}
+            <NotificationsPanel
+              notifications={notificationsResource.data}
+              isLoading={notificationsResource.isLoading}
+              error={notificationsResource.error}
+              onRetry={notificationsResource.retry}
+              onMarkAllRead={handleMarkAllRead}
+            />
           </>
         )}
       </div>
