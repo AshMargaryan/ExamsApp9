@@ -12,8 +12,12 @@ from .models import DEFAULT_CATEGORIES, Category, RecurrenceFrequency, Task
 
 def ensure_default_categories(user):
     """Lazily seeds this user's default category set the first time they
-    touch the To-Do API. A no-op (get_or_create) on every later call, so it's
-    safe to call unconditionally from the list/dashboard views."""
+    touch the To-Do API. Safe to call unconditionally from the list/dashboard
+    views — the is_default exists() check below makes every call after the
+    first a single cheap read instead of one get_or_create per default
+    category."""
+    if Category.objects.filter(user=user, is_default=True).exists():
+        return
     for name, color, icon in DEFAULT_CATEGORIES:
         Category.objects.get_or_create(
             user=user, name=name, defaults={"color": color, "icon": icon, "is_default": True},
