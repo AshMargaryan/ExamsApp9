@@ -8,6 +8,8 @@ import {
 import { useAssistantLaunch } from "../contexts/AssistantLaunchContext";
 import { MathText } from "./MathText";
 import { Button } from "./ui/Button";
+import { ErrorState } from "./ui/ErrorState";
+import { LoadingRegion, Skeleton } from "./ui/Skeleton";
 import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "./questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "./questions/TrueFalseQuestion";
@@ -38,17 +40,46 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
   const [error, setError] = useState<string | null>(null);
   const { askAboutQuestion } = useAssistantLaunch();
 
+  // `loadFailed` is tracked separately from `problem` because the catch used to
+  // do `setProblem(null)` — the same value as "still loading" — so a failed
+  // fetch rendered as a permanently loading card with no error and no retry.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
+    let active = true;
+    setLoadFailed(false);
     getDailyProblem()
-      .then(setProblem)
-      .catch(() => setProblem(null));
-  }, []);
+      .then((p) => active && setProblem(p))
+      .catch(() => active && setLoadFailed(true));
+    return () => {
+      active = false;
+    };
+  }, [reloadKey]);
+
+  if (loadFailed) {
+    return (
+      <ErrorState
+        title="Չհաջողվեց բեռնել օրվա խնդիրը։"
+        size="sm"
+        onRetry={() => setReloadKey((n) => n + 1)}
+      />
+    );
+  }
 
   if (problem === null) {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-        <p className="text-sm text-text-muted">Բեռնվում է...</p>
-      </div>
+      <LoadingRegion label="Օրվա խնդիրը բեռնվում է">
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="mt-[var(--space-4)] h-3.5 w-3/4" />
+          <div className="mt-[var(--space-4)] flex flex-col gap-[var(--space-2)]">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-11 w-full" />
+            ))}
+          </div>
+        </div>
+      </LoadingRegion>
     );
   }
 

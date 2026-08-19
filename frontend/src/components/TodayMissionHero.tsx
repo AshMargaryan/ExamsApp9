@@ -5,6 +5,7 @@ import type { LearningStreak } from "../api/streaks";
 import { missionHrefOrFallback } from "../lib/missionHref";
 import type { NextMission } from "../api/profile";
 import { Card } from "./ui/Card";
+import { LoadingRegion, Skeleton } from "./ui/Skeleton";
 
 const CHECKLIST_LABELS: Record<string, string> = {
   practice: "պարապողական հարց",
@@ -35,9 +36,19 @@ export function TodayMissionHero({
 }) {
   if (insight === null) {
     return (
-      <Card className="lg:col-span-2">
-        <p className="text-sm text-text-muted">Բեռնվում է...</p>
-      </Card>
+      <LoadingRegion label="Այսօրվա պարապմունքը բեռնվում է" className="lg:col-span-2">
+        <div className="rounded-[var(--radius-xl)] border border-border p-[var(--space-6)] sm:p-[var(--space-8)]">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="mt-[var(--space-3)] h-6 w-2/3" />
+          <Skeleton className="mt-[var(--space-2)] h-3.5 w-full" />
+          <div className="mt-[var(--space-5)] flex flex-col gap-[var(--space-2)]">
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-3.5 w-1/3" />
+            ))}
+          </div>
+          <Skeleton className="mt-[var(--space-6)] h-11 w-56 rounded-[var(--radius-full)]" />
+        </div>
+      </LoadingRegion>
     );
   }
 
@@ -141,9 +152,13 @@ export function TodayMissionHero({
 
         <div className="mt-[var(--space-4)] flex flex-wrap items-center gap-[var(--space-2)]">
           {steps.map((item) => (
+            /* The incomplete track needs to read against the hero's own
+               primary-tinted ground, where bg-surface-muted all but vanished. */
             <span
               key={item.key}
-              className={`h-1.5 w-9 rounded-[var(--radius-full)] ${item.complete ? "bg-primary" : "bg-surface-muted"}`}
+              className={`h-1.5 w-9 rounded-[var(--radius-full)] ${
+                item.complete ? "bg-primary" : "bg-primary/25"
+              }`}
             />
           ))}
           <span className="ml-[var(--space-2)] text-[length:var(--text-xs)] text-text-muted">
