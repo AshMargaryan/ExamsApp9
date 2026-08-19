@@ -23,23 +23,57 @@
      e.g. a dark native textarea box on top of our light theme. */
   color-scheme: light;
 
-  --color-bg: #ffffff;
+  /*
+    HAYGIT IDENTITY — colour
+    ------------------------
+    The palette before this was Tailwind's defaults verbatim: violet-600
+    (#7c3aed) on gray-200 borders (#e5e7eb) over gray-900 text (#111827).
+    It was coherent but anonymous — it looked like every other project that
+    has never chosen a colour.
+
+    Two structural problems, not just taste:
+
+    1. `--color-bg` and `--color-surface` were BOTH #ffffff. A card therefore
+       had no ground to sit on and was defined solely by a 1px grey hairline,
+       which is the main reason the light theme read as flat and cheap. The
+       light theme now has a warm paper ground with white surfaces on top, so
+       elevation is carried by the surfaces themselves.
+    2. Every neutral was blue-cast slate. Mixed with a violet primary, the
+       whole UI sat in one cold corner of the wheel with no warmth anywhere.
+
+    The direction: Armenian manuscript ink. A deep lapis indigo carries the
+    primary — serious, focused, the colour of study rather than of a startup
+    landing page — and apricot (ծիրան) answers it as the accent. Apricot is
+    the flag's third band and is essentially unused in edtech, so it reads as
+    ours. Neutrals are warmed to sit with it rather than fight it.
+
+    Contrast is checked, not assumed. On white: primary 9.4:1, muted text
+    5.9:1, accent 4.6:1 — all pass WCAG AA for body text, primary passes AAA.
+  */
+  --color-bg: #faf8f5;
   --color-surface: #ffffff;
-  --color-surface-muted: #f3f4f6;
-  --color-border: #e5e7eb;
+  --color-surface-muted: #f1ede7;
+  --color-border: #e4ded4;
 
-  --color-text: #111827;
-  --color-text-muted: #6b7280;
+  --color-text: #1a1714;
+  --color-text-muted: #6b635a;
 
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
+  --color-primary: #2d3f8f;
+  --color-primary-hover: #223071;
   --color-primary-contrast: #ffffff;
+  /* Tinted grounds for primary-coloured emphasis that must not shout. */
+  --color-primary-bg: #eaedf7;
+  --color-primary-line: #c3cbe6;
 
-  --color-accent: #14b8a6;
+  /* Apricot. Dark enough here to be legible as text on paper (4.6:1); the
+     -bg variant is the fill. */
+  --color-accent: #b0611a;
+  --color-accent-bg: #fbeedd;
+  --color-accent-line: #e8c9a2;
 
-  --color-purple: #7f24b0;
-  --color-pink: #ff5c8d;
-  --gradient-hero: linear-gradient(226deg, var(--color-primary) 0%, var(--color-purple) 55%, var(--color-pink) 100%);
+  --color-purple: #4a3c8f;
+  --color-pink: #b0611a;
+  --gradient-hero: linear-gradient(226deg, var(--color-primary) 0%, var(--color-purple) 55%, var(--color-accent) 100%);
 
   --color-correct: #1a9e6d;
   --color-correct-bg: #e4f7ef;
@@ -83,12 +117,18 @@
   /* Surface that sits *on* a surface — nested cards, popovers, the raised row
      inside an already-elevated panel. Before this existed, every such case
      hand-rolled its own color-mix(). */
-  --color-surface-raised: #f9fafb;
+  --color-surface-raised: #ffffff;
 
-  --shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
+  /*
+    Elevation is tinted with the ink, not with neutral slate. A warm-paper
+    theme under cold grey shadows looks dirty rather than lifted, and the
+    difference is most visible exactly where it matters — cards on the
+    dashboard, popovers, and modal overlays.
+  */
+  --shadow-xs: 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.07), 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-md: 0 8px 24px rgba(26, 23, 20, 0.09), 0 2px 6px rgba(26, 23, 20, 0.05);
+  --shadow-lg: 0 24px 56px rgba(26, 23, 20, 0.14), 0 4px 12px rgba(26, 23, 20, 0.06);
 
   /*
     Radius scale.
@@ -136,14 +176,43 @@
   --section-gap: 2rem;
   --section-gap-lg: 3rem;
 
+  /*
+    HAYGIT IDENTITY — typography
+    ----------------------------
+    Body stays **Noto Sans Armenian**: it has full Armenian coverage, it is
+    well drawn at every size, and Armenian rendering quality is not
+    negotiable for a display flourish.
+
+    Display headings take **Noto Serif Armenian**, which index.html already
+    loads. It is from the same family as the body face, so the letterforms are
+    harmonious rather than clashing, and it has the same complete Armenian
+    coverage — unlike the Space Grotesk / JetBrains Mono pairing that the old
+    practice navigator used to set Armenian in, which had no Armenian glyphs
+    at all and silently fell back to whatever the OS offered.
+
+    A serif display over a sans body gives Haygit an editorial, studied voice
+    that suits a book-shaped product, and — importantly — it makes headings
+    read as a different *level*, not merely a larger size.
+  */
+  --font-sans: "Noto Sans Armenian", "Noto Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Noto Serif Armenian", "Noto Serif", Georgia, serif;
+
+  /*
+    Scale. The old ramp ran 1rem → 1.125 → 1.25 → 1.5 → 2: a 12% step between
+    body and "large", which is not enough for a heading to register as a level
+    change, so pages read as one undifferentiated size. The steps below open
+    up at the top, where hierarchy is actually established, and stay unchanged
+    at the bottom, where dense UI lives.
+  */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 2rem;
-  --text-4xl: 2.5rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+  --text-5xl: 3.75rem;
 
   /*
     Line heights, tuned for Armenian rather than inherited from a Latin scale.
@@ -269,20 +338,24 @@ html[data-native] [contenteditable="true"] {
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --color-bg: #ffffff;
+  --color-bg: #faf8f5;
   --color-surface: #ffffff;
-  --color-surface-muted: #f3f4f6;
-  --color-surface-raised: #f9fafb;
-  --color-border: #e5e7eb;
+  --color-surface-muted: #f1ede7;
+  --color-surface-raised: #ffffff;
+  --color-border: #e4ded4;
 
-  --color-text: #111827;
-  --color-text-muted: #6b7280;
+  --color-text: #1a1714;
+  --color-text-muted: #6b635a;
 
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
+  --color-primary: #2d3f8f;
+  --color-primary-hover: #223071;
   --color-primary-contrast: #ffffff;
+  --color-primary-bg: #eaedf7;
+  --color-primary-line: #c3cbe6;
 
-  --color-accent: #14b8a6;
+  --color-accent: #b0611a;
+  --color-accent-bg: #fbeedd;
+  --color-accent-line: #e8c9a2;
 
   --color-correct: #1a9e6d;
   --color-correct-bg: #e4f7ef;
@@ -310,29 +383,45 @@ html[data-native] [contenteditable="true"] {
   --color-bronze-bg: #f3e3d6;
   --color-bronze-line: #cf9868;
 
-  --shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
+  --shadow-xs: 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.07), 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-md: 0 8px 24px rgba(26, 23, 20, 0.09), 0 2px 6px rgba(26, 23, 20, 0.05);
+  --shadow-lg: 0 24px 56px rgba(26, 23, 20, 0.14), 0 4px 12px rgba(26, 23, 20, 0.06);
 }
 
+/*
+  Dark is the same identity after dusk, not a separate one: the neutrals carry
+  the ink's blue rather than the flat #1a1a1a/#242424 greys they used to, so
+  the theme reads as deliberate instead of "the lights are off".
+
+  The primary INVERTS here. A #2d3f8f fill on a near-black ground is too dark
+  to register as an action, so dark mode uses a light indigo fill with dark
+  text — which is why --color-primary-contrast changes with it. Every
+  `bg-primary`/`text-primary-contrast` pair follows automatically. Checked:
+  primary as text on the page ground is 6.7:1, and the dark contrast colour on
+  a primary fill is also 6.7:1, both comfortably past AA.
+*/
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --color-bg: #1a1a1a;
-  --color-surface: #242424;
-  --color-surface-muted: #2e2e2e;
-  --color-surface-raised: #333333;
-  --color-border: #3a3a3a;
+  --color-bg: #12141c;
+  --color-surface: #191c26;
+  --color-surface-muted: #222634;
+  --color-surface-raised: #262b3a;
+  --color-border: #2e3444;
 
-  --color-text: #ffffff;
-  --color-text-muted: #a3a3a3;
+  --color-text: #f3f1ee;
+  --color-text-muted: #9aa0b0;
 
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
-  --color-primary-contrast: #ffffff;
+  --color-primary: #8098f0;
+  --color-primary-hover: #93a8f5;
+  --color-primary-contrast: #10131c;
+  --color-primary-bg: #1c2138;
+  --color-primary-line: #38427a;
 
-  --color-accent: #2dd4c4;
+  --color-accent: #f0a85c;
+  --color-accent-bg: #2c2317;
+  --color-accent-line: #6b4c24;
 
   --color-correct: #4ade9a;
   --color-correct-bg: #12301f;
@@ -360,30 +449,34 @@ html[data-native] [contenteditable="true"] {
   --color-bronze-bg: #2a2019;
   --color-bronze-line: #8a5a34;
 
-  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --color-bg: #1a1a1a;
-    --color-surface: #242424;
-    --color-surface-muted: #2e2e2e;
-    --color-surface-raised: #333333;
-    --color-border: #3a3a3a;
+    --color-bg: #12141c;
+    --color-surface: #191c26;
+    --color-surface-muted: #222634;
+    --color-surface-raised: #262b3a;
+    --color-border: #2e3444;
 
-    --color-text: #ffffff;
-    --color-text-muted: #a3a3a3;
+    --color-text: #f3f1ee;
+    --color-text-muted: #9aa0b0;
 
-    --color-primary: #7c3aed;
-    --color-primary-hover: #6d28d9;
-    --color-primary-contrast: #ffffff;
+    --color-primary: #8098f0;
+    --color-primary-hover: #93a8f5;
+    --color-primary-contrast: #10131c;
+    --color-primary-bg: #1c2138;
+    --color-primary-line: #38427a;
 
-    --color-accent: #2dd4c4;
+    --color-accent: #f0a85c;
+    --color-accent-bg: #2c2317;
+    --color-accent-line: #6b4c24;
 
     --color-correct: #4ade9a;
     --color-correct-bg: #12301f;
@@ -411,10 +504,10 @@ html[data-native] [contenteditable="true"] {
     --color-bronze-bg: #2a2019;
     --color-bronze-line: #8a5a34;
 
-    --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.2);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+    --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.25);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -429,7 +522,16 @@ html[data-native] [contenteditable="true"] {
   --color-primary: var(--color-primary);
   --color-primary-hover: var(--color-primary-hover);
   --color-primary-contrast: var(--color-primary-contrast);
+  --color-primary-bg: var(--color-primary-bg);
+  --color-primary-line: var(--color-primary-line);
   --color-accent: var(--color-accent);
+  --color-accent-bg: var(--color-accent-bg);
+  --color-accent-line: var(--color-accent-line);
+
+  /* Makes `font-display` / `font-sans` real utilities, so a heading opts into
+     the display face the same way it opts into any other token. */
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
   --color-purple: var(--color-purple);
   --color-pink: var(--color-pink);
   --color-success: var(--color-success);

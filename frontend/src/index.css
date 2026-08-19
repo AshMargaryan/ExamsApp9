@@ -15,7 +15,13 @@ body {
   margin: 0;
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family: "Noto Sans Armenian", "Noto Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  /* The literal stack used to live here, so theme.css could define a font
+     token that nothing actually consumed. One source of truth now. */
+  font-family: var(--font-sans);
+  /* Armenian has a busy lower-case with many similar bowl shapes (ա/ռ, ո/դ);
+     optical sizing and standard ligatures both help it settle at body sizes. */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -72,7 +72,12 @@ export function Section({
                   // A clear step above body text. Armenian headings are long,
                   // so the size increase is paired with tighter tracking and
                   // display leading rather than pushed further up in size.
-                  level === 2 ? "text-[length:var(--text-xl)]" : "text-[length:var(--text-lg)]",
+                  // Level 2 takes the display face; level 3 stays in the body
+                  // face so a nested heading reads as subordinate rather than
+                  // competing with the section it sits inside.
+                  level === 2
+                    ? "font-display text-[length:var(--text-2xl)]"
+                    : "text-[length:var(--text-lg)]",
                   "leading-[var(--leading-heading)] tracking-[var(--tracking-tight)]",
                   headingClassName,
                 )}
