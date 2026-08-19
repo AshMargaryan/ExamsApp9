@@ -92,73 +92,96 @@ export function TodayMissionHero({
 
   const percent = checklist.total_count > 0 ? (checklist.completed_count / checklist.total_count) * 100 : 0;
 
+  const steps = checklist.items.filter((item) => item.target > 0);
+
+  /*
+    Calm surface, not a full-bleed gradient.
+
+    This card used to paint `--gradient-hero` (a saturated magenta→purple ramp)
+    edge to edge and set every string on it in white at ~13px. Two problems:
+    dense Armenian body copy on a saturated ground is hard to read, and the
+    card shouted louder than its own CTA — the brightest thing in it was the
+    backdrop rather than the button. Now the surface is quiet, a primary edge
+    and a tinted wash mark it as the page's primary object, and the filled
+    button is unambiguously the loudest element.
+  */
   return (
     <div
-      className="grid items-center gap-8 rounded-[calc(var(--radius)*1.15)] p-7 sm:p-9 lg:col-span-2 sm:grid-cols-[1fr_auto]"
-      style={{ background: "var(--gradient-hero)", boxShadow: "0 12px 30px rgba(0,0,0,0.18)" }}
+      className="grid items-center gap-[var(--space-7)] rounded-[var(--radius-xl)] border border-primary/40 p-[var(--space-6)] sm:p-[var(--space-8)] lg:col-span-2 sm:grid-cols-[1fr_auto]"
+      style={{ background: "color-mix(in srgb, var(--color-primary) 7%, var(--color-surface))" }}
     >
-      <div>
-        <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-[0.1em] text-white/70 uppercase">
+      <div className="min-w-0">
+        <p className="mb-[var(--space-2)] flex items-center gap-1.5 text-[length:var(--text-xs)] font-semibold tracking-[var(--tracking-wide)] text-primary uppercase">
           <Target size={13} strokeWidth={1.75} /> Այսօրվա պարապմունքը
         </p>
-        <h2 className="text-xl font-semibold text-white sm:text-2xl">{mission.title}</h2>
-        <p className="mt-1.5 text-sm text-white/80">
+        <h2 className="text-[length:var(--text-xl)] font-semibold leading-[var(--leading-heading)] tracking-[var(--tracking-tight)] text-text sm:text-[length:var(--text-2xl)]">
+          {mission.title}
+        </h2>
+        <p className="mt-[var(--space-2)] max-w-[var(--measure-base)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
           {mission.reason}
           {mission.estimated_minutes != null && ` · Մոտավոր տևողությունը՝ ${mission.estimated_minutes} րոպե`}
         </p>
 
-        <ul className="mt-4 space-y-1.5 text-sm text-white/90">
-          {checklist.items
-            .filter((item) => item.target > 0)
-            .map((item) => (
-              <li key={item.key} className="flex items-center gap-2">
-                {item.complete ? (
-                  <CheckCircle2 size={15} strokeWidth={1.75} />
-                ) : (
-                  <Circle size={15} strokeWidth={1.75} />
-                )}
+        <ul className="mt-[var(--space-4)] space-y-1.5 text-[length:var(--text-sm)] text-text">
+          {steps.map((item) => (
+            <li key={item.key} className="flex items-center gap-[var(--space-2)]">
+              {item.complete ? (
+                <CheckCircle2 size={15} strokeWidth={1.75} className="shrink-0 text-correct" />
+              ) : (
+                <Circle size={15} strokeWidth={1.75} className="shrink-0 text-text-muted" />
+              )}
+              <span className={item.complete ? "text-text-muted line-through" : undefined}>
                 {item.key === "daily_problem"
                   ? CHECKLIST_LABELS[item.key]
                   : `${item.done} / ${item.target} ${CHECKLIST_LABELS[item.key]}`}
-              </li>
-            ))}
+              </span>
+            </li>
+          ))}
         </ul>
 
-        <div className="mt-4 flex items-center gap-2">
-          {checklist.items
-            .filter((item) => item.target > 0)
-            .map((item) => (
-              <span
-                key={item.key}
-                className="h-1.5 w-9 rounded-full"
-                style={{ background: item.complete ? "#fff" : "rgba(255,255,255,0.3)" }}
-              />
-            ))}
-          <span className="ml-2 text-xs text-white/80">
+        <div className="mt-[var(--space-4)] flex flex-wrap items-center gap-[var(--space-2)]">
+          {steps.map((item) => (
+            <span
+              key={item.key}
+              className={`h-1.5 w-9 rounded-[var(--radius-full)] ${item.complete ? "bg-primary" : "bg-surface-muted"}`}
+            />
+          ))}
+          <span className="ml-[var(--space-2)] text-[length:var(--text-xs)] text-text-muted">
             {checklist.completed_count}/{checklist.total_count} առաջադրանք ավարտված
           </span>
         </div>
 
         <Link
           to={missionHrefOrFallback(mission)}
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 font-semibold text-[var(--color-primary)] transition-opacity hover:opacity-90"
+          className="mt-[var(--space-6)] inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-full)] bg-primary px-[var(--space-7)] py-[var(--space-3)] font-semibold text-primary-contrast transition-colors hover:bg-primary-hover"
         >
           <Play size={16} strokeWidth={1.75} /> {missionCtaLabel(mission)}
         </Link>
       </div>
 
-      <div
-        className="hidden h-[120px] w-[120px] shrink-0 items-center justify-center rounded-full sm:flex"
-        style={{ background: `conic-gradient(#fff 0% ${percent}%, rgba(255,255,255,0.25) ${percent}% 100%)` }}
-      >
+      {/*
+        The ring is progress feedback, so it only earns its space once there is
+        progress to show. At 0% it was a large circle whose entire message was
+        "you have not started" — stated more kindly, and in less room, by the
+        step list above.
+      */}
+      {percent > 0 && (
         <div
-          className="flex h-24 w-24 flex-col items-center justify-center rounded-full"
-          style={{ background: "var(--color-purple)" }}
+          className="hidden h-[120px] w-[120px] shrink-0 items-center justify-center rounded-[var(--radius-full)] sm:flex"
+          style={{
+            background: `conic-gradient(var(--color-primary) 0% ${percent}%, var(--color-surface-muted) ${percent}% 100%)`,
+          }}
+          role="img"
+          aria-label={`Այսօրվա պարապմունքը ${Math.round(percent)} տոկոսով ավարտված է`}
         >
-          <span className="text-2xl font-semibold text-white">{Math.round(percent)}%</span>
-          <span className="text-[10px] text-white/75">ավարտված</span>
+          <div className="flex h-24 w-24 flex-col items-center justify-center rounded-[var(--radius-full)] bg-surface">
+            <span className="text-[length:var(--text-2xl)] font-semibold tabular-nums text-text">
+              {Math.round(percent)}%
+            </span>
+            <span className="text-[length:var(--text-xs)] text-text-muted">ավարտված</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

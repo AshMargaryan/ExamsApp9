@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shuffle, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Shuffle, Sparkles } from "lucide-react";
 import {
   getDailyProblem, submitDailyProblem,
   type DailyProblem, type DailyProblemSubmitInput, type Question,
@@ -88,10 +88,12 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-text">
-          <span>📅</span> Օրվա խնդիրը
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
+      <div className="mb-[var(--space-4)] flex items-center justify-between gap-[var(--space-3)]">
+        {/* Emoji rendered as UI iconography picks up per-platform colour and
+            weight, which breaks the otherwise monochrome lucide icon set. */}
+        <h3 className="flex items-center gap-[var(--space-2)] text-[length:var(--text-lg)] font-semibold leading-[var(--leading-heading)] text-text">
+          <CalendarDays size={18} strokeWidth={1.75} className="shrink-0 text-text-muted" /> Օրվա խնդիրը
         </h3>
         {revealed && (
           <span
