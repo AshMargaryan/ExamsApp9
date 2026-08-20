@@ -27,10 +27,12 @@ const TAB_OPTIONS: { value: Tab; label: string }[] = [
 ];
 
 function DeckCard({
-  deck, onStudy, extraActions,
+  deck, onStudy, onAddCards, extraActions,
 }: {
   deck: FlashcardDeckSummary;
   onStudy: () => void;
+  /** Only owned decks can be empty *and* fixable, so only they pass this. */
+  onAddCards?: () => void;
   extraActions?: React.ReactNode;
 }) {
   const subject = subjectMeta(deck.subject);
@@ -72,9 +74,19 @@ function DeckCard({
           number that tells the student whether opening this deck is worth it
           right now. It used to be a small badge inside the button.
         */}
-        <Button onClick={onStudy} className="w-full justify-center">
-          {deck.due_count > 0 ? `Կրկնել ${deck.due_count} քարտ` : "Սովորել"}
-        </Button>
+        {deck.card_count === 0 && onAddCards ? (
+          /* A deck with no cards cannot be studied. Offering "Սովորել" as its
+             primary action sent the student to a study screen whose only
+             content was another empty state — a whole navigation to be told
+             what this card already knows. */
+          <Button onClick={onAddCards} className="w-full justify-center">
+            Ավելացնել քարտեր
+          </Button>
+        ) : (
+          <Button onClick={onStudy} className="w-full justify-center">
+            {deck.due_count > 0 ? `Կրկնել ${deck.due_count} քարտ` : "Սովորել"}
+          </Button>
+        )}
         {extraActions}
       </div>
     </div>
@@ -309,6 +321,7 @@ export function FlashcardsPage() {
                   key={deck.id}
                   deck={deck}
                   onStudy={() => navigate(`/flashcards/${deck.id}`)}
+                  onAddCards={() => navigate(`/flashcards/create?deck=${deck.id}`)}
                   extraActions={
                     /*
                       Delete used to be a full-width outlined button directly
@@ -351,15 +364,14 @@ export function FlashcardsPage() {
         </>
       )}
 
-      {showCreateDeck && (
-        <DeckFormModal
-          title="Ստեղծել նոր փաթեթ"
-          initial={{ title: "", description: "", subject }}
-          busy={busy}
-          onSave={handleCreateDeck}
-          onClose={() => setShowCreateDeck(false)}
-        />
-      )}
+      <DeckFormModal
+        open={showCreateDeck}
+        onOpenChange={setShowCreateDeck}
+        title="Ստեղծել նոր փաթեթ"
+        initial={{ title: "", description: "", subject }}
+        busy={busy}
+        onSave={handleCreateDeck}
+      />
 
       {/* ConfirmModal has no focus trap, no Escape handling and no scroll
           lock; ui/ConfirmDialog (Radix) has all three. */}

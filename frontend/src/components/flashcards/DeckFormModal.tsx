@@ -1,23 +1,55 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DeckFormInput, FlashcardSubject } from "../../api/flashcards";
 import { SUBJECTS } from "../../lib/subjects";
-import { X } from "lucide-react";
+import { Button } from "../ui/Button";
+import { Field, fieldInputClass } from "../ui/Field";
+import { Modal } from "../ui/Modal";
+import { cn } from "../../lib/cn";
 
 interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   title: string;
   initial?: DeckFormInput;
   busy?: boolean;
   onSave: (input: DeckFormInput) => void;
-  onClose: () => void;
 }
 
-export function DeckFormModal({ title, initial, busy, onSave, onClose }: Props) {
+/*
+  Create/rename a deck.
+
+  This was a hand-rolled `fixed inset-0` overlay: no focus trap, no Escape, no
+  `aria-modal`, and a close button that was the only way out other than
+  clicking the backdrop. It is on `Modal` now, which is the kit's Radix-backed
+  dialog — the same one the rest of the product uses — so focus, Escape,
+  scroll-locking and the native bottom-sheet treatment all come for free.
+
+  The subject picker stays a row of buttons rather than becoming a `Select`:
+  there are five subjects, they are the deck's single most defining property,
+  and one tap is better than open-scroll-tap. It is a real radio group, so the
+  choice is announced as a choice rather than as five unrelated buttons.
+*/
+export function DeckFormModal({ open, onOpenChange, title, initial, busy, onSave }: Props) {
   const [deckTitle, setDeckTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [subject, setSubject] = useState<FlashcardSubject>(initial?.subject ?? "math");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSave() {
+  // Reopening the dialog on a different deck must not show the previous
+  // deck's values — the component stays mounted between opens.
+  useEffect(() => {
+    if (!open) return;
+    setDeckTitle(initial?.title ?? "");
+    setDescription(initial?.description ?? "");
+    setSubject(initial?.subject ?? "math");
+    setError(null);
+    // `initial` is a fresh object literal on every render at most call sites,
+    // so it is read here rather than depended on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     if (!deckTitle.trim()) {
       setError("Վերնագիրը պարտադիր է։");
       return;
@@ -26,67 +58,72 @@ export function DeckFormModal({ title, initial, busy, onSave, onClose }: Props) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div
-        className="relative w-full max-w-md rounded-[var(--radius)] border border-border bg-surface p-8 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Փակել"
-          className="btn-icon-fx absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
-        >
-          <X size={16} strokeWidth={2} aria-hidden />
-        </button>
-
-        <h2 className="mb-6 text-xl font-semibold text-text">{title}</h2>
-
-        <label className="mb-1.5 block text-sm font-medium text-text">Վերնագիր</label>
-        <input
+    <Modal open={open} onOpenChange={onOpenChange} title={title}>
+      <form onSubmit={handleSubmit}>
+        {/* The error lands on the field that caused it rather than in a toast
+            the student has to read and then map back to a control. */}
+        <Field
+          label="Վերնագիր"
           value={deckTitle}
-          onChange={(e) => setDeckTitle(e.target.value)}
+          onChange={(e) => {
+            setDeckTitle(e.target.value);
+            if (error) setError(null);
+          }}
           placeholder="Օր.՝ Անգլերեն բառեր"
-          className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
+          error={error}
+          autoFocus
         />
 
-        <label className="mb-1.5 block text-sm font-medium text-text">Նկարագրություն (կամընտիր)</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="mb-4 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
-        />
+        <Field label="Նկարագրություն" hint="Կամընտիր">
+          {(props) => (
+            <textarea
+              {...props}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className={cn(fieldInputClass, "resize-none")}
+            />
+          )}
+        </Field>
 
-        <label className="mb-1.5 block text-sm font-medium text-text">Առարկա</label>
-        <div className="mb-6 grid grid-cols-2 gap-2">
-          {SUBJECTS.map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => setSubject(s.key)}
-              className={`btn-fx rounded-full border px-3 py-2 text-sm font-medium ${
-                subject === s.key
-                  ? "border-primary bg-primary text-primary-contrast"
-                  : "border-border text-text hover:border-primary"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <fieldset className="mb-[var(--space-6)]">
+          <legend className="mb-[var(--space-2)] text-[length:var(--text-sm)] font-medium text-text">
+            Առարկա
+          </legend>
+          <div role="radiogroup" aria-label="Առարկա" className="grid grid-cols-2 gap-[var(--space-2)]">
+            {SUBJECTS.map(({ key, label, Icon }) => {
+              const selected = subject === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setSubject(key)}
+                  className={cn(
+                    "flex items-center gap-[var(--space-2)] rounded-[var(--radius-md)] border",
+                    "px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-sm)] font-medium",
+                    "transition-colors duration-[var(--motion-fast)]",
+                    selected
+                      ? "border-primary bg-primary text-primary-contrast"
+                      : "border-border text-text hover:border-primary",
+                  )}
+                >
+                  <Icon size={15} strokeWidth={1.75} aria-hidden className="shrink-0" />
+                  {/* Not truncated: "Կենսաբանություն" does not fit a half-width
+                      cell, and a subject the student cannot read the name of
+                      is not a choice they can make. The row grows instead. */}
+                  <span className="min-w-0 text-left">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
 
-        {error && <p className="mb-4 text-sm text-incorrect">{error}</p>}
-
-        <button
-          type="button"
-          disabled={busy}
-          onClick={handleSave}
-          className="btn-fx btn-fx-glow w-full rounded-full bg-primary py-2.5 text-lg font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
-        >
-          {busy ? "Պահպանվում է..." : "Պահպանել"}
-        </button>
-      </div>
-    </div>
+        <Button type="submit" loading={busy} className="w-full">
+          Պահպանել
+        </Button>
+      </form>
+    </Modal>
   );
 }
