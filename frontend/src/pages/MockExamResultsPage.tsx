@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { HelpCircle, Search, Tag } from "lucide-react";
+import { CircleCheck, CircleX, HelpCircle, History, Search, Share2, Tag } from "lucide-react";
 import {
   getResults, getAutopsy, DIFFICULTY_LABELS,
   type AttemptAutopsy, type AttemptResults, type MockExamQuestion, type QuestionMistakeInfo,
@@ -17,33 +17,96 @@ import { ShortAnswerQuestion } from "../components/questions/ShortAnswerQuestion
 import { TrueFalseQuestion } from "../components/questions/TrueFalseQuestion";
 import { MatchingQuestion } from "../components/questions/MatchingQuestion";
 import { ShareToChatModal } from "../components/chat/ShareToChatModal";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { FilterChips } from "../components/ui/FilterChips";
 import { LinkButton } from "../components/ui/LinkButton";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Section } from "../components/ui/Section";
+import { Skeleton } from "../components/ui/Skeleton";
+import { StatTile } from "../components/ui/StatTile";
 
+// Was `border-primary/40 bg-primary/10`, i.e. opacity-mixed colours, while
+// the token layer has `-bg` and `-line` variants measured for exactly this.
 const CATEGORY_CLASSES: Record<string, string> = {
-  careless_slip: "border-primary/40 bg-primary/10 text-primary",
-  conceptual_gap: "border-incorrect/40 bg-incorrect/10 text-incorrect",
-  process_error: "border-primary/40 bg-primary/10 text-primary",
+  careless_slip: "border-primary-line bg-primary-bg text-primary",
+  conceptual_gap: "border-incorrect bg-incorrect-bg text-incorrect",
+  process_error: "border-primary-line bg-primary-bg text-primary",
   misread_question: "border-border bg-surface-muted text-text-muted",
 };
+
+/*
+  Only two filters, and deliberately so.
+
+  A "skipped" filter is the obvious third one and it is not offered, because
+  this payload cannot support it honestly: it carries a row for every
+  question whether or not the student responded, and an empty row is not the
+  same as an unanswered question — a `multi_statement` question whose correct
+  response is "none of these" is stored with an empty selection and
+  `is_correct: true`. On a real seeded attempt that read as 65 skipped
+  questions of which 0 were wrong, on an attempt scoring 2/65.
+
+  Correctness is decided server-side and is reliable, so that is what the
+  filter uses. `percent_answered` in the summary above still reports coverage.
+*/
+type QuestionFilter = "all" | "wrong";
 
 export function MockExamResultsPage() {
   const { attemptId } = useParams<{ attemptId: string }>();
   const [results, setResults] = useState<AttemptResults | null>(null);
   const [autopsy, setAutopsy] = useState<AttemptAutopsy | null>(null);
   const [sharing, setSharing] = useState(false);
-  const { showError } = useToast();
+  const [resultsFailed, setResultsFailed] = useState(false);
+  const [filter, setFilter] = useState<QuestionFilter>("all");
 
-  useEffect(() => {
-    getResults(Number(attemptId)).then(setResults).catch((err) => showError(extractErrorMessage(err)));
-    getAutopsy(Number(attemptId)).then(setAutopsy).catch((err) => showError(extractErrorMessage(err)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const load = useCallback(() => {
+    setResultsFailed(false);
+    // The results call used to report failure through a toast while leaving
+    // `results` null, so the page stayed on "Բեռնվում է..." after the toast
+    // had gone. The autopsy is genuinely optional and stays a soft failure.
+    getResults(Number(attemptId)).then(setResults).catch(() => setResultsFailed(true));
+    getAutopsy(Number(attemptId)).then(setAutopsy).catch(() => setAutopsy(null));
   }, [attemptId]);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const visibleQuestions = useMemo(() => {
+    if (!results) return [];
+    return results.questions
+      .map((q, index) => ({ q, index }))
+      .filter(({ q }) => filter === "all" || results.answers[q.id]?.is_correct === false);
+  }, [results, filter]);
+
+  if (resultsFailed) {
+    return (
+      <div className="mx-auto max-w-3xl px-[var(--space-4)] py-[var(--space-8)]">
+        <PageHeader title="Արդյունքներ" back={{ to: "/mock-exams", label: "Ամբողջական թեստեր" }} />
+        <ErrorState
+          title="Արդյունքները չհաջողվեց բեռնել։"
+          hint="Փորձդ պահպանված է — ստուգիր կապը և փորձիր կրկին։"
+          onRetry={load}
+        />
+      </div>
+    );
+  }
+
   if (!results) {
-    return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
+    return (
+      <div className="mx-auto max-w-3xl px-[var(--space-4)] py-[var(--space-8)]">
+        <Skeleton className="mb-[var(--space-3)] h-4 w-40" />
+        <Skeleton className="mb-[var(--space-6)] h-9 w-2/3" />
+        <Skeleton className="mb-[var(--space-6)] h-40 w-full" />
+        <div className="flex flex-col gap-[var(--space-4)]">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-48 w-full" />)}
+        </div>
+      </div>
+    );
   }
 
   const { attempt, questions, answers } = results;
+  const wrongCount = questions.filter((q) => answers[q.id]?.is_correct === false).length;
 
   const breakdown = [
     { label: DIFFICULTY_LABELS.easy, correct: attempt.easy_correct, total: attempt.easy_total },
@@ -52,42 +115,52 @@ export function MockExamResultsPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-4 flex items-center justify-between">
-        <LinkButton to="/mock-exams">← Ամբողջական թեստեր</LinkButton>
-        <button
-          type="button"
-          onClick={() => setSharing(true)}
-          className="rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-        >
-          Կիսվել → Չաթ
-        </button>
-      </div>
-      <h1 className="mb-6 text-2xl font-semibold text-text">{attempt.exam.title}</h1>
+    <div className="mx-auto max-w-3xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        back={{ to: "/mock-exams", label: "Ամբողջական թեստեր" }}
+        title={attempt.exam.title}
+        description="Փորձի արդյունքները"
+        actions={
+          <div className="flex flex-wrap gap-[var(--space-2)]">
+            {/* A score with nothing to compare it against says very little.
+                The exam's own attempt history is one click away now, which is
+                where "am I improving?" is actually answered. */}
+            <LinkButton to={`/mock-exams/${attempt.exam.id}/history`} iconLeft={<History size={15} strokeWidth={1.75} aria-hidden />}>
+              Նախորդ փորձերը
+            </LinkButton>
+            {/* Was a hand-rolled button labelled "Կիսվել → Չաթ" — an arrow
+                glyph doing the work of a verb. */}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setSharing(true)}
+              iconLeft={<Share2 size={15} strokeWidth={1.75} aria-hidden />}
+            >
+              Կիսվել
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="mb-8 rounded-[var(--radius)] border border-border bg-surface p-6">
-        <div className="flex flex-wrap items-center gap-8">
-          <div>
-            <p className="text-sm text-text-muted">Միավոր</p>
-            <p className="text-4xl font-bold text-primary">{attempt.scaled_score} / 20</p>
-          </div>
-          <div>
-            <p className="text-sm text-text-muted">Ճիշտ պատասխաններ</p>
-            <p className="text-2xl font-semibold text-text">
-              {attempt.raw_score} / {questions.length}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-text-muted">Պատասխանված</p>
-            <p className="text-2xl font-semibold text-text">{attempt.percent_answered}%</p>
-          </div>
+      <div className="mb-[var(--space-6)] rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-6)]">
+        <div className="mb-[var(--space-5)] flex items-baseline gap-[var(--space-2)]">
+          <span className="text-[length:var(--text-5xl)] font-bold tabular-nums text-primary">
+            {attempt.scaled_score}
+          </span>
+          <span className="text-[length:var(--text-lg)] text-text-muted">/ 20</span>
         </div>
 
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-[var(--space-3)] sm:grid-cols-3">
+          <StatTile label="Ճիշտ" value={`${attempt.raw_score} / ${questions.length}`} />
+          <StatTile label="Պատասխանված" value={`${attempt.percent_answered}%`} />
+          <StatTile label="Սխալ" value={String(wrongCount)} />
+        </div>
+
+        <div className="mt-[var(--space-5)] flex flex-col gap-[var(--space-2)]">
           {breakdown.map((row) => (
-            <div key={row.label} className="flex items-center justify-between text-base text-text">
+            <div key={row.label} className="flex items-center justify-between text-[length:var(--text-sm)] text-text">
               <span>{row.label}</span>
-              <span className="text-text-muted">
+              <span className="tabular-nums text-text-muted">
                 {row.correct} / {row.total}
               </span>
             </div>
@@ -118,21 +191,73 @@ export function MockExamResultsPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-6">
-        {questions.map((q, idx) => (
-          <RevealedQuestionCard
-            key={q.id}
-            question={q}
-            index={idx}
-            answer={answers[q.id]}
-            mistakeInfo={autopsy?.mistakes_by_question[String(q.id)]}
-            onClassified={(updated) =>
-              setAutopsy((prev) =>
-                prev ? { ...prev, mistakes_by_question: { ...prev.mistakes_by_question, [String(q.id)]: updated } } : prev
-              )
-            }
+      {/*
+        The page listed every question in full, always. A 65-question exam is
+        roughly thirty thousand pixels of scroll, and what a student wants
+        immediately after finishing is the handful they got wrong — which was
+        reachable only by scrolling past everything they got right.
+      */}
+      <Section
+        title="Հարցերը"
+        level={2}
+        spacing="tight"
+        description={
+          filter === "all"
+            ? `${questions.length} հարց`
+            : `${visibleQuestions.length} հարց ${questions.length}-ից`
+        }
+      >
+        <FilterChips
+          label="Ցուցադրել հարցերը"
+          className="mb-[var(--space-4)]"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: "all", label: "Բոլորը", count: questions.length },
+            { value: "wrong", label: "Սխալ", count: wrongCount },
+          ]}
+        />
+
+        {visibleQuestions.length === 0 ? (
+          <EmptyState
+            tone="positive"
+            icon={<CircleCheck size={26} strokeWidth={1.5} aria-hidden />}
+            title="Այս թեստում սխալ պատասխաններ չկան։"
+            hint="Անցիր «Բոլորը»՝ ամբողջ թեստը վերանայելու համար։"
+            cta={{ label: "Ցույց տալ բոլորը", onClick: () => setFilter("all") }}
           />
-        ))}
+        ) : (
+          <div className="flex flex-col gap-[var(--space-5)]">
+            {visibleQuestions.map(({ q, index }) => (
+              <RevealedQuestionCard
+                key={q.id}
+                question={q}
+                index={index}
+                answer={answers[q.id]}
+                mistakeInfo={autopsy?.mistakes_by_question[String(q.id)]}
+                onClassified={(updated) =>
+                  setAutopsy((prev) =>
+                    prev ? { ...prev, mistakes_by_question: { ...prev.mistakes_by_question, [String(q.id)]: updated } } : prev
+                  )
+                }
+              />
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* The page used to end after the last question card with nothing to do
+          next — on a surface whose entire purpose is deciding what to study. */}
+      <div className="mt-[var(--space-8)] flex flex-wrap justify-center gap-[var(--space-3)]">
+        <LinkButton to="/mistakes" variant="primary" size="md">
+          Սխալների տետր
+        </LinkButton>
+        <LinkButton to={`/mock-exams/${attempt.exam.id}`} variant="secondary" size="md">
+          Կրկնել թեստը
+        </LinkButton>
+        <LinkButton to="/mock-exams" variant="ghost" size="md">
+          Ամբողջական թեստեր
+        </LinkButton>
       </div>
 
       {sharing && (
@@ -186,7 +311,12 @@ function RevealedQuestionCard({
           {DIFFICULTY_LABELS[question.difficulty]}
           {question.topic && ` · ${question.topic}`}
         </span>
-        <span className={isCorrect ? "text-correct" : "text-incorrect"}>
+        {/* Correctness was carried by colour and a word; the icon makes it
+            legible in greyscale and at a glance down a long list. */}
+        <span className={`inline-flex items-center gap-1 font-medium ${isCorrect ? "text-correct" : "text-incorrect"}`}>
+          {isCorrect
+            ? <CircleCheck size={15} strokeWidth={2} aria-hidden />
+            : <CircleX size={15} strokeWidth={2} aria-hidden />}
           {isCorrect ? "Ճիշտ" : "Սխալ"}
         </span>
       </div>
