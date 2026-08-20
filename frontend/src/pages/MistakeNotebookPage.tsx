@@ -239,7 +239,25 @@ function MistakeDetail({ entry: initial }: { entry: MistakeEntry }) {
   );
 }
 
-function TopicRow({ subject, group: g }: { subject: string; group: TopicGroup }) {
+/*
+  `lead` is the first row in a subject, which — because topics are sorted by
+  open-mistake count — is the one worth opening. Only it carries a filled
+  button.
+
+  Every row used to. On a real account that is sixty-nine identical primary
+  buttons stacked down the page, which is §11's "if everything is emphasised,
+  nothing is": the sorting was doing work that the design then threw away. It
+  also made the page read as a demand rather than a list you can browse.
+*/
+function TopicRow({
+  subject,
+  group: g,
+  lead = false,
+}: {
+  subject: string;
+  group: TopicGroup;
+  lead?: boolean;
+}) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const sessionHref = `/mistake-notebook/review?subject=${encodeURIComponent(subject)}&topic=${encodeURIComponent(
@@ -275,7 +293,7 @@ function TopicRow({ subject, group: g }: { subject: string; group: TopicGroup })
         {g.entries[0]?.topic_label && (
           <Button
             size="sm"
-            variant={g.openCount > 0 ? "primary" : "secondary"}
+            variant={lead && g.openCount > 0 ? "primary" : "secondary"}
             onClick={() => navigate(sessionHref)}
             iconLeft={<Play size={13} strokeWidth={2.5} />}
           >
@@ -339,7 +357,14 @@ export function MistakeNotebookPage() {
 
       {status === "ready" && entries.length > 0 && (
         <div className="mt-5 flex flex-wrap gap-x-9 gap-y-3">
-          <Metric label="բաց սխալ" value={openTotal} size="lg" tone={openTotal > 0 ? "incorrect" : "correct"} />
+          {/* Neutral, not `incorrect`. The tone doc says use it "when the
+              number itself means good/bad" — but this one is a *workload*,
+              not a verdict, and this page's whole argument is that a mistake
+              is something to work through. Rendering a seeded account's 499
+              in alarm red as the first thing on the screen makes a study
+              queue look like a wall of failure. The only coloured number left
+              is the encouraging one. */}
+          <Metric label="բաց սխալ" value={openTotal} size="lg" tone={openTotal > 0 ? "default" : "correct"} />
           <Metric label="ուղղված" value={resolvedTotal} size="lg" tone="correct" />
           <Metric label="թեմա" value={groups.reduce((n, g) => n + g.topics.length, 0)} size="lg" />
         </div>
@@ -401,8 +426,8 @@ export function MistakeNotebookPage() {
                   </Link>
                 </div>
                 <div className="flex flex-col gap-2.5">
-                  {g.topics.map((t) => (
-                    <TopicRow key={t.topic} subject={g.subject} group={t} />
+                  {g.topics.map((t, i) => (
+                    <TopicRow key={t.topic} subject={g.subject} group={t} lead={i === 0} />
                   ))}
                 </div>
               </section>
