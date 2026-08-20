@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Section, SectionHeading } from "./Section";
 import { Reveal } from "./Reveal";
 
@@ -76,12 +77,16 @@ export function StudyPlanSection() {
               Ամենաթույլ թեման՝ <span className="font-medium text-text">քառակուսի հավասարումներ</span>։ Խորհուրդ եմ տալիս
               այսօր պարապել 10 միջին բարդության հարց այդ թեմայից։
             </p>
-            <button
-              type="button"
-              className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover"
+            {/* The card around this is a mockup, but the button was a real
+                focusable control with no handler — a dead CTA. Every other
+                affordance the visitor can reach on this page goes to sign-up
+                (see AiTutorSection, MistakeAnalysisSection), so this does too. */}
+            <Link
+              to="/register"
+              className="mt-5 block w-full rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-contrast transition-colors hover:bg-primary-hover"
             >
               Սկսել առաջարկվածը →
-            </button>
+            </Link>
           </div>
         </Reveal>
       </div>
