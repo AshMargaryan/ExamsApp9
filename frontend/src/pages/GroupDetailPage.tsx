@@ -265,7 +265,7 @@ export function GroupDetailPage() {
 
       <div className="mb-6">
         {subject && (
-          <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium tracking-wide text-text-muted uppercase">
+          <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium tracking-wide text-text-muted">
             <span aria-hidden>{subject.icon}</span>
             {subject.label}
           </span>

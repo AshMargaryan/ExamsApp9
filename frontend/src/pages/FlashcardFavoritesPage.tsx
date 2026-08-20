@@ -89,7 +89,7 @@ export function FlashcardFavoritesPage() {
                   <LinkButton
                     to={`/flashcards/${deck.id}`}
                     variant="ghost"
-                    className="h-6 px-2 text-xs tracking-wide uppercase"
+                    className="h-6 px-2 text-xs tracking-wide"
                   >
                     {deck.title}
                   </LinkButton>

@@ -639,7 +639,7 @@ export function FlashcardStudyPage() {
                       <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[var(--radius)] border border-border bg-surface p-8 text-center shadow-[var(--shadow-sm)]">
                         <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
                           {currentCard.topic && (
-                            <span className="rounded-full border border-border px-3 py-1 text-xs font-medium tracking-wide text-text-muted uppercase">
+                            <span className="rounded-full border border-border px-3 py-1 text-xs font-medium tracking-wide text-text-muted">
                               {currentCard.topic}
                             </span>
                           )}
@@ -777,7 +777,7 @@ export function FlashcardStudyPage() {
                           <div className="flashcard-face flex min-h-[280px] flex-col items-center justify-center rounded-[var(--radius)] border border-border bg-surface p-8 text-center shadow-[var(--shadow-sm)]">
                             <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
                               {currentCard.topic && (
-                                <span className="rounded-full border border-border px-3 py-1 text-xs font-medium tracking-wide text-text-muted uppercase">
+                                <span className="rounded-full border border-border px-3 py-1 text-xs font-medium tracking-wide text-text-muted">
                                   {currentCard.topic}
                                 </span>
                               )}

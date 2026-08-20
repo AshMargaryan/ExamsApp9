@@ -99,7 +99,7 @@ export function StudentDashboardPage() {
         {/* HEADER */}
         <div className="mb-10 flex flex-col gap-6 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="mb-2.5 text-sm font-medium tracking-[0.16em] text-text-muted uppercase">
+            <div className="mb-2.5 text-sm font-medium tracking-[0.16em] text-text-muted">
               Աշակերտի վահանակ
             </div>
             <h1 className="text-3xl font-semibold text-text sm:text-4xl">
@@ -158,7 +158,7 @@ export function StudentDashboardPage() {
         {/* STATS */}
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[1.7fr_1fr_1fr_1fr_1.2fr]">
           <Card className="col-span-2 flex flex-col justify-between gap-4 sm:col-span-3 lg:col-span-1">
-            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted uppercase">
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
               <BarChart3 size={14} strokeWidth={1.75} /> Շաբաթական առաջընթաց
             </p>
             {activity ? <DailyProgressChart days={activity} /> : <Skeleton className="h-[90px] w-full" />}
@@ -167,7 +167,7 @@ export function StudentDashboardPage() {
           <StatTile icon={<Flame size={20} strokeWidth={1.75} />} value={`${profile.streak?.current_streak ?? 0}`} label="Հաջորդականություն" hint="օր անընդմեջ" size="hero" />
 
           <Card className="flex flex-col justify-between gap-4">
-            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted uppercase">
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
               <Target size={14} strokeWidth={1.75} /> Ճշգրտություն
             </p>
             <div className="flex items-center gap-3.5">
@@ -191,7 +191,7 @@ export function StudentDashboardPage() {
           </Card>
 
           <Card className="flex flex-col justify-between gap-4">
-            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted uppercase">
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
               <Star size={14} strokeWidth={1.75} /> Մակարդակ
             </p>
             <div>
@@ -212,7 +212,7 @@ export function StudentDashboardPage() {
               className="flex flex-col justify-between gap-4 border-none text-white"
               style={{ backgroundImage: "linear-gradient(226deg, #2563EB, #7F24B0, #FF5C8D)" }}
             >
-              <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-white/70 uppercase">
+              <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-white/70">
                 <CalendarDays size={14} strokeWidth={1.75} /> Քննության ամսաթիվ
               </p>
               <div>
@@ -224,7 +224,7 @@ export function StudentDashboardPage() {
             </Card>
           ) : (
             <Card className="flex flex-col justify-between gap-4">
-              <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted uppercase">
+              <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
                 <CalendarDays size={14} strokeWidth={1.75} /> Քննության ամսաթիվ
               </p>
               {settingExamDate ? (

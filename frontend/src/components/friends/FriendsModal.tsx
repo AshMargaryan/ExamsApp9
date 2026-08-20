@@ -325,14 +325,14 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
 
           {tab === "challenges" && (
             <>
-              <h3 className="mb-1 mt-2 text-xs font-bold uppercase tracking-wide text-text-muted">Ստացված</h3>
+              <h3 className="mb-1 mt-2 text-xs font-bold tracking-wide text-text-muted">Ստացված</h3>
               {incomingChallenges === null && <p className="py-4 text-center text-text-muted">Բեռնվում է...</p>}
               {incomingChallenges?.length === 0 && <EmptyRow icon={<Swords size={28} strokeWidth={1.5} />} text="Մարտահրավերներ չկան։" />}
               {incomingChallenges?.map((c) => (
                 <ChallengeInviteCard key={c.id} invite={c} onRespond={loadChallenges} />
               ))}
 
-              <h3 className="mb-1 mt-4 text-xs font-bold uppercase tracking-wide text-text-muted">Ուղարկված</h3>
+              <h3 className="mb-1 mt-4 text-xs font-bold tracking-wide text-text-muted">Ուղարկված</h3>
               {outgoingChallenges?.length === 0 && <EmptyRow icon={<Swords size={28} strokeWidth={1.5} />} text="Մարտահրավերներ չկան։" />}
               {outgoingChallenges?.map((c) => (
                 <Row key={c.id}>
@@ -356,7 +356,7 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
 
           {tab === "requests" && (
             <>
-              <h3 className="mb-1 mt-2 text-xs font-bold uppercase tracking-wide text-text-muted">Ստացված</h3>
+              <h3 className="mb-1 mt-2 text-xs font-bold tracking-wide text-text-muted">Ստացված</h3>
               {incoming === null && <p className="py-4 text-center text-text-muted">Բեռնվում է...</p>}
               {incoming?.length === 0 && <EmptyRow icon={<Mail size={28} strokeWidth={1.5} />} text="Հարցումներ չկան։" />}
               {incoming?.map((r) => (
@@ -375,7 +375,7 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
                 </Row>
               ))}
 
-              <h3 className="mb-1 mt-4 text-xs font-bold uppercase tracking-wide text-text-muted">Ուղարկված</h3>
+              <h3 className="mb-1 mt-4 text-xs font-bold tracking-wide text-text-muted">Ուղարկված</h3>
               {outgoing?.length === 0 && <EmptyRow icon={<Mail size={28} strokeWidth={1.5} />} text="Հարցումներ չկան։" />}
               {outgoing?.map((r) => (
                 <Row key={r.id}>

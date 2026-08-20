@@ -78,7 +78,7 @@ export function GroupInfoPanel({ conversation, onClose }: { conversation: Conver
           </div>
 
           <section className="mb-4">
-            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-text-muted">
               <Pin size={13} strokeWidth={1.75} /> Ամրակցված հաղորդագրություններ
             </p>
             {pinned === null && <p className="text-sm text-text-muted">Բեռնվում է...</p>}
@@ -102,7 +102,7 @@ export function GroupInfoPanel({ conversation, onClose }: { conversation: Conver
           </section>
 
           <section className="mb-4">
-            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-text-muted">
               <Users size={13} strokeWidth={1.75} /> Անդամներ ({conversation.participants.length})
             </p>
             <div className="flex flex-col gap-1">
@@ -125,7 +125,7 @@ export function GroupInfoPanel({ conversation, onClose }: { conversation: Conver
           </section>
 
           <section>
-            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-text-muted">
               <File size={13} strokeWidth={1.75} /> Ֆայլեր
             </p>
             {files === null && <p className="text-sm text-text-muted">Բեռնվում է...</p>}

@@ -165,7 +165,7 @@ function AccentChoice() {
           consequence of the choice without hunting for a button elsewhere in
           the app. These are the three ways the accent actually appears. */}
       <div className="mt-[var(--space-5)] rounded-[var(--radius-lg)] border border-border bg-bg p-[var(--space-4)]">
-        <p className="text-[length:var(--text-xs)] font-medium tracking-[var(--tracking-wide)] text-text-muted uppercase">
+        <p className="text-[length:var(--text-xs)] font-medium tracking-[var(--tracking-wide)] text-text-muted">
           Նախադիտում
         </p>
         <div className="mt-[var(--space-3)] flex flex-wrap items-center gap-[var(--space-3)]">

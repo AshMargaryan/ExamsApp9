@@ -94,7 +94,7 @@ export function GlobalSearchPanel({
 
       {showChats && (
         <div className="mb-2">
-          <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted">Զրույցներ</p>
+          <p className="px-2 pb-1 text-xs font-semibold tracking-wide text-text-muted">Զրույցներ</p>
           {matchingConversations.map((c) => (
             <button
               key={c.id}
@@ -111,7 +111,7 @@ export function GlobalSearchPanel({
 
       {showMessages && messages.length > 0 && (
         <div className="mb-2">
-          <p className="flex items-center gap-1.5 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <p className="flex items-center gap-1.5 px-2 pb-1 text-xs font-semibold tracking-wide text-text-muted">
             <MessageCircle size={13} strokeWidth={1.75} /> Հաղորդագրություններ
           </p>
           {messages.map((m) => (
@@ -130,7 +130,7 @@ export function GlobalSearchPanel({
 
       {showPeople && peopleResults.length > 0 && (
         <div className="mb-2">
-          <p className="flex items-center gap-1.5 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <p className="flex items-center gap-1.5 px-2 pb-1 text-xs font-semibold tracking-wide text-text-muted">
             <Users size={13} strokeWidth={1.75} /> Մարդիկ
           </p>
           {peopleResults.map((p) => (
@@ -158,7 +158,7 @@ export function GlobalSearchPanel({
 
       {showFiles && files.length > 0 && (
         <div className="mb-2">
-          <p className="flex items-center gap-1.5 px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <p className="flex items-center gap-1.5 px-2 pb-1 text-xs font-semibold tracking-wide text-text-muted">
             <File size={13} strokeWidth={1.75} /> Ֆայլեր
           </p>
           {files.map((f) => (

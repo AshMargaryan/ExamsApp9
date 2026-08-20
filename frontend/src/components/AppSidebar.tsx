@@ -91,7 +91,7 @@ function NavLinks({ items, pathname, collapsed }: { items: NavItem[]; pathname: 
                   ? i > 0
                     ? "mx-2 mb-2 border-t border-border"
                     : "hidden"
-                  : "px-3.5 pb-1 text-xs font-semibold tracking-wide text-text-muted uppercase"
+                  : "px-3.5 pb-1 text-xs font-semibold tracking-wide text-text-muted"
               }
               aria-hidden={collapsed || undefined}
             >

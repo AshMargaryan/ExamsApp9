@@ -261,7 +261,7 @@ export function NewConversationModal({
           <div className="flex flex-col gap-1">
             {!query.trim() && students && students.length > 0 && (
               <>
-                <p className="px-2 pb-1 text-xs font-medium uppercase text-text-muted">Ձեր աշակերտները</p>
+                <p className="px-2 pb-1 text-xs font-medium text-text-muted">Ձեր աշակերտները</p>
                 {students.map((u) => (
                   <UserPickerRow key={u.id} user={u} selected={selectedIds.has(u.id)} onToggle={() => toggleUser(u)} />
                 ))}

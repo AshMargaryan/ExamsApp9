@@ -76,7 +76,7 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
       <span className="min-w-[2.5ch] rounded-lg bg-black/25 px-2.5 py-1.5 text-xl font-bold tabular-nums text-white">
         {two(value)}
       </span>
-      <span className="text-[11px] font-medium uppercase tracking-wide text-white/70">{label}</span>
+      <span className="text-[11px] font-medium tracking-wide text-white/70">{label}</span>
     </div>
   );
 }

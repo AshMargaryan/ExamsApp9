@@ -371,7 +371,7 @@ export function ProfileHero({
         {isStudent && (
           <div className="mt-6 border-t border-on-brand-line pt-6">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold uppercase tracking-wide text-on-brand-muted">Ցուցադրվող նվաճումներ</p>
+              <p className="text-sm font-semibold tracking-wide text-on-brand-muted">Ցուցադրվող նվաճումներ</p>
               <button
                 type="button"
                 onClick={() => setShowcaseOpen(true)}

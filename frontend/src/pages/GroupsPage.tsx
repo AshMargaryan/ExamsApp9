@@ -40,7 +40,7 @@ function GroupCard({ group }: { group: GroupListItem }) {
       className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-surface p-5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-[var(--shadow-md)]"
     >
       {subject && (
-        <span className="inline-flex w-fit items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium tracking-wide text-text-muted uppercase">
+        <span className="inline-flex w-fit items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium tracking-wide text-text-muted">
           <span aria-hidden>{subject.icon}</span>
           {subject.label}
         </span>

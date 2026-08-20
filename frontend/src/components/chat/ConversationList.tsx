@@ -189,7 +189,7 @@ function Section({
   if (conversations.length === 0) return null;
   return (
     <div className="mb-2">
-      <p className="px-2 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-text-muted">{title}</p>
+      <p className="px-2 pb-1 pt-2 text-xs font-semibold tracking-wide text-text-muted">{title}</p>
       <div className="flex flex-col gap-1">
         {conversations.map((c) => (
           <ConversationRow

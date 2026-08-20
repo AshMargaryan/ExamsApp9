@@ -31,7 +31,7 @@ export function SectionHeading({
   return (
     <Reveal className={`mx-auto max-w-2xl ${align === "center" ? "text-center" : "text-left"}`}>
       {kicker && (
-        <p className="mb-3 text-sm font-semibold tracking-wide text-primary uppercase">{kicker}</p>
+        <p className="mb-3 text-sm font-semibold tracking-wide text-primary">{kicker}</p>
       )}
       <h2 className="text-balance text-3xl font-semibold text-text sm:text-4xl">{title}</h2>
       {subtitle && <p className="mt-4 text-lg text-text-muted">{subtitle}</p>}
