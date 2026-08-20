@@ -78,10 +78,16 @@ export function SectionNav({
   items,
   active,
   className,
+  offset,
 }: {
   items: SectionNavItem[];
   active: string | null;
   className?: string;
+  /** Pixels to leave above the target — the height of whatever is pinned to
+   *  the top of this page. The default clears a bare fixed header; a page
+   *  that also pins this nav under it needs to say so, or the heading it
+   *  jumps to lands underneath the nav that sent you there. */
+  offset?: number;
 }) {
   return (
     <nav aria-label="Բաժիններ" className={className}>
@@ -92,7 +98,7 @@ export function SectionNav({
             <li key={item.id}>
               <button
                 type="button"
-                onClick={() => scrollToSection(item.id)}
+                onClick={() => scrollToSection(item.id, offset)}
                 aria-current={isActive ? "true" : undefined}
                 className={cn(
                   "relative w-full rounded-md py-1.5 pl-4 pr-2 text-left text-[13px] transition-colors",
@@ -123,10 +129,13 @@ export function SectionNavBar({
   items,
   active,
   className,
+  offset,
 }: {
   items: SectionNavItem[];
   active: string | null;
   className?: string;
+  /** See SectionNav. */
+  offset?: number;
 }) {
   return (
     <nav
@@ -144,7 +153,7 @@ export function SectionNavBar({
             <li key={item.id}>
               <button
                 type="button"
-                onClick={() => scrollToSection(item.id)}
+                onClick={() => scrollToSection(item.id, offset)}
                 aria-current={isActive ? "true" : undefined}
                 className={cn(
                   "rounded-full border px-3.5 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors",

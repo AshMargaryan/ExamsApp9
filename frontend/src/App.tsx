@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { RootRoute } from "./components/RootRoute";
-import { applyGradient, getStoredGradient } from "./lib/buttonGradient";
-import { applyBackground, getStoredBackground } from "./lib/backgroundGradient";
+import { applyStoredAccent } from "./lib/accentTheme";
 import { applyStoredTheme } from "./hooks/useTheme";
 import { applyStoredSidebarCollapsed } from "./hooks/useSidebarCollapsed";
 import { LoginPage } from "./pages/LoginPage";
@@ -30,7 +29,6 @@ const TierPage = lazy(() => import("./pages/TierPage").then((m) => ({ default: m
 const AssistantPage = lazy(() => import("./pages/AssistantPage").then((m) => ({ default: m.AssistantPage })));
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage").then((m) => ({ default: m.UserProfilePage })));
-const AccountSessionsPage = lazy(() => import("./pages/AccountSessionsPage").then((m) => ({ default: m.AccountSessionsPage })));
 const TeacherDashboardPage = lazy(() => import("./pages/TeacherDashboardPage").then((m) => ({ default: m.TeacherDashboardPage })));
 const StudentDashboardPage = lazy(() => import("./pages/StudentDashboardPage").then((m) => ({ default: m.StudentDashboardPage })));
 const AssignmentReviewPage = lazy(() => import("./pages/AssignmentReviewPage").then((m) => ({ default: m.AssignmentReviewPage })));
@@ -78,8 +76,7 @@ export default function App() {
   useEffect(() => {
     applyStoredTheme();
     applyStoredSidebarCollapsed();
-    applyGradient(getStoredGradient());
-    applyBackground(getStoredBackground());
+    applyStoredAccent();
   }, []);
 
   return (
@@ -113,7 +110,10 @@ export default function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/profile/:userId" element={<UserProfilePage />} />
               <Route path="/learning-profile" element={<LearningProfilePage />} />
-              <Route path="/account/sessions" element={<AccountSessionsPage />} />
+              {/* The device list is a section of Settings now, not a page of
+                  its own. Kept as a redirect because the link existed in the
+                  wild (profile menu, native shell). */}
+              <Route path="/account/sessions" element={<Navigate to="/settings#devices" replace />} />
               <Route path="/teacher-dashboard" element={<TeacherDashboardPage />} />
               <Route path="/student-dashboard" element={<StudentDashboardPage />} />
               <Route path="/assignments/:id" element={<AssignmentReviewPage />} />

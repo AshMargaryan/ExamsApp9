@@ -35,7 +35,6 @@ import { FriendsSection } from "../components/profile/FriendsSection";
 import { TeachersSection } from "../components/profile/TeachersSection";
 import { ActivityHeatmapSection } from "../components/profile/ActivityHeatmapSection";
 import { ActivityTimeline } from "../components/profile/ActivityTimeline";
-import { PrivacySettingsModal } from "../components/profile/PrivacySettingsModal";
 import { ShareProfileCard } from "../components/profile/ShareProfileCard";
 import { ShareToChatModal } from "../components/chat/ShareToChatModal";
 import { Dropdown } from "../components/ui/Dropdown";
@@ -359,7 +358,6 @@ function ParentProfileCard({ profile, onProfileUpdated }: { profile: Profile; on
 
 export function ProfilePage() {
   const { user, logout } = useAuth();
-  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareToChatOpen, setShareToChatOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -431,7 +429,7 @@ export function ProfilePage() {
         <div className="flex items-center justify-between px-4 py-4 sm:px-8">
           <LinkButton to="/family">← Ծնողական վահանակ</LinkButton>
           <div className="flex items-center gap-4">
-            <Link to="/account/sessions" className="text-sm text-text-muted hover:text-primary">
+            <Link to="/settings#devices" className="text-sm text-text-muted hover:text-primary">
               Ակտիվ սարքեր
             </Link>
             <button type="button" onClick={logout} className="text-sm text-text-muted hover:text-primary">
@@ -505,7 +503,10 @@ export function ProfilePage() {
                 key: "privacy",
                 label: "Գաղտնիություն",
                 icon: <Lock size={15} strokeWidth={1.75} />,
-                onSelect: () => setPrivacyOpen(true),
+                // Both of these used to be two different kinds of thing: an
+                // overlay owned by this page, and a separate route. They are
+                // two sections of one settings page now.
+                onSelect: () => navigate("/settings#privacy"),
               },
               {
                 key: "sessions",
@@ -513,7 +514,7 @@ export function ProfilePage() {
                 icon: <MonitorSmartphone size={15} strokeWidth={1.75} />,
                 // navigate(), not location.href — a full page reload here
                 // would throw away the whole SPA and re-fetch everything.
-                onSelect: () => navigate("/account/sessions"),
+                onSelect: () => navigate("/settings#devices"),
               },
             ]}
           />
@@ -697,7 +698,6 @@ export function ProfilePage() {
         )}
       </div>
 
-      {privacyOpen && <PrivacySettingsModal onClose={() => setPrivacyOpen(false)} />}
       {shareOpen && isStudent && (
         <ShareProfileCard
           profile={profile}

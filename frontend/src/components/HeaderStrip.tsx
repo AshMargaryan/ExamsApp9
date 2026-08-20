@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Moon, Sun } from "lucide-react";
 import * as profileApi from "../api/profile";
 import type { Profile } from "../api/profile";
 import { useTheme } from "../hooks/useTheme";
@@ -77,14 +78,23 @@ export function HeaderStrip() {
         <NotificationBell />
         {profile && (
           <>
+            {/* Two emoji used to do this job (☀️/🌙), which put a pair of
+             * platform-coloured glyphs in the middle of an otherwise
+             * monochrome lucide icon row. The label says which way it goes,
+             * because a sun icon alone is ambiguous about whether it shows
+             * the current mode or the one you would switch to. */}
             <button
               type="button"
               onClick={toggleTheme}
-              aria-label="Փոխել տեսքի ռեժիմը"
-              title="Փոխել տեսքի ռեժիմը"
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-border bg-surface text-base transition-colors hover:border-primary"
+              aria-label={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+              title={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+              className="flex h-[34px] w-[34px] items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-text-muted transition-colors hover:border-primary hover:text-text"
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              {theme === "dark" ? (
+                <Sun size={16} strokeWidth={1.75} aria-hidden />
+              ) : (
+                <Moon size={16} strokeWidth={1.75} aria-hidden />
+              )}
             </button>
             <ProfileDropdown avatar={profile.avatar} name={name} />
           </>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { Logo } from "../Logo";
 
@@ -57,11 +58,11 @@ export function LandingNav() {
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label="Փոխել տեսքի ռեժիմը"
-            title="Փոխել տեսքի ռեժիմը"
-            className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-border bg-surface text-base transition-colors hover:border-primary"
+            aria-label={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+            title={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-text-muted transition-colors hover:border-primary hover:text-text"
           >
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? <Sun size={16} strokeWidth={1.75} aria-hidden /> : <Moon size={16} strokeWidth={1.75} aria-hidden />}
           </button>
           <Link to="/login" className="text-sm font-medium text-text-muted transition-colors hover:text-text">
             Մուտք
@@ -78,11 +79,11 @@ export function LandingNav() {
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label="Փոխել տեսքի ռեժիմը"
-            title="Փոխել տեսքի ռեժիմը"
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-base"
+            aria-label={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+            title={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+            className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-text-muted"
           >
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? <Sun size={18} strokeWidth={1.75} aria-hidden /> : <Moon size={18} strokeWidth={1.75} aria-hidden />}
           </button>
 
           <button

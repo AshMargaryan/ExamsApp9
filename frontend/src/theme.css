@@ -553,6 +553,177 @@ html[data-native] [contenteditable="true"] {
   }
 }
 
+/*
+  ── ACCENT PRESETS ───────────────────────────────────────────────────────────
+
+  What a student can change about how Gitus looks, and — more importantly —
+  what they cannot.
+
+  This replaces a pair of free-form gradient mixers that let any three colours
+  at any angle be painted over *every* `.bg-primary` element and over the page
+  ground itself. The page-ground one is why this is a token change and not a
+  component change: `--color-text` and `--color-text-muted` are tuned against
+  a known paper (light) or ink (dark) ground and were measured at 5.9:1 for
+  the muted step. Painting an arbitrary magenta gradient behind them voids
+  that measurement everywhere at once, and the picker's own default was a
+  saturated blue→purple→pink — dense Armenian body copy on exactly the ground
+  §15 of the mandate says never to put it on.
+
+  So personalisation survives, and the hazard does not: one choice, five
+  curated alternatives to the default lapis, each one a complete
+  `--color-primary*` set for *both* themes. Every preset was measured, not
+  eyeballed — the lowest ratio in the whole table is 6.05:1 (AAA for large
+  text, comfortably past AA 4.5:1 for body), covering both "the fill carries
+  its contrast text" and "`text-primary` is legible on the surface".
+
+  The brand band (`--gradient-brand`) deliberately does NOT follow the accent.
+  See the note beside it above: "a strong branded ground that carries white
+  text" is a different concept from "the primary action colour", and it is the
+  one part of the identity that stays put whatever the student picks.
+
+  Cascade note: these blocks must stay *after* the `[data-theme]` blocks.
+  `:root[data-accent='x']` and `:root[data-theme='light']` have identical
+  specificity, so the light values only win on source order. The dark values
+  use `[data-theme='dark'][data-accent='x']` (one step more specific) and the
+  system-preference variant excludes an explicit light choice via `:not()`.
+*/
+
+/* Ծիրան — the identity's own accent, promoted to the action colour. */
+:root[data-accent='apricot'] {
+  --color-primary: #8a430f;
+  --color-primary-hover: #6f350c;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #fbeedd;
+  --color-primary-line: #e8c9a2;
+}
+
+:root[data-theme='dark'][data-accent='apricot'] {
+  --color-primary: #f0a85c;
+  --color-primary-hover: #f5b878;
+  --color-primary-contrast: #20150a;
+  --color-primary-bg: #2c2317;
+  --color-primary-line: #6b4c24;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='apricot'] {
+    --color-primary: #f0a85c;
+    --color-primary-hover: #f5b878;
+    --color-primary-contrast: #20150a;
+    --color-primary-bg: #2c2317;
+    --color-primary-line: #6b4c24;
+  }
+}
+
+/* Նուռ. */
+:root[data-accent='pomegranate'] {
+  --color-primary: #9d1f3c;
+  --color-primary-hover: #7f1830;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #fbe7ec;
+  --color-primary-line: #eec0cc;
+}
+
+:root[data-theme='dark'][data-accent='pomegranate'] {
+  --color-primary: #f28ba6;
+  --color-primary-hover: #f5a2b8;
+  --color-primary-contrast: #22101a;
+  --color-primary-bg: #2e1720;
+  --color-primary-line: #6d2f42;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='pomegranate'] {
+    --color-primary: #f28ba6;
+    --color-primary-hover: #f5a2b8;
+    --color-primary-contrast: #22101a;
+    --color-primary-bg: #2e1720;
+    --color-primary-line: #6d2f42;
+  }
+}
+
+/* Անտառ. */
+:root[data-accent='forest'] {
+  --color-primary: #1a6248;
+  --color-primary-hover: #144d39;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #e3f3ec;
+  --color-primary-line: #b8ddcd;
+}
+
+:root[data-theme='dark'][data-accent='forest'] {
+  --color-primary: #5fc79b;
+  --color-primary-hover: #7ad4ae;
+  --color-primary-contrast: #0c1a15;
+  --color-primary-bg: #152720;
+  --color-primary-line: #2c5645;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='forest'] {
+    --color-primary: #5fc79b;
+    --color-primary-hover: #7ad4ae;
+    --color-primary-contrast: #0c1a15;
+    --color-primary-bg: #152720;
+    --color-primary-line: #2c5645;
+  }
+}
+
+/* Սալոր. */
+:root[data-accent='plum'] {
+  --color-primary: #6a3391;
+  --color-primary-hover: #542674;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #f2eaf9;
+  --color-primary-line: #d8c3e9;
+}
+
+:root[data-theme='dark'][data-accent='plum'] {
+  --color-primary: #c091ea;
+  --color-primary-hover: #cda6f0;
+  --color-primary-contrast: #180f22;
+  --color-primary-bg: #251a30;
+  --color-primary-line: #4c3564;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='plum'] {
+    --color-primary: #c091ea;
+    --color-primary-hover: #cda6f0;
+    --color-primary-contrast: #180f22;
+    --color-primary-bg: #251a30;
+    --color-primary-line: #4c3564;
+  }
+}
+
+/* Գրաֆիտ — for a student who wants the interface to disappear. */
+:root[data-accent='graphite'] {
+  --color-primary: #3a4150;
+  --color-primary-hover: #2a303c;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #edeef1;
+  --color-primary-line: #ced2da;
+}
+
+:root[data-theme='dark'][data-accent='graphite'] {
+  --color-primary: #a9b3c6;
+  --color-primary-hover: #bcc4d4;
+  --color-primary-contrast: #12141c;
+  --color-primary-bg: #232732;
+  --color-primary-line: #3d4453;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='graphite'] {
+    --color-primary: #a9b3c6;
+    --color-primary-hover: #bcc4d4;
+    --color-primary-contrast: #12141c;
+    --color-primary-bg: #232732;
+    --color-primary-line: #3d4453;
+  }
+}
+
+
 @theme inline {
   --color-bg: var(--color-bg);
   --color-surface: var(--color-surface);
@@ -640,19 +811,23 @@ html[data-native] [contenteditable="true"] {
 }
 
 /*
-  Student-customizable button gradient (Settings page). --gradient-primary is
-  set/cleared at runtime via lib/buttonGradient.ts; painting it as a
-  background-image over every .bg-primary element lets one CSS variable
-  restyle every button site-wide with no per-component changes.
+  A scoped opt-in for a gradient-filled primary button.
+
+  This used to be the delivery mechanism for a settings control that let a
+  student paint any gradient over every `.bg-primary` element in the product;
+  that control is gone (see ACCENT PRESETS above for why, and for what
+  replaced it). The rule survives because the *marketing* page still wants
+  it: `LandingPage` sets `--gradient-primary` on its own root, so its CTAs
+  carry the campaign gradient while nothing behind `/login` does.
+
+  It is inert everywhere else — no `--gradient-primary`, no background-image —
+  so it costs one unmatched custom-property lookup and nothing else.
+
+  The matching `.bg-bg { background-image: var(--gradient-bg) }` rule is
+  deleted rather than kept: it had exactly one setter, the page-background
+  mixer, and a gradient behind the app's entire text ground is the thing that
+  must not come back.
 */
 .bg-primary {
   background-image: var(--gradient-primary, none);
-}
-
-/*
-  Student-customizable page background (Settings page). Same technique as
-  the button gradient above, applied to .bg-bg instead of .bg-primary.
-*/
-.bg-bg {
-  background-image: var(--gradient-bg, none);
 }

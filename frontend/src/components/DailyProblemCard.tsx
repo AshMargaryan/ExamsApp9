@@ -223,8 +223,11 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
           type="button"
           onClick={handleSubmit}
           disabled={busy}
-          style={{ background: "var(--gradient-primary, linear-gradient(45deg, #6d28d9, #7c3aed))" }}
-          className="mt-4 rounded-md px-5 py-2 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          // Was an inline `var(--gradient-primary, linear-gradient(45deg,
+          // #6d28d9, #7c3aed))` with `text-white`: the fallback was the
+          // pre-identity violet, and the hardcoded white broke in dark mode,
+          // where the primary is a light indigo that needs dark text.
+          className="mt-4 rounded-[var(--radius-md)] bg-primary px-5 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {busy ? "..." : "Ուղարկել պատասխանը"}
         </button>
