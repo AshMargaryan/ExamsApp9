@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Circle, Eraser, Highlighter, Lasso, Pen, Pencil, Redo2, Ruler, Slash, Square,
+  Trash2, Type, Undo2, type LucideIcon,
+} from "lucide-react";
 import { useOnClickOutside } from "../../../hooks/useOnClickOutside";
 import { CanvasTextBox } from "./CanvasTextBox";
 import { CANVAS_COLOR_ROWS, CANVAS_ERASER_SIZE_STEPS, CANVAS_HIGHLIGHTER_SIZE_STEPS, CANVAS_SIZE_STEPS } from "./colorPalette";
@@ -27,20 +31,45 @@ const TOOL_LABELS: Record<Tool, string> = {
   text: "Տեքստ",
 };
 
-const TOOL_ICONS: Record<Tool, string> = {
-  pen: "✏️",
-  pencil: "✎",
-  highlighter: "🖍️",
-  eraser: "🧹",
-  lasso: "⭕",
-  shape: "▭",
-  text: "🅣",
+/*
+  These were eleven glyphs from four different systems: ✏️ 🖍️ 🧹 emoji (colour
+  artwork, per-platform weight), ✎ ▭ ◯ ╱ geometric characters (drawn in the
+  text font at the text weight), 🅣 an enclosed Latin capital, and ⭕ 📏 more
+  emoji — all in one 40px-tall row. It was the densest mixed-icon-language
+  surface left in the product.
+*/
+const TOOL_ICONS: Record<Tool, LucideIcon> = {
+  pen: Pen,
+  pencil: Pencil,
+  highlighter: Highlighter,
+  eraser: Eraser,
+  lasso: Lasso,
+  shape: Square,
+  text: Type,
 };
 
-const SHAPE_ICONS: Record<ShapeKind, string> = { rect: "▭", ellipse: "◯", line: "╱" };
+const SHAPE_ICONS: Record<ShapeKind, LucideIcon> = { rect: Square, ellipse: Circle, line: Slash };
 const SHAPE_LABELS: Record<ShapeKind, string> = { rect: "Ուղղանկյուն", ellipse: "Էլիպս", line: "Գիծ" };
 
-const SELECTION_COLOR = "#2563eb";
+/*
+  Was a hardcoded `#2563eb` — neither the product's primary nor theme-aware.
+
+  It is resolved rather than referenced because a canvas 2D context cannot
+  read CSS custom properties: assigning `strokeStyle = "var(--color-primary)"`
+  is invalid, and an invalid assignment is *silently ignored*, leaving
+  whatever colour was set last. So the token is read at draw time, which also
+  means the selection outline follows a theme or accent change without a
+  reload.
+*/
+const SELECTION_COLOR_CSS = "var(--color-primary)";
+
+function selectionColor(): string {
+  if (typeof window === "undefined") return "#2d3f8f";
+  return (
+    getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim() ||
+    "#2d3f8f"
+  );
+}
 
 function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -158,35 +187,68 @@ function drawSelectionOutline(ctx: CanvasRenderingContext2D, obj: CanvasStrokeOb
     maxY = Math.max(obj.y1, obj.y2);
   }
   ctx.save();
-  ctx.strokeStyle = SELECTION_COLOR;
+  ctx.strokeStyle = selectionColor();
   ctx.setLineDash([6, 4]);
   ctx.lineWidth = 1.5;
   ctx.strokeRect(minX - 6, minY - 6, maxX - minX + 12, maxY - minY + 12);
   ctx.restore();
 }
 
+function ShapeOption({
+  kind, selected, onSelect,
+}: { kind: ShapeKind; selected: boolean; onSelect: () => void }) {
+  const Icon = SHAPE_ICONS[kind];
+  return (
+    <button
+      type="button"
+      aria-label={SHAPE_LABELS[kind]}
+      aria-pressed={selected}
+      title={SHAPE_LABELS[kind]}
+      onClick={onSelect}
+      className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] ${
+        selected ? "bg-primary-bg text-primary ring-1 ring-primary" : "text-text-muted hover:bg-surface-muted"
+      }`}
+    >
+      <Icon size={17} strokeWidth={1.75} aria-hidden />
+    </button>
+  );
+}
+
 function ToolButton({
   active,
   label,
-  icon,
+  Icon,
+  children,
   onClick,
 }: {
   active: boolean;
   label: string;
-  icon: string;
+  Icon?: LucideIcon;
+  /** Custom glyph, for the size button which draws its own current width. */
+  children?: ReactNode;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      /* `title` was the only name these had, so on a phone — the device you
+         would actually draw on with a finger — the whole toolbar was
+         unlabelled glyphs. And `aria-pressed` was missing, leaving the active
+         tool signalled by tint alone. */
+      aria-label={label}
+      aria-pressed={active}
       title={label}
-      className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition-colors ${
-        active ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-surface-muted hover:text-text"
+      className={`flex shrink-0 flex-col items-center gap-1 rounded-[var(--radius-lg)] px-3 py-2 text-[length:var(--text-xs)] font-medium transition-colors ${
+        active
+          ? "bg-primary-bg text-primary ring-1 ring-primary"
+          : "text-text-muted hover:bg-surface-muted hover:text-text"
       }`}
     >
-      <span className="text-lg leading-none">{icon}</span>
-      <span className="hidden sm:inline">{label}</span>
+      <span className="flex h-5 items-center leading-none">
+        {Icon ? <Icon size={18} strokeWidth={1.75} aria-hidden /> : children}
+      </span>
+      <span aria-hidden className="hidden sm:inline">{label}</span>
     </button>
   );
 }
@@ -266,7 +328,7 @@ export function CanvasEditor({
 
     if (lassoPath.current && lassoPath.current.length > 1) {
       ctx.save();
-      ctx.strokeStyle = SELECTION_COLOR;
+      ctx.strokeStyle = selectionColor();
       ctx.setLineDash([4, 4]);
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -514,7 +576,6 @@ export function CanvasEditor({
   }
 
   const textObjects = objectsRef.current.filter((o): o is CanvasTextObject => o.type === "text");
-  const statusLabel = tool === "shape" ? SHAPE_LABELS[shapeKind] : TOOL_LABELS[tool];
   const statusWidth = tool === "shape" || tool === "lasso" || tool === "text" ? penWidth : widthForTool(tool);
   const canUndo = undoStackRef.current.length > 0;
   const canRedo = redoStackRef.current.length > 0;
@@ -526,16 +587,17 @@ export function CanvasEditor({
           the scrolling track, so the row's overflow-x-auto (which forces
           overflow-y to clip too, a CSS quirk) never cuts them off. */}
       <div className="relative" ref={toolbarRef}>
-        <div className="flex items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-surface px-2 py-1.5 shadow-[var(--shadow-sm)]">
+        <div className="flex items-stretch gap-1 rounded-[var(--radius-2xl)] border border-border bg-surface px-2 py-1.5 shadow-[var(--shadow-sm)]">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {DRAW_TOOLS.map((t) => (
-            <ToolButton key={t} active={tool === t} label={TOOL_LABELS[t]} icon={TOOL_ICONS[t]} onClick={() => setTool(t)} />
+            <ToolButton key={t} active={tool === t} label={TOOL_LABELS[t]} Icon={TOOL_ICONS[t]} onClick={() => setTool(t)} />
           ))}
-          <ToolButton active={tool === "lasso"} label={TOOL_LABELS.lasso} icon={TOOL_ICONS.lasso} onClick={() => setTool("lasso")} />
+          <ToolButton active={tool === "lasso"} label={TOOL_LABELS.lasso} Icon={TOOL_ICONS.lasso} onClick={() => setTool("lasso")} />
 
           <ToolButton
             active={tool === "shape"}
-            label={TOOL_LABELS.shape}
-            icon={SHAPE_ICONS[shapeKind]}
+            label={`${TOOL_LABELS.shape}՝ ${SHAPE_LABELS[shapeKind]}`}
+            Icon={SHAPE_ICONS[shapeKind]}
             onClick={() => {
               setTool("shape");
               setShapesPopoverOpen((v) => !v);
@@ -543,8 +605,8 @@ export function CanvasEditor({
               setSizePopoverOpen(false);
             }}
           />
-          <ToolButton active={tool === "text"} label={TOOL_LABELS.text} icon={TOOL_ICONS.text} onClick={() => setTool("text")} />
-          <ToolButton active={rulerActive} label="Քանոն" icon="📏" onClick={() => setRulerActive((v) => !v)} />
+          <ToolButton active={tool === "text"} label={TOOL_LABELS.text} Icon={TOOL_ICONS.text} onClick={() => setTool("text")} />
+          <ToolButton active={rulerActive} label="Քանոն" Icon={Ruler} onClick={() => setRulerActive((v) => !v)} />
 
           <div className="mx-1 h-8 w-px shrink-0 bg-border" />
 
@@ -555,43 +617,91 @@ export function CanvasEditor({
               setShapesPopoverOpen(false);
               setSizePopoverOpen(false);
             }}
+            aria-label={`Գույն՝ ${color}`}
+            aria-expanded={colorPopoverOpen}
             title="Գույն"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl hover:bg-surface-muted"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-lg)] hover:bg-surface-muted"
           >
             <span className="h-6 w-6 rounded-full border border-border" style={{ backgroundColor: color }} />
           </button>
 
           <div className="ml-auto shrink-0">
+            {/* Was a "⋮". The trigger draws the current width instead, which
+                is the one thing it is for and needs no icon to say it. */}
             <ToolButton
               active={sizePopoverOpen}
-              label="Չափ"
-              icon="⋮"
+              label={`Չափ՝ ${statusWidth}pt`}
               onClick={() => {
                 setSizePopoverOpen((v) => !v);
                 setShapesPopoverOpen(false);
                 setColorPopoverOpen(false);
               }}
-            />
+            >
+              <span
+                aria-hidden
+                className="rounded-full bg-current"
+                style={{ width: Math.min(statusWidth, 18), height: Math.min(statusWidth, 18) }}
+              />
+            </ToolButton>
           </div>
+        </div>
+
+        {/*
+          Undo, redo and clear used to live in a separate status pill at the
+          bottom of the editor. On a phone that pill sat exactly where the
+          app's two floating launchers do — the trash button and the AI
+          launcher were about ten pixels apart, so a mis-tap on either hit the
+          other. They belong beside the tools that produce the strokes anyway,
+          which is where every drawing app puts them.
+
+          Pinned outside the scrolling track: undo is the most-used control
+          here and must not require scrolling a toolbar to reach.
+        */}
+        <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-1.5">
+          <button
+            type="button"
+            onClick={undo}
+            disabled={!canUndo}
+            aria-label="Հետարկել"
+            title="Հետարկել (Ctrl+Z)"
+            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text disabled:pointer-events-none disabled:opacity-30"
+          >
+            <Undo2 size={17} strokeWidth={1.75} aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={redo}
+            disabled={!canRedo}
+            aria-label="Կրկնել"
+            title="Կրկնել (Ctrl+Shift+Z)"
+            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text disabled:pointer-events-none disabled:opacity-30"
+          >
+            <Redo2 size={17} strokeWidth={1.75} aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={clearAll}
+            aria-label="Մաքրել ամբողջ էջը"
+            title="Մաքրել ամբողջը"
+            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-incorrect-bg hover:text-incorrect"
+          >
+            <Trash2 size={17} strokeWidth={1.75} aria-hidden />
+          </button>
+        </div>
         </div>
 
         {shapesPopoverOpen && (
           <div className="absolute left-4 top-full z-30 mt-2 flex gap-1 rounded-xl border border-border bg-surface p-1.5 shadow-xl">
             {(["rect", "ellipse", "line"] as ShapeKind[]).map((k) => (
-              <button
+              <ShapeOption
                 key={k}
-                type="button"
-                title={SHAPE_LABELS[k]}
-                onClick={() => {
+                kind={k}
+                selected={shapeKind === k}
+                onSelect={() => {
                   setShapeKind(k);
                   setShapesPopoverOpen(false);
                 }}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg ${
-                  shapeKind === k ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-surface-muted"
-                }`}
-              >
-                {SHAPE_ICONS[k]}
-              </button>
+              />
             ))}
           </div>
         )}
@@ -604,6 +714,7 @@ export function CanvasEditor({
                   key={c}
                   type="button"
                   aria-label={`Գույն ${c}`}
+                  aria-pressed={color === c}
                   onClick={() => {
                     setColor(c);
                     setColorPopoverOpen(false);
@@ -611,7 +722,7 @@ export function CanvasEditor({
                   className="aspect-square rounded-full border-2 transition-transform"
                   style={{
                     backgroundColor: c,
-                    borderColor: color === c ? SELECTION_COLOR : "transparent",
+                    borderColor: color === c ? SELECTION_COLOR_CSS : "transparent",
                     transform: color === c ? "scale(1.15)" : undefined,
                   }}
                 />
@@ -626,15 +737,17 @@ export function CanvasEditor({
               <button
                 key={s}
                 type="button"
+                aria-label={`${s}pt`}
+                aria-pressed={statusWidth === s}
                 onClick={() => {
                   setWidthForTool(tool, s);
                   setSizePopoverOpen(false);
                 }}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
-                  statusWidth === s ? "border-primary" : "border-border"
+                className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border ${
+                  statusWidth === s ? "border-primary bg-primary-bg" : "border-border"
                 }`}
               >
-                <span className="rounded-full bg-text" style={{ width: Math.min(s, 20), height: Math.min(s, 20) }} />
+                <span aria-hidden className="rounded-full bg-text" style={{ width: Math.min(s, 20), height: Math.min(s, 20) }} />
               </button>
             ))}
           </div>
@@ -656,7 +769,7 @@ export function CanvasEditor({
       {/* Canvas surface */}
       <div
         ref={wrapRef}
-        className="relative min-h-0 flex-1 touch-none overflow-hidden rounded-[var(--radius)] border border-border bg-surface-muted"
+        className="relative min-h-0 flex-1 touch-none overflow-hidden rounded-[var(--radius-lg)] border border-paper-line bg-paper"
       >
         <canvas
           ref={canvasRef}
@@ -698,39 +811,6 @@ export function CanvasEditor({
         )}
       </div>
 
-      {/* Status pill */}
-      <div className="flex flex-wrap items-center gap-3 self-center rounded-full border border-border bg-surface px-4 py-2 text-sm shadow-[var(--shadow-sm)]">
-        <span className="h-3 w-3 rounded-full border border-border" style={{ backgroundColor: color }} />
-        <span className="text-text-muted">
-          {statusLabel} · {statusWidth}pt
-        </span>
-        <div className="mx-1 h-4 w-px bg-border" />
-        <div className="flex items-center gap-1">
-          {sizeSteps.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setWidthForTool(tool, s)}
-              className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-surface-muted"
-            >
-              <span
-                className={`rounded-full ${statusWidth === s ? "bg-primary" : "bg-text-muted/50"}`}
-                style={{ width: Math.min(s, 16), height: Math.min(s, 16) }}
-              />
-            </button>
-          ))}
-        </div>
-        <div className="mx-1 h-4 w-px bg-border" />
-        <button type="button" onClick={undo} disabled={!canUndo} className="text-text-muted disabled:opacity-30" title="Հետարկել (Ctrl+Z)">
-          ↶
-        </button>
-        <button type="button" onClick={redo} disabled={!canRedo} className="text-text-muted disabled:opacity-30" title="Կրկնել (Ctrl+Shift+Z)">
-          ↷
-        </button>
-        <button type="button" onClick={clearAll} className="text-text-muted hover:text-incorrect" title="Մաքրել ամբողջը">
-          🗑️
-        </button>
-      </div>
     </div>
   );
 }
