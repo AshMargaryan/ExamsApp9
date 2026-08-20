@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   bulkAction, deleteTask, duplicateTask, listTasks, toggleTaskComplete,
   type BulkAction, type Task, type TaskListParams, type TaskPriority, type TaskQuickFilter, type TaskSort,
@@ -7,11 +7,17 @@ import { PRIORITY_OPTIONS } from "../components/todo/PriorityBadge";
 import { TaskListRow } from "../components/todo/TaskListRow";
 import { TaskModal } from "../components/todo/TaskModal";
 import { Button } from "../components/ui/Button";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { EmptyState } from "../components/ui/EmptyState";
-import { LinkButton } from "../components/ui/LinkButton";
-import { Modal } from "../components/ui/Modal";
+import { ErrorState } from "../components/ui/ErrorState";
+import { Field, fieldInputClass } from "../components/ui/Field";
+import { FilterChips } from "../components/ui/FilterChips";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { Skeleton } from "../components/ui/Skeleton";
+import { cn } from "../lib/cn";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
-import { Search } from "lucide-react";
+import { ListTodo, Plus, Search } from "lucide-react";
 
 type QuickFilterValue = TaskQuickFilter | "all" | "completed";
 
@@ -34,9 +40,6 @@ const SORT_OPTIONS: { value: TaskSort; label: string }[] = [
   { value: "completion", label: "Կատարմամբ" },
 ];
 
-const inputClass =
-  "rounded-[var(--radius)] border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary";
-
 export function TodoListPage() {
   const { showError } = useToast();
   const [tasks, setTasks] = useState<Task[] | null>(null);
@@ -50,15 +53,19 @@ export function TodoListPage() {
   const [pendingDelete, setPendingDelete] = useState<Task | null>(null);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkPriority, setBulkPriority] = useState<TaskPriority>("medium");
+  const [loadFailed, setLoadFailed] = useState(false);
 
-  function load() {
+  const load = useCallback(() => {
     const params: TaskListParams = { sort };
     if (quickFilter === "completed") params.completed = true;
     else if (quickFilter !== "all") params.filter = quickFilter;
-    listTasks(params).then(setTasks).catch((err) => showError(extractErrorMessage(err)));
-  }
+    setLoadFailed(false);
+    listTasks(params).then(setTasks).catch(() => setLoadFailed(true));
+  }, [quickFilter, sort]);
 
-  useEffect(load, [quickFilter, sort]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 200);
@@ -141,76 +148,122 @@ export function TodoListPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <LinkButton to="/todo" className="mb-1">← Իմ առաջադրանքները</LinkButton>
-          <h1 className="text-2xl font-semibold text-text">Ամբողջ ցանկը</h1>
+    <div className="mx-auto max-w-3xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        back={{ to: "/todo", label: "Իմ առաջադրանքները" }}
+        title="Ամբողջ ցանկը"
+        actions={
+          <Button onClick={openCreate} iconLeft={<Plus size={16} strokeWidth={2} aria-hidden />}>
+            Նոր առաջադրանք
+          </Button>
+        }
+      />
+
+      {/* Was six bare buttons whose only selected signal was colour and
+          which the keyboard walked one tab stop at a time. */}
+      <FilterChips
+        label="Արագ զտիչ"
+        className="mb-[var(--space-4)]"
+        value={quickFilter}
+        onChange={setQuickFilter}
+        options={QUICK_FILTERS}
+      />
+
+      <div className="mb-[var(--space-4)] flex flex-wrap items-end gap-[var(--space-2)]">
+        <div className="relative min-w-[14rem] flex-1">
+          <Search
+            size={16}
+            strokeWidth={1.75}
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-[var(--space-3)] -translate-y-1/2 text-text-muted"
+          />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            aria-label="Փնտրել առաջադրանքներում"
+            placeholder="Փնտրել վերնագրով, նկարագրությամբ, թեգով..."
+            className={cn(fieldInputClass, "pl-9")}
+          />
         </div>
-        <Button onClick={openCreate}>+ Նոր առաջադրանք</Button>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        {QUICK_FILTERS.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            onClick={() => setQuickFilter(f.value)}
-            className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-              quickFilter === f.value ? "border-primary bg-primary/10 text-primary" : "border-border text-text-muted"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Փնտրել վերնագրով, նկարագրությամբ, թեգով..."
-          className={`${inputClass} min-w-[14rem] flex-1`}
-        />
-        <select value={sort} onChange={(e) => setSort(e.target.value as TaskSort)} className={inputClass}>
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+        <Field label="Դասավորել" containerClassName="mb-0 w-full sm:w-56">
+          {({ id }) => (
+            <Select
+              id={id}
+              value={sort}
+              onChange={(v) => setSort(v as TaskSort)}
+              options={SORT_OPTIONS}
+            />
+          )}
+        </Field>
       </div>
 
       {selected.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[var(--radius)] border border-primary bg-primary/5 p-3">
-          <span className="text-sm font-medium text-text">Ընտրված է {selected.size}</span>
+        <div
+          role="region"
+          aria-label="Ընտրված առաջադրանքների գործողություններ"
+          className="mb-[var(--space-4)] flex flex-wrap items-center gap-[var(--space-2)] rounded-[var(--radius-lg)] border border-primary bg-primary-bg p-[var(--space-3)]"
+        >
+          <span className="text-[length:var(--text-sm)] font-medium text-text">Ընտրված է {selected.size}</span>
           <Button size="sm" variant="secondary" onClick={() => handleBulk("complete")}>Կատարված</Button>
-          <select
-            value={bulkPriority}
-            onChange={(e) => setBulkPriority(e.target.value as TaskPriority)}
-            className={inputClass}
-          >
-            {PRIORITY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.emoji} {opt.label}</option>
-            ))}
-          </select>
+          <div className="w-44">
+            <Select
+              label="Նոր առաջնահերթություն"
+              value={bulkPriority}
+              onChange={(v) => setBulkPriority(v as TaskPriority)}
+              options={PRIORITY_OPTIONS}
+            />
+          </div>
+          {/* The button names what the dropdown beside it is for — "Կիրառել"
+              on its own left a sighted reader guessing what gets applied. */}
           <Button size="sm" variant="secondary" onClick={() => handleBulk("set_priority", { priority: bulkPriority })}>
             Փոխել առաջնահերթությունը
           </Button>
-          <Button size="sm" variant="danger" onClick={() => setBulkDeleteConfirm(true)}>Ջնջել</Button>
+          {/* The only irreversible-looking action in the strip, and it was a
+              filled danger button sitting between two neutral ones. */}
+          <Button size="sm" variant="ghost" onClick={() => setBulkDeleteConfirm(true)} className="text-text-muted hover:text-incorrect">
+            Ջնջել
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="ml-auto">
             Չեղարկել ընտրությունը
           </Button>
         </div>
       )}
 
-      {!filtered ? (
-        <div className="flex flex-col gap-2">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-14 animate-pulse rounded-[var(--radius)] bg-surface-muted" />
-          ))}
+      {loadFailed && !filtered ? (
+        <ErrorState
+          title="Ցանկը չհաջողվեց բեռնել։"
+          hint="Ոչինչ չի կորել — ստուգիր կապը և փորձիր կրկին։"
+          onRetry={load}
+        />
+      ) : !filtered ? (
+        <div className="flex flex-col gap-[var(--space-2)]">
+          {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Search size={26} strokeWidth={1.5} aria-hidden />} title="Ոչինչ չի գտնվել" hint="Փորձիր փոխել ֆիլտրերը կամ որոնման բառը։" />
+        search.trim() || quickFilter !== "all" ? (
+          <EmptyState
+            icon={<Search size={26} strokeWidth={1.5} aria-hidden />}
+            title="Ոչինչ չի գտնվել"
+            hint="Փորձիր փոխել զտիչը կամ որոնման բառը։"
+            cta={{
+              label: "Մաքրել զտիչները",
+              onClick: () => {
+                setQuickFilter("all");
+                setSearchInput("");
+              },
+            }}
+          />
+        ) : (
+          /* "Nothing found" is the wrong sentence when there is nothing to
+             find — an empty list and a filtered-out list were the same state. */
+          <EmptyState
+            icon={<ListTodo size={26} strokeWidth={1.5} aria-hidden />}
+            title="Դեռ առաջադրանքներ չկան"
+            hint="Ավելացրու առաջինը՝ ցանկը սկսելու համար։"
+            cta={{ label: "Նոր առաջադրանք", onClick: openCreate }}
+          />
+        )
       ) : (
         <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
           {filtered.map((task) => (
@@ -230,30 +283,22 @@ export function TodoListPage() {
 
       <TaskModal open={modalOpen} onOpenChange={setModalOpen} task={editingTask} onSaved={load} />
 
-      <Modal
+      <ConfirmDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
         title="Ջնջե՞լ առաջադրանքը"
         description={`«${pendingDelete?.title}» կտեղափոխվի զամբյուղ։`}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setPendingDelete(null)} className="flex-1">Չեղարկել</Button>
-            <Button variant="danger" onClick={handleConfirmDelete} className="flex-1">Ջնջել</Button>
-          </>
-        }
+        confirmLabel="Ջնջել"
+        onConfirm={handleConfirmDelete}
       />
 
-      <Modal
+      <ConfirmDialog
         open={bulkDeleteConfirm}
         onOpenChange={setBulkDeleteConfirm}
         title="Ջնջե՞լ ընտրված առաջադրանքները"
-        description={`${selected.size} առաջադրանք կտեղափոխվի զամբյուղ։`}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setBulkDeleteConfirm(false)} className="flex-1">Չեղարկել</Button>
-            <Button variant="danger" onClick={handleBulkDelete} className="flex-1">Ջնջել</Button>
-          </>
-        }
+        description={`${selected.size} առաջադրանք կտեղափոխվի զամբյուղ։ Կարող ես վերականգնել դրանք այնտեղից։`}
+        confirmLabel="Ջնջել"
+        onConfirm={handleBulkDelete}
       />
     </div>
   );

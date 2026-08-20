@@ -1,41 +1,54 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listProjects, type Project } from "../api/todo";
 import { ProjectCard } from "../components/todo/ProjectCard";
 import { ProjectFormModal } from "../components/todo/ProjectFormModal";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { LinkButton } from "../components/ui/LinkButton";
-import { extractErrorMessage, useToast } from "../context/ToastContext";
-import { Rocket } from "lucide-react";
+import { ErrorState } from "../components/ui/ErrorState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Skeleton } from "../components/ui/Skeleton";
+import { Plus, Rocket } from "lucide-react";
 
 export function TodoProjectsPage() {
-  const { showError } = useToast();
   const [projects, setProjects] = useState<Project[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
 
-  useEffect(() => {
-    listProjects().then(setProjects).catch((err) => showError(extractErrorMessage(err)));
+  const load = useCallback(() => {
+    setLoadFailed(false);
+    listProjects().then(setProjects).catch(() => setLoadFailed(true));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function handleSaved(project: Project) {
     setProjects((prev) => [project, ...(prev ?? [])]);
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <LinkButton to="/todo" className="mb-1">← Իմ առաջադրանքները</LinkButton>
-          <h1 className="text-2xl font-semibold text-text">Նախագծեր</h1>
-        </div>
-        <Button onClick={() => setFormOpen(true)}>+ Նոր նախագիծ</Button>
-      </div>
+    <div className="mx-auto max-w-3xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        back={{ to: "/todo", label: "Իմ առաջադրանքները" }}
+        title="Նախագծեր"
+        description="Խմբավորիր կապակցված առաջադրանքները մեկ տեղում։"
+        actions={
+          <Button onClick={() => setFormOpen(true)} iconLeft={<Plus size={16} strokeWidth={2} aria-hidden />}>
+            Նոր նախագիծ
+          </Button>
+        }
+      />
 
-      {!projects ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-[var(--radius)] bg-surface-muted" />
-          ))}
+      {loadFailed && !projects ? (
+        <ErrorState
+          title="Նախագծերը չհաջողվեց բեռնել։"
+          hint="Ոչինչ չի կորել — ստուգիր կապը և փորձիր կրկին։"
+          onRetry={load}
+        />
+      ) : !projects ? (
+        <div className="grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full" />)}
         </div>
       ) : projects.length === 0 ? (
         <EmptyState
@@ -45,7 +58,7 @@ export function TodoProjectsPage() {
           cta={{ label: "Նոր նախագիծ", onClick: () => setFormOpen(true) }}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2">
           {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

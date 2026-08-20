@@ -7,6 +7,7 @@ import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { extractErrorMessage, useToast } from "../../context/ToastContext";
 import { PRIORITY_OPTIONS } from "./PriorityBadge";
+import { FilterChips } from "../ui/FilterChips";
 import { SubtaskChecklist, type SubtaskItem } from "./SubtaskChecklist";
 
 const REMINDER_OPTIONS = [
@@ -160,21 +161,14 @@ export function TaskModal({
         />
 
         <div>
-          <p className="mb-1.5 text-sm font-medium text-text">Առաջնահերթություն</p>
-          <div className="flex flex-wrap gap-2">
-            {PRIORITY_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setPriority(opt.value)}
-                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                  priority === opt.value ? "border-primary bg-primary/10 text-primary" : "border-border text-text-muted"
-                }`}
-              >
-                {opt.emoji} {opt.label}
-              </button>
-            ))}
-          </div>
+          <p id="task-priority-label" className="mb-1.5 text-sm font-medium text-text">Առաջնահերթություն</p>
+          {/* Was four bare buttons whose only selected signal was colour. */}
+          <FilterChips
+            label="Առաջնահերթություն"
+            value={priority}
+            onChange={setPriority}
+            options={PRIORITY_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
