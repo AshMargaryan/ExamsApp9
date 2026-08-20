@@ -96,7 +96,9 @@ describe("StudyPlanPage", () => {
   it("leads with the active task as the page's primary action", async () => {
     renderPage();
 
-    expect(await screen.findByText(/Բարի վերադարձ, Դանիել/)).toBeInTheDocument();
+    // The page is titled after itself, not after the student — the
+    // dashboard owns the greeting.
+    expect(await screen.findByRole("heading", { level: 1, name: "Ուսումնական պլան" })).toBeInTheDocument();
     // The first not-done task is the one promoted into the hero CTA.
     expect(screen.getByRole("button", { name: /Սկսել՝ Լուծիր վարժություններ/ })).toBeInTheDocument();
     // Its reasoning is shown inline, not hidden behind a tooltip.
@@ -106,7 +108,7 @@ describe("StudyPlanPage", () => {
 
   it("offers a check-in only on the completed task", async () => {
     renderPage();
-    await screen.findByText(/Բարի վերադարձ/);
+    await screen.findByRole("heading", { level: 1, name: "Ուսումնական պլան" });
 
     expect(screen.getByText("Ինչպե՞ս անցավ")).toBeInTheDocument();
     // A completed card must not be a button wrapping these buttons.
@@ -144,7 +146,7 @@ describe("StudyPlanPage", () => {
     vi.mocked(studyPlanApi.getTodayPlan).mockResolvedValue(PLAN);
     await userEvent.click(screen.getByRole("button", { name: /Փորձել կրկին/ }));
 
-    expect(await screen.findByText(/Բարի վերադարձ/)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Ուսումնական պլան" })).toBeInTheDocument();
   });
 
   it("explains what to do when there is not enough data for a plan", async () => {

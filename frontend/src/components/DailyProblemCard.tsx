@@ -18,7 +18,7 @@ function ReasonNote({ reason }: { reason: DailyProblem["reason"] }) {
   const [open, setOpen] = useState(false);
   const text =
     reason.kind === "weak_topic"
-      ? `Այս թեմայից («${reason.topic_label}») ունեք ${reason.incorrect_count} սխալ, ուստի Haygit-ը առաջարկեց հենց սա։`
+      ? `Այս թեմայից («${reason.topic_label}») ունեք ${reason.incorrect_count} սխալ, ուստի Gitus-ը առաջարկեց հենց սա։`
       : "Բավարար տվյալներ դեռ չկան Ձեր մասին, ուստի այս հարցը պատահականորեն է ընտրված։";
 
   return (

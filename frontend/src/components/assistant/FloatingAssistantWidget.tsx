@@ -116,7 +116,10 @@ export function FloatingAssistantWidget() {
               isCompact ? "" : isDragging ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-            <span className="text-sm font-medium text-text select-none">🤖 AI Օգնական</span>
+            <span className="flex items-center gap-[var(--space-2)] text-sm font-medium text-text select-none">
+              <Sparkles size={15} strokeWidth={1.75} aria-hidden className="text-primary" />
+              AI Օգնական
+            </span>
             <div className="flex items-center gap-3 text-text-muted">
               <Link
                 to="/assistant"

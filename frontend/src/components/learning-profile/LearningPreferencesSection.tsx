@@ -32,7 +32,7 @@ const EXPLANATION_STYLES: {
     value: "mixed",
     icon: <Shuffle {...styleIcon} />,
     label: "Խառը",
-    hint: "Haygit-ը ինքն է որոշում՝ ըստ հարցի և ըստ նրա, թե որտեղ ես կանգ առել։",
+    hint: "Gitus-ը ինքն է որոշում՝ ըստ հարցի և ըստ նրա, թե որտեղ ես կանգ առել։",
   },
   {
     value: "direct",
@@ -101,7 +101,7 @@ export function LearningPreferencesSection() {
     <div className="rounded-[var(--radius)] border border-border bg-surface p-5 sm:p-6">
       <div className="mb-1 flex items-center gap-1.5">
         <Bot size={16} strokeWidth={1.75} className="text-text-muted" />
-        <h2 className="text-sm font-semibold text-text">Ինչպե՞ս է քեզ սովորեցնում Haygit-ը</h2>
+        <h2 className="text-sm font-semibold text-text">Ինչպե՞ս է քեզ սովորեցնում Gitus-ը</h2>
       </div>
       <p className="mb-5 text-xs text-text-muted">
         Այս ընտրությունները իրապես փոխում են AI Tutor-ի վարքագիծը՝ ամեն զրույցի սկզբում։

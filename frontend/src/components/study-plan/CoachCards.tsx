@@ -63,7 +63,7 @@ export function MistakePatternCard({ coach, missionHref }: { coach: Coach; missi
   const e = coach.evidence;
 
   return (
-    <CardShell tone="alert" icon={<TriangleAlert size={15} strokeWidth={2} />} title="Haygit-ը օրինաչափություն նկատեց">
+    <CardShell tone="alert" icon={<TriangleAlert size={15} strokeWidth={2} />} title="Gitus-ը օրինաչափություն նկատեց">
       <p className="text-[14.5px] leading-relaxed text-text">
         Վերջերս <span className="font-semibold">{e.incorrect_count} անգամ</span> սխալվել ես «{e.topic}» թեմայում։
       </p>
@@ -125,7 +125,7 @@ export function TargetCard({ profile }: { profile: Profile }) {
       ) : (
         <>
           <p className="text-[14px] leading-relaxed text-text-muted">
-            Ասա Haygit-ին, թե ուր ես գնում՝ և պլանը կդասավորվի այդ ուղղությամբ։
+            Ասա Gitus-ին, թե ուր ես գնում՝ և պլանը կդասավորվի այդ ուղղությամբ։
           </p>
           <Link
             to="/profile"

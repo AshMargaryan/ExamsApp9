@@ -9,7 +9,7 @@ import {
 } from "../api/studyPlan";
 import { fetchHomeInsight, fetchProfile, type HomeInsight, type Profile } from "../api/profile";
 import { fetchSubjectMasteryScores, type MasteryScore } from "../api/knowledge";
-import { HaygitInsightCard } from "../components/HaygitInsightCard";
+import { GitusInsightCard } from "../components/GitusInsightCard";
 import {
   ExamStrategyCard,
   LearningMapCard,
@@ -141,8 +141,13 @@ export function StudyPlanPage() {
       <header className="mb-8">
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
           <div className="max-w-xl">
-            <h1 className="text-[26px] leading-tight font-semibold text-text sm:text-[32px]">
-              Բարի վերադարձ, {profile.first_name || profile.username}
+            {/* Was "Բարի վերադարձ, {name}" — the dashboard's headline,
+                verbatim, on a second page. Two routes titled the same thing
+                leaves "where am I" answerable only by reading the whole
+                screen. The plan's own name goes here; the greeting stays on
+                the one page whose job is to greet. */}
+            <h1 className="font-display text-[length:var(--text-3xl)] leading-[var(--leading-display)] font-semibold tracking-[var(--tracking-tight)] text-text">
+              Ուսումնական պլան
             </h1>
             <p className="mt-2 text-[15px] leading-relaxed text-text-muted sm:text-base">{plan.headline}</p>
           </div>
@@ -212,7 +217,7 @@ export function StudyPlanPage() {
               <EmptyState
                 icon={<Target size={24} strokeWidth={1.75} />}
                 title="Դեռ բավարար տվյալներ չկան անհատական պլան կազմելու համար"
-                hint="Haygit-ը պլանը կառուցում է քո իրական սխալների ու թույլ թեմաների վրա։ Լուծիր մի քանի վարժություն, և վաղը այստեղ կլինի կոնկրետ ցուցակ։"
+                hint="Gitus-ը պլանը կառուցում է քո իրական սխալների ու թույլ թեմաների վրա։ Լուծիր մի քանի վարժություն, և վաղը այստեղ կլինի կոնկրետ ցուցակ։"
                 cta={{ label: "Սկսել վարժություններից", onClick: () => navigate("/subjects") }}
               />
             ) : (
@@ -252,7 +257,7 @@ export function StudyPlanPage() {
 
         {/* ---- Coach column ---- */}
         <div className="flex min-w-0 flex-col gap-5">
-          <HaygitInsightCard
+          <GitusInsightCard
             coach={insight.coach}
             mission={insight.next_mission}
             personalizedMessage={plan.coach_message}

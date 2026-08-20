@@ -454,7 +454,7 @@ export function GoalsSection() {
         )}
       </div>
       <p className="mb-4 text-xs text-text-muted">
-        Haygit-ը օգտագործում է դրանք՝ քո ուսումնական առաջնահերթությունները որոշելու համար։
+        Gitus-ը օգտագործում է դրանք՝ քո ուսումնական առաջնահերթությունները որոշելու համար։
       </p>
 
       {wizardOpen && (
@@ -480,7 +480,7 @@ export function GoalsSection() {
         <EmptyState
           icon={<Target size={24} strokeWidth={1.75} />}
           title="Դեռ նպատակներ չկան"
-          hint="Նպատակները Haygit-ին ասում են, թե ինչն է քեզ համար ամենակարևորը՝ և պլանը դասավորվում է դրանց շուրջ։"
+          hint="Նպատակները Gitus-ին ասում են, թե ինչն է քեզ համար ամենակարևորը՝ և պլանը դասավորվում է դրանց շուրջ։"
           cta={{ label: "Ստեղծել առաջին նպատակը", onClick: () => setWizardOpen(true) }}
         />
       ) : (

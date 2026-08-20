@@ -181,7 +181,7 @@ describe("LearningProfilePage", () => {
 
     expect(screen.getByRole("button", { name: "Երկուշաբթի — թեստի օր" })).toHaveAttribute("aria-pressed", "false");
     expect(
-      screen.getByText(/Haygit-ը ընդհանրապես չի առաջարկի ամբողջական թեստեր/),
+      screen.getByText(/Gitus-ը ընդհանրապես չի առաջարկի ամբողջական թեստեր/),
     ).toBeInTheDocument();
   });
 

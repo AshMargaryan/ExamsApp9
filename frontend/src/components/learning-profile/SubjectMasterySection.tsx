@@ -477,7 +477,7 @@ export function SubjectMasterySection() {
             <div className="mt-4 rounded-[var(--radius)] border border-dashed border-border p-5">
               <p className="text-sm font-medium text-text">Մենք դեռ քեզ բավականաչափ չենք ճանաչում։</p>
               <p className="mt-1.5 text-xs leading-relaxed text-text-muted">
-                Լուծիր 5–10 հարց {meta.label}-ից, և Haygit-ը կսկսի կառուցել քո իրական իմացության պատկերը՝ թեմա առ
+                Լուծիր 5–10 հարց {meta.label}-ից, և Gitus-ը կսկսի կառուցել քո իրական իմացության պատկերը՝ թեմա առ
                 թեմա։ Առանց դրա պլանը կռահում է, փոխարենը որ իմանա։
               </p>
               <Link

@@ -107,7 +107,7 @@ export const CheckpointBlock = memo(function CheckpointBlock({
   Քո պատասխանը → Որտեղ շեղվեց → Ճիշտ ճանապարհը → Նմանատիպ խնդիր.
 
   No general-purpose AI chat renders this, because none of them knows
-  what the student answered. Haygit does: the mistake notebook and the
+  what the student answered. Gitus does: the mistake notebook and the
   practice/exam surfaces already hand the assistant the wrong answer and
   the right one via educational_context, and the backend already asks for
   exactly this pedagogy in the `why_am_i_wrong` mode framing — in prose,

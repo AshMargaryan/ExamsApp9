@@ -60,7 +60,7 @@ export function TodayMissionHero({
         <Target className="mx-auto text-text-muted" size={28} strokeWidth={1.75} />
         <h2 className="mt-2 text-lg font-semibold text-text">Եկ կառուցենք քո ուսումնական պլանը</h2>
         <p className="mt-1 text-sm text-text-muted">
-          Սկսիր առաջին խնդրից, և Haygit-ը կսկսի հասկանալ քո մակարդակը և կառաջարկի քեզ հարմար ծրագիր։
+          Սկսիր առաջին խնդրից, և Gitus-ը կսկսի հասկանալ քո մակարդակը և կառաջարկի քեզ հարմար ծրագիր։
         </p>
         <Link
           to="/subjects"

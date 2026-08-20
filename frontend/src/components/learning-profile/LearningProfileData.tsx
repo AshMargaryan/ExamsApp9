@@ -223,7 +223,7 @@ export interface CompletenessStep {
 }
 
 /**
- * What Haygit still doesn't know about this student.
+ * What Gitus still doesn't know about this student.
  *
  * Only counts things that genuinely change what the product can do for them —
  * this is a guide, not a score to farm. Each step names the payoff so it reads
@@ -247,7 +247,7 @@ export function completenessSteps(data: {
     {
       key: "goals",
       label: "Սահմանիր նպատակ",
-      hint: "Որպեսզի Haygit-ը իմանա՝ ինչի ես ձգտում։",
+      hint: "Որպեսզի Gitus-ը իմանա՝ ինչի ես ձգտում։",
       done: data.goals.length > 0,
       target: "goals",
     },

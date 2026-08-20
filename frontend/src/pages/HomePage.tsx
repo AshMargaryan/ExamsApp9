@@ -48,10 +48,10 @@ const STATUS_CHIP = cn(
     4. Progress    retrospective, below the fold on purpose
 
   Before this restructure the page offered five modules that all answered that
-  question, two of which (TodayMissionHero and HaygitInsightCard) resolved to
+  question, two of which (TodayMissionHero and GitusInsightCard) resolved to
   the *same* mission and the same destination with different labels — while the
   mission's reason string was additionally printed a third time as greeting
-  subtext. HaygitInsightCard now appears only on StudyPlanPage, where it is the
+  subtext. GitusInsightCard now appears only on StudyPlanPage, where it is the
   primary content rather than a duplicate.
 */
 

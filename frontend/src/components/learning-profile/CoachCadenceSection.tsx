@@ -123,8 +123,8 @@ export function CoachCadenceSection() {
 
   const dayNames = days.map((d) => WEEKDAYS.find((w) => w.value === d)?.full).filter(Boolean);
   const summary = examsOff
-    ? "Haygit-ը ընդհանրապես չի առաջարկի ամբողջական թեստեր։ Ամենօրյա պլանը կմնա կարճ առաջադրանքներից։"
-    : `Haygit-ը կառաջարկի ամբողջական թեստ շաբաթը ${perWeek} անգամ${
+    ? "Gitus-ը ընդհանրապես չի առաջարկի ամբողջական թեստեր։ Ամենօրյա պլանը կմնա կարճ առաջադրանքներից։"
+    : `Gitus-ը կառաջարկի ամբողջական թեստ շաբաթը ${perWeek} անգամ${
         dayNames.length > 0 ? `՝ ${dayNames.join(", ")} օրերին` : "՝ ցանկացած օր"
       }${draft.preferred_test_time ? `, մոտ ${draft.preferred_test_time.slice(0, 5)}-ին` : ""}։ Մնացած օրերին՝ կարճ առաջադրանքներ։`;
 
@@ -132,7 +132,7 @@ export function CoachCadenceSection() {
     <div className="rounded-[var(--radius)] border border-border bg-surface p-5 sm:p-6">
       <div className="mb-1 flex items-center gap-1.5">
         <Gauge size={16} strokeWidth={1.75} className="text-text-muted" />
-        <h2 className="text-sm font-semibold text-text">Ինչքա՞ն ուժեղ մղի քեզ Haygit-ը</h2>
+        <h2 className="text-sm font-semibold text-text">Ինչքա՞ն ուժեղ մղի քեզ Gitus-ը</h2>
       </div>
       <p className="mb-5 text-xs text-text-muted">
         Ամբողջական թեստը մեկ ժամ է։ Ընտրիր, թե շաբաթը քանի անգամ և ո՛ր օրերին է դա իրատեսական։
