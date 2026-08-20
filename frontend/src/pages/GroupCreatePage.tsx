@@ -107,7 +107,7 @@ export function GroupCreatePage() {
                 : "border-border text-text hover:border-primary"
             }`}
           >
-            <span aria-hidden>{s.icon}</span>
+            <s.Icon size={15} strokeWidth={1.75} aria-hidden />
             {s.label}
           </button>
         ))}

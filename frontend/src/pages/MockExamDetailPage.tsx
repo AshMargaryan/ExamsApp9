@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-import { RotateCcw, Sparkles } from "lucide-react";
+import { RotateCcw, Sparkles, Play } from "lucide-react";
 import {
   listMockExams, getExamAttemptHistory, startAttempt, abandonAttempt, formatSeconds,
   type MockExamSummary, type MockExamAttempt,
@@ -111,7 +111,7 @@ export function MockExamDetailPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <LinkButton to="/mock-exams" className="mb-4">← Ամբողջական թեստեր</LinkButton>
       <div className="mb-1 flex items-center gap-2 text-lg font-medium text-text-muted">
-        <span aria-hidden="true">{subject?.icon}</span>
+        {subject && <subject.Icon size={18} strokeWidth={1.75} aria-hidden className="shrink-0" />}
         <span>{main}</span>
       </div>
       <p className="mb-6 text-sm text-text-muted">{secondary}</p>
@@ -157,7 +157,7 @@ export function MockExamDetailPage() {
           <p className="mb-3 text-text">Դու ունես անավարտ փորձ այս թեստից։</p>
           <div className="flex flex-wrap gap-3">
             <Button variant="primary" onClick={() => navigate(`/mock-exams/attempt/${exam.draft_attempt_id}`)}>
-              ▶ Շարունակել
+              <Play size={15} strokeWidth={2} aria-hidden /> Շարունակել
             </Button>
             <Button variant="secondary" loading={busy} onClick={() => setShowResetConfirm(true)}>
               <RotateCcw size={15} strokeWidth={1.75} /> Սկսել նորից

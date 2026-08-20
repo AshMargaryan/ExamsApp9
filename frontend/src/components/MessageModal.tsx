@@ -1,3 +1,5 @@
+import { X } from "lucide-react";
+
 interface Props {
   message: string;
   onClose: () => void;
@@ -19,9 +21,9 @@ export function MessageModal({ message, onClose, suggestions, onSelectSuggestion
           type="button"
           onClick={onClose}
           aria-label="Փակել"
-          className="absolute top-3 right-3 text-lg text-text-muted transition-colors hover:text-text"
+          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
         >
-          ✕
+          <X size={16} strokeWidth={2} aria-hidden />
         </button>
         <p className="text-4xl">⚠️</p>
         <p className="mt-4 whitespace-pre-line text-lg text-text">{message}</p>

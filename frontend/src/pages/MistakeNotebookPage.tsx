@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, HelpCircle, NotebookText, Play, Sparkles, Tag } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, HelpCircle, NotebookText, Play, Sparkles, Tag, type LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   classifyMistake,
@@ -18,7 +18,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { Metric } from "../components/ui/Metric";
 import { Skeleton } from "../components/ui/Skeleton";
-import { localizeSubjectName, subjectMetaForName } from "../lib/subjects";
+import { localizeSubjectName, subjectIconForName } from "../lib/subjects";
 
 /*
   The mistake log, organised the way mistakes actually cluster: by subject,
@@ -70,7 +70,7 @@ interface TopicGroup {
 
 interface SubjectGroup {
   subject: string;
-  icon: string;
+  Icon: LucideIcon;
   entries: MistakeEntry[];
   openCount: number;
   topics: TopicGroup[];
@@ -109,7 +109,7 @@ function group(entries: MistakeEntry[]): SubjectGroup[] {
 
       return {
         subject,
-        icon: subjectMetaForName(subject)?.icon ?? "📓",
+        Icon: subjectIconForName(subject),
         entries: subjectEntries,
         openCount: subjectEntries.filter(isOpen).length,
         topics,
@@ -386,7 +386,7 @@ export function MistakeNotebookPage() {
               <section key={g.subject}>
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="flex items-center gap-2 text-base font-semibold text-text">
-                    <span aria-hidden>{g.icon}</span>
+                    <g.Icon size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
                     {localizeSubjectName(g.subject)}
                     <span className="text-sm font-normal text-text-muted">
                       {g.openCount > 0 ? `${g.openCount} բաց` : "ուղղված"}

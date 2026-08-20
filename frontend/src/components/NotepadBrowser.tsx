@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 import { useNotepad } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 import { Button } from "./ui/Button";
@@ -97,10 +98,10 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
           <button
             type="button"
             onClick={handleClose}
-            aria-label="Close"
+            aria-label="Փակել"
             className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
           >
-            ✕
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
       </div>

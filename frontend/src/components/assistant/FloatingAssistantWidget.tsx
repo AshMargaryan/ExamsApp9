@@ -129,8 +129,8 @@ export function FloatingAssistantWidget() {
               >
                 ⤢
               </Link>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="hover:text-primary">
-                ✕
+              <button type="button" onClick={() => setOpen(false)} aria-label="Փակել" className="hover:text-primary">
+                <X size={16} strokeWidth={2} aria-hidden />
               </button>
             </div>
           </div>

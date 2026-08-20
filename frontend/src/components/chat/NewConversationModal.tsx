@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Globe, Lock } from "lucide-react";
+import { Check, Globe, Lock, X } from "lucide-react";
 import * as friendsApi from "../../api/friends";
 import type { FriendUser, SearchResultUser } from "../../api/friends";
 import type { GroupPrivacy } from "../../api/chat";
@@ -32,7 +32,7 @@ function UserPickerRow({
         </p>
         <p className="truncate text-xs text-text-muted">@{user.username}</p>
       </div>
-      {selected && <span className="shrink-0 text-primary">✓</span>}
+      {selected && <Check size={16} strokeWidth={2.5} aria-hidden className="shrink-0 text-primary" />}
     </button>
   );
 }
@@ -147,8 +147,8 @@ export function NewConversationModal({
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-lg font-semibold text-text">Նոր զրույց</h2>
-          <button type="button" onClick={onClose} className="text-lg text-text-muted hover:text-text">
-            ✕
+          <button type="button" onClick={onClose} aria-label="Փակել" className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted hover:bg-surface-muted hover:text-text">
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
 
@@ -243,8 +243,8 @@ export function NewConversationModal({
                   className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary"
                 >
                   {u.first_name || u.username}
-                  <button type="button" onClick={() => toggleUser(u)} className="hover:opacity-70">
-                    ✕
+                  <button type="button" onClick={() => toggleUser(u)} aria-label={`Հեռացնել ${u.first_name || u.username}-ին`} className="hover:opacity-70">
+                    <X size={12} strokeWidth={2.5} aria-hidden />
                   </button>
                 </span>
               ))}

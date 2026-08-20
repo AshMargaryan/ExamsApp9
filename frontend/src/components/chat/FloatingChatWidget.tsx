@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import * as chatApi from "../../api/chat";
 import type { Conversation } from "../../api/chat";
@@ -92,8 +93,8 @@ export function FloatingChatWidget() {
           <Link to="/chat" title="Բացել ամբողջ էջում" className="hover:text-primary" onClick={closeFloatingChat}>
             ⤢
           </Link>
-          <button type="button" onClick={closeFloatingChat} aria-label="Close" className="hover:text-primary">
-            ✕
+          <button type="button" onClick={closeFloatingChat} aria-label="Փակել" className="hover:text-primary">
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
       </div>

@@ -1,18 +1,42 @@
+import { Atom, BookMarked, Dna, FlaskConical, Languages, Sigma, type LucideIcon } from "lucide-react";
+
 export type SubjectKey = "math" | "physics" | "biology" | "chemistry" | "english";
 
 export interface SubjectMeta {
   key: SubjectKey;
   label: string;
-  icon: string;
+  /*
+    A lucide component, not a glyph.
+
+    These were `"∑" | "⚛" | "🧬" | "⚗" | "🇬🇧"` — five characters from three
+    different worlds. The first two are mathematical symbols that render in
+    the text font at the text colour; the next two are colour emoji that pick
+    up per-platform artwork and weight; the last is a *flag*, which stands for
+    a country rather than a subject and is the one glyph on the list that some
+    platforms refuse to draw at all. Rendered side by side in a subject
+    filter, as they were on mock exams, flashcards, groups and the learning
+    profile, the row read as five unrelated things.
+
+    One field feeds thirteen call sites across seven surfaces, so this is the
+    single highest-leverage place in the codebase to fix the icon language.
+  */
+  Icon: LucideIcon;
 }
 
 export const SUBJECTS: SubjectMeta[] = [
-  { key: "math", label: "Մաթեմատիկա", icon: "∑" },
-  { key: "physics", label: "Ֆիզիկա", icon: "⚛" },
-  { key: "biology", label: "Կենսաբանություն", icon: "🧬" },
-  { key: "chemistry", label: "Քիմիա", icon: "⚗" },
-  { key: "english", label: "Անգլերեն", icon: "🇬🇧" },
+  { key: "math", label: "Մաթեմատիկա", Icon: Sigma },
+  { key: "physics", label: "Ֆիզիկա", Icon: Atom },
+  { key: "biology", label: "Կենսաբանություն", Icon: Dna },
+  { key: "chemistry", label: "Քիմիա", Icon: FlaskConical },
+  { key: "english", label: "Անգլերեն", Icon: Languages },
 ];
+
+/** The icon for a subject named in either language, with a neutral fallback
+ *  for anything unmapped — a mistake logged against a subject the frontend
+ *  does not know still needs something to draw. */
+export function subjectIconForName(name: string | undefined): LucideIcon {
+  return subjectMetaForName(name)?.Icon ?? BookMarked;
+}
 
 export function subjectMeta(key: string | undefined): SubjectMeta | undefined {
   return SUBJECTS.find((s) => s.key === key);

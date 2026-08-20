@@ -68,7 +68,7 @@ function SubjectRow({
         }`}
         aria-hidden
       >
-        {meta.icon}
+        <meta.Icon size={16} strokeWidth={1.75} aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
@@ -437,7 +437,7 @@ export function SubjectMasterySection() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="flex items-center gap-2 text-lg font-semibold text-text">
-                <span aria-hidden>{meta.icon}</span>
+                <meta.Icon size={18} strokeWidth={1.75} aria-hidden className="shrink-0" />
                 {meta.label}
               </p>
               <p className={`mt-0.5 text-xs font-medium ${MASTERY_BAND_TEXT[band]}`}>{MASTERY_BAND_LABEL[band]}</p>

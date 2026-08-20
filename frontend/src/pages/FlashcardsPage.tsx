@@ -40,7 +40,7 @@ function DeckCard({
       <div>
         {subject && (
           <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium tracking-wide text-text-muted">
-            <span aria-hidden>{subject.icon}</span>
+            <subject.Icon size={13} strokeWidth={1.75} aria-hidden />
             {subject.label}
           </span>
         )}
@@ -248,7 +248,7 @@ export function FlashcardsPage() {
                     : "border-border text-text hover:border-primary",
                 )}
               >
-                <span aria-hidden>{s.icon}</span>
+                <s.Icon size={15} strokeWidth={1.75} aria-hidden />
                 {s.label}
               </button>
             ))}

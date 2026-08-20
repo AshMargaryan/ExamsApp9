@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eraser } from "lucide-react";
+import { Eraser, X } from "lucide-react";
 import { useNotepad, type Stroke, type TextNote } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 
@@ -101,7 +101,7 @@ function TextNoteBox({
           title="Ջնջել"
           className="flex h-6 w-6 items-center justify-center rounded text-sm text-text-muted hover:bg-surface-muted hover:text-primary"
         >
-          ✕
+          <X size={16} strokeWidth={2} aria-hidden />
         </button>
       </div>
       {editing ? (

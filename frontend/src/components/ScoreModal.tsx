@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { X } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface Props {
@@ -39,9 +40,9 @@ export function ScoreModal({ correctCount, total, onContinue, continueLabel, onC
             type="button"
             onClick={onClose}
             aria-label="Փակել"
-            className="absolute top-3 right-3 text-lg text-text-muted transition-colors hover:text-text"
+            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
           >
-            ✕
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         )}
         {perfect && <p className="mb-2 text-4xl">🎉</p>}

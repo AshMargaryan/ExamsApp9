@@ -34,7 +34,7 @@ export function SubjectNav({ exams, active, onSelect }: Props) {
             )}
           >
             <div className="flex items-center gap-2">
-              <span className="text-xl" aria-hidden="true">{s.icon}</span>
+              <s.Icon size={18} strokeWidth={1.75} aria-hidden className="shrink-0" />
               <span className={cn("text-sm font-medium", isActive ? "text-primary" : "text-text")}>
                 {s.label}
               </span>

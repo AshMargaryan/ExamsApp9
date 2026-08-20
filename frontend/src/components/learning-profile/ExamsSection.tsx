@@ -111,7 +111,11 @@ function ExamForm({ onCreated, onCancel }: { onCreated: (e: StudentExam) => void
             value={subjectKey}
             onChange={setSubjectKey}
             placeholder="Առանց առարկայի"
-            options={SUBJECTS.map((s) => ({ value: s.key as string, label: s.label, icon: <span>{s.icon}</span> }))}
+            options={SUBJECTS.map((s) => ({
+              value: s.key as string,
+              label: s.label,
+              icon: <s.Icon size={15} strokeWidth={1.75} aria-hidden />,
+            }))}
           />
         </div>
         <div>

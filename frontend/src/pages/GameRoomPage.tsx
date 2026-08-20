@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Play } from "lucide-react";
 import { AxiosError } from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import * as gamesApi from "../api/games";
@@ -232,9 +233,9 @@ export function GameRoomPage() {
           {room.status === "running" && (
             <Link
               to={`/games/${room.room_code}/play`}
-              className="mt-6 block rounded-md bg-primary py-3 text-center text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+              className="mt-6 flex items-center justify-center gap-[var(--space-2)] rounded-[var(--radius-md)] bg-primary py-3 text-center text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
             >
-              ▶ Մուտք խաղին
+              <Play size={18} strokeWidth={2} aria-hidden /> Մուտք խաղին
             </Link>
           )}
 

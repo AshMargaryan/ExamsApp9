@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Star } from "lucide-react";
 import {
   flagCard, listFavoriteCards, type FavoriteCardEntry, type FlashcardSubject,
 } from "../api/flashcards";
@@ -40,8 +41,9 @@ export function FlashcardFavoritesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <LinkButton to="/flashcards" className="btn-fx mb-4 rounded-full px-1.5 py-0.5">← Բառաքարտեր</LinkButton>
-      <h1 className="mb-1 text-3xl font-semibold text-text">
-        ⭐ Ընտրյալներ · {activeSubject.icon} {activeSubject.label}
+      <h1 className="mb-1 flex items-center gap-[var(--space-2)] font-display text-[length:var(--text-3xl)] leading-[var(--leading-display)] font-semibold tracking-[var(--tracking-tight)] text-text">
+        <Star size={22} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent" />
+        Ընտրյալներ · {activeSubject.label}
       </h1>
       <p className="mb-6 text-sm text-text-muted">
         {activeSubject.label} առարկայից ընտրյալ նշված քարտերը՝ մեկ տեղում։
@@ -60,7 +62,7 @@ export function FlashcardFavoritesPage() {
                 : "border-border text-text hover:border-primary"
             }`}
           >
-            <span aria-hidden>{s.icon}</span>
+            <s.Icon size={15} strokeWidth={1.75} aria-hidden />
             {s.label}
           </button>
         ))}
