@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, Shuffle, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, ChevronDown, Shuffle, Sparkles, X } from "lucide-react";
 import {
   getDailyProblem, submitDailyProblem,
   type DailyProblem, type DailyProblemSubmitInput, type Question,
@@ -23,8 +23,23 @@ function ReasonNote({ reason }: { reason: DailyProblem["reason"] }) {
 
   return (
     <div className="mb-3">
-      <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)} className="h-7 px-2 text-xs">
-        Ինչու՞ հենց սա {open ? "▲" : "▼"}
+      {/* Was a raw ▲/▼ with no `aria-expanded`, so the control announced
+          nothing about its own state and drew a glyph from whatever font
+          happened to cover it. */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="h-7 gap-1 px-2 text-xs"
+      >
+        Ինչու՞ հենց սա
+        <ChevronDown
+          size={13}
+          strokeWidth={2}
+          aria-hidden
+          className={`transition-transform duration-[var(--motion-fast)] ${open ? "rotate-180" : ""}`}
+        />
       </Button>
       {open && <p className="mt-1 text-xs text-text-muted">{text}</p>}
     </div>
@@ -128,17 +143,27 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
         </h3>
         {revealed && (
           <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
+            className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
               problem.result!.is_correct ? "bg-correct-bg text-correct" : "bg-incorrect-bg text-incorrect"
             }`}
           >
-            {problem.result!.is_correct ? "✓ Ճիշտ" : "✗ Սխալ"}
+            {problem.result!.is_correct ? (
+              <Check size={13} strokeWidth={2.5} aria-hidden />
+            ) : (
+              <X size={13} strokeWidth={2.5} aria-hidden />
+            )}
+            {problem.result!.is_correct ? "Ճիշտ" : "Սխալ"}
           </span>
         )}
       </div>
 
+      {/* Was `uppercase tracking-wide text-accent`: a three-part Armenian
+          breadcrumb set in tracked-out 11px capitals, in a warm hue that read
+          as a warning. Armenian capitals share far more shape than lowercase
+          does, so caps at this size is the least legible setting available —
+          and the line is context, not an alert. */}
       {question.subject_name && (
-        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-accent">
+        <p className="mb-1 truncate text-xs font-medium text-text-muted">
           {[question.subject_name, question.topic_name, question.subtopic_name].filter(Boolean).join(" · ")}
         </p>
       )}
@@ -185,7 +210,7 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
       )}
 
       {revealed && question.explanation && (
-        <div className="mt-3 rounded-md bg-surface-muted p-3 text-sm leading-relaxed text-text-muted whitespace-pre-line">
+        <div className="mt-3 rounded-[var(--radius-md)] bg-surface-muted p-3 text-sm leading-relaxed text-text-muted whitespace-pre-line">
           <MathText text={question.explanation} />
         </div>
       )}

@@ -106,42 +106,66 @@ export function TodayMissionHero({
   const steps = checklist.items.filter((item) => item.target > 0);
 
   /*
-    Calm surface, not a full-bleed gradient.
+    The one branded object on the dashboard.
 
-    This card used to paint `--gradient-hero` (a saturated magenta→purple ramp)
-    edge to edge and set every string on it in white at ~13px. Two problems:
-    dense Armenian body copy on a saturated ground is hard to read, and the
-    card shouted louder than its own CTA — the brightest thing in it was the
-    backdrop rather than the button. Now the surface is quiet, a primary edge
-    and a tinted wash mark it as the page's primary object, and the filled
-    button is unambiguously the loudest element.
+    History matters here, because this card has now been two wrong things.
+    Originally it painted `--gradient-hero` — a saturated magenta→purple ramp
+    built out of `--color-primary` and `--color-purple` — edge to edge, with
+    every string on it in white at ~13px. Session 1 correctly killed that:
+    dense Armenian copy on an unmeasured saturated ground is hard to read, and
+    the loudest thing in the card was its own backdrop rather than its CTA. It
+    became a quiet tinted surface instead.
+
+    But quiet turned out to be its own failure. The card carries the single
+    next action the whole page exists to produce, and as a pale wash it was
+    *less* prominent than the daily-problem card beneath it — the page's
+    primary object was not the most prominent object on the page.
+
+    The resolution is that the identity work built a ground for exactly this.
+    `--gradient-brand` is theme-invariant and measured: white sits on it at
+    8.3:1–11.7:1 and `--color-on-brand-muted` at 5.1:1, in both themes. So the
+    hero is branded again, but on a surface whose contrast is known rather
+    than assumed, and the CTA inverts to a light fill so the brightest element
+    in the card is still the button.
+
+    Anything added here must use `--color-on-brand*`, never `--color-text`,
+    which flips with the theme while this band does not.
   */
   return (
     <div
-      className="grid items-center gap-[var(--space-7)] rounded-[var(--radius-xl)] border border-primary/40 p-[var(--space-6)] sm:p-[var(--space-8)] lg:col-span-2 sm:grid-cols-[1fr_auto]"
-      style={{ background: "color-mix(in srgb, var(--color-primary) 7%, var(--color-surface))" }}
+      className="grid items-center gap-[var(--space-7)] overflow-hidden rounded-[var(--radius-xl)] p-[var(--space-6)] shadow-[var(--shadow-md)] sm:grid-cols-[1fr_auto] sm:p-[var(--space-8)] lg:col-span-2"
+      style={{ background: "var(--gradient-brand)" }}
     >
       <div className="min-w-0">
-        <p className="mb-[var(--space-2)] flex items-center gap-1.5 text-[length:var(--text-xs)] font-semibold tracking-[var(--tracking-wide)] text-primary uppercase">
+        {/* Not `uppercase`. Armenian capitals carry far less shape variety
+            than lowercase, so a tracked-out 11px caps eyebrow is the least
+            legible text on a screen — see the same note on the practice
+            breadcrumb. Sentence case with wide tracking reads as an eyebrow
+            without costing legibility. */}
+        <p className="mb-[var(--space-2)] flex items-center gap-1.5 text-[length:var(--text-xs)] font-semibold tracking-[var(--tracking-wide)] text-on-brand-muted">
           <Target size={13} strokeWidth={1.75} /> Այսօրվա պարապմունքը
         </p>
-        <h2 className="text-[length:var(--text-xl)] font-semibold leading-[var(--leading-heading)] tracking-[var(--tracking-tight)] text-text sm:text-[length:var(--text-2xl)]">
+        <h2 className="font-display text-[length:var(--text-2xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-on-brand sm:text-[length:var(--text-3xl)]">
           {mission.title}
         </h2>
-        <p className="mt-[var(--space-2)] max-w-[var(--measure-base)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
+        <p className="mt-[var(--space-3)] max-w-[var(--measure-base)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-on-brand-muted">
           {mission.reason}
           {mission.estimated_minutes != null && ` · Մոտավոր տևողությունը՝ ${mission.estimated_minutes} րոպե`}
         </p>
 
-        <ul className="mt-[var(--space-4)] space-y-1.5 text-[length:var(--text-sm)] text-text">
+        <ul className="mt-[var(--space-5)] space-y-1.5 text-[length:var(--text-sm)] text-on-brand">
           {steps.map((item) => (
             <li key={item.key} className="flex items-center gap-[var(--space-2)]">
+              {/* `--color-correct` is a mid green tuned for the app surface and
+                  drops to ~2.6:1 on the band's darkest stop. Done-ness is
+                  carried by the filled icon and the strike-through instead,
+                  both of which survive greyscale. */}
               {item.complete ? (
-                <CheckCircle2 size={15} strokeWidth={1.75} className="shrink-0 text-correct" />
+                <CheckCircle2 size={15} strokeWidth={2} className="shrink-0 text-on-brand" />
               ) : (
-                <Circle size={15} strokeWidth={1.75} className="shrink-0 text-text-muted" />
+                <Circle size={15} strokeWidth={1.75} className="shrink-0 text-on-brand-muted" />
               )}
-              <span className={item.complete ? "text-text-muted line-through" : undefined}>
+              <span className={item.complete ? "text-on-brand-muted line-through" : undefined}>
                 {item.key === "daily_problem"
                   ? CHECKLIST_LABELS[item.key]
                   : `${item.done} / ${item.target} ${CHECKLIST_LABELS[item.key]}`}
@@ -152,25 +176,39 @@ export function TodayMissionHero({
 
         <div className="mt-[var(--space-4)] flex flex-wrap items-center gap-[var(--space-2)]">
           {steps.map((item) => (
-            /* The incomplete track needs to read against the hero's own
-               primary-tinted ground, where bg-surface-muted all but vanished. */
+            /* The track is on-brand fill, not a surface token: the band is
+               theme-invariant, so a token that flips with the theme would
+               vanish in one of them. */
             <span
               key={item.key}
-              className={`h-1.5 w-9 rounded-[var(--radius-full)] ${
-                item.complete ? "bg-primary" : "bg-primary/25"
-              }`}
+              className="h-1.5 w-9 rounded-[var(--radius-full)]"
+              style={{
+                background: item.complete ? "var(--color-on-brand)" : "var(--color-on-brand-fill)",
+              }}
             />
           ))}
-          <span className="ml-[var(--space-2)] text-[length:var(--text-xs)] text-text-muted">
+          <span className="ml-[var(--space-2)] text-[length:var(--text-xs)] text-on-brand-muted">
             {checklist.completed_count}/{checklist.total_count} առաջադրանք ավարտված
           </span>
         </div>
 
         <Link
           to={missionHrefOrFallback(mission)}
-          className="mt-[var(--space-6)] inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-full)] bg-primary px-[var(--space-7)] py-[var(--space-3)] font-semibold text-primary-contrast transition-colors hover:bg-primary-hover"
+          // Inverted on the band: a light fill with brand-coloured text. The
+          // filled `bg-primary` button this replaces sat at 1.6:1 against the
+          // band's own indigo, so the page's single most important control was
+          // the least visible thing in its own card.
+          // Full width on a phone. Armenian CTA labels are long enough to wrap
+          // at 375px, and a wrapped label inside an auto-width pill left the
+          // icon stranded against a wide left gutter with the text ragged
+          // beside it.
+          className="mt-[var(--space-6)] flex w-full items-center justify-center gap-[var(--space-2)] rounded-[var(--radius-full)] bg-[var(--color-on-brand)] px-[var(--space-6)] py-[var(--space-3)] text-center font-semibold text-[var(--color-brand-2)] transition-opacity hover:opacity-90 sm:inline-flex sm:w-auto sm:px-[var(--space-7)]"
         >
-          <Play size={16} strokeWidth={1.75} /> {missionCtaLabel(mission)}
+          {/* Hidden below sm: once the Armenian label wraps to two lines the
+              icon is left floating beside a centred block rather than reading
+              as part of the label. The label already names the action. */}
+          <Play size={16} strokeWidth={1.75} className="hidden shrink-0 sm:block" aria-hidden />
+          {missionCtaLabel(mission)}
         </Link>
       </div>
 
@@ -184,16 +222,19 @@ export function TodayMissionHero({
         <div
           className="hidden h-[120px] w-[120px] shrink-0 items-center justify-center rounded-[var(--radius-full)] sm:flex"
           style={{
-            background: `conic-gradient(var(--color-primary) 0% ${percent}%, var(--color-surface-muted) ${percent}% 100%)`,
+            background: `conic-gradient(var(--color-on-brand) 0% ${percent}%, var(--color-on-brand-fill) ${percent}% 100%)`,
           }}
           role="img"
           aria-label={`Այսօրվա պարապմունքը ${Math.round(percent)} տոկոսով ավարտված է`}
         >
-          <div className="flex h-24 w-24 flex-col items-center justify-center rounded-[var(--radius-full)] bg-surface">
-            <span className="text-[length:var(--text-2xl)] font-semibold tabular-nums text-text">
+          <div
+            className="flex h-24 w-24 flex-col items-center justify-center rounded-[var(--radius-full)]"
+            style={{ background: "var(--color-brand-2)" }}
+          >
+            <span className="text-[length:var(--text-2xl)] font-semibold tabular-nums text-on-brand">
               {Math.round(percent)}%
             </span>
-            <span className="text-[length:var(--text-xs)] text-text-muted">ավարտված</span>
+            <span className="text-[length:var(--text-xs)] text-on-brand-muted">ավարտված</span>
           </div>
         </div>
       )}

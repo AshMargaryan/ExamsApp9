@@ -10,7 +10,7 @@ import type { Profile } from "../api/profile";
 import * as streaksApi from "../api/streaks";
 import {
   getRecommendedExercises, getWeeklyProgress, TIER_LABELS,
-  type RecommendedSubtopic,
+  type RecommendedSubtopic, type WeeklyProgressPoint,
 } from "../api/practice";
 import { useAsyncResource } from "../hooks/useAsyncResource";
 import { WeeklyProgressChart } from "../components/WeeklyProgressChart";
@@ -23,6 +23,18 @@ import { Section } from "../components/ui/Section";
 import { LinkButton } from "../components/ui/LinkButton";
 import { ErrorState } from "../components/ui/ErrorState";
 import { Skeleton, LoadingRegion } from "../components/ui/Skeleton";
+import { PageHeader } from "../components/ui/PageHeader";
+import { cn } from "../lib/cn";
+
+/** One shape for the three facts at the top of the dashboard. */
+const STATUS_CHIP = cn(
+  "flex items-center gap-[var(--space-2)] rounded-[var(--radius-full)]",
+  "border border-border bg-surface",
+  // Tighter on a phone: at full desktop padding these three chips stacked into
+  // three near-full-width rows and pushed the mission band — the one thing the
+  // page exists to show — below the fold at 375px.
+  "px-[var(--space-3)] py-[var(--space-2)] sm:px-[var(--space-4)] sm:py-[var(--space-3)]",
+);
 
 /*
   The student dashboard.
@@ -120,6 +132,37 @@ function priorityTag(mistakeCount: number | null): { icon: React.ReactNode; labe
   return { icon: <ArrowRight size={12} strokeWidth={1.75} />, label: "Հաջորդը", tone: "primary" };
 }
 
+
+/*
+  The student's accuracy in their most recent active week, against the average
+  of the active weeks before it. Deliberately compares like with like — weeks
+  where nothing was solved are skipped rather than counted as 0%, which would
+  make a break from studying look like a collapse in ability.
+
+  Returns null unless there are at least two active weeks and enough questions
+  in them to mean anything: a delta computed from three answers is noise
+  presented as a trend.
+*/
+const MIN_QUESTIONS_FOR_TREND = 5;
+
+function accuracyTrendFrom(points: WeeklyProgressPoint[] | null): { delta: string } | null {
+  if (!points) return null;
+  const active = points.filter((p) => p.solved > 0);
+  if (active.length < 2) return null;
+
+  const latest = active[active.length - 1];
+  const earlier = active.slice(0, -1);
+  const earlierSolved = earlier.reduce((sum, p) => sum + p.solved, 0);
+  if (latest.solved < MIN_QUESTIONS_FOR_TREND || earlierSolved < MIN_QUESTIONS_FOR_TREND) return null;
+
+  const latestAccuracy = (latest.correct / latest.solved) * 100;
+  const earlierAccuracy = (earlier.reduce((sum, p) => sum + p.correct, 0) / earlierSolved) * 100;
+  const delta = latestAccuracy - earlierAccuracy;
+  if (Math.abs(delta) < 1) return null;
+
+  return { delta: `${delta > 0 ? "+" : "−"}${Math.abs(delta).toFixed(1)}% այս շաբաթ` };
+}
+
 function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
   const priority = priorityTag(item.mistake_count);
   return (
@@ -142,12 +185,18 @@ function RecommendedExerciseCard({ item }: { item: RecommendedSubtopic }) {
       <p className="line-clamp-2 text-[length:var(--text-xs)] leading-[var(--leading-snug)] text-text-muted">
         {item.subject_name} · {item.domain_name} · {item.topic_name}
       </p>
-      <div className="mt-auto flex items-center justify-between gap-[var(--space-2)] pt-[var(--space-2)]">
-        <span className="text-[length:var(--text-xs)] text-text-muted">
-          {item.mistake_count === null ? "Դեռ չսկսված" : `Սխալների քանակ՝ ${item.mistake_count}`}
-        </span>
-        <span className="shrink-0 rounded-[var(--radius-full)] bg-surface-muted px-[var(--space-2)] py-0.5 text-[length:var(--text-xs)] font-medium text-primary">
+      {/* The difficulty used to be a filled primary-text pill in the card's
+          bottom-right corner — the canonical position and shape of a button,
+          for a label that is not one. The whole card is the link, so the
+          corner now says so, and the tier joins the other metadata on the
+          left where it belongs. */}
+      <div className="mt-auto flex items-center justify-between gap-[var(--space-2)] border-t border-border pt-[var(--space-3)]">
+        <span className="min-w-0 truncate text-[length:var(--text-xs)] text-text-muted">
           {TIER_LABELS[item.suggested_tier]}
+          {item.mistake_count === null ? " · Դեռ չսկսված" : ` · ${item.mistake_count} սխալ`}
+        </span>
+        <span className="flex shrink-0 items-center gap-1 text-[length:var(--text-xs)] font-semibold text-primary">
+          Սկսել <ArrowRight size={13} strokeWidth={2} aria-hidden />
         </span>
       </div>
     </Link>
@@ -210,6 +259,7 @@ export function HomePage() {
       ? `/practice/subtopic/${recommended[0].subtopic_id}/${recommended[0].suggested_tier}`
       : "/practice";
   const weeklyStudyHours = profile?.stats ? profile.stats.weekly_study_seconds / 3600 : 0;
+  const accuracyTrend = accuracyTrendFrom(weeklyRes.data);
 
   return (
     <div className="min-h-screen bg-bg px-[var(--space-4)] py-[var(--space-6)] sm:px-[var(--space-6)]">
@@ -227,32 +277,40 @@ export function HomePage() {
           />
         ) : (
           <>
-            <header>
-              <h1 className="text-[length:var(--text-2xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text sm:text-[length:var(--text-3xl)]">
-                Բարի վերադարձ{firstName ? `, ${firstName}` : ""}
-              </h1>
-              <p className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-text-muted">
-                {[
-                  `@${profile.username}`,
-                  profile.grade ? `${profile.grade}-րդ դասարան` : null,
-                  profile.school?.name,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            </header>
+            {/* `PageHeader`, not a hand-rolled h1. The dashboard was rebuilt
+                before the display face existed, so its h1 was set in the body
+                face while the `Section` headings *below* it were serif — the
+                page's most important line was the least distinctive thing on
+                it. Every other page in the product opens this way. */}
+            <PageHeader
+              title={`Բարի վերադարձ${firstName ? `, ${firstName}` : ""}`}
+              description={[
+                `@${profile.username}`,
+                profile.grade ? `${profile.grade}-րդ դասարան` : null,
+                profile.school?.name,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              className="mb-[var(--space-5)]"
+            />
 
             {/* Status strip. The exam countdown lives here and ONLY here — it
-                used to be repeated as a full card lower down the page. */}
-            <div className="mt-[var(--space-5)] flex flex-wrap gap-[var(--space-3)]">
-              <span className="flex items-center gap-[var(--space-2)] rounded-[var(--radius-full)] bg-surface px-[var(--space-4)] py-[var(--space-3)]">
+                used to be repeated as a full card lower down the page.
+
+                These carry the border token now. Borderless `bg-surface` on
+                `bg-bg` is a 1.15:1 step in dark mode, so three chips that are
+                meant to read as objects read as loose floating text instead —
+                and they were the only surface elements in the product with no
+                edge at all. */}
+            <div className="flex flex-wrap gap-[var(--space-3)]">
+              <span className={STATUS_CHIP}>
                 <Flame size={18} strokeWidth={1.75} className="text-text-muted" />
                 <span className="text-[length:var(--text-sm)] text-text">
                   <strong>{streak?.current_streak ?? 0} օրյա</strong> շարք
                 </span>
               </span>
 
-              <span className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-full)] bg-surface px-[var(--space-4)] py-[var(--space-3)]">
+              <span className={cn(STATUS_CHIP, "gap-[var(--space-3)]")}>
                 <span className="text-[length:var(--text-sm)] text-text">
                   <strong>Level {profile.level}</strong>
                 </span>
@@ -277,12 +335,21 @@ export function HomePage() {
               {profile.target_exam_date && (
                 <Link
                   to="/profile"
-                  className="flex items-center gap-[var(--space-2)] rounded-[var(--radius-full)] bg-surface px-[var(--space-4)] py-[var(--space-3)] transition-colors hover:bg-surface-muted"
+                  className={cn(STATUS_CHIP, "transition-colors hover:border-primary-line hover:bg-surface-muted")}
                 >
                   <CalendarDays size={18} strokeWidth={1.75} className="text-text-muted" />
                   <span className="text-[length:var(--text-sm)] text-text">
-                    <strong>{Math.max(profile.days_until_exam ?? 0, 0)} օր</strong> մինչև քննությունը ·{" "}
-                    {new Date(profile.target_exam_date).toLocaleDateString("hy-AM", { month: "long", day: "numeric" })}
+                    <strong>{Math.max(profile.days_until_exam ?? 0, 0)} օր</strong> մինչև քննությունը
+                    {/* The exact date is context, not the headline, and it is
+                        what made this chip too wide to share a row on a
+                        phone. The day count is the thing being tracked. */}
+                    <span className="hidden sm:inline">
+                      {" · "}
+                      {new Date(profile.target_exam_date).toLocaleDateString("hy-AM", {
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
                   </span>
                 </Link>
               )}
@@ -369,12 +436,15 @@ export function HomePage() {
               description="Վերջին 8 շաբաթվա պարապմունքները։"
             >
               <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-[var(--space-6)] sm:p-[var(--space-7)]">
+                {/* "Ճիշտ / Ընդհանուր" was wrong as well as hard to see: the
+                    two swatches are the two *parts* of a bar, so the second one
+                    is the incorrect remainder, not the total. */}
                 <div className="mb-[var(--space-4)] flex items-center justify-end gap-[var(--space-3)] text-[length:var(--text-xs)] text-text-muted">
                   <span className="flex items-center gap-[var(--space-1)]">
-                    <span className="h-2 w-2 rounded-[var(--radius-full)] bg-accent" /> Ճիշտ
+                    <span className="h-2 w-2 rounded-[var(--radius-full)] bg-primary" /> Ճիշտ
                   </span>
                   <span className="flex items-center gap-[var(--space-1)]">
-                    <span className="h-2 w-2 rounded-[var(--radius-full)] bg-border" /> Ընդհանուր
+                    <span className="h-2 w-2 rounded-[var(--radius-full)] bg-primary/25" /> Սխալ
                   </span>
                 </div>
 
@@ -393,7 +463,20 @@ export function HomePage() {
                     weeklyStudyHours > 0 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"
                   }`}
                 >
-                  <StatTile label="Ճշգրտություն" value={`${profile.stats?.accuracy_percentage ?? 0}%`} />
+                  {/* An accuracy figure with nothing beside it is a verdict,
+                      not information — a student reading "14.3%" cold has no
+                      way to tell whether that is improving, what it counts, or
+                      what to do about it. The weekly series already on this
+                      page supplies the only comparison that is honest and
+                      always available: the student against their own earlier
+                      weeks. When there are not two active weeks to compare,
+                      the tile at least says what the number covers. */}
+                  <StatTile
+                    label="Ճշգրտություն"
+                    value={`${profile.stats?.accuracy_percentage ?? 0}%`}
+                    delta={accuracyTrend?.delta}
+                    hint={accuracyTrend ? undefined : "Բոլոր լուծված հարցերի հաշվով"}
+                  />
                   <StatTile label="Ավարտված թեստ" value={`${profile.stats?.tests_completed ?? 0}`} />
                   {weeklyStudyHours > 0 && (
                     <StatTile label="Այս շաբաթ" value={`${weeklyStudyHours.toFixed(1)} ժ`} />
