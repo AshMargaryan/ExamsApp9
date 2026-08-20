@@ -904,3 +904,99 @@ state **CSS animations never tick and `requestAnimationFrame` never fires**:
 
 Prefer `getBoundingClientRect` / `elementFromPoint` / `getComputedStyle`
 assertions, and take screenshots at scroll-0 with a tall viewport.
+
+---
+
+## Session 5 — the surfaces nobody had visited
+
+Session 4 closed out the primary student journey. This session works down
+debt item 2 — the list of screens that had never been through the loop — and
+handles debt item 1 (emoji-as-iconography) inside each one rather than as a
+glyph sweep.
+
+The recurring shape of these surfaces is the same one session 2 named:
+**adoption, not absence.** Each had an unguarded `.then(setX)` that leaves the
+page loading for ever on any failure, a hand-rolled `animate-pulse` skeleton
+beside the kit's `Skeleton`, native `<select>`s, `<label>`s with no `htmlFor`,
+and a `MessageModal` or a toast where an inline error belongs. Underneath
+that, each had one or two problems that were genuinely about the product.
+
+### Shared components changed
+
+**`ui/Dropdown` had no keyboard.** It portals its menu to `document.body`, so
+the menu is the last element in the document regardless of where its trigger
+sits — Tab never reaches it. Opening the account menu with the keyboard left
+focus on the avatar and the only way in was to tab through the whole page.
+Ten call sites, including the one holding "Ելք".
+
+It now follows the WAI-ARIA menu-button pattern: first enabled item focused on
+open, Up/Down/Home/End with wrap, Tab dismisses, Escape returns focus to the
+trigger. New item fields: `hint` (a line of consequence under the label — a
+menu is where a setting's cost should be stated), `checked` + `selection`
+(`"radio"` default, `"checkbox"` for a standalone toggle — announcing a lone
+on/off as a radio implies a sibling that does not exist), `disabled`, and
+`divider`.
+
+**`.math-scroll` now wraps before it scrolls.** KaTeX emits break
+opportunities between top-level relations and binary operators; `displayMode`
+then sets `white-space: nowrap` over them, and much of the content bank is
+authored as `$$…$$`. Measured: a 438px answer inside a 244px option with 194px
+behind an invisible scroll. Wrapping breaks it at the `=` signs. The vertical
+axis is `hidden` now rather than the `auto` it inherited from `overflow-x`,
+which was painting a full-height scrollbar track down the right of every
+formula in the product, scrolling nothing.
+
+**`games/GameCountdown`** — per-question countdown with the same three-state
+discipline as `mockexam/ExamTimer` at a fifteen-second scale rather than a
+sixty-minute one. Fixed size across all three states: the old one grew a font
+size at the threshold and reflowed the header in the middle of a question.
+
+**`flashcards/DeckFormModal`** is on `ui/Modal` rather than a hand-rolled
+`fixed inset-0` with no focus trap, no Escape and no dialog role.
+
+### Surfaces taken through the loop
+
+**Flashcard study / manage / editor** (`a691460`, `c3f9f2e`)
+
+Study's three permanent settings rows pushed the question to 62% down a
+375×812 screen. They are a menu now — and a menu can state that changing the
+mode discards the queue, which the pills silently did. Beyond layout: the card
+transition gated *all* input on an `animationend` that a backgrounded tab or
+an interrupted animation can swallow, stranding the student on a card that
+ignored every click (there is a watchdog now, and only the exit half blocks);
+the progress bar read 0/7 while showing the result of card one; the finish
+screen's only forward action was to repeat all seven cards including the three
+already known; and the classic card flipped on a `div` with an `onClick`,
+announced as nothing, with both faces permanently in the accessibility tree so
+a screen reader read the answer aloud with the question.
+
+Manage printed the card's LaTeX source — the one screen in the product showing
+`$\sin 2\alpha$` instead of mathematics — and offered eleven write controls on
+a shared library deck where every one of them answers 404, four behind a
+confirmation promising something irreversible. It is a card browser for a
+library deck now.
+
+The editor never showed what the LaTeX it asks for would look like, so the
+only way to check a formula was to save the card and study it. It renders as
+you type.
+
+**Games and multiplayer** (`67d0467`, `9bb0778`)
+
+The score — the point of a competitive game — was a grey line at the bottom of
+the gameplay page, below the fold on a phone. Leaving a live game was one
+click on a text link. The lobby opened with a nine-field configuration form
+in which two fields configured a difficulty that can never appear, while
+joining with a code sat in a small card beside it and quick match was a header
+button. Results carried the fourth copy of the `{1:"🥇"}` medal map, put three
+of its six leaderboard columns off the right edge of a phone, and did not mark
+the reader's own row.
+
+### Rules added to the precedent list
+
+9. A disabled control says why, near itself, whenever the reason is knowable.
+10. A destructive action that affects other people confirms, and the
+    confirmation counts them.
+11. An error belongs beside the control that produced it — never in a modal
+    the student must dismiss to reach the field they need to fix.
+12. A `Select` needs a visible label. Its own `label` prop is only an
+    accessible name; wrap it in `Field`.
