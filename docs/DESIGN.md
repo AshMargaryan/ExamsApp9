@@ -542,63 +542,365 @@ message carries its own full diagnosis; the reusable findings are:
 
 ## Session 4 — Settings, dashboard retrofit, and the final pass
 
-### Settings (`redesign: make Settings the place settings actually live`)
+Eleven commits. The through-line is that the identity established in session 2
+had been applied to the surfaces session 2 and 3 visited and to nothing else,
+so the work here is less "design a page" and more "finish being one product":
+one icon language, one product name, one subject picker, one button that does
+not break the page, one place settings live.
 
-The full diagnosis is in the commit message. Three decisions worth carrying:
+---
 
-**1. Personalisation is now an index into a table, not a colour.**
+### 1. Settings (`redesign: make Settings the place settings actually live`)
+
+Settings held three controls: a password form and two free-form gradient
+mixers, under a line reading "the rest of your account settings are on your
+profile page". They genuinely were: privacy in a hand-rolled overlay behind a
+profile menu, active devices on their own route reachable from a grey text
+link, light/dark only as an unlabelled header icon. The page named after
+settings held the two least consequential controls in the product.
+
+It is one page now — **Տեսք / Անվտանգություն / Գաղտնիություն** — with an
+anchored section rail (a strip pinned under the top bar below `xl`), so a link
+can point at the part it means. `/account/sessions` redirects to
+`/settings#devices` and its page is deleted rather than left as a second copy.
+
+Three decisions worth carrying forward:
+
+**1a. Personalisation is an index into a table, not a colour.**
 
 The retired mixers wrote runtime values into `--gradient-primary` and
-`--gradient-bg`. The second one is the one that mattered: `--color-text-muted`
-is measured at 5.9:1 against a *known* ground, and an arbitrary gradient
-behind it voids that measurement across the whole product at once. The
-replacement is a `data-accent` attribute on `<html>` and six preset blocks in
-`theme.css`, each a complete `--color-primary*` set for light and dark. The
+`--gradient-bg`. The second one is why this became a token change:
+`--color-text` and `--color-text-muted` are measured against a *known* paper or
+ink ground, and an arbitrary gradient behind them voids that measurement across
+the whole product at once. The picker's default was a saturated
+blue→purple→pink — dense Armenian body copy on exactly the ground §15 forbids —
+and its **reset** button restored the *pre-identity* violet, so the one control
+students were pointed at could only take the product backwards.
+
+The replacement is `data-accent` on `<html>` plus six preset blocks in
+`theme.css`, each a complete `--color-primary*` set for light *and* dark. The
 frontend can no longer invent a colour, so a preset cannot be half-applied to
-one theme or land outside the contrast floor (lowest in the table: 6.05:1).
+one theme or land under the contrast floor. Lowest ratio in the table is
+6.05:1; verified live in the browser afterwards (forest/dark measured 8.20:1
+primary-on-surface, 8.63:1 for its contrast text).
 
-The brand band does **not** follow the accent, consistent with the note beside
-`--gradient-brand`: a branded ground that carries white text is a different
-concept from the action colour.
+The brand band deliberately does **not** follow the accent — see the note
+beside `--gradient-brand`: a branded ground that carries white text is a
+different concept from the action colour.
 
-**2. `system` is a state, not the absence of a choice.**
+**1b. `system` is a state, not the absence of a choice.**
 
-`useTheme` used to persist to localStorage from an effect on every mount, so
-rendering the header once converted an OS-following student into a pinned
-light/dark choice with no way back. It is a `useSyncExternalStore` now — one
-value, one media listener, consumers cannot disagree — and `system` is stored
-as the removal of the key, matching what a first-time visitor has.
+`useTheme` persisted to localStorage from an effect on every mount, so merely
+rendering the header converted an OS-following student into a pinned light or
+dark choice they could never get back out of. It is a `useSyncExternalStore`
+now — one value, one media listener, consumers cannot disagree — and `system`
+is stored as the *removal* of the key, which is also what a first-time visitor
+has. One representation for one state.
 
-**3. Optimistic UI needs a rollback or it is a lie.**
+**1c. Optimistic UI without a rollback is a lie.**
 
 The privacy modal kept the optimistic value after a rejected save, so a switch
-read "hidden" while the server said "visible". Any optimistic control in this
-codebase should follow `PrivacySection`: apply, await, replace with the
-server's answer, and on failure restore the previous value *and say so*.
+read "hidden" while the server said "visible" — the worst class of control to
+get silently wrong. Any optimistic control in this codebase should follow
+`PrivacySection`: apply, await, replace with the server's answer, and on
+failure restore the previous value **and say so**.
 
-### New / changed shared components
+---
 
-- **`components/settings/{AppearanceSection,SecuritySection,PrivacySection}`** —
-  content components; the page composes them with `Section` + `Card`.
-- **`lib/accentTheme.ts`** — `ACCENTS`, `getStoredAccent`, `saveAccent`,
-  `applyStoredAccent` (which also clears the two retired gradient keys, so a
-  student who saved a magenta ground is not left on it).
-- **`ui/SectionNav` / `SectionNavBar` gained `offset`** — a nav pinned under a
-  fixed header was scrolling headings to underneath itself.
+### 2. Dashboard retrofit (`redesign: bring the dashboard onto the identity it predates`)
 
-### Verification note for future sessions
+Rebuilt in session 1, before the display face and the identity existed, so its
+`h1` sat in the body face while the `Section` headings *below* it were serif —
+the page's most important line was the least distinctive thing on it.
+
+**The mission hero has now been two wrong things.** It began painting
+`--gradient-hero`, a saturated magenta ramp built from the old violet primary,
+edge to edge with every string in white at ~13px; session 1 correctly killed
+that. But the quiet tinted surface it became was its own failure: the card
+carries the single next action the whole page exists to produce, and as a pale
+wash it was *less* prominent than the daily-problem card beneath it.
+
+The resolution is that the identity built a ground for exactly this.
+`--gradient-brand` is theme-invariant and measured (white 8.3:1–11.7:1, muted
+5.1:1), so the hero is branded again on a surface whose contrast is known. The
+CTA inverts to a light fill — the `bg-primary` button it replaced sat at 1.6:1
+against the band's own indigo, which would have made the page's most important
+control the least visible thing in its own card. The checklist's done-state
+drops `--color-correct` (≈2.6:1 on the band) and carries done-ness with a
+filled icon plus strike-through.
+
+Two long-carried debt items closed here, **one by deciding not to do it**:
+
+- `WeeklyProgressChart` stays a hand-rolled bar strip rather than migrating to
+  `ui/Chart`. That is a recharts *line* chart, and a line through eight
+  discrete weekly counts implies a continuity that is not there; recharts is a
+  ~354KB chunk the dashboard — the highest-traffic route — should not pay to
+  draw eight rectangles. What was actually wrong is fixed: `title` attributes
+  were the only way to read a bar's numbers, so on a phone the chart carried no
+  values at all (it has a real text alternative now), and the incorrect portion
+  of each bar was painted with `--color-border`, a structural token doing duty
+  as a data colour.
+- "`16.7% Ճշգրտություն` presented cold" was left in session 1 because "compare
+  against what" is a product question. The weekly series already on the page
+  answers it honestly: the student against their own earlier weeks. Weeks with
+  no activity are **skipped rather than counted as 0%**, so a break from
+  studying does not read as a collapse in ability, and no delta is shown below
+  five questions on either side — a trend computed from three answers is noise
+  wearing a plus sign.
+
+---
+
+### 3. Information architecture: one subject picker
+
+Stated in the form §65 asks for.
+
+**Problem.** Every "subjects" entry point — sidebar item, mobile tab, the
+mission hero's fallback, the study plan's empty-state CTA, the learning
+profile's mastery panel — pointed at `/subjects`: a nine-panel scrolling
+"universe" on a hardcoded `#05050a` ground that ignored the theme, set in
+Spectral and Work Sans, neither of which has Armenian glyphs. It showed no
+study information at all, and six of its nine panels had no practice content
+behind them — they opened a "coming soon" dialog. The main study destination in
+the navigation was two-thirds dead ends, nine screen-heights tall. Meanwhile
+`/practice` rendered a second picker, with real progress, that nothing linked
+to.
+
+**Proposed and shipped.** `/subjects` and `/practice` render the same picker —
+the one with progress, domain and subtopic counts, and average score. The
+subject-hub page's other two destinations (that subject's mock exams and
+flashcards) move onto the card as secondary links. `/subjects/:subject`
+redirects.
+
+**Why better.** Reaching a question went from subjects → hub → navigator →
+topic → subtopic to subjects → navigator → topic → subtopic, and the first step
+now tells you which subject needs the work.
+
+**Risks and cover.** Assignment deep-link resolution lives in this component
+and is untouched; both routes render it. `/subjects/:subject` had no inbound
+links beyond the universe and its own back button. The six contentless subjects
+are named in one quiet line instead of six clickable dead ends.
+
+Deleted: `SubjectsPage`, `SubjectHubPage`, `OrbitField`, `subjectsUniverse.css`,
+`lib/subjectsUniverse.ts`, and `public/subjects-universe/` — 1.2MB of portraits
+that were the entire contents of `public/`, copied into every build. All
+recoverable from git if the universe is ever wanted on the marketing page,
+which is where its visual language belongs.
+
+---
+
+### 4. Product-wide coherence passes
+
+**Armenian is never set in capitals** (`typography: stop setting Armenian in
+capitals`). A rule the codebase had discovered twice without generalising.
+Armenian capitals are far more uniform in shape than Armenian lowercase, which
+is unusually rich in ascenders and descenders (ղ, ը, պ, ց, ջ). Latin small-caps
+works because Latin capitals still differ from each other at small sizes;
+Armenian ones flatten into a row of similar rectangles, and `text-xs` with
+`tracking-wide` flattens them most. All thirty Armenian `uppercase` sites are
+gone. Two Latin ones remain deliberately: the game room-code input and the
+landing page's "AI Tutor" kicker.
+
+**One product name.** The logo, tab title, auth screens and settings said
+*Gitus*; twenty user-facing strings said *Haygit*. `HaygitInsightCard` is
+renamed rather than left rendering "Gitus-ը նկատեց". Two pages were also both
+titled "Բարի վերադարձ, {name}" — the study plan is titled after itself now.
+
+**One icon language.** `SubjectMeta.icon` held `"∑" | "⚛" | "🧬" | "⚗" | "🇬🇧"` —
+two maths symbols that render in the text font, two colour emoji, and a *flag*.
+One field fed thirteen call sites across seven surfaces, so it was the
+highest-leverage fix available; it is a `LucideIcon` now. Then the shared
+chrome: every toast in the product opened with `✅ `/`⚠️ ` *inside* its
+`role="status"` region, so a screen reader announced "white heavy check mark"
+before the sentence; the generic modals used the same glyphs at `text-4xl`;
+plus the hint button, the reading-note callout, the notepad, the tools dock,
+both `AttachmentChip` copies, the speech controls, and roughly a dozen `✕`
+close buttons — of which **five had no accessible name at all** and three were
+labelled "Close" in an Armenian interface.
+
+---
+
+### 5. What the final pass found
+
+**Two routes scrolled sideways at 375px, and one cause was in the shared
+button.** `buttonClasses` set `whitespace-nowrap` on a fixed height, so a label
+too long for its container widened the button and the button widened the
+document. Measured on the study plan: a 468px CTA in a 343px column, giving the
+page a 484px scrollWidth. Armenian is where this bites — Armenian labels run
+considerably longer than their English equivalents — and clipping is no more
+acceptable than shrinking. Buttons wrap now: `min-h` replaces `h`, so every
+short label keeps its exact previous height and only an unfittable one takes a
+second line. The games page repeated the rankings header defect (an unshrinkable
+`h1` beside a fixed-width CTA in `justify-between`) and moved to `PageHeader`.
+
+**The floating launchers were standing on the content.** Two 64px circles
+pinned to opposite bottom corners of every authenticated page; because they are
+fixed, whatever is beneath them is beneath them permanently — observed covering
+the daily problem's submit button at 768px. Both are 52px now (still clear of
+the 44px floor), and `AppChrome` reserves 84px below the content, which is the
+only place that knows whether the launchers are mounted at all.
+
+**A card whose most button-like object could not be clicked.** `ExamCard` was a
+`role="button"` div wrapping a `pointer-events-none` filled Button. It is a
+real stretched `<Link>` now, which also restores ⌘-clicking an exam into a new
+tab.
+
+**Hover-only actions on the AI assistant.** Copy / edit / listen / regenerate
+were `opacity-0 group-hover:opacity-100`. A phone has no hover, so on the
+platform most students read answers on, all four were invisible and
+unreachable; a keyboard user could tab into an undrawn button. Visible by
+default below `sm`, `group-focus-within` added above it.
+
+**The mistake notebook designed away its own ordering.** Topics are sorted
+worst-first and then every row got an identical filled button — sixty-nine of
+them on a real account. Only the lead row in each subject is primary now. Its
+open-mistake count also came in alarm red as the first thing on the page;
+`Metric`'s own doc reserves that tone for numbers that *mean* good or bad, and
+a workload is neither.
+
+---
+
+### Verified
+
+- **Breakpoints**: 375 / 390 / 768 / 1024 / 1280 / 1440. All eighteen student
+  routes assert `scrollWidth === clientWidth` at 375 after the button fix.
+  1024 specifically caught the settings rail, which turns on at `xl` rather
+  than `lg` because the app's own 200px sidebar is already showing there.
+- **Themes**: light, dark, and `system` (which now resolves live), each with a
+  non-default accent applied, checked in the browser rather than by inspection.
+- **States**: populated, skeleton, per-region error with a working retry
+  (a dead `/auth/sessions` costs the device list and nothing else), empty,
+  and long-content.
+- **Accessibility**: zero unnamed interactive controls on the audited routes;
+  focus tokens resolve (2px, 2px offset); the accent radiogroup is one tab stop
+  with arrow keys; `ConfirmDialog` traps focus and closes on Escape; reduced
+  motion is handled by a global `*` rule so every transition added this session
+  collapses automatically.
+- **Bundle**, measured by building the pre-session commit against the same
+  `node_modules`: main chunk 698.39 kB → 707.07 kB raw, **195.02 → 196.93 kB
+  gzip (+1.9 kB)**, CSS +1 kB, minus a 1.12 kB route chunk and minus 1.2 MB of
+  public assets. `package.json` is byte-identical to the pre-session commit —
+  **no dependency was added**.
+- 127 frontend tests pass (up from 124: two `AccountSessionsPage` tests were
+  replaced by five covering the settings sections), `tsc -b` clean, production
+  build succeeds.
+
+---
+
+### Design system — current state
+
+**Tokens** (`src/theme.css`)
+
+| Group | Tokens |
+|---|---|
+| Ground | `--color-bg`, `--color-surface`, `--color-surface-muted`, `--color-surface-raised`, `--color-border` |
+| Text | `--color-text`, `--color-text-muted` |
+| Action | `--color-primary`, `-hover`, `-contrast`, `-bg`, `-line` |
+| Accent | `--color-accent`, `-bg`, `-line` |
+| Brand band | `--color-brand-1..4`, `--gradient-brand`, `--color-on-brand`, `-muted`, `-fill`, `-line` (theme-**invariant**) |
+| State | `--color-correct/-bg`, `--color-incorrect/-bg`, `--color-success`, `--color-warning`, `--color-info` (+ `-bg`) |
+| Type | `--text-xs…5xl` with matching `--leading-*`, `--tracking-tight/normal/wide`, `--measure-*`, `--font-sans`, `--font-display` |
+| Space | `--space-*`, `--section-gap`, `--section-gap-lg` |
+| Radius | `--radius-xs/sm/md/lg/xl/2xl/full` (`--radius` aliases `-lg`) |
+| Elevation | `--shadow-xs/sm/md/lg` |
+| Focus | `--focus-ring-width/-color/-offset` + a global `:where(...):focus-visible` floor |
+| Motion | `--motion-micro/fast/normal/emphasis/celebration`, `--ease-out`, `--ease-spring` |
+| Personalisation | `[data-accent]` × 6 presets × 2 themes |
+
+**Shared components and their contracts**
+
+| Component | Use it for |
+|---|---|
+| `ui/PageHeader` | The top of every page: back link, eyebrow, title (display face), description, actions. Actions wrap under the title, which is what keeps long Armenian titles from breaking the row. |
+| `ui/Section` | An `h2`/`h3` section with description, trailing action and vertical rhythm. Level 2 takes the display face. |
+| `ui/SectionNav` / `SectionNavBar` | Anchored nav for a long page; rail on wide, strip on narrow. **Pass `offset`** when the nav itself is pinned under the header. |
+| `ui/DataCard` | A card of data: lucide icon, title, description, trailing control. Never an emoji. |
+| `ui/Card` | A plain bordered surface, when the header is being composed separately. |
+| `ui/StatTile` / `ui/Metric` | Bordered vs. unbordered metric. `tone` is semantic: `incorrect` means the number *means* bad, not that it counts bad things. |
+| `ui/Field` / `PasswordField` / `FormAlert` | Labelled input with hint, error and `aria-invalid`. Errors land on the field, never in a toast or modal. |
+| `ui/Switch`, `Select`, `Tabs`, `Badge`, `ProgressBar`, `RankBadge`, `Skeleton`, `LoadingRegion`, `ErrorState`, `EmptyState`, `ConfirmDialog`, `Modal` | The rest of the kit. `EmptyState.icon` takes a node — pass a lucide element. |
+| `hooks/useAsyncResource` | One async read with all four states and a retry. Replaces `.then(setX)`. |
+| `hooks/useTheme` | `{ theme, preference, setPreference, toggleTheme }` over a shared store. |
+| `lib/accentTheme` | `ACCENTS`, `getStoredAccent`, `saveAccent`, `applyStoredAccent`. |
+| `lib/subjects` | `SUBJECTS` with a `LucideIcon`, `subjectMeta`, `subjectMetaForName`, `subjectIconForName`, `localizeSubjectName`. |
+| `lib/scrollToElement` | Any scripted scroll. Never call `scrollIntoView` directly. |
+
+**Rules that now have precedent**
+
+1. Armenian is never set in `uppercase`.
+2. Icons are lucide. Emoji appear only where the emoji *is* the content.
+3. A page title uses `PageHeader` and the display face.
+4. Optimistic writes roll back and say so.
+5. `tone`/`--color-incorrect` is reserved for things that mean wrong, not for
+   things that count wrong answers.
+6. Anything painted on `--gradient-brand` uses `--color-on-brand*`.
+7. Status is never colour alone — pair it with an icon, a label, or a position.
+8. A control's accessible name is written in Armenian, and is never a glyph.
+
+---
+
+### Remaining design debt
+
+Ordered by value ÷ risk.
+
+1. **The long tail of emoji in unvisited surfaces.** The shared chrome is
+   clean; `FlashcardStudyPage`, `GameplayPage`/`ResultsPage`, the todo pages,
+   `UserProfilePage` and `notes/canvas/CanvasEditor` still use emoji as
+   iconography. Fix them *as part of* taking each surface through the loop, not
+   as a sweep — chasing glyphs without the UX pass is the cosmetics-first order
+   §63 warns about.
+2. **Surfaces never taken through the loop**: flashcard study / editor / deck
+   management, mock-exam results and history, the games and multiplayer flow,
+   `/todo/*`, help centre articles and tickets, `UserProfilePage`,
+   `AssignmentReviewPage`, `/subscription`, `/verify-email`.
+3. **`ReloadButton` is rendered on the wrong platform.** `AppChrome` mounts it
+   only on the **web**, where the browser already provides reload, and not in
+   the native shell, where there is no browser chrome and it would earn its
+   place. Removing it from the web takes a fourth permanent overlay off every
+   page. This is a product call, not a design one.
+4. **`SubtopicPage`'s lesson stepper** renders 7+ long Armenian pills wrapping
+   to four rows above the content (carried from session 2).
+5. **Radius migration is incomplete.** The scale exists; several hundred
+   `rounded-md` / `rounded-xl` / `rounded-2xl` call sites still bypass it.
+   Migrate opportunistically per surface.
+6. **No cross-page data cache.** Every navigation refetches. Flagged in
+   `CLAUDE.md` as a deliberate repo-wide decision; worth revisiting, but not a
+   unilateral design change.
+7. **The weekly chart still plots eight weeks to show one bar** for a typical
+   account. The accuracy trend beside it now gives the card a reason to exist,
+   but a range that adapts to available data would be better.
+8. **`greetingSubtext()` retains a motivational-fallback branch** for when no
+   real insight exists. It is grounded in real data today; keep it that way.
+
+### Future opportunities
+
+- **The retired universe belongs on the landing page.** It is genuinely the
+  most distinctive thing the codebase has ever contained; it was only in the
+  wrong place. `LandingPage` already has its own visual language and its own
+  campaign gradient hook.
+- **Per-topic difficulty in the mistake notebook.** With a seeded account every
+  topic shows the same count, so "worst first" conveys nothing. Real accounts
+  differentiate — but a secondary sort (recency, or error category) would make
+  the order legible even when counts tie.
+- **`ui/Chart` needs a bar variant** before any other surface wants one, or the
+  next person will either hand-roll a second bar strip or pull recharts onto a
+  page that cannot afford it.
+- **A visual-regression harness.** Every finding in this session that mattered
+  — the 484px scrollWidth, the 1.6:1 CTA, the invisible mobile actions — was
+  found by measuring the DOM, not by reading code. Those measurements are cheap
+  to automate and would catch the next one before a human sees it.
+
+### A note on verifying this app
 
 The browser pane used for live checks is frequently `document.hidden`. In that
-state **CSS animations never tick and `requestAnimationFrame` never fires**.
-Two consequences:
+state **CSS animations never tick and `requestAnimationFrame` never fires**:
 
-1. A Radix dialog that has closed stays mounted and visible, because
-   `Presence` is waiting for an `animationend` that cannot arrive. This looks
-   exactly like "Escape does not close the dialog" and is not a product bug —
-   check `data-state` before believing it.
+1. A Radix dialog that has closed stays mounted and visible, because `Presence`
+   waits for an `animationend` that cannot arrive. This looks exactly like
+   "Escape does not close the dialog" — check `data-state` before believing it.
 2. Anything scheduled with `rAF` silently does not run. The settings
-   hash-scroll originally used one and did nothing; it uses `setTimeout` now,
-   which is both more robust and testable here.
+   hash-scroll originally used one and did nothing; `setTimeout` is both more
+   robust and testable here.
+3. Screenshots after a scripted scroll return stale or blank frames.
 
-Screenshots are also unreliable after a scripted scroll — prefer
-`getBoundingClientRect` / `elementFromPoint` assertions.
+Prefer `getBoundingClientRect` / `elementFromPoint` / `getComputedStyle`
+assertions, and take screenshots at scroll-0 with a tall viewport.
