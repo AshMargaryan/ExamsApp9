@@ -514,3 +514,91 @@ partly done). Added:
 4. `MockExamHistoryPage`, `MockExamResultsPage`, `MockExamDetailPage`,
    `FlashcardStudyPage`, `FlashcardEditorPage`, `FlashcardDeckManagePage` were
    not taken through the loop this session.
+
+---
+
+## Session 3 — the remaining student surfaces
+
+Recorded after the fact (session 3 was cut short by a session limit before it
+could write this up). Commits `90a6ddb` → `16c993e` took the profile, notes,
+notifications, rankings, teacher dashboard, parent dashboard and the four
+authentication screens through the loop, and extracted `ui/DataCard` (from
+`profile/ProfileCard`) with 17 components migrated onto it. Each commit
+message carries its own full diagnosis; the reusable findings are:
+
+- **`ui/SectionHeader` is deleted** (session 1 debt item 7). All four of its
+  call sites are on `ui/Section`, which gives real h2/h3 levels.
+- **`ui/RankBadge`** is now the single rank badge; a copy-pasted
+  `{1:"🥇",2:"🥈",3:"🥉"}` map existed in three other places. The number is
+  always shown and the metal added to it, never instead of it.
+- **A 401 from a credential endpoint is not an expired session.** The axios
+  interceptor treated every 401 as "refresh, then bounce to /login", so a
+  wrong password caused a full page navigation that destroyed the error the
+  login page had just set. The five credential endpoints are now exempt.
+- **`ui/Field` / `PasswordField` / `FormAlert`** give forms somewhere to put an
+  error that is not a modal or a toast.
+
+---
+
+## Session 4 — Settings, dashboard retrofit, and the final pass
+
+### Settings (`redesign: make Settings the place settings actually live`)
+
+The full diagnosis is in the commit message. Three decisions worth carrying:
+
+**1. Personalisation is now an index into a table, not a colour.**
+
+The retired mixers wrote runtime values into `--gradient-primary` and
+`--gradient-bg`. The second one is the one that mattered: `--color-text-muted`
+is measured at 5.9:1 against a *known* ground, and an arbitrary gradient
+behind it voids that measurement across the whole product at once. The
+replacement is a `data-accent` attribute on `<html>` and six preset blocks in
+`theme.css`, each a complete `--color-primary*` set for light and dark. The
+frontend can no longer invent a colour, so a preset cannot be half-applied to
+one theme or land outside the contrast floor (lowest in the table: 6.05:1).
+
+The brand band does **not** follow the accent, consistent with the note beside
+`--gradient-brand`: a branded ground that carries white text is a different
+concept from the action colour.
+
+**2. `system` is a state, not the absence of a choice.**
+
+`useTheme` used to persist to localStorage from an effect on every mount, so
+rendering the header once converted an OS-following student into a pinned
+light/dark choice with no way back. It is a `useSyncExternalStore` now — one
+value, one media listener, consumers cannot disagree — and `system` is stored
+as the removal of the key, matching what a first-time visitor has.
+
+**3. Optimistic UI needs a rollback or it is a lie.**
+
+The privacy modal kept the optimistic value after a rejected save, so a switch
+read "hidden" while the server said "visible". Any optimistic control in this
+codebase should follow `PrivacySection`: apply, await, replace with the
+server's answer, and on failure restore the previous value *and say so*.
+
+### New / changed shared components
+
+- **`components/settings/{AppearanceSection,SecuritySection,PrivacySection}`** —
+  content components; the page composes them with `Section` + `Card`.
+- **`lib/accentTheme.ts`** — `ACCENTS`, `getStoredAccent`, `saveAccent`,
+  `applyStoredAccent` (which also clears the two retired gradient keys, so a
+  student who saved a magenta ground is not left on it).
+- **`ui/SectionNav` / `SectionNavBar` gained `offset`** — a nav pinned under a
+  fixed header was scrolling headings to underneath itself.
+
+### Verification note for future sessions
+
+The browser pane used for live checks is frequently `document.hidden`. In that
+state **CSS animations never tick and `requestAnimationFrame` never fires**.
+Two consequences:
+
+1. A Radix dialog that has closed stays mounted and visible, because
+   `Presence` is waiting for an `animationend` that cannot arrive. This looks
+   exactly like "Escape does not close the dialog" and is not a product bug —
+   check `data-state` before believing it.
+2. Anything scheduled with `rAF` silently does not run. The settings
+   hash-scroll originally used one and did nothing; it uses `setTimeout` now,
+   which is both more robust and testable here.
+
+Screenshots are also unreliable after a scripted scroll — prefer
+`getBoundingClientRect` / `elementFromPoint` assertions.
