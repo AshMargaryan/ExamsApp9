@@ -73,7 +73,20 @@ class TicketMessageSerializer(serializers.ModelSerializer):
         fields = ["id", "text", "is_staff", "attachments", "created_at"]
 
     def get_is_staff(self, obj) -> bool:
-        return obj.sender_id is None
+        # A null sender is the documented "staff reply written via Django
+        # admin" case — but the admin's own TicketMessageInline exposes
+        # `sender` as an editable field, so a support agent who fills it in
+        # with their own account produced a message the frontend then
+        # attributed to the *student*: support's words, in the student's own
+        # bubble, labelled "Դու". Observed on a seeded ticket where support
+        # asked a question and the thread showed the student asking it.
+        #
+        # Authorship is the honest test, and both ticket endpoints scope the
+        # queryset to `user=request.user`, so the viewer is always the
+        # ticket's owner: anyone else who wrote in this thread is support.
+        request = self.context.get("request")
+        viewer_id = getattr(getattr(request, "user", None), "id", None)
+        return obj.sender_id is None or (viewer_id is not None and obj.sender_id != viewer_id)
 
 
 class TicketListSerializer(serializers.ModelSerializer):

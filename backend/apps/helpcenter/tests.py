@@ -138,6 +138,40 @@ class SupportTicketApiTests(TestCase):
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, TicketStatus.IN_PROGRESS)
 
+    def test_reply_reopens_resolved_ticket(self):
+        """"Resolved" is support's opinion; a reply is the student disagreeing."""
+        ticket = SupportTicket.objects.create(
+            user=self.user, category="account", description="x", status=TicketStatus.RESOLVED,
+        )
+        resp = self.client.post(f"/api/help/tickets/{ticket.id}/messages/", {"text": "Դեռ չի աշխատում"})
+        self.assertEqual(resp.status_code, 201)
+
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, TicketStatus.IN_PROGRESS)
+
+    def test_reply_does_not_reopen_closed_ticket(self):
+        ticket = SupportTicket.objects.create(
+            user=self.user, category="account", description="x", status=TicketStatus.CLOSED,
+        )
+        self.client.post(f"/api/help/tickets/{ticket.id}/messages/", {"text": "Բարև"})
+
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, TicketStatus.CLOSED)
+
+    def test_staff_reply_is_attributed_to_support_not_the_student(self):
+        """A support agent who replies under their own account (which the admin
+        inline lets them do) must not appear in the thread as the student."""
+        from .models import TicketMessage
+
+        ticket = SupportTicket.objects.create(user=self.user, category="account", description="x")
+        TicketMessage.objects.create(ticket=ticket, sender=self.other_user, text="Բարև, ի՞նչ է եղել")
+        TicketMessage.objects.create(ticket=ticket, sender=None, text="Ավտոմատ պատասխան")
+        TicketMessage.objects.create(ticket=ticket, sender=self.user, text="Ահա մանրամասները")
+
+        resp = self.client.get(f"/api/help/tickets/{ticket.id}/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual([m["is_staff"] for m in resp.data["messages"]], [True, True, False])
+
     def test_reply_requires_text_or_files(self):
         ticket = SupportTicket.objects.create(user=self.user, category="account", description="x")
         resp = self.client.post(f"/api/help/tickets/{ticket.id}/messages/", {})

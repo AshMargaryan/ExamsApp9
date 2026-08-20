@@ -6,18 +6,13 @@ import { useAuth } from "../../auth/AuthContext";
 import { messagePreviewText } from "../../lib/chatLabels";
 import { downloadAuthenticatedFile } from "../../lib/authenticatedFile";
 import { ConversationAvatar } from "./ConversationAvatar";
+import { formatBytes } from "../../lib/formatBytes";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Սեփականատեր",
   admin: "Ադմին",
   member: "Անդամ",
 };
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Բ`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ԿԲ`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} ՄԲ`;
-}
 
 export function GroupInfoPanel({ conversation, onClose }: { conversation: Conversation; onClose: () => void }) {
   const { user } = useAuth();
@@ -140,7 +135,7 @@ export function GroupInfoPanel({ conversation, onClose }: { conversation: Conver
                 >
                   <File size={18} strokeWidth={1.75} />
                   <span className="min-w-0 flex-1 truncate text-sm text-text">{f.original_filename}</span>
-                  <span className="shrink-0 text-xs text-text-muted">{formatSize(f.file_size)}</span>
+                  <span className="shrink-0 text-xs text-text-muted">{formatBytes(f.file_size)}</span>
                 </button>
               ))}
             </div>

@@ -13,6 +13,7 @@ import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
+import { FilePicker } from "../components/ui/FilePicker";
 import { Field, fieldInputClass } from "../components/ui/Field";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Section } from "../components/ui/Section";
@@ -475,9 +476,9 @@ export function FlashcardEditorPage() {
                   )}
                 </Field>
 
-                <Field label="Աուդիո">
-                  {(props) =>
-                    (existingAudioUrl && !removeAudio) || audio ? (
+                {(existingAudioUrl && !removeAudio) || audio ? (
+                  <Field label="Աուդիո">
+                    {() => (
                       <div className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-md)] border border-border bg-bg p-[var(--space-3)]">
                         <audio
                           controls
@@ -499,22 +500,25 @@ export function FlashcardEditorPage() {
                           Հեռացնել
                         </Button>
                       </div>
-                    ) : (
-                      <input
-                        {...props}
-                        type="file"
-                        accept="audio/mpeg,audio/wav,audio/mp4,audio/ogg,audio/x-m4a"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setAudio(e.target.files[0]);
-                            setDirty(true);
-                          }
-                        }}
-                        className="block w-full text-[length:var(--text-sm)] text-text-muted"
-                      />
-                    )
-                  }
-                </Field>
+                    )}
+                  </Field>
+                ) : (
+                  /* Was a bare `<input type="file">`, whose button and its
+                     "no file chosen" text the browser draws in its own
+                     locale — the one control in this Armenian form that read
+                     "Choose File" in English. */
+                  <FilePicker
+                    label="Աուդիո"
+                    hint="MP3, WAV, M4A կամ OGG"
+                    accept=".mp3,.wav,.m4a,.ogg,.mp4"
+                    buttonLabel="Ընտրել աուդիո"
+                    files={audio ? [audio] : []}
+                    onChange={(files) => {
+                      setAudio(files[0] ?? null);
+                      setDirty(true);
+                    }}
+                  />
+                )}
               </div>
             )}
           </div>

@@ -30,6 +30,7 @@ import { cn } from "../../lib/cn";
 
 export function PageHeader({
   title,
+  size = "page",
   description,
   back,
   actions,
@@ -37,6 +38,21 @@ export function PageHeader({
   className,
 }: {
   title: ReactNode;
+  /*
+    `page` is a name someone chose for a screen — two or three words, and it
+    can carry the full display size. `prose` is for a title that is really a
+    sentence the *student* wrote: a support ticket's subject (auto-derived
+    from the first 60 characters of their description), a note's first line,
+    a conversation's name.
+
+    The distinction is not cosmetic. A 60-character Armenian sentence at
+    `--text-3xl` measured six lines and 550px tall at 375px — the entire
+    first screen of a support thread was the student's own opening sentence,
+    set as a banner, with the answer they came for below the fold. Prose
+    keeps the display face, because it is still the title of the thing; it
+    just stops being a headline.
+  */
+  size?: "page" | "prose";
   /** One line of context. Stays visibly subordinate to the title. */
   description?: ReactNode;
   /** Where "back" goes, and what it's called. Omit on top-level pages. */
@@ -73,7 +89,14 @@ export function PageHeader({
           {/* The display face is what makes a page title read as a title
               rather than as larger body text. Noto Serif Armenian is loaded
               already and has full Armenian coverage, so this costs nothing. */}
-          <h1 className="font-display text-[length:var(--text-3xl)] leading-[var(--leading-display)] font-semibold tracking-[var(--tracking-tight)] text-text">
+          <h1
+            className={cn(
+              "font-display font-semibold tracking-[var(--tracking-tight)] text-text",
+              size === "page"
+                ? "text-[length:var(--text-3xl)] leading-[var(--leading-display)]"
+                : "max-w-[var(--measure-base)] text-[length:var(--text-xl)] leading-[var(--leading-heading)]",
+            )}
+          >
             {title}
           </h1>
           {description && (

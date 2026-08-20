@@ -13,12 +13,7 @@ import { EmojiPicker } from "./EmojiPicker";
 import { ImageLightbox } from "./ImageLightbox";
 import { ReportMessageModal } from "./ReportMessageModal";
 import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Բ`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ԿԲ`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} ՄԲ`;
-}
+import { formatBytes } from "../../lib/formatBytes";
 
 function senderDisplayName(sender: Message["sender"]): string {
   if (!sender) return "Ջնջված օգտատեր";
@@ -78,7 +73,7 @@ function FileAttachment({ attachment, own }: { attachment: Attachment; own: bool
       <Paperclip size={18} strokeWidth={1.75} />
       <span className="min-w-0 flex-1 truncate">{attachment.original_filename}</span>
       <span className={own ? "shrink-0 text-primary-contrast/70" : "shrink-0 text-text-muted"}>
-        {formatSize(attachment.file_size)}
+        {formatBytes(attachment.file_size)}
       </span>
     </button>
   );

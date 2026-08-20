@@ -44,11 +44,17 @@ def add_message(ticket, user, *, text, files=None):
     message = TicketMessage.objects.create(ticket=ticket, sender=user, text=text)
     _save_attachments(ticket, user, files, message=message)
 
-    # A user reply means the ball is back in support's court — reopen a
-    # ticket that was parked waiting on the user. Anything already
-    # in-progress/open/resolved/closed is left as staff set it.
-    if ticket.status == TicketStatus.WAITING_FOR_YOU:
+    # A user reply means the ball is back in support's court, so a ticket
+    # parked waiting on the user reopens.
+    #
+    # RESOLVED reopens too, and that is a deliberate change: replying to a
+    # resolved ticket is how a student says "this did not actually fix it",
+    # and leaving it resolved filed that message under a status nobody is
+    # working through — the reply went nowhere, silently, with the UI still
+    # reporting success. CLOSED is the one terminal state and stays terminal;
+    # the frontend offers a new ticket there instead of a reply box.
+    if ticket.status in (TicketStatus.WAITING_FOR_YOU, TicketStatus.RESOLVED):
         ticket.status = TicketStatus.IN_PROGRESS
-        ticket.save()
+        ticket.save(update_fields=["status", "updated_at"])
 
     return message

@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { FileText, LifeBuoy } from "lucide-react";
 import { getCategory, type ArticleSection, type ArticleSummary, type Category } from "../api/help";
+import { ArticleRow } from "../components/help/ArticleRow";
 import { EmptyState } from "../components/ui/EmptyState";
-import { LinkButton } from "../components/ui/LinkButton";
+import { ErrorState } from "../components/ui/ErrorState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Section } from "../components/ui/Section";
+import { Skeleton } from "../components/ui/Skeleton";
 
 const SECTION_LABEL: Record<ArticleSection, string> = {
   guide: "Առաջին քայլեր",
@@ -24,61 +28,80 @@ function groupBySection(articles: ArticleSummary[]): [ArticleSection, ArticleSum
 
 export function HelpCategoryPage() {
   const { categoryKey } = useParams<{ categoryKey: string }>();
+  const navigate = useNavigate();
   const [data, setData] = useState<{ category: Category; articles: ArticleSummary[] } | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  // A missing category and an unreachable server used to share one branch, so
+  // an offline student was told the category did not exist.
+  const [status, setStatus] = useState<"loading" | "ready" | "missing" | "failed">("loading");
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!categoryKey) return;
+    setStatus("loading");
     setData(null);
-    setNotFound(false);
-    getCategory(categoryKey).then(setData).catch(() => setNotFound(true));
+    getCategory(categoryKey)
+      .then((d) => {
+        setData(d);
+        setStatus("ready");
+      })
+      .catch((e: { response?: { status?: number } }) => {
+        setStatus(e?.response?.status === 404 ? "missing" : "failed");
+      });
   }, [categoryKey]);
 
-  return (
-    <div className="mx-auto max-w-3xl px-4 pt-8 pb-28">
-      <LinkButton to="/help" className="mb-4">← Օգնության կենտրոն</LinkButton>
+  useEffect(load, [load]);
 
-      {notFound ? (
-        <EmptyState icon={<LifeBuoy size={26} strokeWidth={1.75} />} title="Կատեգորիան չի գտնվել" />
+  return (
+    <div className="mx-auto max-w-3xl px-[var(--space-4)] py-[var(--space-8)]">
+      {status === "missing" || status === "failed" ? (
+        <>
+          <PageHeader title="Կատեգորիա" back={{ to: "/help", label: "Օգնության կենտրոն" }} />
+          {status === "missing" ? (
+            <EmptyState
+              icon={<LifeBuoy size={26} strokeWidth={1.75} aria-hidden />}
+              title="Կատեգորիան չի գտնվել"
+              hint="Հնարավոր է՝ հասցեն փոխվել է։"
+              cta={{ label: "Դեպի օգնության կենտրոն", onClick: () => navigate("/help") }}
+            />
+          ) : (
+            <ErrorState
+              title="Կատեգորիան չհաջողվեց բեռնել։"
+              hint="Ստուգիր կապը և փորձիր կրկին։"
+              onRetry={load}
+            />
+          )}
+        </>
       ) : !data ? (
-        <div className="flex flex-col gap-4">
-          <div className="h-8 w-1/2 animate-pulse rounded bg-surface-muted" />
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-[var(--radius)] bg-surface-muted" />
-          ))}
+        <div className="flex flex-col gap-[var(--space-4)]">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-9 w-1/2" />
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
         </div>
       ) : (
         <>
-          <h1 className="mb-1 text-3xl font-semibold text-text">
-            <span aria-hidden>{data.category.icon}</span> {data.category.name}
-          </h1>
-          {data.category.description && (
-            <p className="mb-6 text-sm text-text-muted">{data.category.description}</p>
-          )}
+          {/* The heading opened with the category's stored emoji. */}
+          <PageHeader
+            back={{ to: "/help", label: "Օգնության կենտրոն" }}
+            title={data.category.name}
+            description={data.category.description || undefined}
+          />
 
           {data.articles.length === 0 ? (
-            <EmptyState icon={<FileText size={26} strokeWidth={1.75} />} title="Այս կատեգորիայում հոդվածներ դեռ չկան" />
+            <EmptyState
+              icon={<FileText size={26} strokeWidth={1.75} aria-hidden />}
+              title="Այս կատեգորիայում հոդվածներ դեռ չկան"
+              hint="Գրիր աջակցության թիմին — կպատասխանենք ուղղակիորեն։"
+              cta={{ label: "Բացել հարցում", onClick: () => navigate("/help/tickets") }}
+            />
           ) : (
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-[var(--section-gap)]">
               {groupBySection(data.articles).map(([section, articles]) => (
-                <div key={section}>
-                  <h2 className="mb-3 text-lg font-semibold text-text">{SECTION_LABEL[section]}</h2>
-                  <div className="flex flex-col gap-3">
-                    {articles.map((article) => (
-                      <Link
-                        key={article.id}
-                        to={`/help/articles/${article.slug}`}
-                        className="flex items-center justify-between gap-3 rounded-[var(--radius)] border border-border bg-surface p-4 transition-colors hover:border-primary"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-medium text-text">{article.title}</p>
-                          {article.summary && <p className="mt-1 text-sm text-text-muted">{article.summary}</p>}
-                        </div>
-                        <span className="shrink-0 text-text-muted">→</span>
-                      </Link>
-                    ))}
+                // Was a hand-rolled `<h2 className="mb-3 text-lg font-semibold">`
+                // — the exact pattern `Section` exists to make consistent.
+                <Section key={section} title={SECTION_LABEL[section]} level={2} spacing="none">
+                  <div className="flex flex-col gap-[var(--space-3)]">
+                    {articles.map((article) => <ArticleRow key={article.id} article={article} />)}
                   </div>
-                </div>
+                </Section>
               ))}
             </div>
           )}

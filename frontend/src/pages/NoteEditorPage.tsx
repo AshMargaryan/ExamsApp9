@@ -28,6 +28,7 @@ import {
   Copy,
   Loader2,
   MoreHorizontal,
+  Paperclip,
   Pin,
   Star,
   Trash2,
@@ -46,6 +47,7 @@ import { Button } from "../components/ui/Button";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { useDebouncedCallback } from "../hooks/useDebouncedCallback";
 import { downloadAuthenticatedFile } from "../lib/authenticatedFile";
+import { formatBytes } from "../lib/formatBytes";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 type UpdatePatch = Parameters<typeof updateDocument>[1];
@@ -427,9 +429,9 @@ export function NoteEditorPage() {
               onClick={() => downloadAuthenticatedFile(a.download_url, a.original_filename)}
               className="flex w-full items-center gap-2 rounded-[var(--radius)] border border-border bg-surface px-3 py-2 text-left text-sm text-text hover:border-primary"
             >
-              <span>📄</span>
+              <Paperclip size={14} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
               <span className="truncate">{a.original_filename}</span>
-              <span className="ml-auto text-xs text-text-muted">{Math.round(a.file_size / 1024)} ԿԲ</span>
+              <span className="ml-auto shrink-0 text-xs text-text-muted">{formatBytes(a.file_size)}</span>
             </button>
           ))}
         </div>

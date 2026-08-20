@@ -6,6 +6,7 @@ import * as friendsApi from "../../api/friends";
 import type { SearchResultUser } from "../../api/friends";
 import { conversationTitle } from "../../lib/chatLabels";
 import { ConversationAvatar } from "./ConversationAvatar";
+import { formatBytes } from "../../lib/formatBytes";
 
 type Tab = "all" | "messages" | "people" | "files";
 
@@ -17,12 +18,6 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 const DEBOUNCE_MS = 300;
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Բ`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ԿԲ`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} ՄԲ`;
-}
 
 /**
  * Renders in place of the plain conversation list whenever the sidebar
@@ -170,7 +165,7 @@ export function GlobalSearchPanel({
             >
               <span className="text-lg"><File size={18} strokeWidth={1.75} /></span>
               <span className="min-w-0 flex-1 truncate text-sm text-text">{f.original_filename}</span>
-              <span className="shrink-0 text-xs text-text-muted">{formatSize(f.file_size)}</span>
+              <span className="shrink-0 text-xs text-text-muted">{formatBytes(f.file_size)}</span>
             </button>
           ))}
         </div>
