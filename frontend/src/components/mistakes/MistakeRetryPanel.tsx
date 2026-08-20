@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CircleCheck, CircleX } from "lucide-react";
 import { retryMistake, type MistakeEntry, type MistakeRetryResult } from "../../api/mistakes";
 import { MathText } from "../MathText";
 import { Button } from "../ui/Button";
@@ -46,8 +47,15 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
           result.is_correct ? "border-correct bg-correct-bg" : "border-incorrect bg-incorrect-bg"
         }`}
       >
-        <p className={`font-medium ${result.is_correct ? "text-correct" : "text-incorrect"}`}>
-          {result.is_correct ? "Ճիշտ է հիմա 🎉" : "Դեռ սխալ է"}
+        {/* Correctness was carried by a colour, a word and a 🎉. The icon
+            makes it legible in greyscale, which is the point of rule 7. */}
+        <p className={`flex items-center gap-1.5 font-medium ${result.is_correct ? "text-correct" : "text-incorrect"}`}>
+          {result.is_correct ? (
+            <CircleCheck size={16} strokeWidth={2} aria-hidden />
+          ) : (
+            <CircleX size={16} strokeWidth={2} aria-hidden />
+          )}
+          {result.is_correct ? "Ճիշտ է հիմա" : "Դեռ սխալ է"}
         </p>
         {!result.is_correct && (
           <p className="mt-1 text-sm text-text">

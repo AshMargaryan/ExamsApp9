@@ -10,6 +10,9 @@ import { useAuth } from "../auth/AuthContext";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { ErrorState } from "../components/ui/ErrorState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { LoadingRegion, Skeleton } from "../components/ui/Skeleton";
 import { Section } from "../components/ui/Section";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { subjectMeta } from "../lib/subjects";
@@ -112,6 +115,7 @@ export function GroupDetailPage() {
   const { showSuccess, showError } = useToast();
 
   const [group, setGroup] = useState<GroupDetail | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [transferring, setTransferring] = useState(false);
@@ -122,23 +126,51 @@ export function GroupDetailPage() {
   const [showStartCall, setShowStartCall] = useState(false);
   const [newCallCapacity, setNewCallCapacity] = useState(CALL_DEFAULT_CAPACITY);
 
+  /*
+    This was `fetchGroup(id).then(setGroup)` with no catch, and the entire
+    page was gated on `!group` — so a deleted group, a 403, or one offline
+    moment left a grey block pulsing for ever, with nothing said and nothing
+    to press. The group either loads, explains why it did not, or offers the
+    way back to the list.
+  */
   function load() {
     setGroup(null);
-    fetchGroup(Number(id)).then(setGroup);
+    setLoadFailed(false);
+    fetchGroup(Number(id)).then(setGroup).catch(() => setLoadFailed(true));
   }
 
+  // The call list is genuinely secondary: if it fails the group page is
+  // still useful, so it degrades to "no calls" rather than taking the page
+  // down with it.
   function loadCalls() {
     if (!id) return;
-    listCalls(Number(id)).then(setCalls);
+    listCalls(Number(id)).then(setCalls).catch(() => setCalls([]));
   }
 
   useEffect(load, [id]);
   useEffect(loadCalls, [id]);
 
+  if (loadFailed) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <PageHeader title="Ուսումնական խումբ" back={{ to: "/groups", label: "Ուսումնական խմբեր" }} />
+        <ErrorState
+          title="Խումբը չհաջողվեց բեռնել։"
+          hint="Հնարավոր է՝ այն ջնջվել է, կամ կապի խնդիր կա։"
+          onRetry={load}
+        />
+      </div>
+    );
+  }
+
   if (!group) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <div className="h-64 animate-pulse rounded-[var(--radius)] border border-border bg-surface" />
+        <LoadingRegion>
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="mt-[var(--space-3)] h-8 w-2/3" />
+          <Skeleton className="mt-[var(--space-6)] h-48 w-full" />
+        </LoadingRegion>
       </div>
     );
   }

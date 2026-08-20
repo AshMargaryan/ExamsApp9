@@ -299,12 +299,17 @@ export function MessageInput({
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
+              // The product's main text input had no accessible name at all:
+              // a placeholder is not one, and it disappears the moment you
+              // start typing. Copy is informal here, like every suggestion
+              // chip directly above it ("Բացատրիր ավելի պարզ").
+              aria-label="Հաղորդագրություն AI Օգնականին"
               placeholder={
                 hasImage
-                  ? "Նկարագրեք հարցը (կամ պարզապես ուղարկեք նկարը)..."
+                  ? "Նկարագրիր հարցդ (կամ պարզապես ուղարկիր նկարը)..."
                   : isHero
-                    ? "Ի՞նչ եք ուզում իմանալ..."
-                    : "Գրեք ձեր հարցը..."
+                    ? "Ի՞նչ ես ուզում իմանալ..."
+                    : "Գրիր հարցդ..."
               }
               rows={1}
               disabled={disabled}

@@ -289,7 +289,7 @@ export function MobileRegister() {
   const usernameTakenMessage =
     usernameCheck.status === "taken" || usernameCheck.status === "invalid" ? usernameCheck.detail : undefined;
   const usernameHint =
-    usernameCheck.status === "available" ? "Ազատ է 🎉" : "Կարող ես փոխել 14 օրը մեկ անգամ։";
+    usernameCheck.status === "available" ? "Ազատ է" : "Կարող ես փոխել 14 օրը մեկ անգամ։";
 
   if (step === "account") {
     return (

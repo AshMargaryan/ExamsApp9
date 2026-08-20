@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check } from "lucide-react";
 import type { AcademicPower, Profile } from "../../api/profile";
 
 export function ShareProfileCard({
@@ -55,7 +56,14 @@ export function ShareProfileCard({
           onClick={handleCopy}
           className="mt-4 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
         >
-          {copied ? "Պատճենվեց ✓" : "Պատճենել որպես տեքստ"}
+          {copied ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <Check size={15} strokeWidth={2.25} aria-hidden />
+              Պատճենվեց
+            </span>
+          ) : (
+            "Պատճենել որպես տեքստ"
+          )}
         </button>
       </div>
     </div>

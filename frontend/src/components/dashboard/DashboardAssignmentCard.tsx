@@ -101,11 +101,11 @@ export function DashboardAssignmentCard({
           {assignment.is_overdue
             ? "Ուշացած"
             : wasRejected
-              ? "❌ Մերժված"
+              ? "Մերժված"
               : assignment.status === "submitted"
-                ? "⏳ Սպասում է հաստատման"
+                ? "Սպասում է հաստատման"
                 : assignment.status === "completed"
-                  ? "✅ Հաստատված"
+                  ? "Հաստատված"
                   : "Չսկսված"}
         </span>
       </div>

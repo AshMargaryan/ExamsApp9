@@ -42,13 +42,31 @@ const ASSIGNMENT_STATUS_LABELS: Record<Assignment["status"], string> = {
 function TeacherProgressSection({ studentId }: { studentId: number }) {
   const [dashboard, setDashboard] = useState<ChildDashboard | null>(null);
   const [rankHistory, setRankHistory] = useState<RankHistoryPoint[] | null>(null);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
+  // Both calls were bare `.then(setX)`, and the section was gated on
+  // `!dashboard` — so a failure left three skeletons pulsing for ever inside
+  // an otherwise working page. The rank history is optional decoration on
+  // top and degrades to nothing; the dashboard says it could not load.
+  const load = useCallback(() => {
     setDashboard(null);
     setRankHistory(null);
-    teachingApi.fetchStudentDashboard(studentId).then(setDashboard);
-    teachingApi.fetchStudentRankHistory(studentId, "global").then(setRankHistory);
+    setFailed(false);
+    teachingApi.fetchStudentDashboard(studentId).then(setDashboard).catch(() => setFailed(true));
+    teachingApi.fetchStudentRankHistory(studentId, "global").then(setRankHistory).catch(() => setRankHistory([]));
   }, [studentId]);
+
+  useEffect(load, [load]);
+
+  if (failed) {
+    return (
+      <ErrorState
+        title="Աշակերտի առաջընթացը չհաջողվեց բեռնել։"
+        hint="Պրոֆիլի մնացած մասը հասանելի է։"
+        onRetry={load}
+      />
+    );
+  }
 
   if (!dashboard) {
     return (

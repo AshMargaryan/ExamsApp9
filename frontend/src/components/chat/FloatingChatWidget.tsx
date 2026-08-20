@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { ArrowLeft, Maximize2, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import * as chatApi from "../../api/chat";
 import type { Conversation } from "../../api/chat";
@@ -79,19 +79,23 @@ export function FloatingChatWidget() {
               type="button"
               onClick={() => selectConversation(null)}
               aria-label="Ետ"
-              title="Ետ"
               className="text-text-muted hover:text-primary"
             >
-              ←
+              <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
             </button>
           )}
           <span className="truncate text-sm font-medium text-text select-none">
-            {selectedConversation ? conversationTitle(selectedConversation) : "💬 Հաղորդագրություններ"}
+            {selectedConversation ? conversationTitle(selectedConversation) : "Հաղորդագրություններ"}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-3 text-text-muted">
-          <Link to="/chat" title="Բացել ամբողջ էջում" className="hover:text-primary" onClick={closeFloatingChat}>
-            ⤢
+          <Link
+            to="/chat"
+            aria-label="Բացել ամբողջ էջում"
+            className="hover:text-primary"
+            onClick={closeFloatingChat}
+          >
+            <Maximize2 size={15} strokeWidth={1.75} aria-hidden />
           </Link>
           <button type="button" onClick={closeFloatingChat} aria-label="Փակել" className="hover:text-primary">
             <X size={16} strokeWidth={2} aria-hidden />

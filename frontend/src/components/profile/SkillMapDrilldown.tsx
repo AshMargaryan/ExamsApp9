@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Lock } from "lucide-react";
 import * as profileApi from "../../api/profile";
 import type { SkillMap } from "../../api/profile";
 import { ProgressBar } from "../ui/ProgressBar";
@@ -30,8 +31,17 @@ export function SkillMapDrilldown({ subjectKey }: { subjectKey: string }) {
             <span className="text-text">
               {topic.name} <span className="text-text-muted">· {topic.domain}</span>
             </span>
-            <span className="text-text-muted">
-              {topic.mastery !== null ? `${topic.mastery}%` : "🔒"}
+            {/* Was a 🔒 emoji standing in for a number, which reads as a
+                padlock rather than as "not enough data yet". */}
+            <span className="flex items-center gap-1 text-text-muted">
+              {topic.mastery !== null ? (
+                `${topic.mastery}%`
+              ) : (
+                <>
+                  <Lock size={11} strokeWidth={2} aria-hidden />
+                  <span>Դեռ չկա</span>
+                </>
+              )}
             </span>
           </div>
           <ProgressBar percent={topic.mastery ?? 0} heightClassName="h-1" />

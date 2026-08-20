@@ -29,7 +29,7 @@ interface Props {
 */
 export function ExamCard({ exam, primaryTo, historyTo }: Props) {
   const subject = subjectMeta(exam.subject);
-  const { main, secondary } = parseExamTitle(exam.title, subject?.label ?? exam.title);
+  const { main } = parseExamTitle(exam.title, subject?.label ?? exam.title);
 
   const status: "not_started" | "in_progress" | "completed" = exam.has_draft
     ? "in_progress"
@@ -39,6 +39,20 @@ export function ExamCard({ exam, primaryTo, historyTo }: Props) {
 
   const primaryLabel = status === "in_progress" ? "Շարունակել" : status === "completed" ? "Կրկնել" : "Սկսել";
   const PrimaryIcon = status === "completed" ? RotateCw : Play;
+
+  /*
+    Only an unfinished attempt gets the filled button.
+
+    The list holds fifty exams for mathematics alone, and every card carried a
+    full-width `bg-primary` CTA — fifty of the loudest control the product has,
+    on a screen where none of them is more urgent than any other. It is the
+    defect the mistake notebook had (sixty-nine identical filled buttons, fixed
+    in session 4) reappearing on a different list: a browse grid has no primary
+    action, so nothing in it should look like one. An attempt the student
+    abandoned genuinely is the thing to come back to — and those cards already
+    sit in their own "Անավարտ թեստեր" band at the top of the page.
+  */
+  const emphasis = status === "in_progress" ? "primary" : "secondary";
 
   return (
     <div
@@ -54,7 +68,10 @@ export function ExamCard({ exam, primaryTo, historyTo }: Props) {
           <h3 className="text-lg font-semibold text-text">{main}</h3>
           <StatusBadge status={status} />
         </div>
-        {secondary && <p className="mb-3 text-sm text-text-muted">{secondary}</p>}
+        {/* `secondary` is "Հայաստանի Հանրապետության Միասնական քննություն" —
+            the same sentence on all fifty cards, above a subject tab bar that
+            has already said which exam family this is. It stays on the detail
+            page, where it is stated once. */}
         <p className="mb-3 text-sm text-text-muted">{exam.question_count} հարց</p>
         {exam.best_scaled_score !== null && (
           <p className="mb-3 text-sm font-medium text-primary">
@@ -67,7 +84,7 @@ export function ExamCard({ exam, primaryTo, historyTo }: Props) {
         <Link
           to={primaryTo}
           className={cn(
-            buttonClasses("primary", "md", "w-full justify-center gap-[var(--space-2)]"),
+            buttonClasses(emphasis, "md", "w-full justify-center gap-[var(--space-2)]"),
             // Stretched over the whole card, so the card stays one target.
             "after:absolute after:inset-0 after:content-['']",
           )}
@@ -88,8 +105,12 @@ export function ExamCard({ exam, primaryTo, historyTo }: Props) {
   );
 }
 
+/* No badge for "not started". It was the state of forty-eight of fifty cards,
+   so it distinguished nothing while adding a bordered object to every one of
+   them; the absence of a badge already says it. A badge is for the cards that
+   differ. */
 function StatusBadge({ status }: { status: "not_started" | "in_progress" | "completed" }) {
   if (status === "in_progress") return <Badge tone="primary">Ընթացքի մեջ</Badge>;
   if (status === "completed") return <Badge tone="correct">Ավարտված</Badge>;
-  return <Badge tone="neutral">Չսկսված</Badge>;
+  return null;
 }
