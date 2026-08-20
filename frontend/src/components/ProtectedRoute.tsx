@@ -36,8 +36,17 @@ export function AppChrome({ children }: { children: ReactNode }) {
               <HeaderStrip />
               <AppSidebar />
               {/* Clears the persistent top strip (h-16) and the desktop nav rail,
-               * which is 0-width below lg (see --rail-w in theme.css). */}
-              <div className="pl-[var(--rail-w)] pt-16">{children}</div>
+               * which is 0-width below lg (see --rail-w in theme.css).
+               *
+               * The bottom padding clears the two floating launchers pinned to
+               * the bottom corners. Without it the last thing on a page sits
+               * underneath one of them permanently — no amount of scrolling
+               * moves a fixed element — so a page's final action could be
+               * unreachable. Reserving the space here rather than in each page
+               * keeps it correct for the ~45 routes at once, and it is the
+               * only place that knows whether the launchers are mounted at
+               * all (the native shell renders none of this). */}
+              <div className="pb-[84px] pl-[var(--rail-w)] pt-16">{children}</div>
               <ReloadButton />
               {showStudyTools && <FloatingAssistantWidget />}
               {showStudyTools && <ToolsDock />}

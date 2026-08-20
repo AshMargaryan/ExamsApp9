@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Sparkles, X } from "lucide-react";
 import * as assistantApi from "../../api/assistant";
 import { useAuth } from "../../auth/AuthContext";
 import { useAssistantLaunch } from "../../contexts/AssistantLaunchContext";
@@ -165,16 +166,31 @@ export function FloatingAssistantWidget() {
         </div>
       )}
 
+      {/*
+        Two changes, both about the cost this control charges every page.
+
+        It was a 💬 emoji at `text-3xl` — a large, platform-coloured glyph as
+        the product's single most prominent floating control, and the same
+        symbol the *human* chat widget would reasonably want. The assistant is
+        `Sparkles` everywhere else in the navigation, so it is Sparkles here,
+        and the two floating tools stop competing for one metaphor.
+
+        And it was 64px. Two 64px circles pinned to opposite bottom corners
+        obstruct real content at every scroll position — observed covering the
+        daily problem's submit button at 768px. 52px still clears the 44px
+        touch-target floor with room to spare.
+      */}
       <button
         type="button"
         onClick={() => (open ? setOpen(false) : handleOpen())}
-        aria-label="AI Օգնական"
-        title="AI Օգնական"
-        className={`fixed right-4 bottom-4 z-40 flex h-16 w-16 items-center justify-center rounded-full text-3xl shadow-lg transition-colors sm:right-6 ${
+        aria-label={open ? "Փակել AI օգնականը" : "AI Օգնական"}
+        title={open ? "Փակել AI օգնականը" : "AI Օգնական"}
+        aria-expanded={open}
+        className={`fixed right-4 bottom-4 z-40 flex h-[52px] w-[52px] items-center justify-center rounded-full shadow-[var(--shadow-md)] transition-colors sm:right-6 ${
           open ? "bg-primary text-primary-contrast" : "border border-border bg-surface text-text hover:border-primary"
         }`}
       >
-        💬
+        {open ? <X size={22} strokeWidth={1.75} aria-hidden /> : <Sparkles size={22} strokeWidth={1.75} aria-hidden />}
       </button>
     </>
   );

@@ -148,10 +148,10 @@ export function ToolsDock() {
               <button
                 type="button"
                 onClick={closePanel}
-                className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
-                aria-label="Close"
+                className="flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] text-text-muted hover:text-primary"
+                aria-label="Փակել"
               >
-                ✕
+                <X size={16} strokeWidth={2} aria-hidden />
               </button>
             </div>
           </div>
@@ -172,40 +172,61 @@ export function ToolsDock() {
       {/* tools-dock-launcher: theme.css lifts this above the bottom tab bar in
           the native shell, where bottom-4 would land on top of it. */}
       {!fullscreen && (
-        <div className="tools-dock-launcher fixed bottom-4 left-4 z-30 flex flex-col-reverse items-center gap-3 sm:left-6 lg:left-[calc(var(--rail-w)+1.5rem)]">
+        <div className="tools-dock-launcher fixed bottom-4 left-4 z-30 flex flex-col-reverse items-start gap-3 sm:left-6 lg:left-[calc(var(--rail-w)+1.5rem)]">
           <button
             type="button"
             onClick={handleHubClick}
             aria-label={panel ? "Փակել գործիքները" : "Գործիքներ"}
             aria-expanded={expanded}
             title={panel ? "Փակել" : "Գործիքներ"}
-            className={`flex h-16 w-16 items-center justify-center rounded-full shadow-lg transition-colors ${
+            /* 52px, not 64. Paired with the assistant launcher in the
+               opposite corner this was 128px of permanently obstructed
+               content on every page at every scroll position. 52 keeps a
+               comfortable margin over the 44px touch-target floor. */
+            className={`flex h-[52px] w-[52px] items-center justify-center rounded-full shadow-[var(--shadow-md)] transition-colors ${
               panel || expanded
                 ? "bg-primary text-primary-contrast"
                 : "bg-surface text-text border border-border hover:border-primary"
             }`}
           >
-            {panel || expanded ? <X size={26} strokeWidth={1.75} /> : <Wrench size={24} strokeWidth={1.75} />}
+            {panel || expanded ? (
+              <X size={22} strokeWidth={1.75} aria-hidden />
+            ) : (
+              <Wrench size={22} strokeWidth={1.75} aria-hidden />
+            )}
           </button>
 
-          {DIAL_ITEMS.map((item, i) => (
-            <button
-              key={item.panel}
-              type="button"
-              onClick={() => openPanel(item.panel)}
-              aria-label={item.label}
-              title={item.label}
-              tabIndex={expanded && !panel ? 0 : -1}
-              className={`flex h-12 w-12 items-center justify-center rounded-full border border-border bg-surface text-xl shadow-md transition-all ease-out ${
-                expanded && !panel
-                  ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-                  : "opacity-0 scale-75 translate-y-2 pointer-events-none"
-              }`}
-              style={{ transitionDuration: "180ms", transitionDelay: expanded && !panel ? `${i * 40}ms` : "0ms" }}
-            >
-              {item.icon}
-            </button>
-          ))}
+          {/*
+            `opacity-0 pointer-events-none` hides an element from sight but not
+            from the accessibility tree, so a screen reader announced two
+            buttons ("Նշումներ", "Հաշվիչ") that could not be activated while
+            the dial was closed. `aria-hidden` matches what is actually true.
+
+            The labels are also *shown* when the dial is open. They were
+            `title`-only, and a touch device never shows a title — so on a
+            phone the dial was two unlabelled circles.
+          */}
+          {DIAL_ITEMS.map((item, i) => {
+            const visible = expanded && !panel;
+            return (
+              <button
+                key={item.panel}
+                type="button"
+                onClick={() => openPanel(item.panel)}
+                aria-hidden={!visible}
+                tabIndex={visible ? 0 : -1}
+                className={`flex h-12 items-center gap-[var(--space-2)] rounded-full border border-border bg-surface pr-[var(--space-4)] pl-[var(--space-3)] text-[length:var(--text-sm)] font-medium text-text shadow-[var(--shadow-md)] transition-all ease-out ${
+                  visible
+                    ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-2 scale-75 opacity-0"
+                }`}
+                style={{ transitionDuration: "180ms", transitionDelay: visible ? `${i * 40}ms` : "0ms" }}
+              >
+                <span className="text-text-muted">{item.icon}</span>
+                {item.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </>
