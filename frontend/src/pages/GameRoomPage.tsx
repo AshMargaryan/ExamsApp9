@@ -1,19 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Play } from "lucide-react";
+import { Check, Copy, Play, Trophy, UserMinus } from "lucide-react";
 import { AxiosError } from "axios";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import * as gamesApi from "../api/games";
 import type { GameRoom } from "../api/games";
 import { useAuth } from "../auth/AuthContext";
-import { MessageModal } from "../components/MessageModal";
+import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { ErrorState } from "../components/ui/ErrorState";
+import { FormAlert } from "../components/ui/Field";
+import { IconButton } from "../components/ui/IconButton";
 import { LinkButton } from "../components/ui/LinkButton";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Skeleton } from "../components/ui/Skeleton";
+import { cn } from "../lib/cn";
 
 const STATUS_LABELS: Record<GameRoom["status"], string> = {
   waiting: "Սպասման մեջ",
   starting: "Սկսվում է...",
   running: "Ընթացքի մեջ",
   finished: "Ավարտված",
+};
+
+const STATUS_TONES: Record<GameRoom["status"], "neutral" | "primary" | "correct"> = {
+  waiting: "neutral",
+  starting: "primary",
+  running: "correct",
+  finished: "neutral",
 };
 
 const CONDITION_LABELS: Record<GameRoom["start_condition"], string> = {
@@ -42,19 +56,31 @@ export function GameRoomPage() {
   const navigate = useNavigate();
 
   const [room, setRoom] = useState<GameRoom | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [loadFailure, setLoadFailure] = useState<"missing" | "network" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [kickTarget, setKickTarget] = useState<{ id: number; name: string } | null>(null);
   const prevStatusRef = useRef<GameRoom["status"] | null>(null);
 
   const load = useCallback(() => {
     if (!roomCode) return;
     gamesApi
       .fetchRoom(roomCode)
-      .then(setRoom)
-      .catch(() => setNotFound(true));
+      .then((r) => {
+        setRoom(r);
+        setLoadFailure(null);
+      })
+      // Any failure used to read as "this room does not exist or was
+      // deleted" — including a dropped connection, which is the most likely
+      // cause and the one where that sentence is simply false. A 404 is the
+      // only thing that actually means gone.
+      .catch((err: unknown) => {
+        const missing = err instanceof AxiosError && err.response?.status === 404;
+        setLoadFailure(missing ? "missing" : "network");
+      });
   }, [roomCode]);
 
   useEffect(() => {
@@ -135,11 +161,12 @@ export function GameRoomPage() {
     }
   }
 
-  async function handleKick(userId: number) {
-    if (!roomCode) return;
+  async function handleKick() {
+    if (!roomCode || !kickTarget) return;
     setError(null);
     try {
-      await gamesApi.kickParticipant(roomCode, userId);
+      await gamesApi.kickParticipant(roomCode, kickTarget.id);
+      setKickTarget(null);
       load();
     } catch (err) {
       setError(extractError(err, "Մասնակցին հեռացնելը ձախողվեց։"));
@@ -153,128 +180,198 @@ export function GameRoomPage() {
     setTimeout(() => setCopied(false), 1500);
   }
 
-  if (notFound) {
+  if (loadFailure && !room) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg px-4">
-        <p className="text-lg text-text-muted">Այս սենյակը գոյություն չունի կամ ջնջվել է։</p>
-        <LinkButton to="/games">← Վերադառնալ խաղասենյակներին</LinkButton>
+      <div className="mx-auto max-w-2xl px-[var(--space-4)] py-[var(--space-8)]">
+        <PageHeader title="Խաղասենյակ" back={{ to: "/games", label: "Խաղասենյակներ" }} />
+        {loadFailure === "missing" ? (
+          <ErrorState
+            title="Այս սենյակը գոյություն չունի կամ ջնջվել է։"
+            hint="Ստուգիր կոդը, կամ խնդրիր ընկերոջդ նորը ուղարկել։"
+          />
+        ) : (
+          <ErrorState
+            title="Սենյակը չհաջողվեց բեռնել։"
+            hint="Կապը կարող է ընդհատված լինել։ Սենյակը տեղում է։"
+            onRetry={load}
+          />
+        )}
       </div>
     );
   }
 
   if (!room) {
-    return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
+    return (
+      <div className="mx-auto max-w-2xl px-[var(--space-4)] py-[var(--space-8)]">
+        <Skeleton className="mb-[var(--space-3)] h-4 w-32" />
+        <Skeleton className="mb-[var(--space-6)] h-9 w-2/3" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
   }
 
   const isCreator = user?.id === room.creator.id;
   const canStart = room.status === "waiting" && room.participant_count >= 2;
 
+  const waitingForPlayers = room.status === "waiting" && room.participant_count < 2;
+
   return (
-    <div className="min-h-screen bg-bg px-4 py-8">
-      <div className="mx-auto max-w-2xl">
-        <LinkButton to="/games" className="mb-6">← Խաղասենյակներ</LinkButton>
+    <div className="mx-auto max-w-2xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        back={{ to: "/games", label: "Խաղասենյակներ" }}
+        title={room.name}
+        description={`Ստեղծող՝ ${displayName(room.creator)}`}
+        actions={<Badge tone={STATUS_TONES[room.status]}>{STATUS_LABELS[room.status]}</Badge>}
+      />
 
-        <div className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-text">{room.name}</h1>
-              <p className="mt-1 text-sm text-text-muted">
-                Ստեղծող՝ {displayName(room.creator)}
-              </p>
-            </div>
-            <span className="rounded-full border border-border px-3 py-1 text-sm text-text-muted">
-              {STATUS_LABELS[room.status]}
-            </span>
-          </div>
+      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)] shadow-[var(--shadow-sm)]">
+        {error && <FormAlert message={error} />}
 
-          <div className="mt-4 flex items-center gap-3 rounded-md border border-border bg-bg px-4 py-3">
-            <span className="text-sm text-text-muted">Կոդ՝</span>
-            <span className="text-xl font-semibold tracking-widest text-text">{room.room_code}</span>
-            <Button variant="secondary" size="sm" onClick={handleCopyCode} className="ml-auto">
-              {copied ? "Պատճենված է ✓" : "Պատճենել"}
-            </Button>
-          </div>
-
-          <p className="mt-3 text-sm text-text-muted">{CONDITION_LABELS[room.start_condition]}</p>
-
-          <div className="mt-6">
-            <h2 className="mb-2 text-sm font-semibold text-text-muted">
-              Մասնակիցներ ({room.participant_count}/{room.max_players})
-            </h2>
-            <div className="flex flex-col gap-2">
-              {room.participants.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-                >
-                  <span className="text-text">
-                    {displayName(p.user)}
-                    {p.user.id === room.creator.id && (
-                      <span className="ml-2 text-xs text-text-muted">(ստեղծող)</span>
-                    )}
-                  </span>
-                  {isCreator && p.user.id !== room.creator.id && room.status === "waiting" && (
-                    <Button variant="danger" size="sm" onClick={() => handleKick(p.user.id)} className="h-7 px-2 text-xs">
-                      Հեռացնել
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {room.status === "starting" && (
-            <div className="mt-6 rounded-md border border-primary bg-surface-muted py-6 text-center">
-              <p className="text-sm text-text-muted">Խաղը սկսվում է...</p>
-              <p className="text-5xl font-bold text-primary">{countdownSeconds ?? ""}</p>
-            </div>
-          )}
-
-          {room.status === "running" && (
-            <Link
-              to={`/games/${room.room_code}/play`}
-              className="mt-6 flex items-center justify-center gap-[var(--space-2)] rounded-[var(--radius-md)] bg-primary py-3 text-center text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-            >
-              <Play size={18} strokeWidth={2} aria-hidden /> Մուտք խաղին
-            </Link>
-          )}
-
-          <div className="mt-6 flex gap-3">
-            {isCreator && room.status === "waiting" && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleStart}
-                  disabled={!canStart || busy}
-                  className="flex-1 rounded-md bg-primary py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-                >
-                  Սկսել խաղը
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  disabled={busy}
-                  className="flex-1 rounded-md border border-border py-2 font-medium text-text-muted transition-colors hover:bg-surface-muted disabled:opacity-60"
-                >
-                  Չեղարկել սենյակը
-                </button>
-              </>
-            )}
-            {!isCreator && room.status === "waiting" && (
-              <button
-                type="button"
-                onClick={handleLeave}
-                disabled={busy}
-                className="flex-1 rounded-md border border-border py-2 font-medium text-text-muted transition-colors hover:bg-surface-muted disabled:opacity-60"
-              >
-                Լքել սենյակը
-              </button>
-            )}
-          </div>
+        {/* The code is the whole reason this screen exists before the game
+            starts — it is what you send to a friend. */}
+        <div className="flex items-center gap-[var(--space-3)] rounded-[var(--radius-md)] border border-border bg-bg px-[var(--space-4)] py-[var(--space-3)]">
+          <span className="text-[length:var(--text-sm)] text-text-muted">Կոդ</span>
+          <span className="text-[length:var(--text-xl)] font-semibold tracking-widest text-text">{room.room_code}</span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleCopyCode}
+            className="ml-auto"
+            iconLeft={copied
+              ? <Check size={15} strokeWidth={2.25} aria-hidden />
+              : <Copy size={15} strokeWidth={1.75} aria-hidden />}
+          >
+            {copied ? "Պատճենված է" : "Պատճենել"}
+          </Button>
         </div>
+
+        <p className="mt-[var(--space-3)] text-[length:var(--text-sm)] text-text-muted">
+          {CONDITION_LABELS[room.start_condition]}
+        </p>
+
+        <div className="mt-[var(--space-6)]">
+          <h2 className="mb-[var(--space-2)] text-[length:var(--text-sm)] font-semibold text-text">
+            Մասնակիցներ ({room.participant_count}/{room.max_players})
+          </h2>
+          <ul className="flex flex-col gap-[var(--space-2)]">
+            {room.participants.map((p) => (
+              <li
+                key={p.id}
+                className={cn(
+                  "flex items-center justify-between gap-[var(--space-2)] rounded-[var(--radius-md)]",
+                  "border border-border px-[var(--space-3)] py-[var(--space-2)]",
+                  p.user.id === user?.id && "border-primary bg-primary-bg",
+                )}
+              >
+                <span className="min-w-0 truncate text-text">
+                  {displayName(p.user)}
+                  {p.user.id === user?.id && <span className="ml-2 text-[length:var(--text-xs)] text-primary">դու</span>}
+                  {p.user.id === room.creator.id && (
+                    <span className="ml-2 text-[length:var(--text-xs)] text-text-muted">ստեղծող</span>
+                  )}
+                </span>
+                {isCreator && p.user.id !== room.creator.id && room.status === "waiting" && (
+                  /* Was a filled red button in every row — the loudest thing
+                     on the participant list, and one click from throwing
+                     someone out with no confirmation. */
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Հեռացնել ${displayName(p.user)}-ին սենյակից`}
+                    onClick={() => setKickTarget({ id: p.user.id, name: displayName(p.user) })}
+                    className="shrink-0 text-text-muted hover:text-incorrect"
+                    icon={<UserMinus size={16} strokeWidth={1.75} aria-hidden />}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {room.status === "starting" && (
+          <div
+            role="status"
+            className="mt-[var(--space-6)] rounded-[var(--radius-md)] border border-primary bg-surface-muted py-[var(--space-6)] text-center"
+          >
+            <p className="text-[length:var(--text-sm)] text-text-muted">Խաղը սկսվում է</p>
+            <p className="text-[length:var(--text-5xl)] font-bold tabular-nums text-primary">
+              {countdownSeconds ?? ""}
+            </p>
+          </div>
+        )}
+
+        {/* A finished room had no action at all — the results it produced,
+            the only reason to open it again, were not linked from anywhere. */}
+        {room.status === "finished" && (
+          <LinkButton
+            to={`/games/${room.room_code}/results`}
+            variant="primary"
+            size="lg"
+            className="mt-[var(--space-6)] w-full justify-center"
+            iconLeft={<Trophy size={18} strokeWidth={1.75} aria-hidden />}
+          >
+            Տեսնել արդյունքները
+          </LinkButton>
+        )}
+
+        {room.status === "running" && (
+          <LinkButton
+            to={`/games/${room.room_code}/play`}
+            variant="primary"
+            size="lg"
+            className="mt-[var(--space-6)] w-full justify-center"
+            iconLeft={<Play size={18} strokeWidth={2} aria-hidden />}
+          >
+            Մուտք խաղին
+          </LinkButton>
+        )}
+
+        <div className="mt-[var(--space-6)] flex flex-col gap-[var(--space-3)] sm:flex-row">
+          {isCreator && room.status === "waiting" && (
+            <>
+              <Button onClick={handleStart} disabled={!canStart} loading={busy} className="sm:flex-1">
+                Սկսել խաղը
+              </Button>
+              <Button variant="ghost" disabled={busy} onClick={() => setConfirmCancel(true)} className="sm:flex-1">
+                Չեղարկել սենյակը
+              </Button>
+            </>
+          )}
+          {!isCreator && room.status === "waiting" && (
+            <Button variant="ghost" disabled={busy} onClick={handleLeave} className="sm:flex-1">
+              Լքել սենյակը
+            </Button>
+          )}
+        </div>
+
+        {/* A disabled button that will not say why is a dead end. This one
+            sits disabled for as long as the creator is alone in the room. */}
+        {isCreator && waitingForPlayers && (
+          <p className="mt-[var(--space-2)] text-center text-[length:var(--text-sm)] text-text-muted">
+            Խաղը սկսելու համար պետք է առնվազն ևս մեկ խաղացող։ Ուղարկիր վերևի կոդը։
+          </p>
+        )}
       </div>
 
-      {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      <ConfirmDialog
+        open={confirmCancel}
+        onOpenChange={setConfirmCancel}
+        title="Չեղարկե՞լ սենյակը"
+        description={`Սենյակը կփակվի բոլորի համար, և ${room.participant_count} մասնակից դուրս կգա։`}
+        confirmLabel="Չեղարկել սենյակը"
+        cancelLabel="Թողնել բաց"
+        busy={busy}
+        onConfirm={handleCancel}
+      />
+
+      <ConfirmDialog
+        open={kickTarget !== null}
+        onOpenChange={(open) => !open && setKickTarget(null)}
+        title="Հեռացնե՞լ մասնակցին"
+        description={kickTarget ? `${kickTarget.name}-ը դուրս կգա սենյակից և կկարողանա նորից միանալ կոդով։` : undefined}
+        confirmLabel="Հեռացնել"
+        onConfirm={handleKick}
+      />
     </div>
   );
 }

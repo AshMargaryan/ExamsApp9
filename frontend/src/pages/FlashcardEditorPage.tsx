@@ -286,17 +286,20 @@ export function FlashcardEditorPage() {
           }}
         >
           <div className="mb-[var(--space-6)] flex items-end gap-[var(--space-2)]">
-            <Select
-              label="Փաթեթ"
-              className="flex-1"
-              value={deckId ? String(deckId) : ""}
-              onChange={(v) => {
-                setDeckId(Number(v));
-                setDirty(true);
-              }}
-              disabled={isEdit}
-              options={decks.map((d) => ({ value: String(d.id), label: d.title }))}
-            />
+            <Field label="Փաթեթ" containerClassName="mb-0 flex-1">
+              {({ id }) => (
+                <Select
+                  id={id}
+                  value={deckId ? String(deckId) : ""}
+                  onChange={(v) => {
+                    setDeckId(Number(v));
+                    setDirty(true);
+                  }}
+                  disabled={isEdit}
+                  options={decks.map((d) => ({ value: String(d.id), label: d.title }))}
+                />
+              )}
+            </Field>
             {!isEdit && (
               <Button
                 type="button"
