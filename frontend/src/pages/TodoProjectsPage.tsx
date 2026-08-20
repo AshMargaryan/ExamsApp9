@@ -6,6 +6,7 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { Rocket } from "lucide-react";
 
 export function TodoProjectsPage() {
   const { showError } = useToast();
@@ -38,7 +39,7 @@ export function TodoProjectsPage() {
         </div>
       ) : projects.length === 0 ? (
         <EmptyState
-          icon="🚀"
+          icon={<Rocket size={26} strokeWidth={1.5} aria-hidden />}
           title="Դեռ նախագծեր չկան"
           hint="Խմբավորիր կապակցված առաջադրանքները մեկ նախագծի մեջ։"
           cta={{ label: "Նոր նախագիծ", onClick: () => setFormOpen(true) }}

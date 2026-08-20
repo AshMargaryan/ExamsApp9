@@ -5,6 +5,7 @@ import { SegmentedControl } from "../SegmentedControl";
 import { Chart } from "../ui/Chart";
 import { EmptyState } from "../ui/EmptyState";
 import { Skeleton } from "../ui/Skeleton";
+import { TrendingUp } from "lucide-react";
 
 /*
   Class activity over time.
@@ -69,7 +70,7 @@ export function ClassTrendsPanel() {
         </div>
       ) : !hasAnyActivity ? (
         <EmptyState
-          icon="📈"
+          icon={<TrendingUp size={26} strokeWidth={1.5} aria-hidden />}
           title="Այս ժամանակահատվածում ակտիվություն չկա"
           hint="Երբ աշակերտները սկսեն լուծել խնդիրներ, առաջընթացը կհայտնվի այստեղ։"
         />

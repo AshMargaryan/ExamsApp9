@@ -8,7 +8,7 @@ import {
 import { Card } from "../components/ui/Card";
 import { Section } from "../components/ui/Section";
 import { EmptyState } from "../components/ui/EmptyState";
-import { LinkButton } from "../components/ui/LinkButton";
+import { PageHeader } from "../components/ui/PageHeader";
 
 function useDebouncedValue(value: string, delayMs: number) {
   const [debounced, setDebounced] = useState(value);
@@ -62,9 +62,13 @@ export function HelpCenterPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pt-8 pb-28">
-      <LinkButton to="/" className="mb-4">← Գլխավոր</LinkButton>
-      <h1 className="mb-1 text-3xl font-semibold text-text">🆘 Օգնության կենտրոն</h1>
-      <p className="mb-6 text-sm text-text-muted">Փնտրեք պատասխան, կամ դիմեք մեզ ուղղակիորեն։</p>
+      {/* Was an emoji in the `h1` and a `text-3xl` title in the body face —
+          a page title that read as larger body text with a glyph in front. */}
+      <PageHeader
+        title="Օգնության կենտրոն"
+        description="Փնտրեք պատասխան, կամ դիմեք մեզ ուղղակիորեն։"
+        back={{ to: "/", label: "Գլխավոր" }}
+      />
 
       <input
         type="search"

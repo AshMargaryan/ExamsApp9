@@ -11,6 +11,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Modal } from "../components/ui/Modal";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { Search } from "lucide-react";
 
 type QuickFilterValue = TaskQuickFilter | "all" | "completed";
 
@@ -209,7 +210,7 @@ export function TodoListPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="🔍" title="Ոչինչ չի գտնվել" hint="Փորձիր փոխել ֆիլտրերը կամ որոնման բառը։" />
+        <EmptyState icon={<Search size={26} strokeWidth={1.5} aria-hidden />} title="Ոչինչ չի գտնվել" hint="Փորձիր փոխել ֆիլտրերը կամ որոնման բառը։" />
       ) : (
         <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
           {filtered.map((task) => (

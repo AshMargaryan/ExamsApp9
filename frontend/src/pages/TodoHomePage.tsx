@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlarmClock, CalendarClock, CalendarDays, CheckCircle2, FolderKanban, Star } from "lucide-react";
+import { AlarmClock, CalendarClock, CalendarDays, CheckCircle2, FolderKanban, Star, PartyPopper } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import {
   deleteTask, duplicateTask, getDashboard, toggleTaskComplete, type Task, type TodoDashboard,
@@ -102,8 +102,10 @@ export function TodoHomePage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-text">
-          {greeting()} 👋{user?.first_name ? `, ${user.first_name}` : ""}
+        {/* The 👋 was the only emoji left in a page title. Nothing else is
+            needed: the greeting already is the warmth. */}
+        <h1 className="font-display text-[length:var(--text-2xl)] leading-[var(--leading-display)] font-semibold tracking-[var(--tracking-tight)] text-text">
+          {greeting()}{user?.first_name ? `, ${user.first_name}` : ""}
         </h1>
         <nav className="flex flex-wrap gap-2">
           <LinkButton to="/todo/list">Ցանկ</LinkButton>
@@ -135,7 +137,7 @@ export function TodoHomePage() {
 
       {isFullyCaughtUp ? (
         <EmptyState
-          icon="🎉"
+          icon={<PartyPopper size={26} strokeWidth={1.5} aria-hidden />}
           title="Դու ամեն ինչ կատարել ես"
           hint="Կատարման ենթակա առաջադրանքներ չկան։"
           cta={{ label: "Ավելացնել առաջադրանք", onClick: openCreate }}

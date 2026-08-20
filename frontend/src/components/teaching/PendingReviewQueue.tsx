@@ -4,13 +4,14 @@ import { formatRelativeTime } from "../../lib/relativeTime";
 import { Avatar } from "../ui/Avatar";
 import { EmptyState } from "../ui/EmptyState";
 import { LinkButton } from "../ui/LinkButton";
+import { PartyPopper } from "lucide-react";
 
 export function PendingReviewQueue({ items }: { items: Assignment[] }) {
   if (items.length === 0) {
     return (
       <EmptyState
         tone="positive"
-        icon="🎉"
+        icon={<PartyPopper size={26} strokeWidth={1.5} aria-hidden />}
         title="Ստուգման սպասող առաջադրանք չկա"
         hint="Ամեն ինչ ստուգված է։ Նոր ուղարկված աշխատանքները կհայտնվեն այստեղ։"
       />

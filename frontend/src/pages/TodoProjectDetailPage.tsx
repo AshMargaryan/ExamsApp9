@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, FolderOpen } from "lucide-react";
 import {
   deleteProject, deleteTask, duplicateTask, getProject, listTasks, toggleTaskComplete,
   type Project, type Task,
@@ -149,7 +149,7 @@ export function TodoProjectDetailPage() {
 
       {tasks.length === 0 ? (
         <EmptyState
-          icon="📁"
+          icon={<FolderOpen size={26} strokeWidth={1.5} aria-hidden />}
           title="Այս նախագծում դեռ առաջադրանքներ չկան"
           cta={{ label: "Ավելացնել առաջադրանք", onClick: openCreate }}
         />

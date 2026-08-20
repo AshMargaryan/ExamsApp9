@@ -6,6 +6,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Modal } from "../components/ui/Modal";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { Trash2 } from "lucide-react";
 
 export function TodoTrashPage() {
   const { showError, showSuccess } = useToast();
@@ -52,7 +53,7 @@ export function TodoTrashPage() {
           ))}
         </div>
       ) : tasks.length === 0 ? (
-        <EmptyState icon="🗑️" title="Զամբյուղը դատարկ է" hint="Ջնջված առաջադրանքները կհայտնվեն այստեղ։" />
+        <EmptyState icon={<Trash2 size={26} strokeWidth={1.5} aria-hidden />} title="Զամբյուղը դատարկ է" hint="Ջնջված առաջադրանքները կհայտնվեն այստեղ։" />
       ) : (
         <div className="flex flex-col gap-2">
           {tasks.map((task) => (

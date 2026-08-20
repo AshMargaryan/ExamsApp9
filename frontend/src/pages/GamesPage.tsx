@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Search } from "lucide-react";
 import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import * as gamesApi from "../api/games";
@@ -6,7 +7,8 @@ import type { GameRoom, StartCondition } from "../api/games";
 import { getHierarchy } from "../api/practice";
 import type { SubjectNode } from "../api/practice";
 import { MessageModal } from "../components/MessageModal";
-import { LinkButton } from "../components/ui/LinkButton";
+import { PageHeader } from "../components/ui/PageHeader";
+import { buttonClasses } from "../components/ui/buttonStyles";
 
 const STATUS_LABELS: Record<GameRoom["status"], string> = {
   waiting: "Սպասման մեջ",
@@ -118,17 +120,20 @@ export function GamesPage() {
   return (
     <div className="min-h-screen bg-bg px-4 py-8">
       <div className="mx-auto max-w-3xl">
-        <LinkButton to="/" className="mb-6">← Գլխավոր</LinkButton>
-
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-semibold text-text">Խաղասենյակներ</h1>
-          <Link
-            to="/games/find"
-            className="rounded-md bg-primary px-6 py-2.5 font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-          >
-            🔍 Գտնել խաղ
-          </Link>
-        </div>
+        {/* `flex items-center justify-between` with a non-shrinking h1 beside
+            a fixed-width CTA — the same pattern that hung the rankings back
+            link off the right edge. At 375px it gave the page a 440px
+            scrollWidth. PageHeader wraps its actions under the title instead,
+            and brings the back link and the display face with it. */}
+        <PageHeader
+          title="Խաղասենյակներ"
+          back={{ to: "/", label: "Գլխավոր" }}
+          actions={
+            <Link to="/games/find" className={buttonClasses("primary", "md")}>
+              <Search size={16} strokeWidth={2} aria-hidden /> Գտնել խաղ
+            </Link>
+          }
+        />
 
         <div className="grid gap-6 sm:grid-cols-2">
           <form
