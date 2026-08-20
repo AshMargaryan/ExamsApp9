@@ -56,7 +56,7 @@ export function ConfirmDialog({
             "fixed z-50 border-border bg-surface focus:outline-none",
             isNative
               ? [
-                  "inset-x-0 bottom-0 rounded-t-[24px] border-t px-5 pt-3",
+                  "inset-x-0 bottom-0 rounded-t-[var(--radius-2xl)] border-t px-5 pt-3",
                   "data-[state=open]:animate-[sheet-in_var(--motion-normal)_var(--ease-out)]",
                   "data-[state=closed]:animate-[sheet-out_var(--motion-fast)_var(--ease-out)]",
                 ]

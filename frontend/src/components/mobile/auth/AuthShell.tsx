@@ -119,7 +119,7 @@ export function AuthShell({ onBack, progress, title, subtitle, showLogo, childre
       <div className="relative flex flex-1 flex-col px-6">
         <div className="my-auto w-full py-2">
           {showLogo && (
-            <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary shadow-lg shadow-black/25">
+            <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-primary shadow-lg shadow-black/25">
               <Logo className="h-8 w-8 text-primary-contrast" />
             </span>
           )}

@@ -72,7 +72,7 @@ export function DashboardAssignmentCard({
 
   return (
     <div
-      className={`flex w-[380px] shrink-0 flex-col gap-4 rounded-[20px] border p-6 ${
+      className={`flex w-[380px] shrink-0 flex-col gap-4 rounded-[var(--radius-lg)] border p-6 ${
         tinted ? "border-border bg-surface-muted" : "border-border bg-surface"
       }`}
       style={{ scrollSnapAlign: "start" }}

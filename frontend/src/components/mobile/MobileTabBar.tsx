@@ -57,12 +57,12 @@ function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }
       <div
         role="dialog"
         aria-label="Ավելին"
-        className="fixed inset-x-0 bottom-0 z-[85] max-h-[82vh] overflow-y-auto rounded-t-[22px] border-t border-border bg-surface"
+        className="fixed inset-x-0 bottom-0 z-[85] max-h-[82vh] overflow-y-auto rounded-t-[var(--radius-2xl)] border-t border-border bg-surface"
         style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
       >
         {/* Grab handle — the affordance iOS users expect on a bottom sheet,
             even though this one is dismissed by tap rather than by drag. */}
-        <div className="sticky top-0 flex items-center justify-between rounded-t-[22px] bg-surface px-4 pt-3 pb-2">
+        <div className="sticky top-0 flex items-center justify-between rounded-t-[var(--radius-2xl)] bg-surface px-4 pt-3 pb-2">
           <span className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-border" aria-hidden />
           <h2 className="mt-3 text-lg font-semibold text-text">Ավելին</h2>
           <button

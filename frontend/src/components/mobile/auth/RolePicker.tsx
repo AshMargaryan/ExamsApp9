@@ -89,7 +89,7 @@ export function RolePicker({ onPick }: { onPick: (role: AccountRole) => void }) 
                 ? `color-mix(in srgb, ${option.accent} 12%, var(--color-surface))`
                 : undefined,
             }}
-            className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-[22px] border border-border bg-surface p-4 text-left transition-all duration-300 ease-out active:scale-[0.98] ${
+            className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-[var(--radius-2xl)] border border-border bg-surface p-4 text-left transition-all duration-300 ease-out active:scale-[0.98] ${
               shown ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
             } ${dimmed ? "scale-[0.98] opacity-40" : ""}`}
           >

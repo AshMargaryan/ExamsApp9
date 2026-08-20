@@ -74,7 +74,7 @@ export function ConversationSheet({
       <div
         role="dialog"
         aria-label="Զրույցներ"
-        className="fixed inset-x-0 bottom-0 z-[95] flex max-h-[85dvh] flex-col rounded-t-[24px] border-t border-border bg-surface"
+        className="fixed inset-x-0 bottom-0 z-[95] flex max-h-[85dvh] flex-col rounded-t-[var(--radius-2xl)] border-t border-border bg-surface"
         style={{ paddingBottom: "calc(var(--safe-bottom) + 0.5rem)" }}
       >
         <div className="flex-none px-4 pt-3">

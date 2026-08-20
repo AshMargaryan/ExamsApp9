@@ -116,7 +116,7 @@ export function MobileWelcome() {
       />
 
       <header className="relative flex flex-col items-center gap-3 px-6">
-        <span className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary shadow-lg shadow-black/25">
+        <span className="flex h-14 w-14 items-center justify-center rounded-[var(--radius-xl)] bg-primary shadow-lg shadow-black/25">
           <Logo className="h-8 w-8 text-primary-contrast" />
         </span>
         <div className="text-center">
