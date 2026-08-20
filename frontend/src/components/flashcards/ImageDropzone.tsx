@@ -1,5 +1,6 @@
 import { useRef, useState, type DragEvent } from "react";
 import { resizeImageFile } from "../../lib/imageResize";
+import { Camera, X } from "lucide-react";
 
 interface Props {
   label: string;
@@ -62,10 +63,11 @@ export function ImageDropzone({ label, file, existingUrl, onChange, onRemoveExis
             <button
               type="button"
               onClick={handleRemove}
+              aria-label="Հեռացնել նկարը"
               title="Հեռացնել"
               className="absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
             >
-              ✕
+              <X size={15} strokeWidth={2} aria-hidden />
             </button>
             <button
               type="button"
@@ -80,7 +82,9 @@ export function ImageDropzone({ label, file, existingUrl, onChange, onRemoveExis
           </>
         ) : (
           <div className="px-4 text-center text-sm text-text-muted">
-            <p>📷 Քաշեք նկարը այստեղ կամ սեղմեք</p>
+            <p className="flex items-center justify-center gap-[var(--space-2)]">
+              <Camera size={16} strokeWidth={1.75} aria-hidden /> Քաշեք նկարը այստեղ կամ սեղմեք
+            </p>
             <p className="mt-1 text-xs">PNG, JPG, WEBP</p>
           </div>
         )}

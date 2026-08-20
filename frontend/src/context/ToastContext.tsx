@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { isNativeApp } from "../lib/platform";
+import { CircleCheck, TriangleAlert } from "lucide-react";
 
 type ToastKind = "success" | "error";
 
@@ -61,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role="status"
-            className={`pointer-events-auto w-full max-w-sm cursor-pointer rounded-[var(--radius)] border px-4 py-3 text-sm font-medium shadow-xl ${
+            className={`pointer-events-auto flex w-full max-w-sm cursor-pointer items-start gap-[var(--space-2)] rounded-[var(--radius)] border px-4 py-3 text-sm font-medium shadow-xl ${
               t.exiting
                 ? "animate-[fade-out_var(--motion-fast)_var(--ease-out)_forwards]"
                 : "animate-[slide-up-in_var(--motion-fast)_var(--ease-out)]"
@@ -72,8 +73,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }`}
             onClick={() => dismiss(t.id)}
           >
-            {t.kind === "success" ? "✅ " : "⚠️ "}
-            {t.message}
+            {t.kind === "success" ? (
+              <CircleCheck size={16} strokeWidth={2} aria-hidden className="mt-0.5 shrink-0" />
+            ) : (
+              <TriangleAlert size={16} strokeWidth={2} aria-hidden className="mt-0.5 shrink-0" />
+            )}
+            <span>{t.message}</span>
           </div>
         ))}
       </div>

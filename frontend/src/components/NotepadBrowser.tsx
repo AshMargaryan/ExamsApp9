@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, FolderOpen, Pencil, Trash2 } from "lucide-react";
 import { useNotepad } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 import { Button } from "./ui/Button";
@@ -86,7 +86,9 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
       )}
 
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-text-muted">📁 Իմ նշումները</span>
+        <span className="flex items-center gap-[var(--space-2)] text-sm font-medium text-text-muted">
+          <FolderOpen size={15} strokeWidth={1.75} aria-hidden /> Իմ նշումները
+        </span>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -144,11 +146,11 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
               <button
                 type="button"
                 onClick={() => startRename(n.id, n.name)}
-                aria-label="Rename"
+                aria-label="Վերանվանել"
                 title="Վերանվանել"
                 className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-primary"
               >
-                ✎
+                <Pencil size={14} strokeWidth={1.75} aria-hidden />
               </button>
               {confirmDeleteId === n.id ? (
                 <>
@@ -177,11 +179,11 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
                 <button
                   type="button"
                   onClick={() => setConfirmDeleteId(n.id)}
-                  aria-label="Delete"
+                  aria-label="Ջնջել"
                   title="Ջնջել"
-                  className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-primary"
+                  className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect"
                 >
-                  🗑️
+                  <Trash2 size={14} strokeWidth={1.75} aria-hidden />
                 </button>
               )}
             </div>

@@ -1,4 +1,5 @@
 import { MathText } from "./MathText";
+import { BookOpen } from "lucide-react";
 
 // Mock-exam questions that share a passage/cloze text embed a one-time
 // bilingual note ("Հարցեր N-M-ը վերաբերում են..." / "Questions N-M refer
@@ -24,7 +25,7 @@ export function QuestionText({
       </p>
       {note && (
         <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-surface-muted px-4 py-3 text-sm leading-relaxed text-text-muted">
-          <span aria-hidden="true">📖</span>
+          <BookOpen size={15} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0" />
           <MathText text={note} className="whitespace-pre-line" />
         </div>
       )}

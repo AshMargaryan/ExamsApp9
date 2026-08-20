@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eraser, X } from "lucide-react";
+import { Eraser, X, Trash2 } from "lucide-react";
 import { useNotepad, type Stroke, type TextNote } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 
@@ -339,11 +339,11 @@ export function Notepad() {
         <button
           type="button"
           onClick={clearAll}
-          aria-label="Clear"
+          aria-label="Մաքրել ամեն ինչ"
           title="Մաքրել ամեն ինչ"
-          className="ml-auto flex h-9 w-9 items-center justify-center rounded-md border border-border text-base transition-colors hover:border-primary"
+          className="ml-auto flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-colors hover:border-primary hover:text-text"
         >
-          🗑️
+          <Trash2 size={16} strokeWidth={1.75} aria-hidden />
         </button>
       </div>
 

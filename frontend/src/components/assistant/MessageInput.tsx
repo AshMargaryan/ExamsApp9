@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { GraduationCap, Lightbulb } from "lucide-react";
+import { GraduationCap, Lightbulb, Check, X } from "lucide-react";
 import {
   transcribeVoice, uploadAttachment, type Attachment, type ConversationMode, type EducationalContext,
 } from "../../api/assistant";
@@ -276,18 +276,20 @@ export function MessageInput({
             <button
               type="button"
               onClick={cancelRecording}
+              aria-label="Չեղարկել ձայնագրումը"
               title="Չեղարկել ձայնագրումը"
-              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-text-muted hover:text-text"
+              className="flex shrink-0 items-center rounded-full border border-border px-3 py-1.5 text-text-muted hover:text-text"
             >
-              ✕
+              <X size={15} strokeWidth={2} aria-hidden />
             </button>
             <button
               type="button"
               onClick={stopAndTranscribe}
+              aria-label="Ավարտել և ճանաչել"
               title="Ավարտել և ճանաչել"
-              className="shrink-0 rounded-full bg-primary px-3 py-1.5 font-medium text-primary-contrast hover:bg-primary-hover"
+              className="flex shrink-0 items-center rounded-full bg-primary px-3 py-1.5 font-medium text-primary-contrast hover:bg-primary-hover"
             >
-              ✓
+              <Check size={15} strokeWidth={2.5} aria-hidden />
             </button>
           </div>
         ) : (

@@ -90,7 +90,9 @@ function ConversationRow({
       }`}
     >
       <button type="button" onClick={onSelect} className="min-w-0 flex-1 truncate text-left">
-        {conversation.is_pinned && "📌 "}
+        {conversation.is_pinned && (
+          <Pin size={12} strokeWidth={2} aria-hidden className="mr-1 inline-block align-[-1px] text-text-muted" />
+        )}
         {conversation.title || "Նոր զրույց"}
       </button>
 

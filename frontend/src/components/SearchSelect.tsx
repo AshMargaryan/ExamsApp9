@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 
 interface Option {
   id: number;
@@ -94,9 +95,9 @@ export function SearchSelect({
                 setOpen(false);
                 setQuery("");
               }}
-              className="block w-full px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-muted"
+              className="flex w-full items-center gap-[var(--space-2)] px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-muted"
             >
-              ✕ Չընտրել
+              <X size={14} strokeWidth={2} aria-hidden /> Չընտրել
             </button>
           )}
           {loading && <div className="px-3 py-2 text-sm text-text-muted">Բեռնվում է...</div>}

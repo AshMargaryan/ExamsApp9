@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, CircleCheck } from "lucide-react";
 
 interface Props {
   message: string;
@@ -20,7 +20,7 @@ export function SuccessModal({ message, onClose }: Props) {
         >
           <X size={16} strokeWidth={2} aria-hidden />
         </button>
-        <p className="text-4xl">✅</p>
+        <CircleCheck size={36} strokeWidth={1.5} aria-hidden className="mx-auto text-correct" />
         <p className="mt-4 text-lg text-text">{message}</p>
         <button
           type="button"

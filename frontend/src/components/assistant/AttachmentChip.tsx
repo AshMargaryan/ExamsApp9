@@ -1,11 +1,15 @@
 import type { Attachment } from "../../api/assistant";
+import { FileText, FileType, Image, Paperclip, X, type LucideIcon } from "lucide-react";
 
-const TYPE_ICON: Record<Attachment["attachment_type"], string> = {
-  image: "🖼️",
-  pdf: "📕",
-  document: "📄",
-  text: "📝",
-  other: "📎",
+/* Five colour emoji in a row of otherwise monochrome chrome, one of which
+   (📝) is the same glyph the notepad insert button used for a different
+   meaning entirely. */
+const TYPE_ICON: Record<Attachment["attachment_type"], LucideIcon> = {
+  image: Image,
+  pdf: FileText,
+  document: FileText,
+  text: FileType,
+  other: Paperclip,
 };
 
 export function AttachmentChip({
@@ -29,20 +33,22 @@ export function AttachmentChip({
             onClick={onRemove}
             className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-text text-xs text-bg"
           >
-            ✕
+            <X size={12} strokeWidth={2.5} aria-hidden />
           </button>
         )}
       </div>
     );
   }
 
+  const TypeIcon = TYPE_ICON[attachment.attachment_type];
+
   return (
-    <div className="relative flex items-center gap-2 rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-text">
-      <span>{TYPE_ICON[attachment.attachment_type]}</span>
+    <div className="relative flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-surface-muted px-3 py-2 text-sm text-text">
+      <TypeIcon size={15} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
       <span className="max-w-[10rem] truncate">{attachment.original_filename}</span>
       {onRemove && (
-        <button type="button" onClick={onRemove} className="text-text-muted hover:text-text">
-          ✕
+        <button type="button" onClick={onRemove} aria-label="Հեռացնել կցորդը" className="flex text-text-muted hover:text-text">
+          <X size={13} strokeWidth={2} aria-hidden />
         </button>
       )}
     </div>

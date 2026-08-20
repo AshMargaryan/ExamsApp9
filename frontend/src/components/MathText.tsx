@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import katex from "katex";
 import { useNotepadOptional } from "../context/NotepadContext";
+import { NotebookPen } from "lucide-react";
 
 // Splits on $$...$$ (block) and $...$ (inline) LaTeX segments, rendering
 // each with KaTeX and leaving the rest as plain text.
@@ -39,9 +40,9 @@ function renderSegment(
         onClick={() => onInsert(segment)}
         title="Ավելացնել այս հավասարումը իմ նշումներում"
         aria-label="Ավելացնել այս հավասարումը իմ նշումներում"
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border align-middle text-[11px] leading-none hover:border-primary"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border align-middle text-text-muted leading-none hover:border-primary hover:text-primary"
       >
-        📝
+        <NotebookPen size={11} strokeWidth={2} aria-hidden />
       </button>
     </span>
   );

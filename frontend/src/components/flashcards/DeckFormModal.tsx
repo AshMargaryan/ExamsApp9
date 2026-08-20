@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { DeckFormInput, FlashcardSubject } from "../../api/flashcards";
 import { SUBJECTS } from "../../lib/subjects";
+import { X } from "lucide-react";
 
 interface Props {
   title: string;
@@ -34,9 +35,9 @@ export function DeckFormModal({ title, initial, busy, onSave, onClose }: Props) 
           type="button"
           onClick={onClose}
           aria-label="Փակել"
-          className="btn-icon-fx absolute top-3 right-3 text-lg text-text-muted transition-colors hover:text-text"
+          className="btn-icon-fx absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
         >
-          ✕
+          <X size={16} strokeWidth={2} aria-hidden />
         </button>
 
         <h2 className="mb-6 text-xl font-semibold text-text">{title}</h2>

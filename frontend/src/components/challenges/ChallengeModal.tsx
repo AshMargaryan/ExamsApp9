@@ -4,6 +4,7 @@ import type { ChallengeInvite } from "../../api/challenges";
 import * as practiceApi from "../../api/practice";
 import type { SubjectNode } from "../../api/practice";
 import type { FriendUser } from "../../api/friends";
+import { Swords, X } from "lucide-react";
 
 export function ChallengeModal({
   friend, onClose, onSent,
@@ -51,14 +52,17 @@ export function ChallengeModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text">⚔️ Մարտահրավեր @{friend.username}-ին</h2>
+          <h2 className="flex items-center gap-[var(--space-2)] text-lg font-semibold text-text">
+            <Swords size={18} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
+            Մարտահրավեր @{friend.username}-ին
+          </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Փակել"
-            className="text-lg text-text-muted hover:text-text"
+            className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted hover:bg-surface-muted hover:text-text"
           >
-            ✕
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
 

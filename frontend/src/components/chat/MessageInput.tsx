@@ -229,10 +229,11 @@ export function MessageInput({
           <button
             type="button"
             onClick={onCancelReply}
-            className="shrink-0 text-text-muted hover:text-text"
+            className="flex shrink-0 text-text-muted hover:text-text"
+            aria-label="Չեղարկել պատասխանը"
             title="Չեղարկել"
           >
-            ✕
+            <X size={15} strokeWidth={2} aria-hidden />
           </button>
         </div>
       )}

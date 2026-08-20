@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Calculator as CalculatorIcon, StickyNote, Wrench, X } from "lucide-react";
+import { Calculator as CalculatorIcon, StickyNote, Wrench, X, FolderOpen, Maximize2, Minimize2 } from "lucide-react";
 import { Calculator } from "./Calculator";
 import { Notepad } from "./Notepad";
 import { NotepadBrowser } from "./NotepadBrowser";
@@ -131,7 +131,7 @@ export function ToolsDock() {
                   aria-label="Իմ նշումները"
                   title="Իմ նշումները"
                 >
-                  📁
+                  <FolderOpen size={16} strokeWidth={1.75} aria-hidden />
                 </button>
               )}
               {panel === "notepad" && (
@@ -139,10 +139,14 @@ export function ToolsDock() {
                   type="button"
                   onClick={() => setFullscreen((f) => !f)}
                   className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
-                  aria-label="Toggle fullscreen"
-                  title="Toggle fullscreen"
+                  aria-label={fullscreen ? "Փոքրացնել" : "Ամբողջ էկրանով"}
+                  title={fullscreen ? "Փոքրացնել" : "Ամբողջ էկրանով"}
                 >
-                  {fullscreen ? "⤡" : "⛶"}
+                  {fullscreen ? (
+                    <Minimize2 size={16} strokeWidth={1.75} aria-hidden />
+                  ) : (
+                    <Maximize2 size={16} strokeWidth={1.75} aria-hidden />
+                  )}
                 </button>
               )}
               <button

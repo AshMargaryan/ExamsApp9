@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { X, PartyPopper } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface Props {
@@ -45,7 +45,7 @@ export function ScoreModal({ correctCount, total, onContinue, continueLabel, onC
             <X size={16} strokeWidth={2} aria-hidden />
           </button>
         )}
-        {perfect && <p className="mb-2 text-4xl">🎉</p>}
+        {perfect && <PartyPopper size={36} strokeWidth={1.5} aria-hidden className="mx-auto mb-2 text-accent" />}
         <p className={`text-4xl font-bold ${color}`}>{percent}%</p>
         <p className="mt-2 text-lg text-text">
           {correctCount} / {total} ճիշտ պատասխան
