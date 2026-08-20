@@ -80,7 +80,19 @@ export function PageHeader({
       )}
 
       <div className="flex flex-wrap items-start justify-between gap-[var(--space-4)]">
-        <div className="min-w-0 flex-1">
+        {/*
+          `min-w-0 flex-1` alone lets this column shrink to nothing, so
+          `flex-wrap` never fires and the actions simply crush the title
+          instead of dropping below it. Measured on a subtopic page at 375px:
+          a 213px action button beside an **82px** title column, in which
+          every word of the breadcrumb, the title and the description wrapped
+          onto its own line — one word per row, for six rows.
+
+          A real minimum is what makes the row wrap. `min()` keeps it safe if
+          the container is ever narrower than the minimum itself, in which
+          case the column simply takes the full width.
+        */}
+        <div className="min-w-[min(100%,15rem)] flex-1">
           {eyebrow && (
             <p className="mb-[var(--space-1)] text-[length:var(--text-xs)] font-medium tracking-[var(--tracking-wide)] text-text-muted">
               {eyebrow}

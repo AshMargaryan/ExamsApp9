@@ -5,7 +5,7 @@ import {
   type SubjectNode, type DomainNode, type TopicNode, type SubtopicNode,
   type SubtopicMaterial, type Tier,
 } from "../api/practice";
-import { Send } from "lucide-react";
+import { ChevronDown, Send } from "lucide-react";
 import * as teachingApi from "../api/teaching";
 import type { StudentRosterEntry } from "../api/teaching";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
@@ -16,6 +16,7 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { PageHeader } from "../components/ui/PageHeader";
+import { ProgressBar } from "../components/ui/ProgressBar";
 import { Section } from "../components/ui/Section";
 import { LoadingRegion, Skeleton, SkeletonText } from "../components/ui/Skeleton";
 import { useAsyncResource } from "../hooks/useAsyncResource";
@@ -27,6 +28,113 @@ import { scrollToElement, scrollWindowToTop } from "../lib/scrollToElement";
 const TIERS: Tier[] = ["easy", "medium", "hard"];
 
 type MaterialSection = { heading: string; body: string };
+
+/*
+  Where you are in the lesson, and every other part one click away.
+
+  This replaced a row of pills, one per section, all shown at once. Section
+  headings in this content bank are Armenian sentences — "Ինչու է
+  ջերմաստիճանն ազդում դիֆուզիայի արագության վրա" is one of ten on a real
+  physics subtopic — so at 1280px the row wrapped to **five lines** and stood
+  about 130px tall above the material: more of the screen than the first
+  paragraph of the lesson it was introducing. The active pill was also a
+  filled `bg-primary`, which made the loudest object on a page meant for
+  three hours of reading a navigation chip.
+
+  A table of contents is not a filter row. What a reader needs continuously
+  is position — which part, how far through — and that is two lines. The
+  destinations are a disclosure: still one click away, listed at full width
+  where a long heading can actually be read, and not occupying the page
+  while nobody is navigating.
+
+  The current step is marked three ways — `aria-current="step"`, a filled
+  marker and weight — so it survives greyscale and is announced.
+*/
+function LessonContents({ sections, index, onSelect, open, onToggle }: {
+  sections: MaterialSection[];
+  index: number;
+  onSelect: (index: number) => void;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const listId = "lesson-contents";
+  const heading = (i: number) => sections[i].heading || `Մաս ${i + 1}`;
+
+  return (
+    <div className="mb-[var(--space-5)] rounded-[var(--radius-lg)] border border-border bg-surface-muted">
+      <div className="flex flex-wrap items-center justify-between gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-3)]">
+        <p className="min-w-0 text-[length:var(--text-sm)] text-text-muted">
+          <span className="tabular-nums">
+            Մաս {index + 1} / {sections.length}
+          </span>
+          <span aria-hidden> · </span>
+          <span className="font-medium text-text">{heading(index)}</span>
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={listId}
+          iconRight={
+            <ChevronDown
+              size={15}
+              strokeWidth={1.75}
+              aria-hidden
+              className={cn("transition-transform duration-[var(--motion-fast)]", open && "rotate-180")}
+            />
+          }
+        >
+          Բովանդակություն
+        </Button>
+      </div>
+
+      <div className="px-[var(--space-4)] pb-[var(--space-3)]">
+        <ProgressBar
+          percent={((index + 1) / sections.length) * 100}
+          label={`Դասի առաջընթաց՝ ${index + 1} ${sections.length}-ից`}
+        />
+      </div>
+
+      {open && (
+        <ol id={listId} className="border-t border-border p-[var(--space-2)]">
+          {sections.map((_section, i) => {
+            const current = i === index;
+            return (
+              <li key={i}>
+                <button
+                  type="button"
+                  aria-current={current ? "step" : undefined}
+                  onClick={() => {
+                    onSelect(i);
+                    onToggle();
+                  }}
+                  className={cn(
+                    "flex w-full items-start gap-[var(--space-3)] rounded-[var(--radius-md)]",
+                    "px-[var(--space-3)] py-[var(--space-2)] text-start",
+                    "text-[length:var(--text-sm)] transition-colors",
+                    current ? "bg-primary-bg font-medium text-text" : "text-text-muted hover:bg-surface hover:text-text",
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                      current ? "bg-primary" : "border border-border",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="tabular-nums text-text-muted">{i + 1}.</span> {heading(i)}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
 
 // Learning material is authored with "## " headers per section (intro, examples,
 // summary, etc.) and, within the worked-examples section, individual examples
@@ -147,6 +255,7 @@ function SubtopicContent({
   onAssignClick?: () => void;
 }) {
   const [sectionIndex, setSectionIndex] = useState(0);
+  const [contentsOpen, setContentsOpen] = useState(false);
   const exercisesRef = useRef<HTMLDivElement>(null);
 
   const fetchMaterial = useCallback(
@@ -239,30 +348,14 @@ function SubtopicContent({
         />
       ) : material ? (
         <div>
-          {/*
-            Section pills are a step indicator, not a filter row: they are the
-            student's position in the lesson. The active one is filled, and the
-            count beneath the body says how far through the material they are.
-          */}
           {sections.length > 1 && (
-            <div className="mb-[var(--space-5)] flex flex-wrap gap-[var(--space-2)]">
-              {sections.map((section, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  aria-current={index === sectionIndex ? "step" : undefined}
-                  onClick={() => goToSection(index)}
-                  className={cn(
-                    "rounded-full border px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-sm)] transition-colors",
-                    index === sectionIndex
-                      ? "border-primary bg-primary text-primary-contrast"
-                      : "border-border text-text-muted hover:border-primary hover:text-text",
-                  )}
-                >
-                  {section.heading || `Մաս ${index + 1}`}
-                </button>
-              ))}
-            </div>
+            <LessonContents
+              sections={sections}
+              index={sectionIndex}
+              onSelect={goToSection}
+              open={contentsOpen}
+              onToggle={() => setContentsOpen((v) => !v)}
+            />
           )}
 
           <MarkdownMessage
