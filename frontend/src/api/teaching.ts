@@ -87,13 +87,25 @@ export interface Assignment {
 export interface ProblemQuestionReview {
   id: number;
   text: string;
+  /** `single_choice` | `multi_statement` | `matching` | `free_response`, plus
+   *  practice's own `multiple_choice` / `true_false` / `short_answer`. */
   question_type: string;
-  choices: { id: number; text: string; is_correct: boolean }[];
-  statements: { id: number; label: string; text: string; is_true: boolean }[];
+  choices: { id: number; text: string; is_correct: boolean; order: number }[];
+  statements: {
+    id: number;
+    label: string;
+    text: string;
+    is_true: boolean;
+    /** `matching` only: the 1-based number of the correct right-hand item.
+     *  Null for every other question type. */
+    match_target: number | null;
+  }[];
   correct_answer_text: string | null;
   selected_choice_id: number | null;
   answer_text: string;
   selected_statement_ids: number[];
+  /** `matching` only: `{ statementId: choiceId }` as the student connected them. */
+  match_pairs: Record<string, number>;
   is_correct: boolean;
 }
 

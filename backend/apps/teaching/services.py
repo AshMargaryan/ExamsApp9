@@ -160,22 +160,36 @@ def mock_exam_status(assignment) -> str | None:
 
 
 def _question_review(question, answer) -> dict:
+    # `order`, `match_target` and `match_pairs` exist so the review page can
+    # render a `matching` question as what it is. Without them it fell into
+    # the statements branch and was drawn as a true/false list, printing
+    # "Ճիշտ"/"Սխալ" beside each left-hand item from an `is_true` that
+    # MockExamStatement's own docstring says is unused for matching items.
+    # Practice questions have no matching type and their models carry
+    # neither field, hence the getattr defaults.
     return {
         "id": question.id,
         "text": question.text,
         "question_type": question.question_type,
         "choices": [
-            {"id": c.id, "text": c.text, "is_correct": c.is_correct}
+            {"id": c.id, "text": c.text, "is_correct": c.is_correct, "order": c.order}
             for c in question.choices.all()
         ],
         "statements": [
-            {"id": s.id, "label": s.label, "text": s.text, "is_true": s.is_true}
+            {
+                "id": s.id,
+                "label": s.label,
+                "text": s.text,
+                "is_true": s.is_true,
+                "match_target": getattr(s, "match_target", None),
+            }
             for s in question.statements.all()
         ],
         "correct_answer_text": question.correct_answer_text or None,
         "selected_choice_id": answer.selected_choice_id if answer else None,
         "answer_text": answer.answer_text if answer else "",
         "selected_statement_ids": answer.selected_statement_ids if answer else [],
+        "match_pairs": getattr(answer, "match_pairs", None) or {} if answer else {},
         "is_correct": answer.is_correct if answer else False,
     }
 
