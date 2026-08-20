@@ -19,8 +19,6 @@ import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 // Tiptap-based notes editor. Splitting them keeps the initial bundle to
 // just the auth screens above.
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })));
-const SubjectsPage = lazy(() => import("./pages/SubjectsPage").then((m) => ({ default: m.SubjectsPage })));
-const SubjectHubPage = lazy(() => import("./pages/SubjectHubPage").then((m) => ({ default: m.SubjectHubPage })));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage").then((m) => ({ default: m.SubscriptionPage })));
 const PracticeSubjectsPage = lazy(() => import("./pages/PracticeSubjectsPage").then((m) => ({ default: m.PracticeSubjectsPage })));
 const PracticeSubjectPage = lazy(() => import("./pages/PracticeSubjectPage").then((m) => ({ default: m.PracticeSubjectPage })));
@@ -100,8 +98,12 @@ export default function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route path="/verify-email" element={<VerifyEmailPage />} />
-              <Route path="/subjects" element={<SubjectsPage />} />
-              <Route path="/subjects/:subject" element={<SubjectHubPage />} />
+              {/* One subject picker, two names. Every "subjects" entry point
+                  in the product points at /subjects, and /practice is where
+                  the deeper routes live, so both render the same page rather
+                  than one of them being a second, worse picker. */}
+              <Route path="/subjects" element={<PracticeSubjectsPage />} />
+              <Route path="/subjects/:subject" element={<Navigate to="/subjects" replace />} />
               <Route path="/subscription" element={<SubscriptionPage />} />
               <Route path="/practice" element={<PracticeSubjectsPage />} />
               <Route path="/practice/:subjectId" element={<PracticeSubjectPage />} />
