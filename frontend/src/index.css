@@ -103,6 +103,65 @@ body {
   margin: 0.5em 0;
 }
 
+/* Block math has an intrinsic width that a phone column frequently cannot
+   hold, and `$$...$$` appears in content the layout cannot pre-measure —
+   flashcard answers, question stems, mistake-review explanations.
+
+   Measured at 375px on flashcard deck 26: one answer option rendered 490px
+   wide inside a 341px button whose radius clipped it, so 149px of a
+   multiple-choice option was unreadable and unreachable with no scrollbar
+   and no way to widen it. Clipping content is not an option, widening the
+   button scrolls the whole document sideways (see buttonStyles), and
+   shrinking type is the answer this project has already rejected. So a
+   constrained math container scrolls on its own axis.
+
+   `overscroll-behavior-x: contain` keeps a swipe that reaches the end of the
+   formula from turning into the page's own back-gesture. */
+.math-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  /* An element that scrolls on one axis can no longer be `visible` on the
+     other, so the vertical axis has to be given an answer too.
+
+     KaTeX bleeds a few pixels past its own line box (the descender of a
+     \dfrac) — measured 6px at 15px type, 0.4em — so the padding absorbs the
+     bleed and scales with the surrounding text rather than cropping it. That
+     padding, not the scroll, is what keeps a formula whole: the container's
+     height is set by its content, so nothing but the bleed can ever exceed
+     it. Leaving the vertical axis `auto` bought nothing and cost a great
+     deal — measured at 375px, Chrome painted a full-height scrollbar track
+     down the right of *every* formula in the product, a grey rule through
+     each flashcard, question stem and explanation, scrolling nothing. */
+  padding-block: 0.45em;
+  overflow-y: hidden;
+}
+.math-scroll .katex-display {
+  margin: 0;
+  text-align: inherit;
+}
+/* Scrolling is the fallback, not the first answer. KaTeX already emits break
+   opportunities between top-level relations and binary operators (one `.base`
+   span per run), but `displayMode` sets `white-space: nowrap`, so a formula
+   written as `$$...$$` — which is how much of the card and question bank is
+   authored — could only ever be one unbreakable line.
+
+   Measured on flashcard deck 26 at 1280px: the answer
+   `cos2α = cos²α − sin²α = 2cos²α − 1 = 1 − 2sin²α` needed 438px inside a
+   244px option, so 194px of it was hidden behind a scroll the student had no
+   way to know was there. Allowing the wrap breaks it at the `=` signs, which
+   is where a textbook would break it, and the whole answer becomes readable.
+   Anything genuinely unbreakable — a single wide \dfrac — still scrolls. */
+.math-scroll .katex-display > .katex {
+  white-space: normal;
+}
+/* Centring a formula that is wider than its container hides *both* ends of
+   it. Start the scroll where the expression starts. */
+.math-scroll .katex-display > .katex {
+  text-align: inherit;
+}
+
 /* Gameplay timer/feedback animations — kept subtle and short-lived. */
 @keyframes urgent-pulse {
   0%, 100% { transform: scale(1); }
