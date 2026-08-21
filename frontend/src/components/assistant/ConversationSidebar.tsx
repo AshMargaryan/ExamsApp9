@@ -5,6 +5,8 @@ import type { Conversation } from "../../api/assistant";
 import { Button } from "../ui/Button";
 import { HamburgerIcon, MoreIcon, PlusCircleIcon } from "./icons";
 import { SearchField } from "../ui/SearchField";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 function ConversationRow({
   conversation,
@@ -76,7 +78,7 @@ function ConversationRow({
             if (e.key === "Escape") setEditing(false);
           }}
           onBlur={saveRename}
-          className="w-full rounded border border-primary bg-surface px-2 py-1 text-sm text-text"
+          className={cn(fieldInputClass, "border-primary bg-surface px-[var(--space-2)] py-[var(--space-1)] text-[length:var(--text-sm)]")}
         />
       </div>
     );

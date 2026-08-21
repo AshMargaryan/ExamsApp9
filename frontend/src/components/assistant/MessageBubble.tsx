@@ -4,6 +4,8 @@ import { synthesizeVoice, type Message } from "../../api/assistant";
 import { AttachmentChip } from "./AttachmentChip";
 import { AssistantContent } from "./content/AssistantContent";
 import { TypingIndicator } from "./TypingIndicator";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -97,7 +99,7 @@ function MessageBubbleImpl({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={3}
-              className="min-w-[16rem] rounded-md border border-border bg-surface p-2 text-sm text-text"
+              className={cn(fieldInputClass, "min-w-[16rem] bg-surface text-[length:var(--text-sm)]")}
               autoFocus
             />
             <div className="flex gap-2 text-sm">

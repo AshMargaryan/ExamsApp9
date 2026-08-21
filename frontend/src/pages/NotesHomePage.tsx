@@ -40,6 +40,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { cn } from "../lib/cn";
 import { SearchField } from "../components/ui/SearchField";
+import { fieldInputClass } from "../components/ui/Field";
 
 /*
   THE NOTES LIBRARY
@@ -489,7 +490,7 @@ export function NotesHomePage() {
           onChange={(e) => setFolderName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSaveFolder()}
           placeholder="Թղթապանակի անունը"
-          className="w-full rounded-[var(--radius)] border border-border bg-bg px-3.5 py-2.5 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className={fieldInputClass}
         />
       </Modal>
 

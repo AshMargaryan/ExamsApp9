@@ -25,6 +25,7 @@ import { ErrorState } from "../components/ui/ErrorState";
 import { Skeleton, LoadingRegion } from "../components/ui/Skeleton";
 import { PageHeader } from "../components/ui/PageHeader";
 import { cn } from "../lib/cn";
+import { DatePicker } from "../components/ui/DatePicker";
 
 /** One shape for the three facts at the top of the dashboard. */
 const STATUS_CHIP = cn(
@@ -83,12 +84,12 @@ function ExamDatePrompt({ onUpdated }: { onUpdated: (p: Profile) => void }) {
         Ամսաթիվը նշելուց հետո կտեսնես, թե որքան ժամանակ է մնացել։
       </p>
       <div className="mt-[var(--space-3)] flex flex-wrap gap-[var(--space-2)]">
-        <input
-          type="date"
-          aria-label="Քննության ամսաթիվը"
+        <DatePicker
           value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-sm)] text-text focus:border-primary"
+          onChange={setDate}
+          label="Քննության ամսաթիվը"
+          clearable={false}
+          className="min-w-0 flex-1"
         />
         <button
           type="button"

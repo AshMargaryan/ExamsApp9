@@ -3,6 +3,8 @@ import { X, FolderOpen, Pencil, Trash2 } from "lucide-react";
 import { useNotepad } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 import { Button } from "./ui/Button";
+import { cn } from "../lib/cn";
+import { fieldInputClass } from "./ui/Field";
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleString("hy-AM", {
@@ -128,7 +130,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
                   if (e.key === "Enter") commitRename();
                   if (e.key === "Escape") setEditingId(null);
                 }}
-                className="mr-2 min-w-0 flex-1 rounded border border-primary bg-surface px-1 py-0.5 text-sm"
+                className={cn(fieldInputClass, "mr-2 w-auto min-w-0 flex-1 border-primary bg-surface px-[var(--space-2)] py-[var(--space-1)] text-[length:var(--text-sm)]")}
               />
             ) : (
               <button

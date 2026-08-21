@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { cn } from "../lib/cn";
+import { fieldInputClass } from "./ui/Field";
 
 interface Option {
   id: number;
@@ -70,14 +72,14 @@ export function SearchSelect({
         <button
           type="button"
           onClick={handleFocus}
-          className="flex w-full items-center justify-between rounded-md border border-border bg-bg px-3 py-2 text-left text-text focus:border-primary"
+          className={cn(fieldInputClass, "flex items-center justify-between text-left")}
         >
           <span className="truncate">{value.label}</span>
           <span className="ml-2 shrink-0 text-xs text-text-muted hover:text-primary">Փոխել</span>
         </button>
       ) : (
         <input
-          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
+          className={fieldInputClass}
           placeholder={placeholder}
           value={query}
           onFocus={handleFocus}

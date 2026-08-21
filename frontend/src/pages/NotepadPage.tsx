@@ -6,6 +6,8 @@ import { Modal } from "../components/ui/Modal";
 import { EmptyState } from "../components/ui/EmptyState";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { LinkButton } from "../components/ui/LinkButton";
+import { cn } from "../lib/cn";
+import { fieldInputClass } from "../components/ui/Field";
 
 function NoteFormModal({
   open,
@@ -68,14 +70,14 @@ function NoteFormModal({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Վերնագիր"
-          className="rounded-[var(--radius)] border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className={cn(fieldInputClass, "text-[length:var(--text-sm)]")}
         />
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Գրիր այստեղ..."
+          placeholder="Գրիր այստեղ…"
           rows={8}
-          className="resize-none rounded-[var(--radius)] border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className={cn(fieldInputClass, "resize-none text-[length:var(--text-sm)]")}
         />
       </div>
     </Modal>

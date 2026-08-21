@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { addSubtask, deleteSubtask, updateSubtask } from "../../api/todo";
 import { extractErrorMessage, useToast } from "../../context/ToastContext";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 export interface SubtaskItem {
   id: number | null;
@@ -114,7 +116,7 @@ export function SubtaskChecklist({ taskId, items, onChange }: SubtaskChecklistPr
             }
           }}
           placeholder="Ավելացնել ենթախնդիր"
-          className="flex-1 rounded-[var(--radius)] border border-border bg-bg px-3 py-1.5 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className={cn(fieldInputClass, "w-auto flex-1 text-[length:var(--text-sm)]")}
         />
         <button
           type="button"

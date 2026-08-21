@@ -23,6 +23,8 @@ import { ErrorState } from "../ui/ErrorState";
 import { SegmentedControl } from "../SegmentedControl";
 import { Skeleton } from "../ui/Skeleton";
 import { useLearningProfileData } from "./LearningProfileData";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 /*
   The mastery command centre.
@@ -321,7 +323,7 @@ function FocusPanel({
                 setNote(e.target.value);
                 setNoteSaved(false);
               }}
-              className="min-w-0 flex-1 rounded-md border border-border bg-surface px-2.5 py-2 text-sm text-text focus:border-primary"
+              className={cn(fieldInputClass, "w-auto min-w-0 flex-1 bg-surface text-[length:var(--text-sm)]")}
             />
             {noteDirty ? (
               <Button
