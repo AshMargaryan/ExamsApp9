@@ -4,9 +4,14 @@ import { GraduationCap, Users } from "lucide-react";
 import { createGroup, type GroupType, type Weekday } from "../api/groups";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { Button } from "../components/ui/Button";
+import { Field } from "../components/ui/Field";
+import { NumberInput } from "../components/ui/NumberInput";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { TimePicker } from "../components/ui/TimePicker";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
+import { cn } from "../lib/cn";
 import { SUBJECTS, type SubjectKey } from "../lib/subjects";
-import { LinkButton } from "../components/ui/LinkButton";
 
 const typeIconProps = { size: 14, strokeWidth: 1.75 };
 
@@ -40,7 +45,11 @@ export function GroupCreatePage() {
   const [endTime, setEndTime] = useState("19:00");
   const [maxMembers, setMaxMembers] = useState(DEFAULT_MAX_MEMBERS.study_group);
   const [maxMembersTouched, setMaxMembersTouched] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Two separate messages, because they belong to two different fields: a
+  // form-level alert would put "the end time must be later" at the bottom of
+  // the page, away from the pair of pickers that produced it.
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function handleTypeChange(next: GroupType) {
@@ -49,15 +58,9 @@ export function GroupCreatePage() {
   }
 
   async function handleSubmit() {
-    if (!title.trim()) {
-      setError("Վերնագիրը պարտադիր է։");
-      return;
-    }
-    if (endTime <= startTime) {
-      setError("Ավարտի ժամանակը պետք է լինի սկզբի ժամանակից ուշ։");
-      return;
-    }
-    setError(null);
+    setTitleError(!title.trim() ? "Վերնագիրը պարտադիր է։" : null);
+    setTimeError(endTime <= startTime ? "Ավարտը պետք է լինի սկզբից ուշ։" : null);
+    if (!title.trim() || endTime <= startTime) return;
     setBusy(true);
     try {
       const group = await createGroup({
@@ -80,18 +83,23 @@ export function GroupCreatePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <LinkButton to="/groups" className="mb-4">← Խմբեր</LinkButton>
-      <h1 className="mb-6 text-3xl font-semibold text-text">Ստեղծել նոր խումբ</h1>
+      <PageHeader
+        title="Ստեղծել նոր խումբ"
+        back={{ to: "/groups", label: "Խմբեր" }}
+        description="Ընտրիր օրը և ժամը, որ մյուսներն իմանան, թե երբ եք հանդիպում։"
+      />
 
-      <label className="mb-1.5 block text-sm font-medium text-text">Տեսակ</label>
+      <label className="mb-[var(--space-1)] block text-[length:var(--text-sm)] font-medium text-text">
+        Տեսակ
+      </label>
       <SegmentedControl options={TYPE_OPTIONS} value={type} onChange={handleTypeChange} className="mb-6 w-fit" />
 
-      <label className="mb-1.5 block text-sm font-medium text-text">Վերնագիր</label>
-      <input
+      <Field
+        label="Վերնագիր"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Օր.՝ Հանրահաշվի կրկնուսույց"
-        className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
+        error={titleError}
       />
 
       <label className="mb-1.5 block text-sm font-medium text-text">Առարկա</label>
@@ -113,63 +121,53 @@ export function GroupCreatePage() {
         ))}
       </div>
 
-      <label className="mb-1.5 block text-sm font-medium text-text">Նկարագրություն (կամընտիր)</label>
-      <textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        rows={3}
-        placeholder="Ինչի՞ մասին է խումբը, ինչ մակարդակի համար է…"
-        className="mb-4 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
-      />
-
-      <label className="mb-1.5 block text-sm font-medium text-text">Օր</label>
-      <select
-        value={scheduleDay}
-        onChange={(e) => setScheduleDay(Number(e.target.value) as Weekday)}
-        className="mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
-      >
-        {WEEKDAY_OPTIONS.map((d) => (
-          <option key={d.value} value={d.value}>
-            {d.label}
-          </option>
-        ))}
-      </select>
-
-      <div className="mb-4 grid grid-cols-2 gap-4">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Սկիզբ</label>
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
+      <Field label="Նկարագրություն (կամընտիր)">
+        {(control) => (
+          <textarea
+            {...control}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder="Ինչի՞ մասին է խումբը, ինչ մակարդակի համար է…"
+            className={cn(control.className, "resize-none")}
           />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Ավարտ</label>
-          <input
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
+        )}
+      </Field>
+
+      <Field label="Օր">
+        {(control) => (
+          <Select<string>
+            id={control.id}
+            value={String(scheduleDay)}
+            onChange={(next) => setScheduleDay(Number(next) as Weekday)}
+            options={WEEKDAY_OPTIONS.map((d) => ({ value: String(d.value), label: d.label }))}
           />
-        </div>
+        )}
+      </Field>
+
+      <div className="grid grid-cols-2 gap-[var(--space-4)]">
+        <Field label="Սկիզբ">
+          {(control) => <TimePicker id={control.id} value={startTime} onChange={setStartTime} clearable={false} />}
+        </Field>
+        <Field label="Ավարտ" error={timeError}>
+          {(control) => <TimePicker id={control.id} value={endTime} onChange={setEndTime} clearable={false} />}
+        </Field>
       </div>
 
-      <label className="mb-1.5 block text-sm font-medium text-text">Առավելագույն անդամների քանակ</label>
-      <input
-        type="number"
-        min={2}
-        max={100}
-        value={maxMembers}
-        onChange={(e) => {
-          setMaxMembersTouched(true);
-          setMaxMembers(Number(e.target.value));
-        }}
-        className="mb-6 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
-      />
-
-      {error && <p className="mb-4 text-sm text-incorrect">{error}</p>}
+      <Field label="Առավելագույն անդամների քանակ" containerClassName="mb-6">
+        {(control) => (
+          <NumberInput
+            id={control.id}
+            value={maxMembers}
+            min={2}
+            max={100}
+            onChange={(next) => {
+              setMaxMembersTouched(true);
+              setMaxMembers(next ?? 2);
+            }}
+          />
+        )}
+      </Field>
 
       <Button onClick={handleSubmit} loading={busy} className="w-full">
         Ստեղծել խումբ

@@ -10,6 +10,7 @@ import { LoadingRegion, SkeletonCard } from "../components/ui/Skeleton";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAsyncResource } from "../hooks/useAsyncResource";
 import { SUBJECTS, subjectMeta, type SubjectKey } from "../lib/subjects";
+import { SearchField } from "../components/ui/SearchField";
 
 const tabIconProps = { size: 14, strokeWidth: 1.75 };
 
@@ -102,12 +103,13 @@ export function GroupsPage() {
 
       <SegmentedControl options={TAB_OPTIONS} value={tab} onChange={setTab} className="mb-6 w-fit" />
 
-      <input
-        type="search"
+      <SearchField
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={setQuery}
+        label="Փնտրել խմբերում"
         placeholder="Փնտրել վերնագրով կամ նկարագրությամբ…"
-        className="mb-4 w-full rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-text placeholder:text-text-muted focus:border-primary"
+        containerClassName="mb-4"
+        className="bg-surface"
       />
 
       <div className="mb-6 flex flex-wrap gap-2">

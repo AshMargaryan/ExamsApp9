@@ -17,6 +17,9 @@ import { Section } from "../components/ui/Section";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { subjectMeta } from "../lib/subjects";
 import { LinkButton } from "../components/ui/LinkButton";
+import { Field } from "../components/ui/Field";
+import { NumberInput } from "../components/ui/NumberInput";
+import { Select } from "../components/ui/Select";
 
 const CALL_STATUS_LABELS: Record<CallRoomStatus, string> = {
   waiting: "Սպասում է",
@@ -361,17 +364,17 @@ export function GroupDetailPage() {
 
           {showStartCall && (
             <div className="mb-4 flex flex-wrap items-end gap-3 rounded-[var(--radius)] border border-border bg-bg p-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-text">Մասնակիցների քանակ</label>
-                <input
-                  type="number"
-                  min={CALL_MIN_CAPACITY}
-                  max={CALL_MAX_CAPACITY}
-                  value={newCallCapacity}
-                  onChange={(e) => setNewCallCapacity(Number(e.target.value))}
-                  className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-text focus:border-primary focus:outline-none"
-                />
-              </div>
+              <Field label="Մասնակիցների քանակ" containerClassName="mb-0 w-44">
+                {(control) => (
+                  <NumberInput
+                    id={control.id}
+                    value={newCallCapacity}
+                    min={CALL_MIN_CAPACITY}
+                    max={CALL_MAX_CAPACITY}
+                    onChange={(next) => setNewCallCapacity(next ?? CALL_MIN_CAPACITY)}
+                  />
+                )}
+              </Field>
               <Button onClick={handleStartCall} loading={callBusy}>
                 Ստեղծել
               </Button>
@@ -434,18 +437,17 @@ export function GroupDetailPage() {
 
       {transferring && (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-4">
-          <select
-            value={transferTarget}
-            onChange={(e) => setTransferTarget(e.target.value ? Number(e.target.value) : "")}
-            className="rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
-          >
-            <option value="">Ընտրիր անդամ…</option>
-            {otherMembers.map((m) => (
-              <option key={m.user.id} value={m.user.id}>
-                {displayName(m.user)}
-              </option>
-            ))}
-          </select>
+          <Field label="Նոր ղեկավար" containerClassName="mb-0 min-w-56">
+            {(control) => (
+              <Select<string>
+                id={control.id}
+                value={transferTarget === "" ? "" : String(transferTarget)}
+                onChange={(next) => setTransferTarget(next ? Number(next) : "")}
+                placeholder="Ընտրիր անդամ…"
+                options={otherMembers.map((m) => ({ value: String(m.user.id), label: displayName(m.user) }))}
+              />
+            )}
+          </Field>
           <Button onClick={handleTransfer} loading={busy} disabled={transferTarget === ""}>
             Հաստատել
           </Button>
