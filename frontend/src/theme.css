@@ -311,6 +311,21 @@
     up at the top, where hierarchy is actually established, and stay unchanged
     at the bottom, where dense UI lives.
   */
+  /*
+    One step below the scale, for tick and axis labels only.
+
+    It exists because eight week labels share a 343px card on a phone, and at
+    `--text-xs` half of them truncated to "Aug 1…". The alternative — one-off
+    `text-[10px]` — is what ~40 call sites already do, so this is a magic
+    number becoming a token rather than a new size entering the product.
+
+    Hard constraint: **numerals and two-to-three character abbreviations
+    only.** Armenian at 10px is not readable prose, and "shrink the type" is
+    never the answer to an Armenian layout problem — see the leading note
+    below. If a label needs `--text-2xs` to fit, and it is a word rather than
+    a tick, the layout is wrong.
+  */
+  --text-2xs: 0.625rem;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;

@@ -38,9 +38,21 @@ interface ChartProps {
   yWidth?: number;
 }
 
-/** Generalizes the recharts LineChart pattern already used in profile/PerformanceTrends.tsx
- * (theme-variable grid/tick colors, premium animated tooltip) so new chart usages — Phase 3's
- * progress chart — don't hand-roll flexbox bars the way the older WeeklyProgressChart does. */
+/*
+  A line chart, on recharts.
+
+  Use it for a continuous trend on an analytics surface — a score over time, a
+  class average across weeks — where the line between two points means
+  something.
+
+  **Not for bars, and not for the dashboard.** Importing this module pulls the
+  ~354KB recharts chunk into whatever imports it, so it belongs on routes that
+  already earn that cost (profile, analytics, the parent and teacher
+  dashboards). For a small categorical summary — "how much in each of the last
+  eight weeks" — use `ui/BarChart`, which has no library behind it and draws
+  the mark that question actually calls for. See its header for why the two
+  cannot be one component with a `variant` prop.
+*/
 export function Chart({ data, xKey, series, height = 224, yWidth = 32 }: ChartProps) {
   return (
     <div style={{ height }} className="w-full">

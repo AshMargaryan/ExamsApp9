@@ -157,8 +157,11 @@ export function StudentDashboardPage() {
         </div>
 
         {/* STATS */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-[minmax(0,1.7fr)_1fr_1fr_1fr_minmax(9rem,1.2fr)]">
-          <Card className="col-span-2 flex flex-col justify-between gap-4 sm:col-span-3 lg:col-span-1">
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-[minmax(14rem,1.7fr)_1fr_1fr_1fr_minmax(9rem,1.2fr)]">
+          {/* Full width until the five-across strip turns on, because this is
+              the only cell with a chart in it: at one-of-three it measured a
+              161px plot, and seven weekday labels do not fit in 161px. */}
+          <Card className="col-span-2 flex flex-col justify-between gap-4 sm:col-span-3 2xl:col-span-1">
             <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
               <BarChart3 size={14} strokeWidth={1.75} /> Շաբաթական առաջընթաց
             </p>
