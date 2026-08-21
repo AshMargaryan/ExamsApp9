@@ -1,3 +1,4 @@
+import { dedupe } from "../lib/inFlight";
 import { apiClient } from "./client";
 import type { AccountRole, School, University } from "./auth";
 import type { FriendUser } from "./friends";
@@ -89,9 +90,23 @@ export async function setExamDate(date: string): Promise<Profile> {
   return data;
 }
 
+/*
+  Deduped, as a proof of concept for the caching memo in docs/DESIGN.md §13.
+
+  `HeaderStrip` and `HomePage` both read this on the same mount, so "/" issued
+  two identical `GET /profile/me/` requests a millisecond apart. `dedupe` is an
+  in-flight join, not a cache: once the response lands the entry is dropped and
+  the next read goes to the network, so nothing here can serve a stale profile
+  after a student earns XP or sets an exam date.
+
+  Scoped to this one endpoint on purpose. Whether the app should hold read
+  results across navigations is a product decision, not a mechanical one.
+*/
 export async function fetchProfile(): Promise<Profile> {
-  const { data } = await apiClient.get("/profile/me/");
-  return data;
+  return dedupe("profile/me", async () => {
+    const { data } = await apiClient.get("/profile/me/");
+    return data as Profile;
+  });
 }
 
 export async function updateProfile(payload: UpdateProfilePayload): Promise<Profile> {

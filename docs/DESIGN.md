@@ -80,9 +80,9 @@ something broke.
 | Difficulty | `--color-easy`, `--color-medium/-bg`, `--color-hard` |
 | Rank tiers | `--color-gold/-bg/-line`, `--color-silver/…`, `--color-bronze/…` |
 | Decorative | `--color-purple`, `--color-pink` (gradient stops only) |
-| Type | `--text-xs…5xl` with matching `--leading-*`, `--tracking-tight/normal/wide`, `--measure-*`, `--font-sans`, `--font-display` |
+| Type | `--text-2xs…5xl` with matching `--leading-*`, `--tracking-tight/normal/wide`, `--measure-*`, `--font-sans`, `--font-display`. `--text-2xs` (10px) is for **tick labels only** — numerals and short abbreviations, never Armenian prose. |
 | Space | `--space-*`, `--section-gap`, `--section-gap-lg` |
-| Radius | `--radius-xs/sm/md/lg/xl/2xl/full` (`--radius` aliases `-lg`) |
+| Radius | `--radius-xs/sm/md/lg/xl/2xl/full` (`--radius` aliases `-lg`). Roles: `md` inputs, list rows, menu cells, thumbnails, small icon buttons; `lg` cards, panels, popovers, dialogs, buttons; `xl` chat bubbles and the native shell, which sits one step up the same scale. `rounded-full` stays a Tailwind utility on purpose — a circle carries no decision to centralise. |
 | Elevation | `--shadow-xs/sm/md/lg` |
 | Focus | `--focus-ring-width/-color/-offset` + a global `:where(...):focus-visible` floor |
 | Motion | `--motion-micro/fast/normal/emphasis/celebration`, `--ease-out`, `--ease-spring` |
@@ -189,7 +189,9 @@ contradicted their OS.
 | `ui/DataCard` | A card of data: lucide icon, title, description, trailing control. |
 | `ui/Card` | A plain bordered surface, when the header is composed separately. |
 | `ui/StatTile` / `ui/Metric` | Bordered vs. unbordered metric. `tone` is semantic (rule 5). |
-| `ui/Field` / `PasswordField` / `FormAlert` | Labelled input with hint, error and `aria-invalid`. Errors land on the field. `fieldInputClass` is the input surface for custom controls. |
+| `ui/Field` / `PasswordField` / `FormAlert` | Labelled input with hint, error and `aria-invalid`. Errors land on the field. `fieldInputClass` is the input surface for custom controls — `min-h-11`, so an input is the same height as the `Select` and the `Button` beside it, and clears the 44px touch floor. |
+| `ui/SearchField` | Any search box. Leading magnifier, a required Armenian `label` (a placeholder is not a name), and a clear button that restores focus to the field. Do **not** add `.tap-target` to something absolutely positioned — that utility sets `position: relative` from an unlayered rule and beats Tailwind's `.absolute`. |
+| `ui/BarChart` | A bar chart with no library behind it: `points`, a spoken `summary`, an `empty` node, and a per-bar `readout` that becomes the visually-hidden text alternative. Use it for a categorical summary anywhere, and **especially** where `ui/Chart` cannot go — importing `Chart` pulls the 354 kB recharts chunk onto that route. |
 | `ui/Button` / `LinkButton` / `IconButton` | `buttonClasses(variant, size, extra)` is the shared shape. Buttons **wrap** rather than overflow: `min-h` not `h`, so a short label keeps its exact height and only an unfittable one takes a second line. |
 | `ui/Modal` | Any dialog. Radix underneath: focus trap, Escape, focus restoration, scroll lock. Centred card on the web, bottom sheet in the native shell, with the footer reversed so the primary action sits nearest the thumb. The way out is a **labelled footer action**, not an "✕". |
 | `ui/ConfirmDialog` | A destructive confirmation. Never `window.confirm`. |
@@ -197,7 +199,9 @@ contradicted their OS.
 | `ui/Badge` | A status pill. `shrink-0` deliberately — it is almost always the trailing item of a row whose leading item is long Armenian text. The *row* must therefore be allowed to wrap; see §7. |
 | `ui/EmptyState` / `ErrorState` / `Skeleton` / `LoadingRegion` | The four non-populated states. `EmptyState.icon` takes a node — pass a lucide element. `tone="positive"` for empty states that are good news. |
 | `ui/RankBadge` | The single rank badge. The number is always shown and the metal added to it, never instead of it. |
-| `ui/Switch`, `Select`, `Tabs`, `ProgressBar`, `ProgressRing`, `Avatar`, `Tooltip`, `Popover`, `FilterChips`, `NumberInput`, `RangeSlider`, `DatePicker`, `TimePicker`, `FilePicker`, `Chart` | The rest of the kit. |
+| `ui/Chart` | A recharts **line** chart, for a continuous trend on a surface that already earns the 354 kB. Not for bars, and not for the dashboard. |
+| `lib/inFlight` | `dedupe(key, run)` — joins concurrent callers onto one promise and forgets it the moment it settles. An in-flight join, never a cache. See §13. |
+| `ui/Switch`, `Select`, `Tabs`, `ProgressBar`, `ProgressRing`, `Avatar`, `Tooltip`, `Popover`, `FilterChips`, `NumberInput`, `RangeSlider`, `DatePicker`, `TimePicker`, `FilePicker` | The rest of the kit. |
 | `questions/answerState` | The one vocabulary for answer status. See §5. |
 | `practice/TierStatus` | One subtopic's three tiers, reported one way. |
 | `mockexam/QuestionNavigator` / `ExamTimer` | The map of an exam, and time remaining with quiet / warning / critical states. |
@@ -349,7 +353,18 @@ path) and a signed-out visitor is still sent to `/login`.
 - **Fixed overlays stand on content permanently.** `AppChrome` reserves 84px
   below the page for the floating launchers, because no amount of scrolling
   moves a fixed element and a page's final action would otherwise be
-  unreachable.
+  unreachable. Those two numbers are `--chrome-top` and `--chrome-bottom`; a
+  page that wants exactly what is left of the viewport subtracts both from
+  `100dvh` rather than guessing. `ChatPage` was a flat `h-screen` inside that
+  padding and overflowed by precisely their sum, which put the message
+  composer one viewport below the fold on every conversation.
+- **A `fr` track will not shrink below its content.** Grid tracks default to
+  `min-width: auto`, so replacing a narrow native control with a kit one can
+  push a whole row past the viewport — measured at 1317px in a 1280px window
+  when a `DatePicker` replaced an `<input type="date">`. Give `minmax(0, …)`
+  only to the cell whose content actually truncates: giving it to *every*
+  track clipped "1-րդ մակարդակ" in the neighbour, because Armenian does not
+  break.
 
 ---
 
@@ -392,7 +407,7 @@ state **CSS animations never tick and `requestAnimationFrame` never fires**:
 3. Screenshots after a scripted scroll return stale or blank frames. Take them
    at scroll 0 with a tall viewport instead.
 
-Two measurement traps:
+Four measurement traps:
 
 - **`getComputedStyle().outlineWidth` / `.outlineColor` are useless for focus
   rings.** Every element reports `1.5px currentColor` regardless of focus.
@@ -400,6 +415,20 @@ Two measurement traps:
 - **Screenshot capture fails past a few thousand pixels of scroll.** The
   65-question exam is ~30,000px tall. Verify deep-scroll state with
   `getBoundingClientRect` / `elementFromPoint` assertions.
+- **The review browser has no Armenian locale data.**
+  `Intl.DateTimeFormat.supportedLocalesOf(['hy-AM','hy'])` returns `[]` in it,
+  so all twenty-eight `toLocaleDateString("hy-AM", …)` call sites render
+  English there — "Aug 17", not "17 օգս". The *code* is correct and a normal
+  Chrome resolves `hy`; what this means is that **Armenian date layout cannot
+  be judged in this browser**, and that a user whose runtime lacks `hy` (some
+  Android WebViews, a Capacitor shell built with a trimmed ICU) silently gets
+  English dates. See §12.
+- **Counting requests in the dev server counts them twice.** `main.tsx` wraps
+  the app in `StrictMode`, which double-invokes effects in development, so
+  every fetch fires two identical times. Halve any request count taken from
+  `npm run dev` before drawing a conclusion — and note that an endpoint
+  appearing *four* times is the interesting case: that is two real callers,
+  doubled.
 
 What is worth automating, because every finding that mattered came from
 measuring the DOM rather than reading code:
@@ -430,13 +459,20 @@ measuring the DOM rather than reading code:
   eighteen student routes.
 - **Failure**: fourteen routes mounted against a forced 500; all show an error
   and a retry that recovers.
-- **Tests**: 145 frontend, 494 backend. `tsc -b` clean, production build
+- **Radii**: every Tailwind `rounded-*` utility outside the landing page is on
+  the scale. Six routes measured in both themes report exactly two
+  non-circular radii across the whole document (12px and 8px), where before
+  they reported four or five. `rounded-full` is exempt and stays — see §2.
+- **Inputs**: no bespoke input surface remains. Ten deliberate exceptions are
+  named in the commit that finished the migration (borderless editors, the OTP
+  boxes, a colour swatch, a tone-carrying pill, the native-shell fields).
+- **Tests**: 149 frontend, 499 backend. `tsc --noEmit` clean, production build
   succeeds.
-- **Bundle**: measured against the pre-session commit with the same
-  `node_modules` — main chunk 195.91 → 196.33 kB gzip (+421 B), CSS 31.23 →
-  30.98 kB gzip (−253 B): **net +168 B gzipped** for a page added, a shared
-  module added, and ~60 files touched. `frontend/package.json` is
-  byte-identical to `4ab72f4` — **no dependency has been added**.
+- **Bundle**: no dependency added. `ui/BarChart` is library-free, and the
+  production build confirms the property that matters — `HomePage-*.js` and
+  `StudentDashboardPage-*.js` contain no reference to the 354 kB
+  `LineChart-*.js` chunk, which is pulled only by `ui/Chart`, the two radar
+  charts and `ProfilePage`.
 
 ---
 
@@ -461,9 +497,25 @@ These are decisions, not defects. They are deliberately not made here.
    interface asserts an answer the student never gave. Distinguishing them is
    a backend contract change. `TierPage` is at least honest about the
    consequence before submitting ("Չպատասխանվածները կհաշվվեն սխալ։").
-4. **Help-centre article copy is database-authored** and still uses the formal
-   register ("AI Օգնականը կարող է օգնել ձեզ…"). It is content operations, not
-   a code change.
+4. **The help centre has no content pipeline.** Its articles live only in the
+   database — no seed file, no fixture, no data in `0001_initial`, unlike every
+   other body of content here (`apps/*/data/*.json` + an idempotent importer).
+   Their register has been converted with a management command (below), but the
+   next edit has the same problem: nothing about the copy is under review, and
+   two databases can disagree for ever. Whether the help centre deserves a
+   `data/articles.json` and an importer is a product call.
+
+   To apply the register fix to a database this session did not touch:
+
+   ```
+   python manage.py fix_help_register --dry-run   # report first
+   python manage.py fix_help_register             # then apply
+   ```
+
+   It is idempotent, it rewrites only reviewed exact strings, and it *reports*
+   anything else that still reads as formal rather than guessing — because
+   "Դուք և {name} այժմ ընկերներ եք" is a genuine plural and a sweep over `-եք`
+   would break it (§4).
 
 ---
 
@@ -471,39 +523,169 @@ These are decisions, not defects. They are deliberately not made here.
 
 Ordered by value ÷ risk.
 
-1. **~40 bespoke inputs re-declare what `fieldInputClass` already says.** They
-   are now consistent in focus treatment, but they still duplicate the border,
-   radius, padding and disabled styling, and several use `rounded-md` off the
-   scale. Migrate per surface, not as a sweep.
-2. **No cross-page data cache.** Every navigation refetches from scratch; the
-   dashboard alone makes five parallel calls on every mount. Flagged in
-   `CLAUDE.md` as a deliberate repo-wide decision — worth revisiting, but not
-   a unilateral design change.
-3. **The radius migration is incomplete.** The scale exists and the visited
-   surfaces use it; several hundred `rounded-md` / `rounded-xl` / `rounded-2xl`
-   call sites elsewhere still bypass it.
-4. **`ui/Chart` has no bar variant.** `WeeklyProgressChart` stays a hand-rolled
-   bar strip deliberately — recharts is a ~354KB chunk the dashboard should not
-   pay to draw eight rectangles, and a *line* through eight discrete weekly
-   counts implies a continuity that is not there. But the next surface that
-   wants bars will either hand-roll a second strip or pull recharts onto a page
-   that cannot afford it.
-5. **The weekly chart plots eight weeks to show one bar** for a typical
+1. **`AppChrome` remounts when you cross `/`.** Measured, and the single
+   highest-value item here — see §13, which records the numbers. It is a
+   routing change with a real trap in it (the landing page must *not* end up
+   inside the chrome), and the landing page is owned separately, so it is
+   written up rather than done.
+2. **Two endpoints are fetched twice on one mount.**
+   `GET /teaching/assignments/notifications/` is read by both the sidebar badge
+   and the notification bell. `GET /profile/me/` had the same shape and is now
+   deduped as the proof of concept in §13; the same treatment fits here, but
+   the general fix is a shared provider, which needs a refresh contract.
+3. **Armenian dates depend on the runtime having `hy`.** Twenty-eight call
+   sites format dates through `Intl`; eight of them ask for a month *name*
+   (`month: "short"`/`"long"`) and therefore render English words wherever
+   `hy` is missing — which is measurable right now in the review browser (§9).
+   A `lib/armenianDate.ts` with an explicit month table behind a
+   `supportedLocalesOf` check would make Armenian dates unconditional. The
+   other twenty sites degrade to a different numeric order, not to English.
+4. **`--text-2xs` has one consumer and ~40 candidates.** The step was added for
+   chart tick labels; `text-[10px]` / `text-[11px]` still appears about forty
+   times. Migrating them is mechanical, but each one needs the same judgement
+   the token's comment demands: a tick may shrink, a word may not.
+5. **A hand-rolled button is still a hand-rolled button.** The radius pass put
+   ~25 of them on the scale without putting them on `Button`, so they render at
+   the right radius but still reinvent hover, active, disabled and loading.
+   `ConfirmModal`, `MessageModal`, `SuccessModal`, `MessageRequestsModal` and
+   `ShowcasePickerModal` are the clearest cases.
+6. **A disabled control that does not say why.** `AssignmentPicker`'s
+   "Հանձնարարել" disables until a student is picked and explains nothing,
+   which is principle 9 unmet on a surface a teacher uses daily.
+7. **`NewConversationModal` is still a hand-rolled dialog.** It has an "✕" for
+   a way out rather than a labelled footer action, and does not use `ui/Modal`,
+   so it has no focus trap and no scroll lock. Its four form fields are
+   labelled only by placeholder.
+8. **The weekly chart plots eight weeks to show one bar** for a typical
    account. The accuracy trend beside it gives the card a reason to exist, but
    a range that adapts to available data would be better.
-6. **Dismissing a menu on a polling list loses focus.** `ui/Dropdown` restores
+9. **Dismissing a menu on a polling list loses focus.** `ui/Dropdown` restores
    focus to its trigger correctly (verified on the account menu), but the chat
    conversation list re-renders on a 15-second poll, and if that lands just
    after Escape the restored button is unmounted and focus falls to `<body>`.
    Narrow, but real.
-7. **Per-topic difficulty in the mistake notebook.** With a seeded account
-   every topic shows the same count, so "worst first" conveys nothing. A
-   secondary sort (recency, or error category) would make the order legible
-   when counts tie.
-8. **`greetingSubtext()` retains a motivational-fallback branch** for when no
-   real insight exists. It is grounded in real data today; keep it that way.
-9. **A visual-regression harness.** The checks in §9 are cheap to automate and
-   would catch the next 1024px overflow before a human sees it.
+10. **Per-topic difficulty in the mistake notebook.** With a seeded account
+    every topic shows the same count, so "worst first" conveys nothing. A
+    secondary sort (recency, or error category) would make the order legible
+    when counts tie.
+11. **`greetingSubtext()` retains a motivational-fallback branch** for when no
+    real insight exists. It is grounded in real data today; keep it that way.
+12. **A visual-regression harness.** The checks in §9 are cheap to automate and
+    would catch the next 1024px overflow before a human sees it.
+
+---
+
+## 13. Memo: should the app cache reads across navigations?
+
+`CLAUDE.md` records "no Redux, no React Query" as a deliberate repo-wide
+decision, and the debt list carried "no cross-page data cache — the dashboard
+alone makes five parallel calls on every mount" against it. This section is the
+measurement and the options. **It is a proposal; the decision is the product
+owner's.**
+
+### What was measured
+
+A logged-in student account, XHR and `fetch` patched to record every
+`/api/` call, walking a realistic trail with in-app links (no page reloads):
+`/subjects → / → /rankings → / → /mistake-notebook → / → /mock-exams → /`, then
+a second trail that never touches `/`. Dev server, backend on localhost, so
+network latency is ~0 and every number below is a *floor*. Request counts are
+halved from the raw figures because `StrictMode` double-invokes effects in
+development (§9).
+
+**The premise turned out to be half right.**
+
+| Navigation | Requests on mount |
+|---|---|
+| protected → protected (`/rankings → /mock-exams`) | 2 — the page's own data, nothing else |
+| protected → protected (`/mock-exams → /mistake-notebook`) | 1 |
+| returning to a page already visited (`/mistake-notebook → /rankings`) | 5 — all of them refetched |
+| anything ↔ `/` | the page's data **plus 8 chrome requests** |
+
+So navigating *between* protected routes already costs only the page's own
+data. There is no general "everything refetches" problem to solve. Two
+specific things are real:
+
+**1. Crossing `/` remounts the entire app chrome.** `App.tsx` renders `/`
+through `RootRoute` and everything else through `ProtectedRoute`, and *both*
+render their own `<AppChrome>`. They are sibling routes, so React unmounts one
+tree and mounts the other every time a student goes to or leaves the dashboard
+— which is the most travelled edge in the product. Eight requests fire again
+(`profile/me`, `notifications`, `friends/requests`, `parents/requests`,
+`teaching/invitations`, `teaching/assignments`,
+`teaching/assignments/notifications`, `chat/conversations/unread-count`), every
+polling interval restarts, and the header and sidebar lose their state. This is
+not a caching problem. It is one routing change, and it is worth more than any
+cache.
+
+**2. Two endpoints are requested twice in the same tick.** `GET /profile/me/`
+by `HeaderStrip` and by `HomePage`; `GET /teaching/assignments/notifications/`
+by the sidebar badge and by the notification bell. Identical requests, ~1ms
+apart, identical responses.
+
+**What it costs the student.** Time from click to real dashboard content, three
+runs, warm cache, localhost: **258 / 252 / 243 ms** — every time. Payloads are
+small (the eight chrome calls total ~2 kB, five of them returning `[]`), so the
+cost is round trips, not bytes: on a phone at ~150 ms RTT the same mount is
+roughly 0.5–1 s of skeleton, repeated on every return to the dashboard.
+
+### The options
+
+**(a) A small in-house cache, no new dependency.** A `Map` of
+`key → { value, at }` behind `useAsyncResource`, serving a stale value
+immediately and revalidating behind it, for a named allowlist of endpoints.
+*Bundle:* ~1 kB. *Migration:* small — `useAsyncResource` is already the one
+async-read primitive. *Invalidation risk:* this is the whole cost, and it is
+not small. Every mutation in the product would have to know which keys it
+invalidates, and getting it wrong shows a student stale XP after they earned
+it, or a stale rank after a season rolled over. `apps/rankings` also has
+per-request server side effects (rank-history snapshots, season-ending
+notifications, noted in `CLAUDE.md`), so calling it *less often* changes
+behaviour rather than just latency.
+
+**(b) React Query or SWR.** *Bundle:* ~13 kB gzip for `@tanstack/react-query`
+v5 core — not measured here, since installing it to find out would be the
+decision. *Migration:* every `useAsyncResource` call site, ~45 files, plus a
+provider. *Invalidation risk:* lower than (a) in the sense that the library
+has thought about it, higher in the sense that it introduces a second state
+model beside the five Contexts. It also contradicts a recorded repo-wide
+decision, which is a reason to raise it rather than to route around it.
+
+**(c) Do nothing about caching.** *Bundle:* 0. *Risk:* 0. Leaves the 250 ms
+re-mount cost on repeat visits to the same page.
+
+### Recommendation
+
+**(c) for now, and fix the two structural problems instead** — in this order:
+
+1. **Render one `AppChrome`.** Removes 8 requests from the most common
+   navigation in the app and stops the header, sidebar and every poll
+   restarting. No staleness semantics, no invalidation design. Blocked here
+   only because the fix touches how `/` is routed and `/` renders the landing
+   page for signed-out visitors, which another owner holds.
+2. **Dedupe the two double-fetches.** Done for `profile/me` below as a proof of
+   concept; `teaching/assignments/notifications` wants a shared provider,
+   because both call sites also need to refresh it.
+3. **Then re-measure.** With those two done, the remaining cost is a page
+   refetching its own data on a return visit — 1–5 requests. That is a real but
+   modest prize, and it is the *only* part that needs a caching decision. If it
+   is still wanted, prefer (a) with an explicit allowlist over (b): the
+   endpoints worth caching are few and known (`profile/analytics`, the parent
+   dashboard's `build_child_dashboard`, `practice/hierarchy`), and an allowlist
+   keeps the invalidation surface countable.
+
+### The proof of concept
+
+`lib/inFlight.ts` — `dedupe(key, run)` joins concurrent callers onto one
+promise and **deletes the entry as soon as it settles**. It is not a cache:
+nothing is retained, so the next read always goes to the network and no stale
+profile can ever be served. Applied to `fetchProfile()` only.
+
+Measured on a dashboard mount, dev server (so counts are doubled):
+`GET /profile/me/` went **4 → 1**, while `GET
+/teaching/assignments/notifications/` stayed at 4 as an untouched control. Four
+unit tests pin the behaviour, including the one that keeps it honest — that a
+settled request is forgotten.
 
 ---
 
@@ -531,3 +713,4 @@ underneath it.
 | 4 | Settings, the dashboard retrofit, one subject picker, one icon language, one product name |
 | 5 | The surfaces nobody had visited: flashcard study/manage/editor, games, multiplayer |
 | 6 | The final review: voice, answer feedback, contrast, focus, touch targets, silent failures, the 404 |
+| 7 | The debt list: the bespoke inputs, the radius migration, `ui/BarChart`, the help-centre register, and the caching memo in §13 |
