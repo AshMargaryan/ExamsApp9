@@ -265,7 +265,7 @@ export function MessageInput({
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className={`rounded-3xl border p-3 transition-colors ${
+        className={`rounded-[var(--radius-2xl)] border p-3 transition-colors ${
           dragOver ? "border-primary bg-surface-muted" : "border-border bg-surface"
         } ${isHero ? "shadow-lg" : ""}`}
       >

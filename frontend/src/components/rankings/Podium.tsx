@@ -54,7 +54,7 @@ function Stand({
         <p className="font-mono text-sm font-bold tabular-nums text-text">{entry.xp} XP</p>
       </div>
       <div
-        className={`flex w-full items-start justify-center rounded-t-lg border border-b-0 pt-2 ${plinthHeight}`}
+        className={`flex w-full items-start justify-center rounded-t-[var(--radius-md)] border border-b-0 pt-2 ${plinthHeight}`}
         style={{
           backgroundColor: tier.bg,
           borderColor: tier.line,

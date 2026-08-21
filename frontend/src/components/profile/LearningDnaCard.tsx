@@ -55,7 +55,7 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
 
       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {unlocked.map(([key, m]) => (
-          <div key={key} className="rounded-md border border-border bg-bg px-3 py-2">
+          <div key={key} className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2">
             <p className="text-xs text-text-muted">{DIMENSION_LABELS[key]}</p>
             <p className="text-sm font-semibold text-text">
               {!isLocked(m) ? Math.round(m.value) : ""}

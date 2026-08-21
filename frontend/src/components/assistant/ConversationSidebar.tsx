@@ -86,7 +86,7 @@ function ConversationRow({
 
   return (
     <div
-      className={`flex items-center justify-between rounded-xl border-l-2 px-3 py-2.5 text-[15px] transition-colors ${
+      className={`flex items-center justify-between rounded-[var(--radius)] border-l-2 px-3 py-2.5 text-[15px] transition-colors ${
         active
           ? "border-primary bg-surface-muted font-medium text-text"
           : "border-transparent text-text hover:bg-surface-muted"
@@ -117,7 +117,7 @@ function ConversationRow({
             <div
               ref={menuRef}
               style={{ top: menuPos.top, right: menuPos.right }}
-              className="fixed z-50 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-lg"
+              className="fixed z-50 w-44 overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 shadow-lg"
             >
               <button
                 type="button"

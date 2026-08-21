@@ -18,7 +18,7 @@ function UserPickerRow({
     <button
       type="button"
       onClick={onToggle}
-      className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors ${
+      className={`flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors ${
         selected ? "bg-primary/10" : "hover:bg-surface-muted"
       }`}
     >
@@ -163,7 +163,7 @@ export function NewConversationModal({
               setSelectedIds(new Set());
               setSelectedUsers(new Map());
             }}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-colors ${
               mode === "private" ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
             }`}
           >
@@ -176,7 +176,7 @@ export function NewConversationModal({
               setSelectedIds(new Set());
               setSelectedUsers(new Map());
             }}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-colors ${
               mode === "group" ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
             }`}
           >
@@ -219,7 +219,7 @@ export function NewConversationModal({
                 <button
                   type="button"
                   onClick={() => setGroupPrivacy("private")}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-1.5 text-xs font-medium transition-colors ${
                     groupPrivacy === "private" ? "border-primary text-primary" : "border-border text-text-muted"
                   }`}
                 >
@@ -228,7 +228,7 @@ export function NewConversationModal({
                 <button
                   type="button"
                   onClick={() => setGroupPrivacy("public")}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-1.5 text-xs font-medium transition-colors ${
                     groupPrivacy === "public" ? "border-primary text-primary" : "border-border text-text-muted"
                   }`}
                 >
@@ -288,7 +288,7 @@ export function NewConversationModal({
             type="button"
             onClick={handleSubmit}
             disabled={busy}
-            className="w-full rounded-md bg-primary py-2.5 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="w-full rounded-[var(--radius)] bg-primary py-2.5 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {busy ? "..." : mode === "private" ? "Սկսել զրույցը" : "Ստեղծել խումբը"}
           </button>

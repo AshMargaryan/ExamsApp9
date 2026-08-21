@@ -155,7 +155,7 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
             const label = RELATIONSHIP_LABEL(r.relationship_status);
             const name = [r.first_name, r.last_name].filter(Boolean).join(" ") || r.username;
             return (
-              <div key={r.id} className="flex items-center justify-between rounded-md border border-border bg-surface p-3">
+              <div key={r.id} className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface p-3">
                 <div className="flex items-center gap-2">
                   <Avatar src={r.avatar} name={name} size="sm" />
                   <div>
@@ -181,7 +181,7 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
           <p className="mb-2 text-xs font-medium text-text-muted">Սպասվող հարցումներ</p>
           <div className="flex flex-col gap-2">
             {outgoing.map((req) => (
-              <div key={req.id} className="flex items-center justify-between rounded-md border border-border bg-surface p-2.5">
+              <div key={req.id} className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface p-2.5">
                 <span className="text-sm text-text">@{req.child.username}</span>
                 <Button variant="ghost" size="sm" onClick={() => handleCancel(req.id)} className="h-7 px-2 text-xs">
                   Չեղարկել

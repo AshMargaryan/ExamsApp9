@@ -691,7 +691,7 @@ export function CanvasEditor({
         </div>
 
         {shapesPopoverOpen && (
-          <div className="absolute left-4 top-full z-30 mt-2 flex gap-1 rounded-xl border border-border bg-surface p-1.5 shadow-xl">
+          <div className="absolute left-4 top-full z-30 mt-2 flex gap-1 rounded-[var(--radius)] border border-border bg-surface p-1.5 shadow-xl">
             {(["rect", "ellipse", "line"] as ShapeKind[]).map((k) => (
               <ShapeOption
                 key={k}
@@ -707,7 +707,7 @@ export function CanvasEditor({
         )}
 
         {colorPopoverOpen && (
-          <div className="absolute left-1/2 top-full z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-border bg-surface p-3 shadow-xl">
+          <div className="absolute left-1/2 top-full z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-[var(--radius)] border border-border bg-surface p-3 shadow-xl">
             <div className="grid grid-cols-6 gap-2">
               {CANVAS_COLOR_ROWS.flat().map((c) => (
                 <button
@@ -732,7 +732,7 @@ export function CanvasEditor({
         )}
 
         {sizePopoverOpen && (
-          <div className="absolute right-4 top-full z-30 mt-2 flex items-center gap-2 rounded-xl border border-border bg-surface p-2 shadow-xl">
+          <div className="absolute right-4 top-full z-30 mt-2 flex items-center gap-2 rounded-[var(--radius)] border border-border bg-surface p-2 shadow-xl">
             {sizeSteps.map((s) => (
               <button
                 key={s}
@@ -755,7 +755,7 @@ export function CanvasEditor({
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+        <div className="flex items-center gap-2 rounded-[var(--radius)] border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
           <span className="text-text">{selectedIds.size} ընտրված</span>
           <button type="button" onClick={deleteSelected} className="ml-auto font-medium text-incorrect hover:underline">
             Ջնջել

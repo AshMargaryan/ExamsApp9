@@ -174,7 +174,7 @@ export function DatePicker({
   ];
 
   const navButton =
-    "flex h-8 w-8 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+    "flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
     <div className={cn("relative", className)}>
@@ -268,7 +268,7 @@ export function DatePicker({
                 disabled={off}
                 onClick={() => select(date)}
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-md text-[13px] tabular-nums",
+                  "flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-[13px] tabular-nums",
                   "transition-colors duration-[var(--motion-micro)]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   "disabled:cursor-not-allowed disabled:opacity-30",
@@ -290,7 +290,7 @@ export function DatePicker({
             type="button"
             onClick={() => select(new Date())}
             disabled={isDisabled(new Date())}
-            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Այսօր
           </button>
@@ -302,7 +302,7 @@ export function DatePicker({
                 setOpen(false);
                 triggerRef.current?.focus();
               }}
-              className="rounded-md px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               Մաքրել
             </button>

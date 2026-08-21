@@ -213,12 +213,12 @@ export function MessageInput({
       }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
-      className={`rounded-md border p-2 transition-colors ${
+      className={`rounded-[var(--radius)] border p-2 transition-colors ${
         dragOver ? "border-primary bg-surface-muted" : "border-transparent"
       }`}
     >
       {replyingTo && (
-        <div className="mb-2 flex items-start gap-2 rounded-md border-l-4 border-primary bg-surface-muted px-3 py-1.5">
+        <div className="mb-2 flex items-start gap-2 rounded-[var(--radius-md)] border-l-4 border-primary bg-surface-muted px-3 py-1.5">
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-medium text-primary">
               {replyingTo.sender

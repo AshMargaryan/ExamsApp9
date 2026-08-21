@@ -181,7 +181,7 @@ export function ChatPage() {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="flex-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
+          className="flex-1 rounded-[var(--radius)] bg-primary px-3 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
         >
           + Նոր զրույց
         </button>
@@ -189,7 +189,7 @@ export function ChatPage() {
           type="button"
           onClick={() => setRequestsOpen(true)}
           title="Հաղորդագրության հարցումներ"
-          className="relative shrink-0 rounded-md border border-border px-3 py-2 text-text-muted hover:bg-surface-muted"
+          className="relative shrink-0 rounded-[var(--radius)] border border-border px-3 py-2 text-text-muted hover:bg-surface-muted"
         >
           <Inbox size={16} strokeWidth={1.75} />
           {requestCount > 0 && (
@@ -266,7 +266,7 @@ export function ChatPage() {
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
-            className="rounded-md border border-border px-2 py-1 text-text md:hidden"
+            className="rounded-[var(--radius-md)] border border-border px-2 py-1 text-text md:hidden"
           >
             ☰
           </button>
@@ -316,7 +316,7 @@ export function ChatPage() {
               navigate("/");
             }}
             title="Բացել լողացող պատուհանում"
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm text-text-muted hover:border-primary hover:text-text"
+            className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] border border-border px-2.5 py-1 text-sm text-text-muted hover:border-primary hover:text-text"
           >
             <PictureInPicture2 size={15} strokeWidth={1.75} aria-hidden />
             <span className="hidden sm:inline">Լողացող</span>

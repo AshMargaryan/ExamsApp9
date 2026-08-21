@@ -95,7 +95,7 @@ export function GlobalSearchPanel({
               key={c.id}
               type="button"
               onClick={() => onSelectConversation(c.id)}
-              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-surface-muted"
+              className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-muted"
             >
               <ConversationAvatar conversation={c} size="h-8 w-8" />
               <span className="truncate text-sm text-text">{conversationTitle(c)}</span>
@@ -114,7 +114,7 @@ export function GlobalSearchPanel({
               key={m.id}
               type="button"
               onClick={() => onSelectConversation(m.conversation.id)}
-              className="flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-surface-muted"
+              className="flex w-full flex-col items-start gap-0.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-muted"
             >
               <span className="text-xs font-medium text-primary">{conversationTitle(m.conversation)}</span>
               <span className="truncate text-sm text-text">{m.text}</span>
@@ -133,7 +133,7 @@ export function GlobalSearchPanel({
               key={p.id}
               type="button"
               onClick={() => onStartChat(p.id)}
-              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-surface-muted"
+              className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-muted"
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted">
                 {p.avatar ? (
@@ -161,7 +161,7 @@ export function GlobalSearchPanel({
               key={f.id}
               type="button"
               onClick={() => onSelectConversation(f.conversation.id)}
-              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-surface-muted"
+              className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-muted"
             >
               <span className="text-lg"><File size={18} strokeWidth={1.75} /></span>
               <span className="min-w-0 flex-1 truncate text-sm text-text">{f.original_filename}</span>

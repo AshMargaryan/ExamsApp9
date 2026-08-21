@@ -5,7 +5,7 @@ export function PersonBox({ person, onClick }: { person: FriendUser; onClick: ()
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface p-4 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg hover:shadow-primary/10"
+      className="group flex flex-col items-center gap-2 rounded-[var(--radius-xl)] border border-border bg-surface p-4 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg hover:shadow-primary/10"
     >
       <span
         className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-surface-muted p-0.5 text-lg font-semibold text-text-muted transition-transform group-hover:scale-105"

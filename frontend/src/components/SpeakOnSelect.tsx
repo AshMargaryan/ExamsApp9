@@ -236,7 +236,7 @@ export function SpeakOnSelect({ children }: { children: React.ReactNode }) {
           </div>
 
           {translation !== null && (
-            <div className="rounded-md border border-border bg-surface px-3 py-1 text-sm font-medium text-primary shadow-lg">
+            <div className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-1 text-sm font-medium text-primary shadow-lg">
               {translation}
             </div>
           )}

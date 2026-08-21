@@ -35,7 +35,7 @@ export function HintButton({ hint, onOpen }: HintButtonProps) {
         <Lightbulb size={16} strokeWidth={1.75} aria-hidden /> Հուշում
       </button>
       {open && (
-        <div className="absolute left-0 z-10 mt-2 w-96 max-w-[90vw] rounded-md border border-border bg-surface p-4 text-base leading-relaxed text-text shadow-lg">
+        <div className="absolute left-0 z-10 mt-2 w-96 max-w-[90vw] rounded-[var(--radius)] border border-border bg-surface p-4 text-base leading-relaxed text-text shadow-lg">
           <MathText text={hint} />
         </div>
       )}

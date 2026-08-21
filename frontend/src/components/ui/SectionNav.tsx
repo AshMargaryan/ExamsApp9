@@ -101,7 +101,7 @@ export function SectionNav({
                 onClick={() => scrollToSection(item.id, offset)}
                 aria-current={isActive ? "true" : undefined}
                 className={cn(
-                  "relative w-full rounded-md py-1.5 pl-4 pr-2 text-left text-[13px] transition-colors",
+                  "relative w-full rounded-[var(--radius-md)] py-1.5 pl-4 pr-2 text-left text-[13px] transition-colors",
                   "duration-[var(--motion-fast)] ease-[var(--ease-out)]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   isActive ? "font-semibold text-text" : "text-text-muted hover:text-text",

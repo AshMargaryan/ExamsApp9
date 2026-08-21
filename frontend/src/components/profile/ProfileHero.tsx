@@ -248,7 +248,7 @@ export function ProfileHero({
                   )}
                 </>
               ) : (
-                <div className="grid gap-3 rounded-2xl border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md sm:grid-cols-2">
+                <div className="grid gap-3 rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md sm:grid-cols-2">
                   <div>
                     <label className={glassLabelClass}>Օգտանուն</label>
                     <input
@@ -332,7 +332,7 @@ export function ProfileHero({
 
           {isStudent && (
             <div className="mt-6 grid gap-4 border-t border-on-brand-line pt-6 sm:grid-cols-3">
-              <div className="rounded-2xl border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
+              <div className="rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
                 <p className={glassLabelClass}>Դպրոց</p>
                 {!editing ? (
                   <p className="mt-1 font-medium text-on-brand">
@@ -342,7 +342,7 @@ export function ProfileHero({
                   <SearchSelect placeholder="Փնտրիր դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
                 )}
               </div>
-              <div className="rounded-2xl border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
+              <div className="rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
                 <p className={glassLabelClass}>Ցանկալի բուհ</p>
                 {!editing ? (
                   <p className="mt-1 font-medium text-on-brand">{profile.university ? profile.university.name : "Չնշված"}</p>
@@ -350,7 +350,7 @@ export function ProfileHero({
                   <SearchSelect placeholder="Փնտրիր բուհ..." value={university} onChange={setUniversity} search={universitySearch} />
                 )}
               </div>
-              <div className="rounded-2xl border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
+              <div className="rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
                 <p className={glassLabelClass}>Մասնագիտություն</p>
                 {!editing ? (
                   <p className="mt-1 font-medium text-on-brand">{profile.target_major || "Չնշված"}</p>

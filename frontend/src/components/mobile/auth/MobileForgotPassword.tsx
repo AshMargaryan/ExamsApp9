@@ -37,7 +37,7 @@ export function MobileForgotPassword() {
           <AuthPrimaryButton onClick={() => navigate("/login")}>Վերադառնալ մուտք</AuthPrimaryButton>
         }
       >
-        <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-correct-bg text-correct">
+        <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-[var(--radius-2xl)] bg-correct-bg text-correct">
           <MailCheck size={30} strokeWidth={1.75} />
         </span>
         <p className="text-[15px] leading-relaxed text-text-muted">

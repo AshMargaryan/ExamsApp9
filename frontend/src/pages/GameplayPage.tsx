@@ -293,7 +293,7 @@ export function GameplayPage() {
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-[var(--space-4)] py-[var(--space-6)] sm:px-[var(--space-6)]">
         <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)] sm:p-[var(--space-8)]">
           {q.passage && (
-            <div className="mb-6 rounded-md bg-surface-muted p-4 text-lg leading-relaxed italic whitespace-pre-line text-text">
+            <div className="mb-6 rounded-[var(--radius)] bg-surface-muted p-4 text-lg leading-relaxed italic whitespace-pre-line text-text">
               <MathText text={q.passage} />
             </div>
           )}

@@ -37,7 +37,7 @@ export function MessageActionSheet({
         className="fixed inset-x-3 bottom-0 z-[95] flex flex-col gap-2"
         style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
       >
-        <div className="overflow-hidden rounded-2xl bg-surface">
+        <div className="overflow-hidden rounded-[var(--radius-xl)] bg-surface">
           {actions.map((action, i) => (
             <button
               key={action.key}
@@ -57,7 +57,7 @@ export function MessageActionSheet({
         <button
           type="button"
           onClick={onClose}
-          className="h-14 w-full rounded-2xl bg-surface text-[17px] font-semibold text-text active:bg-surface-muted"
+          className="h-14 w-full rounded-[var(--radius-xl)] bg-surface text-[17px] font-semibold text-text active:bg-surface-muted"
         >
           Փակել
         </button>

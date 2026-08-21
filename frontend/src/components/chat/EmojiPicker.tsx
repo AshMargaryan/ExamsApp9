@@ -26,7 +26,7 @@ export function EmojiPicker({
   return (
     <div
       ref={ref}
-      className={`absolute bottom-full z-10 mb-2 grid w-64 grid-cols-6 gap-1 rounded-md border border-border bg-surface p-2 shadow-lg ${
+      className={`absolute bottom-full z-10 mb-2 grid w-64 grid-cols-6 gap-1 rounded-[var(--radius)] border border-border bg-surface p-2 shadow-lg ${
         align === "right" ? "right-0" : "left-0"
       }`}
     >
@@ -35,7 +35,7 @@ export function EmojiPicker({
           key={emoji}
           type="button"
           onClick={() => onSelect(emoji)}
-          className="rounded-md p-1.5 text-xl hover:bg-surface-muted"
+          className="rounded-[var(--radius-md)] p-1.5 text-xl hover:bg-surface-muted"
         >
           {emoji}
         </button>

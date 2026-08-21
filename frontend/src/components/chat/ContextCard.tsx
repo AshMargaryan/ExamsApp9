@@ -18,7 +18,7 @@ const SUBJECT_LABELS: Record<string, string> = {
 
 function CardShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-64 max-w-full overflow-hidden rounded-xl border border-border bg-surface text-text">
+    <div className="w-64 max-w-full overflow-hidden rounded-[var(--radius)] border border-border bg-surface text-text">
       {children}
     </div>
   );

@@ -75,7 +75,7 @@ export function ImageDropzone({ label, file, existingUrl, onChange, onRemoveExis
                 e.stopPropagation();
                 inputRef.current?.click();
               }}
-              className="absolute bottom-1.5 right-1.5 rounded-md bg-black/60 px-2 py-1 text-xs text-white transition-colors hover:bg-black/80"
+              className="absolute bottom-1.5 right-1.5 rounded-[var(--radius-md)] bg-black/60 px-2 py-1 text-xs text-white transition-colors hover:bg-black/80"
             >
               Փոխարինել
             </button>

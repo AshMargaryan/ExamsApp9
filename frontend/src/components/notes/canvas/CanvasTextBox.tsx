@@ -97,7 +97,7 @@ export function CanvasTextBox({
   return (
     <div
       ref={boxRef}
-      className={`absolute z-10 min-w-[90px] min-h-[40px] max-w-[420px] touch-none resize overflow-auto rounded-md border bg-surface/95 px-2 py-1 shadow-sm ${
+      className={`absolute z-10 min-w-[90px] min-h-[40px] max-w-[420px] touch-none resize overflow-auto rounded-[var(--radius-md)] border bg-surface/95 px-2 py-1 shadow-sm ${
         selected ? "border-primary" : "border-primary/50"
       }`}
       style={{

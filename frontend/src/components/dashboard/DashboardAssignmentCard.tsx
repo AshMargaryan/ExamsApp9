@@ -151,7 +151,7 @@ export function DashboardAssignmentCard({
             to={assignmentLink(assignment)}
             state={navState(assignment)}
             onClick={handleOpen}
-            className="flex-1 rounded-xl bg-text px-4 py-3 text-center text-sm font-semibold text-bg transition-opacity hover:opacity-90"
+            className="flex-1 rounded-[var(--radius)] bg-text px-4 py-3 text-center text-sm font-semibold text-bg transition-opacity hover:opacity-90"
           >
             Կատարել
           </Link>
@@ -161,7 +161,7 @@ export function DashboardAssignmentCard({
         <button
           type="button"
           onClick={handleRedo}
-          className="rounded-xl bg-text px-4 py-3 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
+          className="rounded-[var(--radius)] bg-text px-4 py-3 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
         >
           Կատարել նորից
         </button>

@@ -114,7 +114,7 @@ function PillButton({
 
 function EmptyRow({ icon, text, cta }: { icon: ReactNode; text: string; cta?: { label: string; onClick: () => void } }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border py-10 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-[var(--radius-xl)] border border-dashed border-border py-10 text-center">
       <span className="flex text-text-muted">{icon}</span>
       <p className="text-sm text-text-muted">{text}</p>
       {cta && (
@@ -133,7 +133,7 @@ function EmptyRow({ icon, text, cta }: { icon: ReactNode; text: string; cta?: { 
 
 function Row({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-muted">
+    <div className="flex items-center justify-between gap-3 rounded-[var(--radius)] px-2 py-2.5 transition-colors hover:bg-surface-muted">
       {children}
     </div>
   );
@@ -245,7 +245,7 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
       onClick={close}
     >
       <div
-        className={`flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-surface shadow-2xl transition-all duration-200 ${mounted ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
+        className={`flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius-2xl)] bg-surface shadow-2xl transition-all duration-200 ${mounted ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div

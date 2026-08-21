@@ -355,7 +355,7 @@ function WebAssistantPage() {
       </main>
 
       {undo && (
-        <div className="fixed bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-md border border-border bg-surface px-4 py-2 text-sm text-text shadow-lg">
+        <div className="fixed bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-[var(--radius)] border border-border bg-surface px-4 py-2 text-sm text-text shadow-lg">
           <span>Զրույցը «{undo.title || "Նոր զրույց"}» ջնջվեց</span>
           <Button variant="secondary" size="sm" onClick={handleUndoDelete}>
             Հետարկել

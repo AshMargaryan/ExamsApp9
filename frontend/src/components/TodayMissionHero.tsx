@@ -64,7 +64,7 @@ export function TodayMissionHero({
         </p>
         <Link
           to="/subjects"
-          className="mt-4 inline-block rounded-md bg-primary px-6 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+          className="mt-4 inline-block rounded-[var(--radius)] bg-primary px-6 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
         >
           Սկսել →
         </Link>

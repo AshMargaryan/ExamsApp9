@@ -164,7 +164,7 @@ export function MistakeReviewSessionPage() {
           type="button"
           onClick={() => navigate("/study-plan")}
           aria-label="Փակել վերանայումը"
-          className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="rounded-[var(--radius-md)] p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <X size={17} strokeWidth={2} />
         </button>

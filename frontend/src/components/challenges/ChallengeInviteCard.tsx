@@ -18,7 +18,7 @@ export function ChallengeInviteCard({ invite, onRespond }: { invite: ChallengeIn
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-muted">
+    <div className="flex items-center justify-between gap-3 rounded-[var(--radius)] px-2 py-2.5 transition-colors hover:bg-surface-muted">
       <div className="flex items-center gap-2">
         <Swords size={16} strokeWidth={1.75} className="shrink-0 text-text-muted" />
         <div>

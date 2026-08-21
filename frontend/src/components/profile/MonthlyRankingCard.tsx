@@ -23,7 +23,7 @@ const FETCHERS: Record<RankingScope, () => Promise<RankingBoard>> = {
 
 function Row({ entry, isMe }: { entry: RankingEntry; isMe: boolean }) {
   return (
-    <div className={`flex items-center gap-3 rounded-md px-2 py-1.5 ${isMe ? "bg-primary/10" : ""}`}>
+    <div className={`flex items-center gap-3 rounded-[var(--radius-md)] px-2 py-1.5 ${isMe ? "bg-primary/10" : ""}`}>
       <RankBadge rank={entry.rank} />
       {entry.avatar ? (
         <img src={entry.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />

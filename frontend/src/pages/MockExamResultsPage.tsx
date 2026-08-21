@@ -385,7 +385,7 @@ function RevealedQuestionCard({
       )}
 
       {question.solution_steps && question.solution_steps.length > 0 && (
-        <div className="mt-3 rounded-md bg-surface-muted p-4 text-base leading-relaxed text-text-muted">
+        <div className="mt-3 rounded-[var(--radius)] bg-surface-muted p-4 text-base leading-relaxed text-text-muted">
           {question.solution_steps.map((step, i) => (
             <p key={i}>
               <MathText text={step} />

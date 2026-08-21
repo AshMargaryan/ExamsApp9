@@ -205,7 +205,7 @@ export function MobileRegister() {
   const errorBanner = formError && (
     <div
       role="alert"
-      className="mb-5 flex items-start gap-2.5 rounded-2xl border border-incorrect/40 bg-incorrect-bg px-4 py-3 text-[14px] text-incorrect"
+      className="mb-5 flex items-start gap-2.5 rounded-[var(--radius-xl)] border border-incorrect/40 bg-incorrect-bg px-4 py-3 text-[14px] text-incorrect"
     >
       <AlertCircle size={17} strokeWidth={2} className="mt-px flex-none" />
       {formError}
@@ -482,7 +482,7 @@ export function MobileRegister() {
               hapticStep();
             }}
             aria-pressed={sex === option.value}
-            className={`flex-1 rounded-xl border py-3 text-[14px] font-medium transition-colors active:scale-95 ${
+            className={`flex-1 rounded-[var(--radius)] border py-3 text-[14px] font-medium transition-colors active:scale-95 ${
               sex === option.value
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border bg-surface text-text-muted"
@@ -506,7 +506,7 @@ export function MobileRegister() {
                   hapticStep();
                 }}
                 aria-pressed={grade === String(g)}
-                className={`h-11 w-11 rounded-xl border text-[14px] font-semibold transition-colors active:scale-90 ${
+                className={`h-11 w-11 rounded-[var(--radius)] border text-[14px] font-semibold transition-colors active:scale-90 ${
                   grade === String(g)
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-surface text-text-muted"

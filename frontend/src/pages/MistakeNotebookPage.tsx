@@ -159,13 +159,13 @@ function MistakeDetail({ entry: initial }: { entry: MistakeEntry }) {
       </p>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <div className="rounded-md border border-incorrect/30 bg-incorrect/[0.06] px-3 py-2">
+        <div className="rounded-[var(--radius-md)] border border-incorrect/30 bg-incorrect/[0.06] px-3 py-2">
           <p className="text-[10.5px] text-text-muted">Քո պատասխանը</p>
           <p className="mt-0.5 text-[13px] text-incorrect">
             {entry.mistake_type === "not_attempted" ? "Չես նշել" : <MathText text={entry.your_answer_text} />}
           </p>
         </div>
-        <div className="rounded-md border border-correct/30 bg-correct/[0.06] px-3 py-2">
+        <div className="rounded-[var(--radius-md)] border border-correct/30 bg-correct/[0.06] px-3 py-2">
           <p className="text-[10.5px] text-text-muted">Ճիշտ պատասխանը</p>
           <p className="mt-0.5 text-[13px] text-correct">
             <MathText text={entry.correct_answer_text} />

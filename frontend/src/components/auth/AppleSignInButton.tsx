@@ -94,7 +94,7 @@ export function AppleSignInButton({ onCredential, onError, disabled }: Props) {
       type="button"
       onClick={handleClick}
       disabled={disabled || !ready}
-      className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-bg py-2.5 font-medium text-text transition-colors hover:border-primary disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-[var(--radius)] border border-border bg-bg py-2.5 font-medium text-text transition-colors hover:border-primary disabled:opacity-60"
     >
       <span aria-hidden></span>
       Շարունակել Apple-ով

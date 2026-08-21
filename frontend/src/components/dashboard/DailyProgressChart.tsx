@@ -43,7 +43,7 @@ export function DailyProgressChart({ days }: { days: ActivityDay[] }) {
           <div key={p.date} className="flex flex-1 flex-col items-center justify-end gap-2">
             <div
               title={`${p.weekday}՝ ${p.solved} հարց, ${p.correct} ճիշտ`}
-              className="flex w-full max-w-4 flex-col justify-end overflow-hidden rounded-t-md bg-surface-muted"
+              className="flex w-full max-w-4 flex-col justify-end overflow-hidden rounded-t-[var(--radius-sm)] bg-surface-muted"
               style={{ height: Math.max(barHeight, p.solved > 0 ? 4 : 0) }}
             >
               <div className="w-full bg-text" style={{ height: correctHeight }} />

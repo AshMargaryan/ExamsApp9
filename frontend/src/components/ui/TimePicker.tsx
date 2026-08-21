@@ -66,7 +66,7 @@ function Column({
         ref={ref}
         role="listbox"
         aria-label={label}
-        className="max-h-[196px] w-[68px] overflow-y-auto overscroll-contain rounded-md [scrollbar-width:thin]"
+        className="max-h-[196px] w-[68px] overflow-y-auto overscroll-contain rounded-[var(--radius-md)] [scrollbar-width:thin]"
       >
         {values.map((v) => {
           const isSelected = v === selected;
@@ -79,7 +79,7 @@ function Column({
               data-selected={isSelected ? "true" : undefined}
               onClick={() => onSelect(v)}
               className={cn(
-                "block w-full rounded-md px-2 py-1.5 text-center text-sm tabular-nums transition-colors",
+                "block w-full rounded-[var(--radius-md)] px-2 py-1.5 text-center text-sm tabular-nums transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 isSelected
                   ? "bg-primary font-semibold text-primary-contrast"
@@ -194,7 +194,7 @@ export function TimePicker({
               setOpen(false);
               triggerRef.current?.focus();
             }}
-            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Պատրաստ է
           </button>

@@ -173,13 +173,13 @@ export function MobileWelcome() {
       <div className="relative mt-2 flex flex-col gap-3 px-6">
         <Link
           to="/register"
-          className="bg-primary btn-fx w-full rounded-2xl py-4 text-center text-[17px] font-semibold text-primary-contrast shadow-lg shadow-violet-600/25"
+          className="bg-primary btn-fx w-full rounded-[var(--radius-xl)] py-4 text-center text-[17px] font-semibold text-primary-contrast shadow-lg shadow-violet-600/25"
         >
           Ստեղծել հաշիվ
         </Link>
         <Link
           to="/login"
-          className="w-full rounded-2xl border border-border bg-surface py-4 text-center text-[17px] font-semibold text-text"
+          className="w-full rounded-[var(--radius-xl)] border border-border bg-surface py-4 text-center text-[17px] font-semibold text-text"
         >
           Մուտք գործել
         </Link>

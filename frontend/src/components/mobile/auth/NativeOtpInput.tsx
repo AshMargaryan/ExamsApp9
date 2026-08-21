@@ -74,7 +74,7 @@ export function NativeOtpInput({
           return (
             <div
               key={i}
-              className={`flex h-16 flex-1 items-center justify-center rounded-2xl border text-[26px] font-semibold tabular-nums transition-all duration-200 ${
+              className={`flex h-16 flex-1 items-center justify-center rounded-[var(--radius-xl)] border text-[26px] font-semibold tabular-nums transition-all duration-200 ${
                 invalid
                   ? "border-incorrect bg-incorrect-bg text-incorrect"
                   : filled

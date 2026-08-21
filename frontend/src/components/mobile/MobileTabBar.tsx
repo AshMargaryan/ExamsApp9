@@ -81,7 +81,7 @@ function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }
               key={item.to}
               to={item.to}
               onClick={onClose}
-              className={`relative flex items-center gap-2.5 rounded-2xl border p-3.5 text-[14px] font-medium ${
+              className={`relative flex items-center gap-2.5 rounded-[var(--radius-xl)] border p-3.5 text-[14px] font-medium ${
                 isNavItemActive(pathname, item.to)
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border bg-bg text-text"
@@ -104,7 +104,7 @@ function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }
               key={link.to}
               to={link.to}
               onClick={onClose}
-              className="flex items-center gap-3 rounded-xl px-2 py-3 text-[15px] text-text active:bg-surface-muted"
+              className="flex items-center gap-3 rounded-[var(--radius)] px-2 py-3 text-[15px] text-text active:bg-surface-muted"
             >
               <span className="flex-none text-text-muted">{link.icon}</span>
               {link.label}

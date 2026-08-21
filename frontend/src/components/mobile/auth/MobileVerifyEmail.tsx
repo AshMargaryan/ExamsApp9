@@ -95,7 +95,7 @@ export function MobileVerifyEmail() {
         </div>
       }
     >
-      <span className="mb-7 flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/12 text-primary">
+      <span className="mb-7 flex h-16 w-16 items-center justify-center rounded-[var(--radius-2xl)] bg-primary/12 text-primary">
         <MailCheck size={30} strokeWidth={1.75} />
       </span>
 

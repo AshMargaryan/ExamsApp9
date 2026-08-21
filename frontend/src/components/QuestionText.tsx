@@ -24,7 +24,7 @@ export function QuestionText({
         {index + 1}. <MathText text={rest} />
       </p>
       {note && (
-        <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-surface-muted px-4 py-3 text-sm leading-relaxed text-text-muted">
+        <div className="mb-4 flex items-start gap-2 rounded-[var(--radius)] border border-border bg-surface-muted px-4 py-3 text-sm leading-relaxed text-text-muted">
           <BookOpen size={15} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0" />
           <MathText text={note} className="whitespace-pre-line" />
         </div>

@@ -29,10 +29,10 @@ export function AttachmentChip({
           <img
             src={src}
             alt={attachment.original_filename}
-            className="h-16 w-16 rounded-md border border-border object-cover"
+            className="h-16 w-16 rounded-[var(--radius-md)] border border-border object-cover"
           />
         ) : (
-          <div className="h-16 w-16 animate-pulse rounded-md border border-border bg-surface-muted" />
+          <div className="h-16 w-16 animate-pulse rounded-[var(--radius-md)] border border-border bg-surface-muted" />
         )}
         {onRemove && (
           <button

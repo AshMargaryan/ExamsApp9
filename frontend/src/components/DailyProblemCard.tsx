@@ -220,21 +220,21 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
           <button
             type="button"
             onClick={handleExplain}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+            className="flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
           >
             <Sparkles size={15} strokeWidth={1.75} /> Բացատրել
           </button>
           {question.subtopic_id != null && (
             <Link
               to={`/practice/subtopic/${question.subtopic_id}/${question.tier}`}
-              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+              className="flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
             >
               <Shuffle size={15} strokeWidth={1.75} /> Նման խնդիր
             </Link>
           )}
           <Link
             to={nextHref}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+            className="flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
           >
             <ArrowRight size={15} strokeWidth={1.75} /> Հաջորդը
           </Link>

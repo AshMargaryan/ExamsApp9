@@ -149,7 +149,7 @@ function GoalWizard({
   }
 
   const inputClass =
-    "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary";
+    "w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary";
 
   return (
     <div className="rounded-[var(--radius)] border border-border bg-bg p-4 sm:p-5">
@@ -327,7 +327,7 @@ function GoalRow({
     >
       <div className="flex items-start gap-3">
         <span
-          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${
             complete ? "bg-correct-bg text-correct" : "bg-surface-muted text-text-muted"
           }`}
           aria-hidden
@@ -369,7 +369,7 @@ function GoalRow({
             disabled={busy}
             onClick={() => setConfirmOpen(true)}
             aria-label={`Ջնջել նպատակը՝ ${title}`}
-            className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+            className="rounded-[var(--radius-md)] p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
           >
             <Trash2 size={14} strokeWidth={1.75} />
           </button>

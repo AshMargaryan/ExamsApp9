@@ -13,7 +13,7 @@ const TEXT_TYPES = new Set(["short_answer", "free_response"]);
 const STATEMENT_TYPES = new Set(["true_false", "multi_statement"]);
 
 const SUBMIT_BUTTON =
-  "mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-50";
+  "mt-3 rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-50";
 
 interface Props {
   entry: MistakeEntry;
@@ -43,7 +43,7 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
   if (result) {
     return (
       <div
-        className={`mt-3 rounded-md border p-4 ${
+        className={`mt-3 rounded-[var(--radius)] border p-4 ${
           result.is_correct ? "border-correct bg-correct-bg" : "border-incorrect bg-incorrect-bg"
         }`}
       >
@@ -73,7 +73,7 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
 
   if (entry.source === "flashcard") {
     return (
-      <div className="mt-3 rounded-md border border-border bg-surface-muted p-4">
+      <div className="mt-3 rounded-[var(--radius)] border border-border bg-surface-muted p-4">
         {!flipped ? (
           <Button variant="secondary" size="sm" onClick={() => setFlipped(true)}>
             Ցույց տալ պատասխանը
@@ -88,7 +88,7 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
                 type="button"
                 disabled={submitting}
                 onClick={() => submit({ knew_it: true })}
-                className="rounded-md border border-correct px-3 py-1.5 text-sm font-medium text-correct transition-colors hover:bg-correct-bg disabled:opacity-50"
+                className="rounded-[var(--radius)] border border-correct px-3 py-1.5 text-sm font-medium text-correct transition-colors hover:bg-correct-bg disabled:opacity-50"
               >
                 Գիտեի
               </button>
@@ -96,7 +96,7 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
                 type="button"
                 disabled={submitting}
                 onClick={() => submit({ knew_it: false })}
-                className="rounded-md border border-incorrect px-3 py-1.5 text-sm font-medium text-incorrect transition-colors hover:bg-incorrect-bg disabled:opacity-50"
+                className="rounded-[var(--radius)] border border-incorrect px-3 py-1.5 text-sm font-medium text-incorrect transition-colors hover:bg-incorrect-bg disabled:opacity-50"
               >
                 Դեռ չգիտեմ
               </button>

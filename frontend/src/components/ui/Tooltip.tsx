@@ -29,7 +29,7 @@ export function Tooltip({ label, children, side = "top" }: TooltipProps) {
         <span
           role="tooltip"
           className={cn(
-            "pointer-events-none absolute z-50 whitespace-nowrap rounded-md border border-border bg-surface px-2.5 py-1.5",
+            "pointer-events-none absolute z-50 whitespace-nowrap rounded-[var(--radius-md)] border border-border bg-surface px-2.5 py-1.5",
             "text-xs font-medium text-text shadow-lg animate-[fade-in_var(--motion-micro)_var(--ease-out)]",
             side === "top" ? "bottom-full left-1/2 mb-2 -translate-x-1/2" : "top-full left-1/2 mt-2 -translate-x-1/2",
           )}

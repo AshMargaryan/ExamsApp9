@@ -315,7 +315,7 @@ export function StudentDashboardPage() {
           {achievements !== null && achievements.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {achievements.map((ua) => (
-                <div key={ua.id} className="flex items-start gap-3.5 rounded-2xl border border-border p-4.5">
+                <div key={ua.id} className="flex items-start gap-3.5 rounded-[var(--radius-xl)] border border-border p-4.5">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-text text-base">
                     {ua.achievement.icon || "🏆"}
                   </div>

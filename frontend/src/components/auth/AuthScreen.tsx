@@ -155,7 +155,7 @@ export function AuthSubmitButton({
       loading={loading}
       disabled={disabled}
       size={isNative ? "lg" : "md"}
-      className={isNative ? "w-full rounded-2xl py-4 text-[17px]" : "w-full"}
+      className={isNative ? "w-full rounded-[var(--radius-xl)] py-4 text-[17px]" : "w-full"}
     >
       {children}
     </Button>

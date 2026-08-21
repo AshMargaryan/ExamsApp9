@@ -161,7 +161,7 @@ export function AuthPrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className="bg-primary flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-[17px] font-semibold text-primary-contrast shadow-lg shadow-violet-600/25 transition-all duration-150 active:scale-[0.97] disabled:opacity-40 disabled:shadow-none"
+      className="bg-primary flex h-14 w-full items-center justify-center gap-2 rounded-[var(--radius-xl)] text-[17px] font-semibold text-primary-contrast shadow-lg shadow-violet-600/25 transition-all duration-150 active:scale-[0.97] disabled:opacity-40 disabled:shadow-none"
     >
       {loading ? (
         <span

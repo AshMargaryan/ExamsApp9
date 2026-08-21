@@ -44,7 +44,7 @@ function ToolbarButton({
       aria-pressed={active}
       title={label}
       className={cn(
-        "inline-flex h-8 min-w-8 items-center justify-center rounded-md px-1.5 text-sm font-medium transition-colors",
+        "inline-flex h-8 min-w-8 items-center justify-center rounded-[var(--radius-md)] px-1.5 text-sm font-medium transition-colors",
         // aria-pressed, so the active mark is announced rather than being a
         // colour a screen reader cannot see.
         active ? "bg-primary-bg text-primary" : "text-text-muted hover:bg-surface-muted hover:text-text",

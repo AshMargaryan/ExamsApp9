@@ -54,7 +54,7 @@ export function ActivityHeatmap({
                 <div
                   key={p.date}
                   title={p.tooltip ?? `${p.date}՝ ${p.count}`}
-                  className={`h-3 w-3 rounded-sm ${levelClass(p.count)}`}
+                  className={`h-3 w-3 rounded-[var(--radius-xs)] ${levelClass(p.count)}`}
                 />
               ) : (
                 <div key={di} className="h-3 w-3" />

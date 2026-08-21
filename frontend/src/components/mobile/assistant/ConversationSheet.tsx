@@ -101,7 +101,7 @@ export function ConversationSheet({
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Փնտրել զրույց"
-              className="w-full rounded-2xl border border-border bg-bg py-3 pl-10 pr-3 text-[16px] text-text focus:border-primary"
+              className="w-full rounded-[var(--radius-xl)] border border-border bg-bg py-3 pl-10 pr-3 text-[16px] text-text focus:border-primary"
               autoCapitalize="none"
               autoCorrect="off"
             />
@@ -114,7 +114,7 @@ export function ConversationSheet({
                 onCreate();
                 onClose();
               }}
-              className="bg-primary flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary-contrast active:scale-[0.97]"
+              className="bg-primary flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-xl)] text-[15px] font-semibold text-primary-contrast active:scale-[0.97]"
             >
               <Plus size={18} strokeWidth={2} /> Նոր զրույց
             </button>
@@ -122,7 +122,7 @@ export function ConversationSheet({
               type="button"
               onClick={onToggleShowArchived}
               aria-pressed={showArchived}
-              className={`flex h-11 items-center gap-2 rounded-2xl border px-4 text-[15px] font-medium active:scale-[0.97] ${
+              className={`flex h-11 items-center gap-2 rounded-[var(--radius-xl)] border px-4 text-[15px] font-medium active:scale-[0.97] ${
                 showArchived ? "border-primary bg-primary/10 text-primary" : "border-border text-text-muted"
               }`}
             >
@@ -157,7 +157,7 @@ export function ConversationSheet({
                     onSelect(conversation.id);
                     onClose();
                   }}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-left active:bg-surface-muted ${
+                  className={`flex w-full items-center gap-3 rounded-[var(--radius-xl)] px-3.5 py-3.5 text-left active:bg-surface-muted ${
                     active ? "bg-primary/10" : ""
                   }`}
                 >
@@ -226,7 +226,7 @@ function SheetRowAction({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border text-[13px] font-medium active:scale-[0.97] ${
+      className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[var(--radius)] border text-[13px] font-medium active:scale-[0.97] ${
         destructive ? "border-incorrect/40 text-incorrect" : "border-border text-text-muted"
       }`}
     >

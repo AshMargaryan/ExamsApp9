@@ -79,7 +79,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
       }
     >
       {pendingEquation && (
-        <div className="mb-2 rounded-md border border-primary/50 bg-primary/5 px-2 py-2 text-sm">
+        <div className="mb-2 rounded-[var(--radius-md)] border border-primary/50 bg-primary/5 px-2 py-2 text-sm">
           <p className="mb-1 text-xs text-text-muted">Ընտրիր՝ որտե՞ղ տեղադրել այս հավասարումը.</p>
           <div className="overflow-x-auto">
             <MathText text={pendingEquation} />
@@ -95,7 +95,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
           <button
             type="button"
             onClick={handleCreateOrNewInsert}
-            className="rounded-md border border-border px-2 py-1 text-xs hover:border-primary"
+            className="rounded-[var(--radius-md)] border border-border px-2 py-1 text-xs hover:border-primary"
           >
             + Նոր նշում
           </button>
@@ -114,7 +114,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
         {sorted.map((n) => (
           <div
             key={n.id}
-            className={`flex items-center justify-between rounded-md border px-2.5 py-2 shadow-sm transition-colors ${
+            className={`flex items-center justify-between rounded-[var(--radius-md)] border px-2.5 py-2 shadow-sm transition-colors ${
               n.id === activeNoteId
                 ? "border-primary bg-primary/5"
                 : "border-border bg-surface hover:border-primary/50"

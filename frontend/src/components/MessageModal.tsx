@@ -49,7 +49,7 @@ export function MessageModal({ message, onClose, suggestions, onSelectSuggestion
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-md bg-primary py-2.5 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
+          className="mt-6 w-full rounded-[var(--radius)] bg-primary py-2.5 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
         >
           Լավ
         </button>

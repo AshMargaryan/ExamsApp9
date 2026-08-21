@@ -79,7 +79,7 @@ export function ShowcasePickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border px-4 py-1.5 text-sm font-medium text-text-muted hover:bg-surface-muted"
+            className="rounded-[var(--radius)] border border-border px-4 py-1.5 text-sm font-medium text-text-muted hover:bg-surface-muted"
           >
             Չեղարկել
           </button>
@@ -87,7 +87,7 @@ export function ShowcasePickerModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
+            className="rounded-[var(--radius)] bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
           >
             {saving ? "..." : "Պահպանել"}
           </button>

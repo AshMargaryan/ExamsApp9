@@ -102,7 +102,7 @@ export function RolePicker({ onPick }: { onPick: (role: AccountRole) => void }) 
             />
 
             <span
-              className="relative flex h-14 w-14 flex-none items-center justify-center rounded-2xl"
+              className="relative flex h-14 w-14 flex-none items-center justify-center rounded-[var(--radius-xl)]"
               style={{
                 background: `color-mix(in srgb, ${option.accent} 16%, transparent)`,
                 color: option.accent,

@@ -70,7 +70,7 @@ function ExamForm({ onCreated, onCancel }: { onCreated: (e: StudentExam) => void
   }
 
   const inputClass =
-    "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary";
+    "w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary";
 
   return (
     <div className="rounded-[var(--radius)] border border-border bg-bg p-4 sm:p-5">
@@ -216,7 +216,7 @@ function ExamRow({ exam, onDeleted }: { exam: StudentExam; onDeleted: (id: numbe
               disabled={busy}
               onClick={() => setConfirmOpen(true)}
               aria-label={`Ջնջել քննությունը՝ ${exam.name}`}
-              className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+              className="rounded-[var(--radius-md)] p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
             >
               <Trash2 size={14} strokeWidth={1.75} />
             </button>

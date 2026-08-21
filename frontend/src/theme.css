@@ -232,14 +232,25 @@
     There was one radius token and eight radii in the wild: `rounded-md`
     (0.375rem) and `rounded-[var(--radius)]` (0.75rem) were each used ~300
     times for the same kinds of element, plus 2xl/xl/lg/3xl and four arbitrary
-    pixel values. A scale gives each size a reason to exist:
+    pixel values. Every Tailwind `rounded-*` utility has since been migrated
+    onto this scale, so the roles below are what the product actually does —
+    read them off the kit, not off intent:
 
-      xs  chips, tags, inline code
-      sm  inputs, small buttons, table cells
-      md  buttons, list rows
-      lg  cards, panels           <- --radius aliases this
-      xl  page-level containers, modals
-      2xl heroes, feature panels
+      xs   the smallest marks — heatmap cells
+      sm   (spare; nothing claims it)
+      md   inputs (`fieldInputClass`), list rows, menu and calendar cells,
+           thumbnails, small icon buttons
+      lg   cards, panels, popovers, dialogs and buttons — `Card`, `DataCard`,
+           `StatTile`, `EmptyState`, `Skeleton`, `Popover`, `Dropdown`,
+           `Modal` and `buttonClasses` all use it   <- --radius aliases this
+      xl   chat bubbles, hero panels, and every control in the native shell,
+           which sits exactly one step up this scale from the web
+      2xl  the bottom sheet, and the largest native-shell surfaces
+
+    `rounded-full` is deliberately *not* migrated. A full circle carries no
+    design decision to centralise: 9999px and Tailwind's own value render
+    identically, and rewriting 300 pills to `rounded-[var(--radius-full)]`
+    would buy verbosity and nothing else.
 
     --radius stays an alias of lg so all ~300 existing
     `rounded-[var(--radius)]` sites render exactly as they do today.
@@ -874,9 +885,12 @@ html[data-native] [contenteditable="true"] {
 
   NOTE: the radius scale above is deliberately NOT registered in `@theme
   inline`. Tailwind v4 maps the `--radius-*` namespace onto its own
-  `rounded-*` utilities, so doing that would silently repoint the ~300
-  existing `rounded-md` call sites from 0.375rem to this scale's 0.5rem.
-  New code opts in explicitly with `rounded-[var(--radius-md)]`.
+  `rounded-*` utilities, and its scale is offset from this one by exactly one
+  step (its `md` is 0.375rem where this one's is 0.5rem), so registering it
+  would silently repoint every remaining `rounded-*` call site — including any
+  a future dependency ships. Code opts in explicitly with
+  `rounded-[var(--radius-md)]` instead. `rounded-full` is the one utility left
+  in use, because it means the same thing under either scale.
 */
 /* Longhands, not the `outline:` shorthand. With a var() in the shorthand the
    whole declaration is invalid-at-computed-value-time if any substitution

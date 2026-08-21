@@ -72,7 +72,7 @@ export function ReportMessageModal({ messageId, onClose }: { messageId: number; 
               type="button"
               onClick={handleSubmit}
               disabled={sending}
-              className="w-full rounded-md bg-incorrect px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+              className="w-full rounded-[var(--radius)] bg-incorrect px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
             >
               {sending ? "..." : "Ուղարկել բողոքը"}
             </button>

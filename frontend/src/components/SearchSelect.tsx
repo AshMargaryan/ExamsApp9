@@ -88,7 +88,7 @@ export function SearchSelect({
       )}
 
       {open && (
-        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border bg-surface shadow-lg">
+        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-[var(--radius)] border border-border bg-surface shadow-lg">
           {value && (
             <button
               type="button"

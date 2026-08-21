@@ -113,7 +113,7 @@ function MobileMessageBubbleImpl({
           onChange={(e) => setDraft(e.target.value)}
           rows={3}
           autoFocus
-          className="w-full rounded-2xl border border-primary bg-surface p-3 text-[16px] text-text outline-none"
+          className="w-full rounded-[var(--radius-xl)] border border-primary bg-surface p-3 text-[16px] text-text outline-none"
         />
         <div className="flex gap-2">
           <button
@@ -122,7 +122,7 @@ function MobileMessageBubbleImpl({
               setDraft(message.content);
               setEditing(false);
             }}
-            className="h-11 rounded-xl border border-border px-4 text-[15px] font-medium text-text"
+            className="h-11 rounded-[var(--radius)] border border-border px-4 text-[15px] font-medium text-text"
           >
             Չեղարկել
           </button>
@@ -132,7 +132,7 @@ function MobileMessageBubbleImpl({
               onEdit?.(draft);
               setEditing(false);
             }}
-            className="bg-primary h-11 rounded-xl px-4 text-[15px] font-semibold text-primary-contrast"
+            className="bg-primary h-11 rounded-[var(--radius)] px-4 text-[15px] font-semibold text-primary-contrast"
           >
             Պահպանել
           </button>
@@ -157,8 +157,8 @@ function MobileMessageBubbleImpl({
           }}
           className={`max-w-[85%] px-4 py-2.5 transition-transform active:scale-[0.99] ${
             isUser
-              ? "bg-primary rounded-3xl rounded-br-lg text-primary-contrast"
-              : "rounded-3xl rounded-bl-lg border border-border bg-surface text-text"
+              ? "bg-primary rounded-[var(--radius-2xl)] rounded-br-[var(--radius-md)] text-primary-contrast"
+              : "rounded-[var(--radius-2xl)] rounded-bl-[var(--radius-md)] border border-border bg-surface text-text"
           } ${failed ? "border-incorrect" : ""}`}
         >
           {message.attachments && message.attachments.length > 0 && (

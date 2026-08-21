@@ -94,7 +94,7 @@ export function CompleteRegistrationPage() {
   }
 
   const inputClass =
-    "mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary";
+    "mb-4 w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-text focus:border-primary";
   const labelClass = "mb-1 block text-sm text-text-muted";
 
   if (!role) {
@@ -109,7 +109,7 @@ export function CompleteRegistrationPage() {
               key={card.role}
               type="button"
               onClick={() => setRole(card.role)}
-              className="mb-4 w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary last:mb-0"
+              className="mb-4 w-full rounded-[var(--radius)] border border-border bg-bg p-4 text-left transition-colors hover:border-primary last:mb-0"
             >
               <span className="block font-medium text-text">{card.title}</span>
               <span className="mt-1 block text-sm text-text-muted">{card.description}</span>
@@ -203,7 +203,7 @@ export function CompleteRegistrationPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-md bg-primary py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="w-full rounded-[var(--radius)] bg-primary py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {submitting ? "..." : "Ավարտել գրանցումը"}
         </button>

@@ -28,7 +28,7 @@ export function MobileResetPassword() {
         subtitle="Այս հղումը թերի է։ Խնդրիր նորը մուտքի էջից։"
         footer={<AuthPrimaryButton onClick={() => navigate("/forgot-password")}>Խնդրել նոր հղում</AuthPrimaryButton>}
       >
-        <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-incorrect-bg text-incorrect">
+        <span className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-2xl)] bg-incorrect-bg text-incorrect">
           <AlertCircle size={30} strokeWidth={1.75} />
         </span>
       </AuthShell>
@@ -73,7 +73,7 @@ export function MobileResetPassword() {
         subtitle="Գաղտնաբառդ թարմացվեց։ Կարող ես մուտք գործել նորով։"
         footer={<AuthPrimaryButton onClick={() => navigate("/login")}>Մուտք գործել</AuthPrimaryButton>}
       >
-        <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-correct-bg text-correct">
+        <span className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-2xl)] bg-correct-bg text-correct">
           <CheckCircle2 size={30} strokeWidth={1.75} />
         </span>
       </AuthShell>
@@ -98,7 +98,7 @@ export function MobileResetPassword() {
       {error && (
         <div
           role="alert"
-          className="mb-5 flex items-start gap-2.5 rounded-2xl border border-incorrect/40 bg-incorrect-bg px-4 py-3 text-[14px] text-incorrect"
+          className="mb-5 flex items-start gap-2.5 rounded-[var(--radius-xl)] border border-incorrect/40 bg-incorrect-bg px-4 py-3 text-[14px] text-incorrect"
         >
           <AlertCircle size={17} strokeWidth={2} className="mt-px flex-none" />
           {error}

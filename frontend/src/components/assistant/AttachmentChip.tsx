@@ -25,7 +25,7 @@ export function AttachmentChip({
         <img
           src={attachment.url}
           alt={attachment.original_filename}
-          className="h-16 w-16 rounded-md border border-border object-cover"
+          className="h-16 w-16 rounded-[var(--radius-md)] border border-border object-cover"
         />
         {onRemove && (
           <button

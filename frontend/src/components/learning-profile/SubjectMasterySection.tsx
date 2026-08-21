@@ -65,7 +65,7 @@ function SubjectRow({
       }`}
     >
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base transition-colors ${
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius)] text-base transition-colors ${
           selected ? "bg-primary text-primary-contrast" : "bg-surface-muted text-text-muted"
         }`}
         aria-hidden
@@ -289,7 +289,7 @@ function FocusPanel({
             disabled={busy}
             onClick={() => setConfirmOpen(true)}
             aria-label={`Հեռացնել ${meta.label}-ը ընտրվածներից`}
-            className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+            className="rounded-[var(--radius-md)] p-1.5 text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
           >
             <Trash2 size={14} strokeWidth={1.75} />
           </button>

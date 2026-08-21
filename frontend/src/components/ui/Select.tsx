@@ -206,7 +206,7 @@ export function Select<T extends string>({
                   onPointerEnter={() => !option.disabled && setActiveIndex(index)}
                   onClick={() => commit(index)}
                   className={cn(
-                    "flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm",
+                    "flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-sm",
                     option.disabled && "cursor-not-allowed opacity-40",
                     isActive && !option.disabled ? "bg-surface-muted text-text" : "text-text",
                   )}

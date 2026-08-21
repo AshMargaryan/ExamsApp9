@@ -48,7 +48,7 @@ export const MobileTextField = forwardRef<HTMLInputElement, Props>(function Mobi
   return (
     <div className="mb-4">
       <div
-        className={`relative rounded-2xl border bg-surface transition-[border-color,box-shadow] duration-200 ${
+        className={`relative rounded-[var(--radius-xl)] border bg-surface transition-[border-color,box-shadow] duration-200 ${
           error
             ? "border-incorrect"
             : focused

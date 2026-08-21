@@ -35,7 +35,7 @@ const NATIVE_BUTTON_SIZE_CLASSES: Record<ButtonSize, string> = {
 
 /** Press feedback replaces the hover lift, which a finger can never trigger
  *  and which iOS then latches on after the tap. */
-const NATIVE_BUTTON_BASE = "rounded-2xl font-semibold active:scale-[0.97]";
+const NATIVE_BUTTON_BASE = "rounded-[var(--radius-xl)] font-semibold active:scale-[0.97]";
 
 /*
   Shared visual classes so non-<button> elements (e.g. router Links) can look
