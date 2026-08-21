@@ -69,6 +69,7 @@ const TodoProjectDetailPage = lazy(() => import("./pages/TodoProjectDetailPage")
 const TodoTrashPage = lazy(() => import("./pages/TodoTrashPage").then((m) => ({ default: m.TodoTrashPage })));
 const NotesHomePage = lazy(() => import("./pages/NotesHomePage").then((m) => ({ default: m.NotesHomePage })));
 const NoteEditorPage = lazy(() => import("./pages/NoteEditorPage").then((m) => ({ default: m.NoteEditorPage })));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 export default function App() {
   useEffect(() => {
@@ -159,6 +160,14 @@ export default function App() {
               <Route path="/todo/trash" element={<TodoTrashPage />} />
               <Route path="/notes" element={<NotesHomePage />} />
               <Route path="/notes/:id" element={<NoteEditorPage />} />
+
+              {/* Catch-all. Without this, react-router matched nothing for an
+                  unknown URL and rendered an entirely blank document — no
+                  chrome, no message, no way back. Inside ProtectedRoute so a
+                  signed-in student keeps the sidebar and header (the real
+                  recovery path), and a signed-out visitor is still sent to
+                  /login rather than being told a page is missing. */}
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </Suspense>
