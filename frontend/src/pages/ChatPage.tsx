@@ -123,7 +123,7 @@ export function ChatPage() {
   async function handleBlock() {
     const other = selectedConversation?.other_participant;
     if (!other) return;
-    if (!window.confirm(`Արգելափակե՞լ ${other.username}-ին։ Կչեղարկվի ընկերությունը և այլևս չեք կարողանա նամակագրվել։`)) {
+    if (!window.confirm(`Արգելափակե՞լ ${other.username}-ին։ Կչեղարկվի ընկերությունը և այլևս չես կարողանա նամակագրվել։`)) {
       return;
     }
     setBlocking(true);
@@ -288,7 +288,7 @@ export function ChatPage() {
           <ConversationView key={selectedConversation.id} conversation={selectedConversation} />
         ) : (
           <div className="flex flex-1 items-center justify-center text-text-muted">
-            Ընտրեք զրույց կամ սկսեք նորը։
+            Ընտրիր զրույց կամ սկսիր նորը։
           </div>
         )}
       </main>

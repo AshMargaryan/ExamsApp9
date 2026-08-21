@@ -102,7 +102,7 @@ export function NewConversationModal({
     if (mode === "private") {
       const userId = [...selectedIds][0];
       if (!userId) {
-        setError("Ընտրեք օգտատեր։");
+        setError("Ընտրիր օգտատեր։");
         return;
       }
       setBusy(true);
@@ -121,7 +121,7 @@ export function NewConversationModal({
       return;
     }
     if (selectedIds.size === 0) {
-      setError("Ընտրեք առնվազն մեկ մասնակից։");
+      setError("Ընտրիր առնվազն մեկ մասնակից։");
       return;
     }
     setBusy(true);

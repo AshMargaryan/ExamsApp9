@@ -18,8 +18,8 @@ function ReasonNote({ reason }: { reason: DailyProblem["reason"] }) {
   const [open, setOpen] = useState(false);
   const text =
     reason.kind === "weak_topic"
-      ? `Այս թեմայից («${reason.topic_label}») ունեք ${reason.incorrect_count} սխալ, ուստի Gitus-ը առաջարկեց հենց սա։`
-      : "Բավարար տվյալներ դեռ չկան Ձեր մասին, ուստի այս հարցը պատահականորեն է ընտրված։";
+      ? `Այս թեմայից («${reason.topic_label}») ունես ${reason.incorrect_count} սխալ, ուստի Gitus-ը առաջարկեց հենց սա։`
+      : "Բավարար տվյալներ դեռ չկան քո մասին, ուստի այս հարցը պատահականորեն է ընտրված։";
 
   return (
     <div className="mb-3">
@@ -127,7 +127,7 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
       const updated = await submitDailyProblem(input);
       setProblem(updated);
     } catch {
-      setError("Չհաջողվեց ուղարկել պատասխանը։ Փորձեք կրկին։");
+      setError("Չհաջողվեց ուղարկել պատասխանը։ Փորձիր կրկին։");
     } finally {
       setBusy(false);
     }

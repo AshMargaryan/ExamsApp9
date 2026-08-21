@@ -129,7 +129,7 @@ export function NoteEditorPage() {
             Underline,
             Highlight,
             Link.configure({ openOnClick: false }),
-            Placeholder.configure({ placeholder: "Սկսեք գրել..." }),
+            Placeholder.configure({ placeholder: "Սկսիր գրել..." }),
             TaskList,
             TaskItem.configure({ nested: true }),
             Table.configure({ resizable: true }),
@@ -441,7 +441,7 @@ export function NoteEditorPage() {
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}
         title={`Ջնջե՞լ «${title || "(անանուն)"}» նշումը`}
-        description="Նշումը կտեղափոխվի աղբարկղ, որտեղից կարող եք վերականգնել այն։"
+        description="Նշումը կտեղափոխվի աղբարկղ, որտեղից կարող ես վերականգնել այն։"
         confirmLabel="Ջնջել"
         onConfirm={handleDelete}
       />

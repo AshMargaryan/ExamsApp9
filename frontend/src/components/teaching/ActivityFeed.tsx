@@ -30,7 +30,7 @@ function eventText(e: ActivityEvent): string {
     case "rejected":
       return `«${e.title || "Առաջադրանք"}» ուղարկվեց ուղղման ${name}-ին`;
     case "joined":
-      return `${name}-ը միացավ ձեր դասարանին`;
+      return `${name}-ը միացավ Ձեր դասարանին`;
   }
 }
 

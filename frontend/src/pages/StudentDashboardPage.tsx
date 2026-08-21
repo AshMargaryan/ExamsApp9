@@ -304,7 +304,7 @@ export function StudentDashboardPage() {
             </div>
           )}
           {achievements !== null && achievements.length === 0 && (
-            <EmptyState tone="positive" title="Դեռ նվաճումներ չկան" hint="Շարունակեք սովորել՝ դրանք բացելու համար։" />
+            <EmptyState tone="positive" title="Դեռ նվաճումներ չկան" hint="Շարունակիր սովորել՝ դրանք բացելու համար։" />
           )}
           {achievements !== null && achievements.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

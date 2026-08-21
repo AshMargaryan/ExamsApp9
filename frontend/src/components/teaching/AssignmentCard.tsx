@@ -132,7 +132,7 @@ export function AssignmentCard({
 
       {!compact && assignment.status === "submitted" && (
         <div className="mt-3 border-t border-border pt-3">
-          <p className="text-sm text-text-muted">Ձեր բացատրությունը՝</p>
+          <p className="text-sm text-text-muted">Քո բացատրությունը՝</p>
           <p className="text-sm text-text">{assignment.explanation}</p>
         </div>
       )}

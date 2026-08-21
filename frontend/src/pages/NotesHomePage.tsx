@@ -280,18 +280,18 @@ export function NotesHomePage() {
             ? `«${debouncedSearch}» հարցմամբ ոչինչ չգտնվեց`
             : selectedFolderId
               ? "Այս թղթապանակը դատարկ է"
-              : "Ձեր ուսումնական տարածքը դատարկ է";
+              : "Քո ուսումնական տարածքը դատարկ է";
 
   const emptyHint =
     view === "trash"
-      ? "Ջնջված նշումները հայտնվում են այստեղ, և կարող եք վերականգնել դրանք։"
+      ? "Ջնջված նշումները հայտնվում են այստեղ, և կարող ես վերականգնել դրանք։"
       : view === "favorites"
-        ? "Նշումի ⋯ ընտրացանկից ավելացրեք այն ընտրյալներում։"
+        ? "Նշումի ⋯ ընտրացանկից ավելացրու այն ընտրյալներում։"
         : view === "pinned"
           ? "Ամրակցված նշումները միշտ ցուցակի սկզբում են։"
           : debouncedSearch
-            ? "Փորձեք այլ բառ, կամ մաքրեք որոնումը։"
-            : "Ստեղծեք ձեր առաջին նշումը կամ թղթապանակը։";
+            ? "Փորձիր այլ բառ, կամ մաքրիր որոնումը։"
+            : "Ստեղծիր քո առաջին նշումը կամ թղթապանակը։";
 
   const EmptyIcon = view === "trash" ? Trash2 : view === "favorites" ? Star : view === "pinned" ? Pin : NotebookPen;
 
@@ -331,7 +331,7 @@ export function NotesHomePage() {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <PageHeader
         title="Նշումներ"
-        description="Ձեր սեփական ուսումնական նյութերը՝ մեկ տեղում"
+        description="Քո սեփական ուսումնական նյութերը՝ մեկ տեղում"
         actions={
           <>
             <Button
@@ -544,7 +544,7 @@ export function NotesHomePage() {
         open={deleteFolderTarget !== null}
         onOpenChange={(open) => !open && setDeleteFolderTarget(null)}
         title={`Ջնջե՞լ «${deleteFolderTarget?.name ?? ""}» թղթապանակը`}
-        description="Ներսի նշումները չեն ջնջվի — դրանք կտեղափոխվեն աղբարկղ, որտեղից կարող եք վերականգնել դրանք։"
+        description="Ներսի նշումները չեն ջնջվի — դրանք կտեղափոխվեն աղբարկղ, որտեղից կարող ես վերականգնել դրանք։"
         confirmLabel="Ջնջել"
         onConfirm={handleDeleteFolder}
       />
@@ -552,7 +552,7 @@ export function NotesHomePage() {
         open={deleteNoteTarget !== null}
         onOpenChange={(open) => !open && setDeleteNoteTarget(null)}
         title={`Ջնջե՞լ «${deleteNoteTarget?.title || "(անանուն)"}» նշումը`}
-        description="Նշումը կտեղափոխվի աղբարկղ, որտեղից կարող եք վերականգնել այն։"
+        description="Նշումը կտեղափոխվի աղբարկղ, որտեղից կարող ես վերականգնել այն։"
         confirmLabel="Ջնջել"
         onConfirm={handleDeleteNote}
       />

@@ -25,8 +25,8 @@ export function AcademicIdentityCard({
       <DataCard icon={GraduationCap} title="Ակադեմիական ինքնություն">
         <EmptyState
           icon={<Target size={22} strokeWidth={1.75} />}
-          title="Ընտրեք ձեր նպատակային բուհը"
-          hint="Ասացեք Gitus-ին, թե ուր եք գնում։"
+          title="Ընտրիր քո նպատակային բուհը"
+          hint="Ասա Gitus-ին, թե ուր ես գնում։"
           cta={{ label: "Սահմանել նպատակ", onClick: onSetGoal }}
         />
       </DataCard>

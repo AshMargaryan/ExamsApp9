@@ -21,7 +21,7 @@ export function PersonalRecordsCard({ records }: { records: PersonalRecords }) {
   return (
     <DataCard icon={Medal} title="Անձնական ռեկորդներ">
       {!hasAny ? (
-        <p className="text-sm text-text-muted">Սովորեք, որպեսզի սահմանեք ձեր առաջին ռեկորդը։</p>
+        <p className="text-sm text-text-muted">Սովորիր, որպեսզի սահմանես քո առաջին ռեկորդը։</p>
       ) : (
         <div className="flex flex-col divide-y divide-border">
           {rows

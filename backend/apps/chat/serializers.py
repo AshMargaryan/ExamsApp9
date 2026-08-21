@@ -191,7 +191,7 @@ class CreatePrivateConversationSerializer(serializers.Serializer):
     def validate_user_id(self, value):
         request_user = self.context["request"].user
         if value.id == request_user.id:
-            raise serializers.ValidationError("Չեք կարող զրույց սկսել ինքներդ ձեզ հետ։")
+            raise serializers.ValidationError("Չես կարող զրույց սկսել ինքդ քեզ հետ։")
         return value
 
 

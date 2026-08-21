@@ -43,7 +43,7 @@ function Stand({
         */}
         <p className="mt-1 w-full truncate text-center text-[length:var(--text-sm)] font-semibold text-text">
           {displayName(entry)}
-          {isMe && <span className="ml-1 text-[length:var(--text-xs)] font-normal text-primary">(Դուք)</span>}
+          {isMe && <span className="ml-1 text-[length:var(--text-xs)] font-normal text-primary">(Դու)</span>}
         </p>
         <p
           className="w-full truncate text-center text-[length:var(--text-xs)] text-text-muted"

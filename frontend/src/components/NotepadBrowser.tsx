@@ -78,7 +78,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
     >
       {pendingEquation && (
         <div className="mb-2 rounded-md border border-primary/50 bg-primary/5 px-2 py-2 text-sm">
-          <p className="mb-1 text-xs text-text-muted">Ընտրեք՝ որտե՞ղ տեղադրել այս հավասարումը.</p>
+          <p className="mb-1 text-xs text-text-muted">Ընտրիր՝ որտե՞ղ տեղադրել այս հավասարումը.</p>
           <div className="overflow-x-auto">
             <MathText text={pendingEquation} />
           </div>

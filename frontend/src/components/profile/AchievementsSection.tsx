@@ -60,7 +60,7 @@ export function AchievementsSection({
         <EmptyState
           icon={<Trophy size={22} strokeWidth={1.75} />}
           title="Այս զտիչով նվաճումներ չկան"
-          hint="Փոխեք զտիչը՝ մնացած նվաճումները տեսնելու համար։"
+          hint="Փոխիր զտիչը՝ մնացած նվաճումները տեսնելու համար։"
           size="sm"
           cta={{ label: "Ցույց տալ բոլորը", onClick: () => setFilter("all") }}
         />

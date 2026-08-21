@@ -167,7 +167,7 @@ class GoogleAuthView(APIView):
             claims = verify_google_id_token(token)
         except ValueError:
             return Response(
-                {"detail": "Google-ով մուտքը ձախողվեց։ Փորձեք կրկին։"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Google-ով մուտքը ձախողվեց։ Փորձիր կրկին։"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         if not claims["email_verified"]:
@@ -203,7 +203,7 @@ class AppleAuthView(APIView):
             claims = verify_apple_id_token(token)
         except ValueError:
             return Response(
-                {"detail": "Apple-ով մուտքը ձախողվեց։ Փորձեք կրկին։"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Apple-ով մուտքը ձախողվեց։ Փորձիր կրկին։"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         if not claims["email_verified"]:

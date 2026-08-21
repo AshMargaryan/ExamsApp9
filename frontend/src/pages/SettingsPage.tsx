@@ -127,7 +127,7 @@ export function SettingsPage() {
     <div className="mx-auto max-w-6xl px-[var(--space-4)] pb-[var(--space-16)] pt-[var(--space-8)] sm:px-[var(--space-6)]">
       <PageHeader
         title="Կարգավորումներ"
-        description="Ինչպես է Gitus-ը երևում, ով կարող է մուտք գործել ձեր հաշիվ և ինչ են տեսնում ուրիշները։"
+        description="Ինչպես է Gitus-ը երևում, ով կարող է մուտք գործել քո հաշիվ և ինչ են տեսնում ուրիշները։"
       />
 
       {/* The rail turns on at xl, not lg. At 1024 the app's own 200px
@@ -161,7 +161,7 @@ export function SettingsPage() {
           <AnchoredSection
             id="settings-security"
             title="Անվտանգություն"
-            description="Ձեր գաղտնաբառը և այն սարքերը, որոնցից հաշիվը մուտք է գործած։"
+            description="Քո գաղտնաբառը և այն սարքերը, որոնցից հաշիվը մուտք է գործած։"
           >
             <SecuritySection />
           </AnchoredSection>
@@ -169,7 +169,7 @@ export function SettingsPage() {
           <AnchoredSection
             id="settings-privacy"
             title="Գաղտնիություն"
-            description="Ինչ են տեսնում այլ աշակերտները ձեր մասին։"
+            description="Ինչ են տեսնում այլ աշակերտները քո մասին։"
           >
             <PrivacySection />
           </AnchoredSection>

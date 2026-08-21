@@ -30,7 +30,7 @@ export function MessageModal({ message, onClose, suggestions, onSelectSuggestion
 
         {suggestions && suggestions.length > 0 && (
           <div className="mt-5">
-            <p className="mb-2 text-sm text-text-muted">Փորձեք այս ազատ օգտանուններից մեկը՝</p>
+            <p className="mb-2 text-sm text-text-muted">Փորձիր այս ազատ օգտանուններից մեկը՝</p>
             <div className="flex flex-wrap justify-center gap-2">
               {suggestions.map((suggestion) => (
                 <button

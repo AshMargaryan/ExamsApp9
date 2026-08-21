@@ -26,7 +26,7 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
       <DataCard icon={Brain} title="Ուսումնական ԴՆԹ">
         <EmptyState
           icon={<Brain size={22} strokeWidth={1.75} />}
-          title="Շարունակեք սովորել՝ բացելու համար ձեր Ուսումնական ԴՆԹ-ն"
+          title="Շարունակիր սովորել՝ բացելու համար քո Ուսումնական ԴՆԹ-ն"
         />
       </DataCard>
     );
@@ -41,7 +41,7 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
     <DataCard
       icon={Brain}
       title="Ուսումնական ԴՆԹ"
-      description="Հաշվարկված է ձեր իրական ուսումնական վարքագծից"
+      description="Հաշվարկված է քո իրական ուսումնական վարքագծից"
     >
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">

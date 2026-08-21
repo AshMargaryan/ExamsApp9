@@ -25,10 +25,10 @@ function formatDelta(value: number, suffix = ""): string {
 }
 
 function verdict(growth: Growth): string {
-  if (growth.accuracy_delta === null) return "Ձեր տեմպը կայուն է մնում։";
-  if (growth.accuracy_delta > 0) return "Դուք բարելավվում եք ավելի արագ, քան նախորդ ամիս։";
-  if (growth.accuracy_delta < 0) return "Այս ամիս մի փոքր ավելի դանդաղ եք առաջադիմում, քան նախորդում։";
-  return "Ձեր տեմպը կայուն է մնում։";
+  if (growth.accuracy_delta === null) return "Քո տեմպը կայուն է մնում։";
+  if (growth.accuracy_delta > 0) return "Դու բարելավվում ես ավելի արագ, քան նախորդ ամիս։";
+  if (growth.accuracy_delta < 0) return "Այս ամիս մի փոքր ավելի դանդաղ ես առաջադիմում, քան նախորդում։";
+  return "Քո տեմպը կայուն է մնում։";
 }
 
 export function PerformanceOverview({ stats, growth }: { stats: LearningStats; growth: Growth | null }) {
@@ -72,7 +72,7 @@ export function PerformanceOverview({ stats, growth }: { stats: LearningStats; g
         <p className="mt-[var(--space-4)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
           {growth.has_enough_data
             ? verdict(growth)
-            : "Համեմատության համար բավարար տվյալներ դեռ չկան — շարունակեք սովորել առաջիկա շաբաթներին։"}
+            : "Համեմատության համար բավարար տվյալներ դեռ չկան — շարունակիր սովորել առաջիկա շաբաթներին։"}
         </p>
       )}
     </DataCard>

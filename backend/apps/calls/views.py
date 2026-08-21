@@ -133,7 +133,7 @@ class JoinCallView(APIView):
                 {"detail": "Միայն խմբի անդամները կարող են գրանցվել զանգին։"}, status=status.HTTP_403_FORBIDDEN
             )
         except AlreadyRegisteredError:
-            return Response({"detail": "Դուք արդեն գրանցված եք այս զանգին։"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Արդեն գրանցված ես այս զանգին։"}, status=status.HTTP_400_BAD_REQUEST)
         except CallFullError:
             return Response({"detail": "Զանգը արդեն լրացված է։"}, status=status.HTTP_400_BAD_REQUEST)
         room = _room_queryset().get(pk=room.pk)
@@ -152,9 +152,9 @@ class LeaveCallView(APIView):
             leave_call(room, request.user)
         except CreatorCannotLeaveError:
             return Response(
-                {"detail": "Զանգը սկսողը չի կարող լքել այն։ Փոխարենը՝ չեղարկեք զանգը։"},
+                {"detail": "Զանգը սկսողը չի կարող լքել այն։ Փոխարենը՝ չեղարկիր զանգը։"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except NotAParticipantError:
-            return Response({"detail": "Դուք գրանցված չեք այս զանգին։"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Գրանցված չես այս զանգին։"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)

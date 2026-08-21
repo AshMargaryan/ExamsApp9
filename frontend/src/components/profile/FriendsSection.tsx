@@ -46,8 +46,8 @@ export function FriendsSection() {
         {friends !== null && friends.length === 0 && (
           <EmptyState
             icon={<Users size={22} strokeWidth={1.75} />}
-            title="Ձեր ուսումնական ցանցը դատարկ է"
-            hint="Գտեք դասընկերներին և սովորեք միասին։"
+            title="Քո ուսումնական ցանցը դատարկ է"
+            hint="Գտիր դասընկերներին և սովորիր միասին։"
             cta={{ label: "Գտնել ընկերներ", onClick: () => setModalOpen(true) }}
           />
         )}

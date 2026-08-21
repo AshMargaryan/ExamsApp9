@@ -125,7 +125,7 @@ export function DashboardAssignmentCard({
 
       {assignment.status === "submitted" && assignment.explanation && (
         <div>
-          <p className="mb-1.5 text-xs text-text-muted">Ձեր նշումը</p>
+          <p className="mb-1.5 text-xs text-text-muted">Քո նշումը</p>
           <ClampedText text={assignment.explanation} />
         </div>
       )}

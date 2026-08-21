@@ -32,7 +32,7 @@ export function AssignmentSubmitForm({
       await teachingApi.submitAssignment(assignment.id, explanation.trim());
       onSubmitted();
     } catch {
-      setError("Ուղարկելիս սխալ տեղի ունեցավ։ Փորձեք կրկին։");
+      setError("Ուղարկելիս սխալ տեղի ունեցավ։ Փորձիր կրկին։");
     } finally {
       setSubmitting(false);
     }
@@ -41,7 +41,7 @@ export function AssignmentSubmitForm({
   return (
     <div>
       <label className="mb-1 block text-sm text-text-muted">
-        Ի՞նչ սովորեցիք։ Գրեք բացատրություն և ուղարկեք ուսուցչին ստուգելու համար։
+        Ի՞նչ սովորեցիր։ Գրիր բացատրություն և ուղարկիր ուսուցչին ստուգելու համար։
       </label>
       <textarea
         className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
@@ -56,7 +56,7 @@ export function AssignmentSubmitForm({
 
       {confirming && (
         <ConfirmModal
-          message={`Դուք կատարել եք առաջադրանքի ${assignment.progress}%-ը։ Ուղարկե՞լ ուսուցչին ստուգելու համար։`}
+          message={`Կատարել ես առաջադրանքի ${assignment.progress}%-ը։ Ուղարկե՞լ ուսուցչին ստուգելու համար։`}
           confirmLabel="Ուղարկել"
           cancelLabel="Ոչ"
           onConfirm={handleConfirm}

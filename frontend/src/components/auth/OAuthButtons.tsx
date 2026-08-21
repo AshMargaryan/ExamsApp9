@@ -41,7 +41,7 @@ export function OAuthButtons({ getRedirectPath }: Props) {
     try {
       handleResult(await loginWithGoogle(idToken));
     } catch {
-      setError("Google մուտքը ձախողվեց։ Փորձեք կրկին։");
+      setError("Google մուտքը ձախողվեց։ Փորձիր կրկին։");
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export function OAuthButtons({ getRedirectPath }: Props) {
     try {
       handleResult(await loginWithApple(idToken, firstName, lastName));
     } catch {
-      setError("Apple մուտքը ձախողվեց։ Փորձեք կրկին։");
+      setError("Apple մուտքը ձախողվեց։ Փորձիր կրկին։");
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export function OAuthButtons({ getRedirectPath }: Props) {
         <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
         <AppleSignInButton
           onCredential={handleAppleCredential}
-          onError={() => setError("Apple մուտքը ձախողվեց։ Փորձեք կրկին։")}
+          onError={() => setError("Apple մուտքը ձախողվեց։ Փորձիր կրկին։")}
           disabled={loading}
         />
       </div>

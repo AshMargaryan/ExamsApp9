@@ -300,7 +300,7 @@ function ParentProfileCard({ profile, onProfileUpdated }: { profile: Profile; on
                     />
                     {usernameLocked && (
                       <p className="mt-1 text-xs text-on-brand-muted">
-                        Օգտանունը կրկին կարող եք փոխել {usernameDaysLeft} օրից։
+                        Օգտանունը կրկին կարող ես փոխել {usernameDaysLeft} օրից։
                       </p>
                     )}
                   </div>
@@ -416,7 +416,7 @@ export function ProfilePage() {
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-8">
         <ErrorState
           title="Չհաջողվեց բեռնել պրոֆիլը։"
-          hint="Ստուգեք կապը և փորձեք կրկին։"
+          hint="Ստուգիր կապը և փորձիր կրկին։"
           onRetry={profileResource.retry}
         />
       </div>
@@ -549,7 +549,7 @@ export function ProfilePage() {
             <AnchoredSection
               id="profile-overview"
               title="Ամփոփում"
-              description="Ձեր ընթացիկ վիճակը մեկ հայացքով"
+              description="Քո ընթացիկ վիճակը մեկ հայացքով"
               spacing="default"
             >
               <div className="grid gap-[var(--space-5)]">
@@ -591,7 +591,7 @@ export function ProfilePage() {
             <AnchoredSection
               id="profile-progress"
               title="Առաջընթաց"
-              description="Ինչպես է փոխվել ձեր պատրաստվածությունը ժամանակի ընթացքում"
+              description="Ինչպես է փոխվել քո պատրաստվածությունը ժամանակի ընթացքում"
             >
               <div className="grid gap-[var(--space-5)]">
                 {analytics && <SubjectMasteryCard subjects={analytics.subject_mastery} />}

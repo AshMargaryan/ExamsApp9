@@ -229,7 +229,7 @@ class UserSerializer(serializers.ModelSerializer):
         if user is not None and value != user.username and not user.can_change_username():
             days_left = user.days_until_username_change()
             raise serializers.ValidationError(
-                f"Օգտանունը կրկին կարող եք փոխել {days_left} օրից։"
+                f"Օգտանունը կրկին կարող ես փոխել {days_left} օրից։"
             )
         return value
 

@@ -46,7 +46,7 @@ export function TeachersSection({ profile, onProfileChange }: { profile: Profile
           size="sm"
           icon={<Icon size={22} strokeWidth={1.75} />}
           title={emptyText}
-          hint={isTeacher ? "Հրավիրեք ձեր աշակերտներին։" : "Ուսուցիչը կարող է հրավեր ուղարկել ձեզ։"}
+          hint={isTeacher ? "Հրավիրեք Ձեր աշակերտներին։" : "Ուսուցիչը կարող է հրավեր ուղարկել քեզ։"}
         />
       )}
 

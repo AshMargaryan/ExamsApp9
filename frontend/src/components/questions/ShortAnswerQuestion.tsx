@@ -31,7 +31,7 @@ export function ShortAnswerQuestion({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={revealed}
-        placeholder="Ձեր պատասխանը..."
+        placeholder="Քո պատասխանը..."
         className={`w-full rounded-md border bg-surface text-text outline-none ${sizeClasses} ${borderClass}`}
       />
       {revealed && (

@@ -158,7 +158,7 @@ def record_answer(room: GameRoom, participant: GameParticipant, question_id: int
 
     participant = GameParticipant.objects.select_for_update().get(pk=participant.pk)
     if participant.finished_at is not None:
-        raise ValueError("Դուք արդեն ավարտել եք հարցերը։")
+        raise ValueError("Արդեն ավարտել ես հարցերը։")
 
     questions = get_room_questions(room)
     total = len(questions)

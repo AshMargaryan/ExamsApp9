@@ -69,7 +69,7 @@ def join_room(room: GameRoom, user) -> GameParticipant:
 
 def leave_room(room: GameRoom, user) -> None:
     if user.id == room.creator_id:
-        raise ValueError("Ստեղծողը չի կարող լքել սենյակը։ Փոխարենը՝ չեղարկեք այն։")
+        raise ValueError("Ստեղծողը չի կարող լքել սենյակը։ Փոխարենը՝ չեղարկիր այն։")
     GameParticipant.objects.filter(game=room, user=user).delete()
 
 

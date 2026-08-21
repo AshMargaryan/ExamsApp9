@@ -102,7 +102,7 @@ export function CompleteRegistrationPage() {
       <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
         <div className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm">
           <h1 className="mb-2 text-2xl font-semibold text-text">Ավարտել գրանցումը</h1>
-          <p className="mb-6 text-sm text-text-muted">Ընտրեք, թե ինչպես եք ցանկանում գրանցվել</p>
+          <p className="mb-6 text-sm text-text-muted">Ընտրիր, թե ինչպես ես ցանկանում գրանցվել</p>
 
           {ROLE_CARDS.map((card) => (
             <button
@@ -185,13 +185,13 @@ export function CompleteRegistrationPage() {
 
             <label className={labelClass}>Դպրոց</label>
             <div className="mb-4">
-              <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+              <SearchSelect placeholder="Փնտրիր դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
             </div>
 
             <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
             <div className="mb-4">
               <SearchSelect
-                placeholder="Փնտրեք բուհ..."
+                placeholder="Փնտրիր բուհ..."
                 value={university}
                 onChange={setUniversity}
                 search={universitySearch}

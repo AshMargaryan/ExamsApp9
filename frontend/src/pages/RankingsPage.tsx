@@ -57,7 +57,7 @@ function SchoolComparisonList({ board, mySchoolId }: { board: SchoolComparisonBo
       <EmptyState
         icon={<Building2 size={24} strokeWidth={1.75} />}
         title="Այս ամիս դեռ ոչ մի դպրոց միավոր չի վաստակել"
-        hint="Առաջին իսկ լուծված հարցից հետո ձեր դպրոցը կհայտնվի այստեղ։"
+        hint="Առաջին իսկ լուծված հարցից հետո քո դպրոցը կհայտնվի այստեղ։"
       />
     );
   }
@@ -87,7 +87,7 @@ function SchoolComparisonList({ board, mySchoolId }: { board: SchoolComparisonBo
               <p className="truncate text-[length:var(--text-sm)] font-medium text-text">
                 {entry.school.name}
                 {isMySchool && (
-                  <span className="ml-1 text-[length:var(--text-xs)] font-semibold text-primary">(Ձեր դպրոցը)</span>
+                  <span className="ml-1 text-[length:var(--text-xs)] font-semibold text-primary">(Քո դպրոցը)</span>
                 )}
               </p>
               <p className="truncate text-[length:var(--text-xs)] text-text-muted">
@@ -235,7 +235,7 @@ export function RankingsPage() {
         {isCompetitor && (
           <div className="flex min-w-0 flex-col gap-[var(--space-5)]">
             {sideFailed ? (
-              <ErrorState size="sm" title="Չհաջողվեց բեռնել ձեր վիճակագրությունը։" onRetry={loadSidePanel} />
+              <ErrorState size="sm" title="Չհաջողվեց բեռնել քո վիճակագրությունը։" onRetry={loadSidePanel} />
             ) : (
               <>
                 <DataCard icon={TrendingUp} title="Սեզոնի առաջընթաց">

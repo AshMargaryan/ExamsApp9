@@ -416,14 +416,14 @@ export function NotificationBell() {
 
           {/* ── Needs an answer ── */}
           {requests > 0 && (
-            <PanelSection icon={Users} title="Ձեր պատասխանն է սպասվում">
+            <PanelSection icon={Users} title="Քո պատասխանն է սպասվում">
               {incomingParents?.map((r) => (
                 <RequestRow
                   key={`parent-${r.id}`}
                   person={r.parent}
                   description={
                     <>
-                      <span className="font-medium">{displayName(r.parent)}</span> ցանկանում է լինել ձեր ծնողը
+                      <span className="font-medium">{displayName(r.parent)}</span> ցանկանում է լինել քո ծնողը
                     </>
                   }
                   onAccept={() => handleRespondParent(r.id, "accept")}

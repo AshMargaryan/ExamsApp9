@@ -56,7 +56,7 @@ export function PerformanceTrends({ activityDays }: { activityDays: ActivityDay[
         <EmptyState
           icon={<TrendingUp size={22} strokeWidth={1.75} />}
           title="Դեռ բավարար տվյալներ չկան այս ժամանակահատվածի համար"
-          hint="Ընտրեք ավելի երկար ժամանակահատված կամ շարունակեք պարապել։"
+          hint="Ընտրիր ավելի երկար ժամանակահատված կամ շարունակիր պարապել։"
         />
       ) : (
         <div className="h-56 w-full">

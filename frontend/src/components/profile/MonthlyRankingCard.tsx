@@ -33,7 +33,7 @@ function Row({ entry, isMe }: { entry: RankingEntry; isMe: boolean }) {
         </div>
       )}
       <span className={`min-w-0 flex-1 truncate text-sm ${isMe ? "font-semibold text-text" : "text-text"}`}>
-        {isMe ? "Դուք" : entry.username}
+        {isMe ? "Դու" : entry.username}
       </span>
       <span className="text-xs text-text-muted">{entry.xp} XP</span>
     </div>
@@ -74,14 +74,14 @@ export function MonthlyRankingCard() {
         <EmptyState
           size="sm"
           icon={<School size={22} strokeWidth={1.75} />}
-          title="Նշեք ձեր դպրոցը՝ այս դասակարգումը տեսնելու համար"
+          title="Նշիր քո դպրոցը՝ այս դասակարգումը տեսնելու համար"
         />
       )}
       {board?.no_grade && (
         <EmptyState
           size="sm"
           icon={<School size={22} strokeWidth={1.75} />}
-          title="Նշեք ձեր դասարանը՝ այս դասակարգումը տեսնելու համար"
+          title="Նշիր քո դասարանը՝ այս դասակարգումը տեսնելու համար"
         />
       )}
 
@@ -92,7 +92,7 @@ export function MonthlyRankingCard() {
               size="sm"
               icon={<Trophy size={22} strokeWidth={1.75} />}
               title="Դեռ մրցույթի մեջ չեք"
-              hint={scope === "friends" ? "Ավելացրեք ընկերներ՝ մրցելու համար։" : "Լուծեք հարցեր՝ XP վաստակելու համար։"}
+              hint={scope === "friends" ? "Ավելացրու ընկերներ՝ մրցելու համար։" : "Լուծիր հարցեր՝ XP վաստակելու համար։"}
             />
           ) : (
             <div className="flex flex-col gap-0.5">

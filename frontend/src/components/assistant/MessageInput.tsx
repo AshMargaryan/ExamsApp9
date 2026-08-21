@@ -169,7 +169,7 @@ export function MessageInput({
         setAttachments((prev) => [...prev, attachment]);
       }
     } catch {
-      setUploadError("Ֆայլը չհաջողվեց վերբեռնել։ Ստուգեք ձևաչափը և չափսը։");
+      setUploadError("Ֆայլը չհաջողվեց վերբեռնել։ Ստուգիր ձևաչափը և չափսը։");
     } finally {
       setUploading(false);
     }

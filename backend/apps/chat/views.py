@@ -165,7 +165,7 @@ class ConversationParticipantDetailView(APIView):
         is_self = user_id == request.user.id
         if conversation.type != ConversationType.GROUP and not is_self:
             return Response(
-                {"detail": "Անձնական զրույցներից կարելի է հեռացնել միայն ինքներդ ձեզ։"},
+                {"detail": "Անձնական զրույցներից կարելի է հեռացնել միայն ինքդ քեզ։"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not is_self and not group_service.is_owner(conversation, request.user):
@@ -425,7 +425,7 @@ class MessageForwardView(APIView):
         target = get_object_or_404(Conversation, pk=request.data.get("conversation_id"))
         if not is_participant(target.id, request.user):
             return Response(
-                {"detail": "Դուք այս զրույցի մասնակից չեք։"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Այս զրույցի մասնակից չես։"}, status=status.HTTP_403_FORBIDDEN
             )
 
         forwarded = message_service.forward_message(message, target, request.user)
@@ -475,7 +475,7 @@ class AttachmentUploadView(APIView):
         conversation = d["conversation"]
         if not is_participant(conversation.id, request.user):
             return Response(
-                {"detail": "Դուք այս զրույցի մասնակից չեք։"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Այս զրույցի մասնակից չես։"}, status=status.HTTP_403_FORBIDDEN
             )
 
         uploaded_file = d["file"]

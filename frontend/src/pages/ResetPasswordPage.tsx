@@ -73,7 +73,7 @@ function WebResetPasswordPage() {
         <div className="mb-[var(--space-5)] flex flex-col items-center gap-[var(--space-3)] rounded-[var(--radius)] border border-correct bg-correct-bg p-[var(--space-5)] text-center">
           <CircleCheck size={26} strokeWidth={1.75} className="text-correct" aria-hidden="true" />
           <p className="text-[length:var(--text-sm)] text-text">
-            Ձեր գաղտնաբառը հաջողությամբ փոփոխվեց։
+            Քո գաղտնաբառը հաջողությամբ փոփոխվեց։
           </p>
         </div>
         <Button className="w-full" onClick={() => navigate("/login")}>

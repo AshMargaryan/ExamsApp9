@@ -37,20 +37,20 @@ type Row = { key: keyof PrivacySettings; label: string; hint: string };
  *  whether you appear in a public list at all. Under one flat heading it read
  *  as a ninth profile field. */
 const PROFILE_ROWS: Row[] = [
-  { key: "show_school", label: "Դպրոց", hint: "Ձեր դպրոցի անունը" },
-  { key: "show_age", label: "Տարիք", hint: "Ձեր տարիքը" },
+  { key: "show_school", label: "Դպրոց", hint: "Քո դպրոցի անունը" },
+  { key: "show_age", label: "Տարիք", hint: "Քո տարիքը" },
   { key: "show_university", label: "Ցանկալի բուհ", hint: "Բուհը, որին պատրաստվում եք" },
   { key: "show_stats", label: "Ուսումնական վիճակագրություն", hint: "Լուծված խնդիրներ, ճշգրտություն, ժամանակ" },
   { key: "show_ranking", label: "Դասակարգման մեդալներ", hint: "Ամսվա արդյունքներով ստացած մեդալները" },
   { key: "show_achievements", label: "Նվաճումներ", hint: "Ձեռք բերած կրծքանշանները" },
-  { key: "show_friends", label: "Ընկերներ", hint: "Ձեր ընկերների ցանկը" },
+  { key: "show_friends", label: "Ընկերներ", hint: "Քո ընկերների ցանկը" },
   { key: "show_activity", label: "Ակտիվություն", hint: "Օրերի քարտեզը՝ երբ եք պարապել" },
 ];
 
 const LEADERBOARD_ROW: Row = {
   key: "show_on_leaderboard",
   label: "Երևալ դասակարգման ցուցակում",
-  hint: "Անջատելու դեպքում ձեր անունը չի հայտնվի ամսվա վարկանիշային աղյուսակներում։ XP-ն շարունակում է հաշվարկվել։",
+  hint: "Անջատելու դեպքում քո անունը չի հայտնվի ամսվա վարկանիշային աղյուսակներում։ XP-ն շարունակում է հաշվարկվել։",
 };
 
 function ToggleRow({
@@ -103,7 +103,7 @@ export function PrivacySection() {
       // alternative is a switch that claims a privacy setting was applied
       // when it was not.
       resource.setData(settings);
-      showError("Չհաջողվեց պահպանել կարգավորումը։ Փորձեք նորից։");
+      showError("Չհաջողվեց պահպանել կարգավորումը։ Փորձիր նորից։");
     } finally {
       setPendingKey(null);
     }
@@ -112,11 +112,11 @@ export function PrivacySection() {
   return (
     <Card>
       <h3 className="text-[length:var(--text-lg)] font-semibold leading-[var(--leading-heading)] text-text">
-        Ձեր հանրային պրոֆիլը
+        Քո հանրային պրոֆիլը
       </h3>
       <p className="mt-[var(--space-1)] max-w-[var(--measure-base)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
-        Ընտրեք, թե ինչ են տեսնում այլ աշակերտները, երբ բացում են ձեր պրոֆիլը։ Ձեր ուսուցիչը և ծնողը միշտ տեսնում են
-        ձեր առաջընթացը։
+        Ընտրիր, թե ինչ են տեսնում այլ աշակերտները, երբ բացում են քո պրոֆիլը։ Քո ուսուցիչը և ծնողը միշտ տեսնում են
+        քո առաջընթացը։
       </p>
 
       {resource.error !== null && !resource.isLoading ? (
@@ -157,7 +157,7 @@ export function PrivacySection() {
           </div>
 
           <p className="mt-[var(--space-4)] text-[length:var(--text-sm)] text-text-muted">
-            Տեսնել, թե ինչպես է երևում ձեր պրոֆիլը՝{" "}
+            Տեսնել, թե ինչպես է երևում քո պրոֆիլը՝{" "}
             <Link to="/profile" className="font-medium text-primary underline underline-offset-2">
               պրոֆիլի էջում
             </Link>

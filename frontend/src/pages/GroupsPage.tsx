@@ -144,7 +144,7 @@ export function GroupsPage() {
         <EmptyState
           icon={<Search size={26} strokeWidth={1.75} />}
           title="Ոչինչ չի գտնվել"
-          hint="Փորձեք այլ ֆիլտր, կամ ստեղծեք առաջին խումբը այս առարկայից։"
+          hint="Փորձիր այլ ֆիլտր, կամ ստեղծիր առաջին խումբը այս առարկայից։"
           cta={{ label: "Ստեղծել խումբ", onClick: () => navigate("/groups/create") }}
         />
       ) : (

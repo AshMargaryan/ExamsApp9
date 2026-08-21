@@ -18,7 +18,7 @@ export function AcademicPowerCard({ power }: { power: AcademicPower }) {
       <DataCard icon={Zap} title="Ակադեմիական հզորություն">
         <EmptyState
           icon={<Zap size={22} strokeWidth={1.75} />}
-          title="Սկսեք սովորել՝ ձեր ցուցանիշը հաշվարկելու համար"
+          title="Սկսիր սովորել՝ քո ցուցանիշը հաշվարկելու համար"
         />
       </DataCard>
     );

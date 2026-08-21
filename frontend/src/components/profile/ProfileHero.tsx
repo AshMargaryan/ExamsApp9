@@ -258,7 +258,7 @@ export function ProfileHero({
                       disabled={usernameLocked}
                       required
                     />
-                    {usernameLocked && <p className="mt-1 text-xs text-on-brand-muted">Օգտանունը կրկին կարող եք փոխել {usernameDaysLeft} օրից։</p>}
+                    {usernameLocked && <p className="mt-1 text-xs text-on-brand-muted">Օգտանունը կրկին կարող ես փոխել {usernameDaysLeft} օրից։</p>}
                   </div>
                   <div>
                     <label className={glassLabelClass}>Անուն</label>
@@ -339,7 +339,7 @@ export function ProfileHero({
                     {profile.school ? `${profile.school.name}${profile.school.marz ? ` (${profile.school.marz})` : ""}` : "Չնշված"}
                   </p>
                 ) : (
-                  <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+                  <SearchSelect placeholder="Փնտրիր դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
                 )}
               </div>
               <div className="rounded-2xl border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
@@ -347,7 +347,7 @@ export function ProfileHero({
                 {!editing ? (
                   <p className="mt-1 font-medium text-on-brand">{profile.university ? profile.university.name : "Չնշված"}</p>
                 ) : (
-                  <SearchSelect placeholder="Փնտրեք բուհ..." value={university} onChange={setUniversity} search={universitySearch} />
+                  <SearchSelect placeholder="Փնտրիր բուհ..." value={university} onChange={setUniversity} search={universitySearch} />
                 )}
               </div>
               <div className="rounded-2xl border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">

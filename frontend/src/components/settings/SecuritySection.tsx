@@ -78,8 +78,8 @@ function ChangePassword() {
       </h3>
       <p className="mt-[var(--space-1)] max-w-[var(--measure-base)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
         {hasPassword
-          ? "Փոխեք գաղտնաբառը, եթե կասկածում եք, որ ուրիշը գիտի այն։"
-          : "Ձեր հաշիվը մուտք է գործել Google-ով կամ Apple-ով և դեռ գաղտնաբառ չունի։ Սահմանեք մեկը՝ նաև գաղտնաբառով մուտք գործելու համար։"}
+          ? "Փոխիր գաղտնաբառը, եթե կասկածում ես, որ ուրիշը գիտի այն։"
+          : "Քո հաշիվը մուտք է գործել Google-ով կամ Apple-ով և դեռ գաղտնաբառ չունի։ Սահմանիր մեկը՝ նաև գաղտնաբառով մուտք գործելու համար։"}
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="mt-[var(--space-4)] max-w-md">
@@ -200,7 +200,7 @@ function Devices() {
       // Previously this surfaced in a MessageModal at page level, which meant
       // a failure to disconnect one device covered the whole list.
       setConfirmTarget(null);
-      showError("Չհաջողվեց անջատել սարքը։ Փորձեք նորից։");
+      showError("Չհաջողվեց անջատել սարքը։ Փորձիր նորից։");
     } finally {
       setRevokingId(null);
     }
@@ -214,7 +214,7 @@ function Devices() {
         Ակտիվ սարքեր
       </h3>
       <p className="mt-[var(--space-1)] max-w-[var(--measure-base)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
-        Միաժամանակ կարող են մուտք գործած լինել առավելագույնը 2 սարք։ Անջատեք այն սարքը, որն այլևս ձերը չէ։
+        Միաժամանակ կարող են մուտք գործած լինել առավելագույնը 2 սարք։ Անջատիր այն սարքը, որն այլևս քոնը չէ։
       </p>
 
       <div className="mt-[var(--space-4)]">
@@ -251,7 +251,7 @@ function Devices() {
           confirmTarget
             ? `${confirmTarget.platform || "Անհայտ սարք"}${
                 confirmTarget.browser ? ` · ${confirmTarget.browser}` : ""
-              } — այդ սարքից հաշիվը դուրս կգա, իսկ ձեր ուսումնական տվյալները մնում են անփոփոխ։`
+              } — այդ սարքից հաշիվը դուրս կգա, իսկ քո ուսումնական տվյալները մնում են անփոփոխ։`
             : undefined
         }
         confirmLabel="Անջատել"

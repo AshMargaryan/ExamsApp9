@@ -153,7 +153,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             if not user.can_change_username():
                 days_left = user.days_until_username_change()
                 raise serializers.ValidationError(
-                    f"Օգտանունը կրկին կարող եք փոխել {days_left} օրից։"
+                    f"Օգտանունը կրկին կարող ես փոխել {days_left} օրից։"
                 )
         return value
 
@@ -534,7 +534,7 @@ class ShowcaseUpdateSerializer(serializers.Serializer):
         )
         missing = set(value) - unlocked_ids
         if missing:
-            raise serializers.ValidationError("Ցուցադրության մեջ կարող եք դնել միայն ապակողպված նվաճումներ։")
+            raise serializers.ValidationError("Ցուցադրության մեջ կարող ես դնել միայն ապակողպված նվաճումներ։")
         return value
 
     def save(self):

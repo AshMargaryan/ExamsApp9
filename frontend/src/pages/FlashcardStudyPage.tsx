@@ -514,7 +514,7 @@ export function FlashcardStudyPage() {
         </Link>
         <ErrorState
           title="Փաթեթը չհաջողվեց բեռնել։"
-          hint="Կապը կարող է ընդհատված լինել։ Ձեր առաջընթացը պահպանված է։"
+          hint="Կապը կարող է ընդհատված լինել։ Քո առաջընթացը պահպանված է։"
           onRetry={resource.retry}
         />
       </div>

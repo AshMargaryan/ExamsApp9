@@ -28,7 +28,7 @@ function WebForgotPasswordPage() {
     } catch {
       // The request used to have no catch at all: a network failure left the
       // button un-pressed with nothing said, and the person retried forever.
-      setError("Չհաջողվեց ուղարկել հղումը։ Ստուգեք կապը և փորձեք կրկին։");
+      setError("Չհաջողվեց ուղարկել հղումը։ Ստուգիր կապը և փորձիր կրկին։");
     } finally {
       setSubmitting(false);
     }
@@ -36,7 +36,7 @@ function WebForgotPasswordPage() {
 
   if (sent) {
     return (
-      <AuthScreen title="Ստուգեք ձեր փոստը">
+      <AuthScreen title="Ստուգիր փոստդ">
         <div className="flex flex-col items-center gap-[var(--space-3)] rounded-[var(--radius)] border border-correct bg-correct-bg p-[var(--space-5)] text-center">
           <MailCheck size={26} strokeWidth={1.75} className="text-correct" aria-hidden="true" />
           <p className="text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text">
@@ -45,13 +45,13 @@ function WebForgotPasswordPage() {
           </p>
         </div>
         <p className="mt-[var(--space-4)] text-center text-[length:var(--text-xs)] text-text-muted">
-          Նամակը չհասա՞վ։ Ստուգեք սպամի թղթապանակը, կամ{" "}
+          Նամակը չհասա՞վ։ Ստուգիր սպամի թղթապանակը, կամ{" "}
           <button
             type="button"
             onClick={() => setSent(false)}
             className="font-medium text-primary hover:underline"
           >
-            փորձեք այլ հասցեով
+            փորձիր այլ հասցեով
           </button>
           ։
         </p>
@@ -65,7 +65,7 @@ function WebForgotPasswordPage() {
   return (
     <AuthScreen
       title="Մոռացե՞լ եք գաղտնաբառը"
-      subtitle="Մուտքագրեք ձեր էլ. հասցեն, և մենք կուղարկենք վերականգնման հղում։"
+      subtitle="Մուտքագրիր քո էլ. հասցեն, և մենք կուղարկենք վերականգնման հղում։"
       onSubmit={handleSubmit}
     >
       {error && <FormAlert message={error} />}

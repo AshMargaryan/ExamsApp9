@@ -36,7 +36,7 @@ export function ActivityHeatmapSection({ activityDays }: { activityDays: Activit
         <EmptyState
           icon={<CalendarDays size={22} strokeWidth={1.75} />}
           title="Դեռ ակտիվություն չկա"
-          hint="Առաջին իսկ պարապմունքից հետո այստեղ կհայտնվի ձեր օրերի քարտեզը։"
+          hint="Առաջին իսկ պարապմունքից հետո այստեղ կհայտնվի քո օրերի քարտեզը։"
         />
       ) : (
         <>

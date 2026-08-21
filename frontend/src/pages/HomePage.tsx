@@ -77,10 +77,10 @@ function ExamDatePrompt({ onUpdated }: { onUpdated: (p: Profile) => void }) {
     <Card className="rounded-[var(--radius-lg)]">
       <p className="flex items-center gap-[var(--space-2)] text-[length:var(--text-sm)] font-medium text-text">
         <Target size={16} strokeWidth={1.75} className="text-primary" />
-        Երբ է ձեր ընդունելության քննությունը?
+        Ե՞րբ է քո ընդունելության քննությունը։
       </p>
       <p className="mt-[var(--space-1)] text-[length:var(--text-xs)] leading-[var(--leading-body)] text-text-muted">
-        Ամսաթիվը նշելուց հետո կտեսնեք, թե որքան ժամանակ է մնացել։
+        Ամսաթիվը նշելուց հետո կտեսնես, թե որքան ժամանակ է մնացել։
       </p>
       <div className="mt-[var(--space-3)] flex flex-wrap gap-[var(--space-2)]">
         <input
@@ -101,7 +101,7 @@ function ExamDatePrompt({ onUpdated }: { onUpdated: (p: Profile) => void }) {
       </div>
       {failed && (
         <p role="alert" className="mt-[var(--space-2)] text-[length:var(--text-xs)] text-incorrect">
-          Չհաջողվեց պահպանել ամսաթիվը։ Փորձեք կրկին։
+          Չհաջողվեց պահպանել ամսաթիվը։ Փորձիր կրկին։
         </p>
       )}
     </Card>
@@ -272,7 +272,7 @@ export function HomePage() {
              own below rather than taking the page down with it. */
           <ErrorState
             title="Չհաջողվեց բեռնել գլխավոր էջը։"
-            hint="Ստուգեք ինտերնետ կապը և փորձեք կրկին։"
+            hint="Ստուգիր ինտերնետ կապը և փորձիր կրկին։"
             onRetry={profileRes.retry}
           />
         ) : (
@@ -414,7 +414,7 @@ export function HomePage() {
                 </div>
               ) : (
                 <Card className="rounded-[var(--radius-lg)] border-dashed text-text-muted">
-                  Հիանալի է! Դուք յուրացրել եք բոլոր հասանելի թեմաները։
+                  Հիանալի՜ է։ Յուրացրել ես բոլոր հասանելի թեմաները։
                 </Card>
               )}
             </Section>

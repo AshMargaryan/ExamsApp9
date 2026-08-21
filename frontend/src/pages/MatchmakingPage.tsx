@@ -103,7 +103,7 @@ export function MatchmakingPage() {
 
   async function handleFindGame(queueId: number) {
     if (!subjectId) {
-      setError("Ընտրեք առարկան։");
+      setError("Ընտրիր առարկան։");
       return;
     }
     setError(null);

@@ -37,7 +37,7 @@ def _locked(current: int, needed: int, unit: str) -> dict:
         "locked": True,
         "current": current,
         "needed": needed,
-        "reason": f"Պետք է առնվազն {needed} {unit}, առայժմ ունեք {current}։",
+        "reason": f"Պետք է առնվազն {needed} {unit}, առայժմ ունես {current}։",
     }
 
 
@@ -522,7 +522,7 @@ def coach(user, mistake=None, growth_data=None) -> dict:
     if mistake is None:
         mistake = _weakest_topic_mistake(user)
     if mistake is None:
-        return {"available": False, "reason": "Դեռ բավարար տվյալներ չկան Ձեր վերլուծության համար։ Շարունակեք սովորել։"}
+        return {"available": False, "reason": "Դեռ բավարար տվյալներ չկան քո վերլուծության համար։ Շարունակիր սովորել։"}
 
     total_mistakes = TopicMistake.objects.filter(student=user).aggregate(total=Sum("incorrect_count"))["total"] or 0
     share = round(mistake.incorrect_count / total_mistakes * 100) if total_mistakes else 0
@@ -531,17 +531,17 @@ def coach(user, mistake=None, growth_data=None) -> dict:
     situation = None
     if g["accuracy_delta"] is not None:
         if g["accuracy_delta"] > 0:
-            situation = f"Ձեր ճշգրտությունը բարձրացել է {g['accuracy_delta']}%-ով նախորդ ամսվա համեմատ։"
+            situation = f"Քո ճշգրտությունը բարձրացել է {g['accuracy_delta']}%-ով նախորդ ամսվա համեմատ։"
         elif g["accuracy_delta"] < 0:
-            situation = f"Ձեր ճշգրտությունը նվազել է {abs(g['accuracy_delta'])}%-ով նախորդ ամսվա համեմատ։"
+            situation = f"Քո ճշգրտությունը նվազել է {abs(g['accuracy_delta'])}%-ով նախորդ ամսվա համեմատ։"
         else:
-            situation = "Ձեր ճշգրտությունը կայուն է մնացել նախորդ ամսվա համեմատ։"
+            situation = "Քո ճշգրտությունը կայուն է մնացել նախորդ ամսվա համեմատ։"
 
     return {
         "available": True,
         "situation": situation,
-        "weakness": f"«{mistake.topic_label}» թեման Ձեր ամենամեծ խնդիրն է հենց հիմա։",
-        "opportunity": f"Այս թեմայի սխալները կազմում են Ձեր վերջին սխալների {share}%-ը։",
+        "weakness": f"«{mistake.topic_label}» թեման քո ամենամեծ խնդիրն է հենց հիմա։",
+        "opportunity": f"Այս թեմայի սխալները կազմում են քո վերջին սխալների {share}%-ը։",
         "recommendation": f"Հաջորդ լավագույն քայլը՝ վերանայել «{mistake.topic_label}» թեմայի սխալները։",
         "evidence": {
             "topic": mistake.topic_label,
@@ -567,11 +567,11 @@ def next_mission(user, mistake=None) -> dict:
         estimated_minutes = max(5, round(question_count * 1.5))
         return {
             "available": True,
-            "title": f"Ուղղեք «{mistake.subtopic.name}» թեմայի սխալները",
+            "title": f"Ուղղիր «{mistake.subtopic.name}» թեմայի սխալները",
             "question_count": question_count,
             "estimated_minutes": estimated_minutes,
             "potential_xp": question_count * XP_PER_CORRECT_PRACTICE_ANSWER,
-            "reason": f"«{mistake.topic_label}» թեմայում ունեք {mistake.incorrect_count} սխալ պատասխան։",
+            "reason": f"«{mistake.topic_label}» թեմայում ունես {mistake.incorrect_count} սխալ պատասխան։",
             "cta": {"type": "practice_subtopic", "subtopic_id": mistake.subtopic_id, "tier": "medium"},
         }
 
@@ -583,11 +583,11 @@ def next_mission(user, mistake=None) -> dict:
     # (subject_name, topic_label) pair — so review them.
     return {
         "available": True,
-        "title": f"Վերանայեք «{mistake.topic_label}» թեման",
+        "title": f"Վերանայիր «{mistake.topic_label}» թեման",
         "question_count": mistake.incorrect_count,
         "estimated_minutes": max(5, mistake.incorrect_count * 2),
         "potential_xp": None,
-        "reason": f"«{mistake.topic_label}» թեմայում ունեք {mistake.incorrect_count} սխալ պատասխան փորձնական քննություններում։",
+        "reason": f"«{mistake.topic_label}» թեմայում ունես {mistake.incorrect_count} սխալ պատասխան փորձնական քննություններում։",
         "cta": {
             "type": "mistake_review",
             "subject_name": mistake.subject_name,

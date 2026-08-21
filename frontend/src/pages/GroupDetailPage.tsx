@@ -188,7 +188,7 @@ export function GroupDetailPage() {
     try {
       const updated = await joinGroup(group.id);
       setGroup(updated);
-      showSuccess("Դուք միացաք խմբին։");
+      showSuccess("Միացար խմբին։");
     } catch (err) {
       showError(extractErrorMessage(err));
     } finally {
@@ -201,7 +201,7 @@ export function GroupDetailPage() {
     setBusy(true);
     try {
       await leaveGroup(group.id);
-      showSuccess("Դուք լքեցիք խումբը։");
+      showSuccess("Լքեցիր խումբը։");
       load();
     } catch (err) {
       showError(extractErrorMessage(err));
@@ -439,7 +439,7 @@ export function GroupDetailPage() {
             onChange={(e) => setTransferTarget(e.target.value ? Number(e.target.value) : "")}
             className="rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary focus:outline-none"
           >
-            <option value="">Ընտրեք անդամ…</option>
+            <option value="">Ընտրիր անդամ…</option>
             {otherMembers.map((m) => (
               <option key={m.user.id} value={m.user.id}>
                 {displayName(m.user)}

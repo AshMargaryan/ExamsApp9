@@ -48,12 +48,12 @@ export function ShowcasePickerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text">Ընտրեք ցուցադրվող նվաճումները</h2>
+          <h2 className="text-lg font-semibold text-text">Ընտրիր ցուցադրվող նվաճումները</h2>
           <button type="button" onClick={onClose} aria-label="Փակել" className="text-lg text-text-muted hover:text-text">
             ✕
           </button>
         </div>
-        <p className="mb-4 text-sm text-text-muted">Ընտրեք մինչև 3 նվաճում ({selected.length}/3)</p>
+        <p className="mb-4 text-sm text-text-muted">Ընտրիր մինչև 3 նվաճում ({selected.length}/3)</p>
 
         {unlocked.length === 0 ? (
           <p className="text-text-muted">Դեռ ապակողպված նվաճումներ չկան։</p>

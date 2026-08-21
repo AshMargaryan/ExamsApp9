@@ -120,7 +120,7 @@ function WebRegisterPage() {
 
   if (!role) {
     return (
-      <AuthScreen title="Գրանցում" subtitle="Ընտրեք, թե ինչպես եք ցանկանում գրանցվել">
+      <AuthScreen title="Գրանցում" subtitle="Ընտրիր, թե ինչպես ես ցանկանում գրանցվել">
         {ROLE_CARDS.map((card) => (
           <button
             key={card.role}
@@ -279,7 +279,7 @@ function WebRegisterPage() {
           <Field label="Դպրոց">
             {() => (
               <SearchSelect
-                placeholder="Փնտրեք դպրոց..."
+                placeholder="Փնտրիր դպրոց..."
                 value={school}
                 onChange={setSchool}
                 search={schoolSearch}
@@ -290,7 +290,7 @@ function WebRegisterPage() {
           <Field label="Բուհ, որին ցանկանում եք դիմել">
             {() => (
               <SearchSelect
-                placeholder="Փնտրեք բուհ..."
+                placeholder="Փնտրիր բուհ..."
                 value={university}
                 onChange={setUniversity}
                 search={universitySearch}

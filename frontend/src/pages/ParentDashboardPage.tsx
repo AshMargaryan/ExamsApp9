@@ -128,7 +128,7 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
       <div>
         <label className="mb-1 block text-sm font-medium text-text">Կապել երեխայի հաշիվը</label>
         <p className="mb-2 text-xs text-text-muted">
-          Փնտրեք ձեր երեխայի օգտանունով և ուղարկեք հարցում։ Նա այն կտեսնի իր ծանուցումներում և կընդունի կամ կմերժի։
+          Փնտրեք Ձեր երեխայի օգտանունով և ուղարկեք հարցում։ Նա այն կտեսնի իր ծանուցումներում և կընդունի կամ կմերժի։
         </p>
       </div>
 
@@ -570,11 +570,11 @@ function ChildDashboardView({ child, onUnlinked }: { child: ChildSummary; onUnli
       <Section
         spacing="none"
         title="Շաբաթական AI հաշվետվություն"
-        description="Gitus-ի ամփոփումը ձեր երեխայի շաբաթվա մասին՝ սովորական լեզվով"
+        description="Gitus-ի ամփոփումը Ձեր երեխայի շաբաթվա մասին՝ սովորական լեզվով"
       >
         <Card>
           {report && <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-text">{report}</p>}
-          {emailSent && <p className="mb-3 text-sm text-correct">Ուղարկվեց ձեր էլ. փոստին։</p>}
+          {emailSent && <p className="mb-3 text-sm text-correct">Ուղարկվեց Ձեր էլ. փոստին։</p>}
           {/* flex-wrap: the two Armenian button labels together are 455px
               wide, which pushed the page 80px off a 375px screen. */}
           <div className="flex flex-wrap gap-[var(--space-3)]">
@@ -592,7 +592,7 @@ function ChildDashboardView({ child, onUnlinked }: { child: ChildSummary; onUnli
         open={confirmUnlink}
         onOpenChange={setConfirmUnlink}
         title={`Հեռացնե՞լ ${child.first_name || child.username}-ի կապը`}
-        description="Դուք այլևս չեք տեսնի նրա առաջընթացը, և ձեր սահմանած նպատակները կջնջվեն։ Երեխայի հաշիվն ու տվյալները մնում են անփոփոխ, և կապը կարելի է վերականգնել նոր հարցումով։"
+        description="Դուք այլևս չեք տեսնի նրա առաջընթացը, և Ձեր սահմանած նպատակները կջնջվեն։ Երեխայի հաշիվն ու տվյալները մնում են անփոփոխ, և կապը կարելի է վերականգնել նոր հարցումով։"
         confirmLabel="Հեռացնել"
         busy={unlinking}
         onConfirm={handleUnlink}
@@ -673,7 +673,7 @@ function NotificationsPanel({
           Վերջին իրադարձությունները
         </span>
       }
-      description="Ինչ է արել ձեր երեխան Gitus-ում"
+      description="Ինչ է արել Ձեր երեխան Gitus-ում"
       action={
         unreadCount > 0 ? (
           <Button variant="secondary" size="sm" onClick={onMarkAllRead}>
@@ -799,7 +799,7 @@ export function ParentDashboardPage() {
         {childrenResource.isLoading && <Skeleton className="mb-6 h-10 w-full" />}
 
         {childrenResource.error !== null && !childrenResource.isLoading && (
-          <ErrorState title="Չհաջողվեց բեռնել ձեր երեխաների ցանկը։" onRetry={childrenResource.retry} />
+          <ErrorState title="Չհաջողվեց բեռնել Ձեր երեխաների ցանկը։" onRetry={childrenResource.retry} />
         )}
 
         {children !== null && children.length === 0 && (

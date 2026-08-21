@@ -32,12 +32,12 @@ export function SubjectMasteryCard({ subjects }: { subjects: SubjectMastery[] })
     <DataCard
       icon={Library}
       title="Առարկաների տիրապետում"
-      description="Բացեք առարկան՝ թեմա առ թեմա տեսնելու համար"
+      description="Բացիր առարկան՝ թեմա առ թեմա տեսնելու համար"
     >
       {withData.length === 0 ? (
         <EmptyState
           icon={<Library size={22} strokeWidth={1.75} />}
-          title="Սկսեք սովորել՝ ձեր տիրապետումը հետևելու համար"
+          title="Սկսիր սովորել՝ քո տիրապետումը հետևելու համար"
         />
       ) : (
         <div className="flex flex-col gap-3">

@@ -316,7 +316,7 @@ export function TeacherDashboardPage() {
               <EmptyState
                 icon={<Users size={26} strokeWidth={1.5} />}
                 title="Դեռ կապակցված աշակերտներ չկան"
-                hint="Հրավիրեք ձեր առաջին աշակերտին՝ նրա առաջընթացը տեսնելու համար։"
+                hint="Հրավիրեք Ձեր առաջին աշակերտին՝ նրա առաջընթացը տեսնելու համար։"
                 cta={{ label: "Հրավիրել աշակերտ", onClick: () => setTeachingOpen(true) }}
               />
             )}
@@ -324,7 +324,7 @@ export function TeacherDashboardPage() {
           </TabPanel>
 
           <TabPanel value="leaderboard">
-            <Section spacing="none" title="Դասարանի դասակարգում" description="Այս ամսվա XP-ն ձեր աշակերտների միջև">
+            <Section spacing="none" title="Դասարանի դասակարգում" description="Այս ամսվա XP-ն Ձեր աշակերտների միջև">
               <ClassLeaderboard onSelectStudent={(id) => navigate(`/profile/${id}`)} />
             </Section>
           </TabPanel>

@@ -67,7 +67,7 @@ export function ChallengeModal({
         </div>
 
         {sent ? (
-          <p className="text-sm text-text">Մարտահրավերն ուղարկվեց! Սպասեք {friend.username}-ի պատասխանին։</p>
+          <p className="text-sm text-text">Մարտահրավերն ուղարկվեց! Սպասիր {friend.username}-ի պատասխանին։</p>
         ) : (
           <>
             {!subjects && <p className="text-text-muted">Բեռնվում է...</p>}

@@ -16,7 +16,7 @@ export function ProfileCompletionCard({
   return (
     <DataCard
       icon={Sparkles}
-      title="Լրացրեք պրոֆիլը"
+      title="Լրացրու պրոֆիլը"
       description={`Մնացել է՝ ${completion.missing.join(", ")}`}
       action={<span className="text-[length:var(--text-sm)] font-semibold tabular-nums text-text">{completion.percent}%</span>}
     >

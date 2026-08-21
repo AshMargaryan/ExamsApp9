@@ -32,7 +32,7 @@ def _notify_mentions(message: Message) -> None:
     sender_name = message.sender.first_name or message.sender.username
     for participant in mentioned:
         create_notification(
-            participant.user, NotificationType.MENTION, f"{sender_name} նշեց ձեզ չաթում", link="/chat",
+            participant.user, NotificationType.MENTION, f"{sender_name} նշեց քեզ չաթում", link="/chat",
         )
 
 

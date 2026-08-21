@@ -83,7 +83,7 @@ export function ImageDropzone({ label, file, existingUrl, onChange, onRemoveExis
         ) : (
           <div className="px-4 text-center text-sm text-text-muted">
             <p className="flex items-center justify-center gap-[var(--space-2)]">
-              <Camera size={16} strokeWidth={1.75} aria-hidden /> Քաշեք նկարը այստեղ կամ սեղմեք
+              <Camera size={16} strokeWidth={1.75} aria-hidden /> Քաշիր նկարը այստեղ կամ սեղմիր
             </p>
             <p className="mt-1 text-xs">PNG, JPG, WEBP</p>
           </div>
