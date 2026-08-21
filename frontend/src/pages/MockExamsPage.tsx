@@ -122,7 +122,7 @@ export function MockExamsPage() {
           <p className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-text-muted">
             Շարունակիր այնտեղից, որտեղ կանգ առար։
           </p>
-          <div className="mt-[var(--space-4)] grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-[var(--space-4)] grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-3">
             {inProgress.map((exam) => (
               <ExamCard
                 key={exam.id}
@@ -199,7 +199,7 @@ export function MockExamsPage() {
       </div>
 
       {examsLoading ? (
-        <LoadingRegion className="grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 lg:grid-cols-3">
+        <LoadingRegion className="grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
               <Skeleton className="h-4 w-1/3" />
@@ -229,7 +229,7 @@ export function MockExamsPage() {
           }}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleExams.map((exam) => (
             <ExamCard
               key={exam.id}

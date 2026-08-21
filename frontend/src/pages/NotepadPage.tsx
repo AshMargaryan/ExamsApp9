@@ -86,7 +86,10 @@ function NoteCard({ note, onEdit, onDelete }: { note: Note; onEdit: () => void; 
   return (
     <div className="flex flex-col rounded-[var(--radius)] border border-border bg-surface p-5">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h2 className="line-clamp-1 text-lg font-semibold text-text">{note.title || "(առանց վերնագրի)"}</h2>
+        {/* min-w-0 so line-clamp can actually clamp: a flex child's default
+            min-width is its min-content width, which a long unbroken Armenian
+            title exceeds, so the clamp never gets the chance to apply. */}
+        <h2 className="line-clamp-1 min-w-0 text-lg font-semibold text-text">{note.title || "(առանց վերնագրի)"}</h2>
         <span className="shrink-0 text-xs text-text-muted">
           {new Date(note.updated_at).toLocaleDateString("hy-AM")}
         </span>

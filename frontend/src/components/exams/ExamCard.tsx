@@ -64,7 +64,13 @@ export function ExamCard({ exam, primaryTo, historyTo }: Props) {
       )}
     >
       <div>
-        <div className="mb-2 flex items-start justify-between gap-2">
+        {/* `flex-wrap`, not `min-w-0`. The badge is deliberately `shrink-0`
+            (see ui/Badge), so when the card is narrow something has to give.
+            Letting the title shrink is the wrong answer: Armenian words do not
+            break, so the text simply spilled out of its own box and painted
+            over the badge. Wrapping the badge onto its own line is the only
+            outcome here that can neither overflow the card nor overlap. */}
+        <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
           <h3 className="text-lg font-semibold text-text">{main}</h3>
           <StatusBadge status={status} />
         </div>
