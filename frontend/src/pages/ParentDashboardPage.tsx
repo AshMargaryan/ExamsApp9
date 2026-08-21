@@ -42,6 +42,10 @@ import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { Tabs } from "../components/ui/Tabs";
 import { useAsyncResource } from "../hooks/useAsyncResource";
 import { cn } from "../lib/cn";
+import { Field } from "../components/ui/Field";
+import { NumberInput } from "../components/ui/NumberInput";
+import { SearchField } from "../components/ui/SearchField";
+import { Select } from "../components/ui/Select";
 
 /*
   THE PARENT'S VAHANAK
@@ -132,11 +136,12 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
         </p>
       </div>
 
-      <input
+      <SearchField
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Երեխայի օգտանունը..."
-        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary"
+        onChange={setQuery}
+        label="Երեխայի օգտանունը"
+        placeholder="Երեխայի օգտանունը…"
+        className="bg-surface text-[length:var(--text-sm)]"
       />
 
       {error && <p className="text-sm text-incorrect">{error}</p>}
@@ -231,44 +236,39 @@ function GoalForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 rounded-[var(--radius)] border border-border bg-surface-muted p-4">
-      <div>
-        <label className="mb-1 block text-xs text-text-muted">Նպատակի տեսակ</label>
-        <select
-          value={goalType}
-          onChange={(e) => setGoalType(e.target.value as GoalType)}
-          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-primary"
-        >
-          {GOAL_TYPES.map((t) => (
-            <option key={t} value={t}>{GOAL_TYPE_LABELS[t]}</option>
-          ))}
-        </select>
-      </div>
+      <Field label="Նպատակի տեսակ" containerClassName="mb-0 min-w-52">
+        {(control) => (
+          <Select<GoalType>
+            id={control.id}
+            value={goalType}
+            onChange={setGoalType}
+            options={GOAL_TYPES.map((t) => ({ value: t, label: GOAL_TYPE_LABELS[t] }))}
+          />
+        )}
+      </Field>
       {goalType === "subject_accuracy" && (
-        <div>
-          <label className="mb-1 block text-xs text-text-muted">Առարկա</label>
-          <select
-            value={subjectId}
-            onChange={(e) => setSubjectId(e.target.value)}
-            required
-            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-primary"
-          >
-            <option value="">Ընտրեք...</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
+        <Field label="Առարկա" containerClassName="mb-0 min-w-48">
+          {(control) => (
+            <Select<string>
+              id={control.id}
+              value={subjectId}
+              onChange={setSubjectId}
+              placeholder="Ընտրեք…"
+              options={subjects.map((s) => ({ value: String(s.id), label: s.name }))}
+            />
+          )}
+        </Field>
       )}
-      <div>
-        <label className="mb-1 block text-xs text-text-muted">Նպատակային արժեք</label>
-        <input
-          type="number"
-          min={1}
-          value={targetValue}
-          onChange={(e) => setTargetValue(e.target.value)}
-          className="w-24 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-primary"
-        />
-      </div>
+      <Field label="Նպատակային արժեք" containerClassName="mb-0 w-40">
+        {(control) => (
+          <NumberInput
+            id={control.id}
+            value={targetValue === "" ? null : Number(targetValue)}
+            min={1}
+            onChange={(next) => setTargetValue(next == null ? "" : String(next))}
+          />
+        )}
+      </Field>
       <Button type="submit" size="sm" loading={busy}>
         Ավելացնել նպատակ
       </Button>

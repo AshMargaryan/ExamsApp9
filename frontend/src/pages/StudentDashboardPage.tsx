@@ -15,6 +15,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Skeleton } from "../components/ui/Skeleton";
 import { StatTile } from "../components/ui/StatTile";
+import { DatePicker } from "../components/ui/DatePicker";
 
 const ACCURACY_RING_R = 24;
 const ACCURACY_RING_CIRCUMFERENCE = 2 * Math.PI * ACCURACY_RING_R;
@@ -156,7 +157,7 @@ export function StudentDashboardPage() {
         </div>
 
         {/* STATS */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[1.7fr_1fr_1fr_1fr_1.2fr]">
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-[minmax(0,1.7fr)_1fr_1fr_1fr_minmax(9rem,1.2fr)]">
           <Card className="col-span-2 flex flex-col justify-between gap-4 sm:col-span-3 lg:col-span-1">
             <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
               <BarChart3 size={14} strokeWidth={1.75} /> Շաբաթական առաջընթաց
@@ -229,11 +230,16 @@ export function StudentDashboardPage() {
               </p>
               {settingExamDate ? (
                 <div className="flex flex-col gap-2">
-                  <input
-                    type="date"
+                  {/* A short placeholder deliberately: this picker lives in one
+                      cell of a five-across stat strip, and the default
+                      "Ընտրիր ամսաթիվը" sets a min-content width that pushed the
+                      whole row 37px past the viewport. */}
+                  <DatePicker
                     value={examDateInput}
-                    onChange={(e) => setExamDateInput(e.target.value)}
-                    className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-primary"
+                    onChange={setExamDateInput}
+                    label="Քննության ամսաթիվ"
+                    placeholder="Ամսաթիվ"
+                    clearable={false}
                   />
                   <Button size="sm" onClick={handleSetExamDate}>
                     Հաստատել
