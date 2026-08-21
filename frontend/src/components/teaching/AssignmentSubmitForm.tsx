@@ -3,6 +3,8 @@ import * as teachingApi from "../../api/teaching";
 import type { Assignment } from "../../api/teaching";
 import { ConfirmModal } from "../ConfirmModal";
 import { Button } from "../ui/Button";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 export function AssignmentSubmitForm({
   assignment,
@@ -44,7 +46,7 @@ export function AssignmentSubmitForm({
         Ի՞նչ սովորեցիր։ Գրիր բացատրություն և ուղարկիր ուսուցչին ստուգելու համար։
       </label>
       <textarea
-        className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
+        className={cn(fieldInputClass, "mb-2")}
         rows={3}
         value={explanation}
         onChange={(e) => setExplanation(e.target.value)}

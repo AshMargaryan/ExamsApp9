@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { listMockExams } from "../../api/mockExams";
 import type { MockExamSummary } from "../../api/mockExams";
 import { getHierarchy } from "../../api/practice";
@@ -12,6 +12,9 @@ import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 import { Modal } from "../ui/Modal";
+import { SearchField } from "../ui/SearchField";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 import { Skeleton } from "../ui/Skeleton";
 
 /*
@@ -237,19 +240,13 @@ export function AssignmentPicker({
             }}
           />
 
-          <div className="relative">
-            <Search
-              size={15}
-              strokeWidth={1.75}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-            />
-            <input
-              value={contentQuery}
-              onChange={(e) => setContentQuery(e.target.value)}
-              placeholder="Փնտրել..."
-              className="w-full rounded-md border border-border bg-bg py-2 pl-9 pr-3 text-sm text-text focus:border-primary"
-            />
-          </div>
+          <SearchField
+            value={contentQuery}
+            onChange={setContentQuery}
+            label="Փնտրել նյութերում"
+            placeholder="Փնտրել…"
+            className="text-[length:var(--text-sm)]"
+          />
 
           <div className="max-h-72 overflow-y-auto rounded-[var(--radius)] border border-border">
             {contentOptions.length === 0 ? (
@@ -280,19 +277,13 @@ export function AssignmentPicker({
       ) : (
         <div className="flex flex-col gap-3">
           {roster.length > 3 && (
-            <div className="relative">
-              <Search
-                size={15}
-                strokeWidth={1.75}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-              />
-              <input
-                value={studentQuery}
-                onChange={(e) => setStudentQuery(e.target.value)}
-                placeholder="Փնտրել աշակերտի..."
-                className="w-full rounded-md border border-border bg-bg py-2 pl-9 pr-3 text-sm text-text focus:border-primary"
-              />
-            </div>
+            <SearchField
+              value={studentQuery}
+              onChange={setStudentQuery}
+              label="Փնտրել աշակերտի"
+              placeholder="Փնտրել աշակերտի…"
+              className="text-[length:var(--text-sm)]"
+            />
           )}
 
           {roster.length === 0 ? (
@@ -354,13 +345,13 @@ export function AssignmentPicker({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Վերնագիր"
-                  className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
+                  className={cn(fieldInputClass, "text-[length:var(--text-sm)]")}
                 />
                 <textarea
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="Հաղորդագրություն"
-                  className="min-h-16 w-full resize-y rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
+                  className={cn(fieldInputClass, "min-h-16 resize-y text-[length:var(--text-sm)]")}
                 />
                 <div>
                   <label className="mb-1 block text-xs text-text-muted" htmlFor="assign-picker-due">
@@ -371,7 +362,7 @@ export function AssignmentPicker({
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full max-w-48 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
+                    className={cn(fieldInputClass, "max-w-48 text-[length:var(--text-sm)]")}
                   />
                 </div>
               </div>

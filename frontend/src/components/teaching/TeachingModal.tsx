@@ -7,6 +7,7 @@ import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
 import { Modal } from "../ui/Modal";
+import { SearchField } from "../ui/SearchField";
 import { SkeletonRows } from "../ui/Skeleton";
 import { Tabs, TabPanel } from "../ui/Tabs";
 
@@ -156,12 +157,13 @@ export function TeachingModal({
 
   const searchPanel = (
     <>
-      <input
+      <SearchField
         autoFocus
-        className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
-        placeholder="Փնտրեք օգտանունով..."
+        containerClassName="mb-3"
+        label="Փնտրել օգտանունով"
+        placeholder="Փնտրել օգտանունով…"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={setQuery}
       />
       {searching && <SkeletonRows count={2} />}
       {!searching && query && results?.length === 0 && <EmptyState size="sm" title="Ոչինչ չի գտնվել։" />}
