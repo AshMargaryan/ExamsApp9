@@ -1,12 +1,15 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap, Search, Users } from "lucide-react";
+import { GraduationCap, Plus, Search, Users } from "lucide-react";
 import { searchGroups, type GroupListItem, type GroupType } from "../api/groups";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { LoadingRegion, SkeletonCard } from "../components/ui/Skeleton";
+import { PageHeader } from "../components/ui/PageHeader";
+import { useAsyncResource } from "../hooks/useAsyncResource";
 import { SUBJECTS, subjectMeta, type SubjectKey } from "../lib/subjects";
-import { LinkButton } from "../components/ui/LinkButton";
 
 const tabIconProps = { size: 14, strokeWidth: 1.75 };
 
@@ -68,30 +71,34 @@ export function GroupsPage() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 300);
   const [subject, setSubject] = useState<SubjectKey | null>(null);
-  const [groups, setGroups] = useState<GroupListItem[] | null>(null);
-
-  useEffect(() => {
-    setGroups(null);
-    let cancelled = false;
-    searchGroups({ type: tab, q: debouncedQuery || undefined, subject: subject ?? undefined }).then((data) => {
-      if (!cancelled) setGroups(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [tab, debouncedQuery, subject]);
+  /*
+    Was `searchGroups(...).then(setGroups)` with no `.catch`, so a failed
+    request left `groups` at null for ever — and null is this page's *loading*
+    state, so the student sat looking at three pulsing grey rectangles with no
+    error, no explanation and no way to retry. Silent and permanent, and
+    invisible in the happy path: the recurring defect class in this codebase.
+  */
+  const resource = useAsyncResource(
+    () => searchGroups({ type: tab, q: debouncedQuery || undefined, subject: subject ?? undefined }),
+    [tab, debouncedQuery, subject],
+  );
+  const groups = resource.data;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <LinkButton to="/" className="mb-4">← Գլխավոր</LinkButton>
-
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-3xl font-semibold text-text">Ուսումնական խմբեր և կրկնուսույցներ</h1>
-          <p className="text-sm text-text-muted">Միացիր ուսումնական խմբի, կամ գտիր կրկնուսույց քո առարկայից։</p>
-        </div>
-        <Button onClick={() => navigate("/groups/create")}>+ Ստեղծել</Button>
-      </div>
+      {/* Was a hand-rolled header: a "← Գլխավոր" text arrow above a `text-3xl`
+          h1 in the body face, beside a CTA in a `justify-between` row — the
+          exact shape PageHeader exists to stop each page re-inventing. */}
+      <PageHeader
+        back={{ to: "/", label: "Գլխավոր" }}
+        title="Ուսումնական խմբեր և կրկնուսույցներ"
+        description="Միացիր ուսումնական խմբի, կամ գտիր կրկնուսույց քո առարկայից։"
+        actions={
+          <Button onClick={() => navigate("/groups/create")} iconLeft={<Plus size={16} strokeWidth={2} aria-hidden />}>
+            Ստեղծել
+          </Button>
+        }
+      />
 
       <SegmentedControl options={TAB_OPTIONS} value={tab} onChange={setTab} className="mb-6 w-fit" />
 
@@ -100,7 +107,7 @@ export function GroupsPage() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Փնտրել վերնագրով կամ նկարագրությամբ…"
-        className="mb-4 w-full rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
+        className="mb-4 w-full rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-text placeholder:text-text-muted focus:border-primary"
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -134,12 +141,18 @@ export function GroupsPage() {
         ))}
       </div>
 
-      {!groups ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {resource.error !== null ? (
+        <ErrorState
+          title="Չհաջողվեց բեռնել խմբերը։"
+          hint="Ստուգիր կապը և փորձիր կրկին։"
+          onRetry={resource.retry}
+        />
+      ) : !groups ? (
+        <LoadingRegion label="Խմբերը բեռնվում են" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-[var(--radius)] border border-border bg-surface" />
+            <SkeletonCard key={i} lines={3} />
           ))}
-        </div>
+        </LoadingRegion>
       ) : groups.length === 0 ? (
         <EmptyState
           icon={<Search size={26} strokeWidth={1.75} />}

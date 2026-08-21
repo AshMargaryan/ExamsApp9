@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Ban, Info, Inbox, Swords } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Ban, Info, Inbox, PictureInPicture2, Swords } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import * as chatApi from "../api/chat";
@@ -10,6 +10,8 @@ import * as teachingApi from "../api/teaching";
 import type { FriendUser } from "../api/friends";
 import { ChallengeModal } from "../components/challenges/ChallengeModal";
 import { ConversationList } from "../components/chat/ConversationList";
+import { ErrorState } from "../components/ui/ErrorState";
+import { LoadingRegion, SkeletonRows } from "../components/ui/Skeleton";
 import { ConversationView } from "../components/chat/ConversationView";
 import { GlobalSearchPanel } from "../components/chat/GlobalSearchPanel";
 import { GroupInfoPanel } from "../components/chat/GroupInfoPanel";
@@ -24,6 +26,10 @@ export function ChatPage() {
   const { openFloatingChat } = useChatWidget();
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
+  const [listError, setListError] = useState<unknown>(null);
+  // Read inside `refresh`'s catch without making it a dependency of anything.
+  const conversationsRef = useRef<Conversation[] | null>(null);
+  conversationsRef.current = conversations;
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -50,11 +56,29 @@ export function ChatPage() {
     return () => clearInterval(interval);
   }, []);
 
+  /*
+    `conversations === null` is this page's *loading* state, and the fetch had
+    no `.catch`, so any failure left the sidebar reading "Բեռնվում է..." for
+    ever with no error and no way to retry — while a 15-second poller kept
+    failing silently behind it. Failure is tracked separately from absence
+    now, exactly as DailyProblemCard was corrected in session 1.
+
+    The rejection is swallowed rather than rethrown because five call sites
+    await this, including a `setInterval`; the last good list stays on screen
+    and the error is reported beside it.
+  */
   function refresh(): Promise<Conversation[]> {
-    return chatApi.listConversations(search || undefined).then((data) => {
-      setConversations(data);
-      return data;
-    });
+    return chatApi
+      .listConversations(search || undefined)
+      .then((data) => {
+        setConversations(data);
+        setListError(null);
+        return data;
+      })
+      .catch((err) => {
+        setListError(err ?? new Error("Չհաջողվեց բեռնել զրույցները։"));
+        return conversationsRef.current ?? [];
+      });
   }
 
   useEffect(() => {
@@ -183,8 +207,21 @@ export function ChatPage() {
         />
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3">
-        {conversations === null ? (
-          <p className="px-2 py-4 text-sm text-text-muted">Բեռնվում է...</p>
+        {conversations === null && listError !== null ? (
+          <ErrorState
+            size="sm"
+            className="m-2"
+            title="Չհաջողվեց բեռնել զրույցները։"
+            hint="Ստուգիր կապը և փորձիր կրկին։"
+            onRetry={() => {
+              setListError(null);
+              void refresh();
+            }}
+          />
+        ) : conversations === null ? (
+          <LoadingRegion label="Զրույցները բեռնվում են" className="px-2 py-2">
+            <SkeletonRows count={5} />
+          </LoadingRegion>
         ) : search.trim() ? (
           <GlobalSearchPanel
             query={search}
@@ -279,7 +316,7 @@ export function ChatPage() {
             title="Բացել լողացող պատուհանում"
             className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm text-text-muted hover:border-primary hover:text-text"
           >
-            <span aria-hidden>⧉</span>
+            <PictureInPicture2 size={15} strokeWidth={1.75} aria-hidden />
             <span className="hidden sm:inline">Լողացող</span>
           </button>
         </header>

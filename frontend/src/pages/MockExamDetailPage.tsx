@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-import { RotateCcw, Sparkles, Play } from "lucide-react";
+import { Check, RotateCcw, Sparkles, Play } from "lucide-react";
 import {
   listMockExams, getExamAttemptHistory, startAttempt, abandonAttempt, formatSeconds,
   type MockExamSummary, type MockExamAttempt,
@@ -208,7 +208,7 @@ export function MockExamDetailPage() {
             <ul className="flex flex-col gap-2 text-sm text-text-muted">
               {RULES.map((rule) => (
                 <li key={rule} className="flex items-start gap-2">
-                  <span className="text-primary">✓</span>
+                  <Check size={15} strokeWidth={2.25} aria-hidden className="mt-0.5 shrink-0 text-primary" />
                   {rule}
                 </li>
               ))}
