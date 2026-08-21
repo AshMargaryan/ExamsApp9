@@ -7,6 +7,7 @@ import * as friendsApi from "../../api/friends";
 import type { FriendRequest, FriendUser, SearchResultUser } from "../../api/friends";
 import { ChallengeInviteCard } from "../challenges/ChallengeInviteCard";
 import { ChallengeModal } from "../challenges/ChallengeModal";
+import { SearchField } from "../ui/SearchField";
 
 type Tab = "friends" | "requests" | "challenges" | "search";
 
@@ -394,16 +395,14 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
 
           {tab === "search" && (
             <>
-              <div className="relative mb-3">
-                <Search size={16} strokeWidth={1.75} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  autoFocus
-                  className="w-full rounded-full border border-border bg-bg py-2.5 pl-9 pr-3 text-text outline-none transition-colors focus:border-primary"
-                  placeholder="Փնտրիր օգտանունով..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
+              <SearchField
+                autoFocus
+                containerClassName="mb-3"
+                label="Փնտրիր օգտանունով"
+                placeholder="Փնտրիր օգտանունով…"
+                value={query}
+                onChange={setQuery}
+              />
               {searching && <p className="py-4 text-center text-text-muted">Փնտրվում է...</p>}
               {!searching && query && results?.length === 0 && <EmptyRow icon={<Search size={28} strokeWidth={1.5} />} text="Ոչինչ չի գտնվել։" />}
               {!query && <EmptyRow icon={<Search size={28} strokeWidth={1.5} />} text="Գրեք օգտանուն՝ դասընկերներ գտնելու համար։" />}

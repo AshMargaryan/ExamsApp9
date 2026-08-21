@@ -11,6 +11,7 @@ import type { FriendUser } from "../api/friends";
 import { ChallengeModal } from "../components/challenges/ChallengeModal";
 import { ConversationList } from "../components/chat/ConversationList";
 import { ErrorState } from "../components/ui/ErrorState";
+import { SearchField } from "../components/ui/SearchField";
 import { LoadingRegion, SkeletonRows } from "../components/ui/Skeleton";
 import { ConversationView } from "../components/chat/ConversationView";
 import { GlobalSearchPanel } from "../components/chat/GlobalSearchPanel";
@@ -199,11 +200,12 @@ export function ChatPage() {
         </button>
       </div>
       <div className="px-3 pb-3">
-        <input
+        <SearchField
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Փնտրել զրույցներում..."
-          className="w-full rounded-md border border-border bg-surface-muted px-3 py-1.5 text-sm text-text"
+          onChange={setSearch}
+          label="Փնտրել զրույցներում"
+          placeholder="Փնտրել զրույցներում…"
+          className="bg-surface-muted text-[length:var(--text-sm)]"
         />
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3">

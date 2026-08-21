@@ -7,6 +7,8 @@ import type { Attachment, Message } from "../../api/chat";
 import { useAuth } from "../../auth/AuthContext";
 import { useAuthenticatedImageUrl } from "../../hooks/useAuthenticatedImageUrl";
 import { isAiSender, messagePreviewText } from "../../lib/chatLabels";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 import { downloadAuthenticatedFile, saveBlobUrl } from "../../lib/authenticatedFile";
 import { ContextCard } from "./ContextCard";
 import { EmojiPicker } from "./EmojiPicker";
@@ -377,7 +379,7 @@ function EditComposer({
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={2}
-        className="resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-primary"
+        className={cn(fieldInputClass, "resize-none px-[var(--space-2)] py-[var(--space-1)] text-[length:var(--text-sm)]")}
       />
       <div className="flex justify-end gap-2 text-xs">
         <button type="button" onClick={onCancel} className="px-2 py-1 text-text-muted hover:text-text">

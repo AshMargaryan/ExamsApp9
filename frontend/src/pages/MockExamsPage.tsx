@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Search } from "lucide-react";
 import {
   listMockExams, getOverview, formatHoursMinutes,
   type MockExamSummary, type MockExamOverview,
@@ -16,6 +15,7 @@ import { LoadingRegion, Skeleton } from "../components/ui/Skeleton";
 import { useAsyncResource } from "../hooks/useAsyncResource";
 import { SUBJECTS, type SubjectKey } from "../lib/subjects";
 import { extractExamNumber } from "../lib/examTitle";
+import { SearchField } from "../components/ui/SearchField";
 
 type StatusFilter = "all" | "not_started" | "in_progress" | "completed";
 type SortKey = "number" | "recent" | "best_score";
@@ -157,22 +157,14 @@ export function MockExamsPage() {
           global focus ring with a second, competing idiom. Both now use the
           kit. */}
       <div className="mb-[var(--space-6)] flex flex-col gap-[var(--space-3)] sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full max-w-xs">
-          <Search
-            size={16}
-            strokeWidth={1.75}
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-[var(--space-3)] -translate-y-1/2 text-text-muted"
-          />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Փնտրել թեստ"
-            placeholder="Փնտրել թեստ..."
-            className="w-full rounded-[var(--radius-md)] border border-border bg-surface py-[var(--space-2)] pr-[var(--space-3)] pl-[var(--space-8)] text-[length:var(--text-sm)] text-text placeholder:text-text-muted"
-          />
-        </div>
+        <SearchField
+          containerClassName="w-full max-w-xs"
+          value={search}
+          onChange={setSearch}
+          label="Փնտրել թեստ"
+          placeholder="Փնտրել թեստ…"
+          className="bg-surface text-[length:var(--text-sm)]"
+        />
         <div className="flex flex-wrap gap-[var(--space-2)]">
           <Select<StatusFilter>
             value={statusFilter}

@@ -24,7 +24,6 @@ import {
   NotebookPen,
   Pencil,
   Pin,
-  Search,
   Star,
   Trash2,
 } from "lucide-react";
@@ -40,6 +39,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { Skeleton } from "../components/ui/Skeleton";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { cn } from "../lib/cn";
+import { SearchField } from "../components/ui/SearchField";
 
 /*
   THE NOTES LIBRARY
@@ -387,28 +387,15 @@ export function NotesHomePage() {
 
         <div className="min-w-0">
           <div className="mb-[var(--space-5)] flex flex-wrap items-center gap-[var(--space-3)]">
-            <div className="relative min-w-0 flex-1">
-              <Search
-                size={16}
-                strokeWidth={1.75}
-                aria-hidden="true"
-                className="pointer-events-none absolute left-[var(--space-3)] top-1/2 -translate-y-1/2 text-text-muted"
-              />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                disabled={view !== "notes"}
-                aria-label="Փնտրել նշումների մեջ"
-                placeholder={view === "notes" ? "Փնտրել նշումների մեջ..." : "Որոնումը հասանելի է բոլոր նշումներում"}
-                className={cn(
-                  "w-full rounded-[var(--radius)] border border-border bg-surface",
-                  "py-[var(--space-2)] pl-[var(--space-9)] pr-[var(--space-3)]",
-                  "text-[length:var(--text-sm)] text-text placeholder:text-text-muted",
-                  "disabled:cursor-not-allowed disabled:opacity-60",
-                )}
-              />
-            </div>
+            <SearchField
+              containerClassName="min-w-0 flex-1"
+              value={search}
+              onChange={setSearch}
+              disabled={view !== "notes"}
+              label="Փնտրել նշումների մեջ"
+              placeholder={view === "notes" ? "Փնտրել նշումների մեջ…" : "Որոնումը հասանելի է բոլոր նշումներում"}
+              className="bg-surface text-[length:var(--text-sm)]"
+            />
             <p aria-live="polite" className="text-[length:var(--text-sm)] text-text-muted">
               {orderedDocuments ? `${orderedDocuments.length} նշում` : ""}
             </p>

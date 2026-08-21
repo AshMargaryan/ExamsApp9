@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { Archive, ArchiveRestore, Pencil, Pin, PinOff, Trash2 } from "lucide-react";
 import type { Conversation } from "../../api/assistant";
 import { Button } from "../ui/Button";
-import { HamburgerIcon, MoreIcon, PlusCircleIcon, SearchIcon } from "./icons";
+import { HamburgerIcon, MoreIcon, PlusCircleIcon } from "./icons";
+import { SearchField } from "../ui/SearchField";
 
 function ConversationRow({
   conversation,
@@ -226,15 +227,13 @@ export function ConversationSidebar({
       </div>
 
       <div className="px-3 py-3">
-        <div className="relative">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
-          <input
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Փնտրել"
-            className="w-full appearance-none rounded-full border border-border bg-surface-muted py-1.5 pr-3 pl-9 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-          />
-        </div>
+        <SearchField
+          value={search}
+          onChange={onSearchChange}
+          label="Փնտրել զրույցներում"
+          placeholder="Փնտրել"
+          className="bg-surface-muted text-[length:var(--text-sm)]"
+        />
       </div>
 
       <Button

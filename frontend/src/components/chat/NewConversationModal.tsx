@@ -3,6 +3,9 @@ import { Check, Globe, Lock, X } from "lucide-react";
 import * as friendsApi from "../../api/friends";
 import type { FriendUser, SearchResultUser } from "../../api/friends";
 import type { GroupPrivacy } from "../../api/chat";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
+import { SearchField } from "../ui/SearchField";
 
 function UserPickerRow({
   user, selected, onToggle,
@@ -188,28 +191,28 @@ export function NewConversationModal({
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 placeholder="Խմբի անունը"
-                className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
+                className={cn(fieldInputClass, "mb-2")}
               />
               <textarea
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 placeholder="Նկարագրություն (ոչ պարտադիր)"
                 rows={2}
-                className="mb-2 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
+                className={cn(fieldInputClass, "mb-2 resize-none text-[length:var(--text-sm)]")}
               />
               <div className="mb-2 flex gap-2">
                 <input
                   value={groupSubject}
                   onChange={(e) => setGroupSubject(e.target.value)}
                   placeholder="Առարկա (օր. Մաթեմատիկա)"
-                  className="min-w-0 flex-1 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
+                  className={cn(fieldInputClass, "w-auto min-w-0 flex-1 text-[length:var(--text-sm)]")}
                 />
                 <input
                   value={groupGrade}
                   onChange={(e) => setGroupGrade(e.target.value.replace(/\D/g, ""))}
                   placeholder="Դասարան"
                   inputMode="numeric"
-                  className="w-24 shrink-0 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
+                  className={cn(fieldInputClass, "w-24 shrink-0 text-[length:var(--text-sm)]")}
                 />
               </div>
               <div className="mb-3 flex gap-2">
@@ -251,11 +254,12 @@ export function NewConversationModal({
             </div>
           )}
 
-          <input
+          <SearchField
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Փնտրել օգտատեր..."
-            className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
+            onChange={setQuery}
+            label="Փնտրել օգտատեր"
+            placeholder="Փնտրել օգտատեր…"
+            containerClassName="mb-3"
           />
 
           <div className="flex flex-col gap-1">

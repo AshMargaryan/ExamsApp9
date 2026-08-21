@@ -66,9 +66,16 @@ export interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   The border recolour stays, because it marks the field itself rather than a
   ring around it, but the ring is no longer suppressed. One focus treatment
   across every control the student can land on.
+
+  `min-h-11` rather than padding alone. The padding here rendered a 39px
+  control, while `Select` and every `Button` in the same rows render 44 —
+  visible as a stepped edge wherever a filter row puts a search box beside a
+  select, and 5px short of the 44px touch floor the rest of the kit holds to.
+  It is `min-h`, not `h`, for the same reason `buttonClasses` is: a textarea
+  that asks for more rows must still get them.
 */
 export const fieldInputClass = cn(
-  "w-full rounded-[var(--radius-md)] border border-border bg-bg",
+  "w-full min-h-11 rounded-[var(--radius-md)] border border-border bg-bg",
   "px-[var(--space-3)] py-[var(--space-2)] text-text",
   "transition-colors focus:border-primary",
   "disabled:cursor-not-allowed disabled:opacity-60",
