@@ -32,8 +32,13 @@ export function GitusInsightCard({
 
   return (
     <div
-      className="grid grid-cols-[auto_1fr] items-start gap-5 rounded-[calc(var(--radius)*1.15)] p-6 sm:p-7"
-      style={{ background: "color-mix(in srgb, var(--color-purple) 8%, var(--color-surface))" }}
+      /* Was `color-mix(--color-purple 8%, --color-surface)` with the heading
+         set to `--color-purple` inline. --color-purple is declared only in the
+         light block and has no dark value, so in dark mode this heading was a
+         dark violet on a near-black ground: measured 2.04:1, effectively
+         invisible. --color-primary-bg / --color-primary are the theme-aware
+         tokens meant for exactly this "primary emphasis that must not shout". */
+      className="grid grid-cols-[auto_1fr] items-start gap-5 rounded-[var(--radius-xl)] bg-primary-bg p-6 sm:p-7"
     >
       <div
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-brand"
@@ -42,7 +47,7 @@ export function GitusInsightCard({
         <Sparkles size={20} strokeWidth={1.75} aria-hidden />
       </div>
       <div>
-        <h3 className="text-base font-semibold" style={{ color: "var(--color-purple)" }}>
+        <h3 className="text-base font-semibold text-primary">
           Gitus-ը նկատեց
         </h3>
         <div className="mt-2 space-y-1.5 text-sm leading-relaxed text-text-muted">

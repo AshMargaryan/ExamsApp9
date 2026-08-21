@@ -54,7 +54,7 @@ function RequestRow({
             type="button"
             disabled={busy}
             onClick={() => respond("block")}
-            className="rounded-md border border-incorrect px-3 py-1 text-xs font-medium text-incorrect hover:bg-incorrect/10 disabled:opacity-60"
+            className="rounded-md border border-incorrect px-3 py-1 text-xs font-medium text-incorrect hover:bg-incorrect-bg disabled:opacity-60"
           >
             Արգելափակել
           </button>

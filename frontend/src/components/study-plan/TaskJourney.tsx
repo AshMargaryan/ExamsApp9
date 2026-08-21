@@ -46,7 +46,7 @@ function Marker({ status, index }: { status: TaskStatus; index: number }) {
   if (status === "completed") {
     return (
       <span
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-correct/15 text-correct"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-correct-bg text-correct"
         aria-hidden
       >
         <Check size={15} strokeWidth={2.5} />

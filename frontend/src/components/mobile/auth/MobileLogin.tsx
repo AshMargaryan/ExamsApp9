@@ -82,7 +82,7 @@ export function MobileLogin() {
         {error && (
           <div
             role="alert"
-            className="mb-5 flex items-start gap-2.5 rounded-2xl border border-incorrect/40 bg-incorrect/10 px-4 py-3 text-[14px] text-incorrect"
+            className="mb-5 flex items-start gap-2.5 rounded-2xl border border-incorrect/40 bg-incorrect-bg px-4 py-3 text-[14px] text-incorrect"
           >
             <AlertCircle size={17} strokeWidth={2} className="mt-px flex-none" />
             {error}

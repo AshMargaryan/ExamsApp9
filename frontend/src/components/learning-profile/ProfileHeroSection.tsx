@@ -220,7 +220,7 @@ export function ProfileHeroSection() {
             {steps.map((step) => (
               <li key={step.key}>
                 {step.done ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-correct/35 bg-correct/10 px-3 py-1.5 text-[12.5px] font-medium text-correct">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-correct/35 bg-correct-bg px-3 py-1.5 text-[12.5px] font-medium text-correct">
                     <Check size={13} strokeWidth={2.5} />
                     {step.label}
                   </span>

@@ -141,7 +141,7 @@ function Row({ children }: { children: ReactNode }) {
 const STATUS_BADGE: Record<string, { label: string; icon: ReactNode; className: string }> = {
   friends: { label: "Ընկեր է", icon: <UserCheck size={12} strokeWidth={2} />, className: "bg-correct-bg text-correct" },
   request_sent: { label: "Ուղարկված է", icon: <Clock size={12} strokeWidth={2} />, className: "bg-surface-muted text-text-muted" },
-  request_received: { label: "Սպասում է քո պատասխանին", icon: <Clock size={12} strokeWidth={2} />, className: "bg-medium/15 text-medium" },
+  request_received: { label: "Սպասում է քո պատասխանին", icon: <Clock size={12} strokeWidth={2} />, className: "bg-medium-bg text-medium" },
 };
 
 export function FriendsModal({ onClose }: { onClose: () => void }) {

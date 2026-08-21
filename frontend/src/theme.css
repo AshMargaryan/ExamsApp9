@@ -67,12 +67,21 @@
 
   /* Apricot. Dark enough here to be legible as text on paper (4.6:1); the
      -bg variant is the fill. */
-  --color-accent: #b0611a;
+  --color-accent: #a35a18;
   --color-accent-bg: #fbeedd;
   --color-accent-line: #e8c9a2;
 
+  /*
+    Two decorative hues, used only as gradient stops (ProgressRing) after the
+    identity work. They are declared in every theme block like everything else
+    — they used to exist only here, so dark mode inherited the *light* values
+    and a dark-violet stop landed on a near-black ground. That was measured at
+    2.04:1 where the coach card set its heading in --color-purple, and it dimmed
+    the middle of every large progress ring. A token that does not appear in
+    the dark block is not a token, it is a light-mode literal.
+  */
   --color-purple: #4a3c8f;
-  --color-pink: #b0611a;
+  --color-pink: #a35a18;
 
   /*
     THE BRAND BAND — deliberately theme-invariant.
@@ -135,9 +144,31 @@
   --color-paper: #fdfdfb;
   --color-paper-line: #e6e3dd;
 
-  --color-correct: #1a9e6d;
+  /*
+    State inks — light mode.
+
+    These are text colours before they are anything else: `text-correct` and
+    `text-incorrect` alone appear on ~180 call sites, including the marks that
+    tell a student whether their answer was right. They must therefore clear
+    4.5:1 on BOTH grounds they are ever set on: `--color-surface` and their own
+    `-bg` tint. The earlier values did not — measured in the browser,
+    `--color-correct` was 3.41:1 on white and 3.06:1 on its own mint, and
+    `--color-medium` was 2.47:1. Contrast had been computed for the primary and
+    the accent against the surface, and the state family had simply never been
+    checked as ink.
+
+    Each value below is the *minimum* darkening that clears 4.5:1 on both
+    grounds with hue and saturation held exactly, so the palette reads as the
+    same colours, only deeper — which suits an ink identity anyway. The `-bg`
+    tints are unchanged, and dark mode is unchanged: measured 5.6–10.7:1
+    throughout, it never had this problem.
+
+    If you change one of these, re-check it against its own `-bg` as well as
+    against the surface. The tint is always the tighter of the two.
+  */
+  --color-correct: #157d56;
   --color-correct-bg: #e4f7ef;
-  --color-incorrect: #d64545;
+  --color-incorrect: #ca2c2c;
   --color-incorrect-bg: #fbe8e8;
 
   /*
@@ -150,27 +181,32 @@
     operation worked", the other means "this answer was right", and they should
     be free to diverge.
   */
-  --color-success: #1a9e6d;
+  --color-success: #157d56;
   --color-success-bg: #e4f7ef;
-  --color-warning: #b47613;
+  --color-warning: #986410;
   --color-warning-bg: #fdf3e0;
-  --color-info: #2563eb;
+  --color-info: #2361eb;
   --color-info-bg: #e6eefc;
 
-  --color-easy: #1a9e6d;
-  --color-medium: #d69a1a;
-  --color-hard: #d64545;
+  --color-easy: #157d56;
+  --color-medium: #8a6311;
+  /* easy/hard borrow --color-correct-bg / --color-incorrect-bg, whose inks
+     they share. Medium was the only tier without a tint of its own, which is
+     why its chips reached for `bg-medium/15` — an alpha of the ink itself,
+     which is not theme-aware and measured 4.42:1 under its own text. */
+  --color-medium-bg: #fdf3e0;
+  --color-hard: #ca2c2c;
 
   /* Rank-tier accents — reserved for #1/#2/#3 placement moments (podium,
      medals, trophy case). Never used as a general-purpose accent, so a gold
      highlight always means "you placed," not just "this is important." */
-  --color-gold: #a8790f;
+  --color-gold: #89630c;
   --color-gold-bg: #f7ecd3;
   --color-gold-line: #d9b768;
   --color-silver: #5a5f66;
   --color-silver-bg: #eceef0;
   --color-silver-line: #b9bec6;
-  --color-bronze: #a15a30;
+  --color-bronze: #99562e;
   --color-bronze-bg: #f3e3d6;
   --color-bronze-line: #cf9868;
 
@@ -413,33 +449,38 @@ html[data-native] [contenteditable="true"] {
   --color-primary-bg: #eaedf7;
   --color-primary-line: #c3cbe6;
 
-  --color-accent: #b0611a;
+  --color-accent: #a35a18;
   --color-accent-bg: #fbeedd;
   --color-accent-line: #e8c9a2;
 
-  --color-correct: #1a9e6d;
+  --color-correct: #157d56;
   --color-correct-bg: #e4f7ef;
-  --color-incorrect: #d64545;
+  --color-incorrect: #ca2c2c;
   --color-incorrect-bg: #fbe8e8;
 
-  --color-success: #1a9e6d;
+  --color-success: #157d56;
   --color-success-bg: #e4f7ef;
-  --color-warning: #b47613;
+  --color-warning: #986410;
   --color-warning-bg: #fdf3e0;
-  --color-info: #2563eb;
+  --color-info: #2361eb;
   --color-info-bg: #e6eefc;
 
-  --color-easy: #1a9e6d;
-  --color-medium: #d69a1a;
-  --color-hard: #d64545;
+  --color-easy: #157d56;
+  --color-medium: #8a6311;
+  /* easy/hard borrow --color-correct-bg / --color-incorrect-bg, whose inks
+     they share. Medium was the only tier without a tint of its own, which is
+     why its chips reached for `bg-medium/15` — an alpha of the ink itself,
+     which is not theme-aware and measured 4.42:1 under its own text. */
+  --color-medium-bg: #fdf3e0;
+  --color-hard: #ca2c2c;
 
-  --color-gold: #a8790f;
+  --color-gold: #89630c;
   --color-gold-bg: #f7ecd3;
   --color-gold-line: #d9b768;
   --color-silver: #5a5f66;
   --color-silver-bg: #eceef0;
   --color-silver-line: #b9bec6;
-  --color-bronze: #a15a30;
+  --color-bronze: #99562e;
   --color-bronze-bg: #f3e3d6;
   --color-bronze-line: #cf9868;
 
@@ -479,6 +520,9 @@ html[data-native] [contenteditable="true"] {
   --color-primary-bg: #1c2138;
   --color-primary-line: #38427a;
 
+  --color-purple: #9b8ae0;
+  --color-pink: #f0a85c;
+
   --color-accent: #f0a85c;
   --color-accent-bg: #2c2317;
   --color-accent-line: #6b4c24;
@@ -497,6 +541,7 @@ html[data-native] [contenteditable="true"] {
 
   --color-easy: #4ade9a;
   --color-medium: #f0be5a;
+  --color-medium-bg: #33270f;
   --color-hard: #f2726e;
 
   --color-gold: #e7c374;
@@ -534,6 +579,9 @@ html[data-native] [contenteditable="true"] {
     --color-primary-bg: #1c2138;
     --color-primary-line: #38427a;
 
+    --color-purple: #9b8ae0;
+    --color-pink: #f0a85c;
+
     --color-accent: #f0a85c;
     --color-accent-bg: #2c2317;
     --color-accent-line: #6b4c24;
@@ -552,6 +600,7 @@ html[data-native] [contenteditable="true"] {
 
     --color-easy: #4ade9a;
     --color-medium: #f0be5a;
+    --color-medium-bg: #33270f;
     --color-hard: #f2726e;
 
     --color-gold: #e7c374;
@@ -785,6 +834,7 @@ html[data-native] [contenteditable="true"] {
   --color-incorrect-bg: var(--color-incorrect-bg);
   --color-easy: var(--color-easy);
   --color-medium: var(--color-medium);
+  --color-medium-bg: var(--color-medium-bg);
   --color-hard: var(--color-hard);
   --color-gold: var(--color-gold);
   --color-gold-bg: var(--color-gold-bg);

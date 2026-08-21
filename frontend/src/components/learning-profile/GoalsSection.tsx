@@ -328,7 +328,7 @@ function GoalRow({
       <div className="flex items-start gap-3">
         <span
           className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-            complete ? "bg-correct/15 text-correct" : "bg-surface-muted text-text-muted"
+            complete ? "bg-correct-bg text-correct" : "bg-surface-muted text-text-muted"
           }`}
           aria-hidden
         >

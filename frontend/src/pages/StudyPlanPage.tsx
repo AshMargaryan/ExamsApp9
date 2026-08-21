@@ -157,7 +157,7 @@ export function StudyPlanPage() {
               <span
                 className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold"
                 style={{
-                  background: "color-mix(in srgb, var(--color-primary) 12%, var(--color-bg))",
+                  background: "var(--color-primary-bg)",
                   color: "var(--color-primary)",
                 }}
               >
@@ -169,8 +169,13 @@ export function StudyPlanPage() {
               <span
                 className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold"
                 style={{
-                  background: "color-mix(in srgb, var(--color-purple) 14%, var(--color-bg))",
-                  color: "var(--color-purple)",
+                  /* --color-purple has no dark-mode value, so this chip was
+                     unreadable in dark while the streak chip beside it — same
+                     shape, same size — used a theme-aware token. Accent keeps
+                     the two chips visually distinct and is measured in both
+                     themes. */
+                  background: "var(--color-accent-bg)",
+                  color: "var(--color-accent)",
                 }}
               >
                 <Hourglass size={15} strokeWidth={2} />

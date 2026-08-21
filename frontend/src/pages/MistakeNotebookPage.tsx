@@ -57,7 +57,7 @@ const CATEGORY_LABEL: Record<ErrorCategory, string> = {
 const CATEGORY_CLASS: Record<ErrorCategory, string> = {
   unclassified: "border-border bg-surface-muted text-text-muted",
   careless_slip: "border-primary/40 bg-primary/10 text-primary",
-  conceptual_gap: "border-incorrect/40 bg-incorrect/10 text-incorrect",
+  conceptual_gap: "border-incorrect/40 bg-incorrect-bg text-incorrect",
   process_error: "border-primary/40 bg-primary/10 text-primary",
   misread_question: "border-border bg-surface-muted text-text-muted",
 };

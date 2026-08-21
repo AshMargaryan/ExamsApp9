@@ -205,7 +205,7 @@ function ExamRow({ exam, onDeleted }: { exam: StudentExam; onDeleted: (id: numbe
             <span
               className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
                 urgency === "critical"
-                  ? "border-incorrect/40 bg-incorrect/10 text-incorrect"
+                  ? "border-incorrect/40 bg-incorrect-bg text-incorrect"
                   : IMPORTANCE_CLASS[exam.importance]
               }`}
             >
