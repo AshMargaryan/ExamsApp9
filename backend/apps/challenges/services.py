@@ -32,7 +32,7 @@ def create_challenge(sender, receiver, subject, topic=None) -> ChallengeInvite:
         sender=sender, receiver=receiver, status=ChallengeStatus.PENDING
     ).first()
     if existing:
-        raise ValueError("Այս օգտատիրոջը արդեն մարտահրավեր եք նետել։")
+        raise ValueError("Այս օգտատիրոջը արդեն մարտահրավեր ես նետել։")
 
     invite = ChallengeInvite.objects.create(
         sender=sender, receiver=receiver, subject=subject, topic=topic,

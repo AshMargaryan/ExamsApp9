@@ -286,7 +286,7 @@ class LogoutView(APIView):
             UserSession.objects.filter(
                 session_id=session_id, user=request.user, revoked_at__isnull=True
             ).update(revoked_at=timezone.now())
-        return Response({"detail": "Դուրս եք եկել համակարգից։"})
+        return Response({"detail": "Դուրս ես եկել համակարգից։"})
 
 
 class SessionListView(generics.ListAPIView):

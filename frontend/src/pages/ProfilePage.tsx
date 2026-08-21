@@ -604,7 +604,7 @@ export function ProfilePage() {
             <AnchoredSection
               id="profile-achievements"
               title="Նվաճումներ և դասակարգում"
-              description="Ինչ եք բացել և ուր եք կանգնած մյուսների կողքին"
+              description="Ինչ ես բացել և ուր ես կանգնած մյուսների կողքին"
             >
               <div className="grid gap-[var(--space-5)]">
                 <AchievementsSection
@@ -629,7 +629,7 @@ export function ProfilePage() {
             <AnchoredSection
               id="profile-activity"
               title="Ակտիվություն"
-              description="Երբ եք սովորել, և ինչ եք արել"
+              description="Երբ ես սովորել, և ինչ ես արել"
             >
               <div className="grid gap-[var(--space-5)]">
                 {activityResource.error !== null && !activityResource.isLoading ? (
@@ -648,7 +648,7 @@ export function ProfilePage() {
             <AnchoredSection
               id="profile-network"
               title="Ուսումնական ցանց"
-              description="Ում հետ եք սովորում"
+              description="Ում հետ ես սովորում"
             >
               <div className="grid gap-[var(--space-5)] lg:grid-cols-2">
                 <FriendsSection />

@@ -39,12 +39,12 @@ type Row = { key: keyof PrivacySettings; label: string; hint: string };
 const PROFILE_ROWS: Row[] = [
   { key: "show_school", label: "Դպրոց", hint: "Քո դպրոցի անունը" },
   { key: "show_age", label: "Տարիք", hint: "Քո տարիքը" },
-  { key: "show_university", label: "Ցանկալի բուհ", hint: "Բուհը, որին պատրաստվում եք" },
+  { key: "show_university", label: "Ցանկալի բուհ", hint: "Բուհը, որին պատրաստվում ես" },
   { key: "show_stats", label: "Ուսումնական վիճակագրություն", hint: "Լուծված խնդիրներ, ճշգրտություն, ժամանակ" },
   { key: "show_ranking", label: "Դասակարգման մեդալներ", hint: "Ամսվա արդյունքներով ստացած մեդալները" },
   { key: "show_achievements", label: "Նվաճումներ", hint: "Ձեռք բերած կրծքանշանները" },
   { key: "show_friends", label: "Ընկերներ", hint: "Քո ընկերների ցանկը" },
-  { key: "show_activity", label: "Ակտիվություն", hint: "Օրերի քարտեզը՝ երբ եք պարապել" },
+  { key: "show_activity", label: "Ակտիվություն", hint: "Օրերի քարտեզը՝ երբ ես պարապել" },
 ];
 
 const LEADERBOARD_ROW: Row = {

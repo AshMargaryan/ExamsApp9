@@ -91,7 +91,7 @@ export function MonthlyRankingCard() {
             <EmptyState
               size="sm"
               icon={<Trophy size={22} strokeWidth={1.75} />}
-              title="Դեռ մրցույթի մեջ չեք"
+              title="Դեռ մրցույթի մեջ չես"
               hint={scope === "friends" ? "Ավելացրու ընկերներ՝ մրցելու համար։" : "Լուծիր հարցեր՝ XP վաստակելու համար։"}
             />
           ) : (

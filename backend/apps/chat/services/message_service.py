@@ -162,7 +162,7 @@ def send_message(
 
 def edit_message(message: Message, user, text: str) -> Message:
     if message.sender_id != user.id:
-        raise ValueError("Կարող եք խմբագրել միայն սեփական հաղորդագրությունները։")
+        raise ValueError("Կարող ես խմբագրել միայն սեփական հաղորդագրությունները։")
     if message.deleted_at is not None:
         raise ValueError("Ջնջված հաղորդագրությունը հնարավոր չէ խմբագրել։")
     text = (text or "").strip()
@@ -178,7 +178,7 @@ def edit_message(message: Message, user, text: str) -> Message:
 
 def delete_message_for_everyone(message: Message, user) -> Message:
     if message.sender_id != user.id:
-        raise ValueError("Կարող եք ջնջել միայն սեփական հաղորդագրությունները։")
+        raise ValueError("Կարող ես ջնջել միայն սեփական հաղորդագրությունները։")
     if message.deleted_at is None:
         message.text = ""
         message.deleted_at = timezone.now()

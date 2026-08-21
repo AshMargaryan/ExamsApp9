@@ -60,7 +60,7 @@ export function WeeklyProgressChart({ points }: { points: WeeklyProgressPoint[] 
            the visually-hidden list below, which is the actual text
            alternative. */
         role="img"
-        aria-label={`Վերջին 8 շաբաթում լուծված է ${totalSolved} հարց, որից ${totalCorrect} ճիշտ։ Պարապել եք ${activeWeeks} շաբաթ։`}
+        aria-label={`Վերջին 8 շաբաթում լուծված է ${totalSolved} հարց, որից ${totalCorrect} ճիշտ։ Պարապել ես ${activeWeeks} շաբաթ։`}
       >
         {points.map((p) => {
           const barHeight = Math.round((p.solved / max) * BAR_MAX_HEIGHT);

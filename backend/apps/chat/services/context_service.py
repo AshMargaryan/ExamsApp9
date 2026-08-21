@@ -83,7 +83,7 @@ def _build_profile(user_id: int, sender) -> dict:
     # other user's, which would need its own privacy check. Matches spec
     # section 22 ("Send a profile card" from your own profile page).
     if user_id != sender.id:
-        raise ValueError("Կարող եք կիսվել միայն սեփական պրոֆիլով։")
+        raise ValueError("Կարող ես կիսվել միայն սեփական պրոֆիլով։")
     profile = Profile.objects.filter(user_id=user_id).first()
     if profile is None:
         raise ValueError("Պրոֆիլը հասանելի չէ։")

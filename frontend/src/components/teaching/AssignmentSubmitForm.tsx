@@ -19,7 +19,7 @@ export function AssignmentSubmitForm({
   function handleRequestSubmit() {
     setError(null);
     if (!explanation.trim()) {
-      setError("Խնդրում ենք գրել բացատրություն, թե ինչ եք սովորել։");
+      setError("Գրիր բացատրություն, թե ինչ ես սովորել։");
       return;
     }
     setConfirming(true);

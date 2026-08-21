@@ -64,7 +64,7 @@ function WebForgotPasswordPage() {
 
   return (
     <AuthScreen
-      title="Մոռացե՞լ եք գաղտնաբառը"
+      title="Մոռացե՞լ ես գաղտնաբառը"
       subtitle="Մուտքագրիր քո էլ. հասցեն, և մենք կուղարկենք վերականգնման հղում։"
       onSubmit={handleSubmit}
     >

@@ -188,7 +188,7 @@ export function CompleteRegistrationPage() {
               <SearchSelect placeholder="Փնտրիր դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
             </div>
 
-            <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
+            <label className={labelClass}>Բուհ, որին ցանկանում ես դիմել</label>
             <div className="mb-4">
               <SearchSelect
                 placeholder="Փնտրիր բուհ..."

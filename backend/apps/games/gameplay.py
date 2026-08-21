@@ -174,7 +174,7 @@ def record_answer(room: GameRoom, participant: GameParticipant, question_id: int
         raise ValueError("Ժամանակը սպառված է այս հարցի համար։")
 
     if has_answered(participant, game_question):
-        raise ValueError("Այս հարցին արդեն պատասխանել եք։")
+        raise ValueError("Այս հարցին արդեն պատասխանել ես։")
 
     time_taken = None
     if participant.current_question_started_at:

@@ -287,7 +287,7 @@ function WebRegisterPage() {
             )}
           </Field>
 
-          <Field label="Բուհ, որին ցանկանում եք դիմել">
+          <Field label="Բուհ, որին ցանկանում ես դիմել">
             {() => (
               <SearchSelect
                 placeholder="Փնտրիր բուհ..."

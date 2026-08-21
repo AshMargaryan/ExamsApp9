@@ -86,7 +86,7 @@ function WebLoginPage() {
       <AuthSubmitButton loading={submitting}>Մուտք գործել</AuthSubmitButton>
 
       <p className="mt-3 flex justify-center">
-        <LinkButton to="/forgot-password">Մոռացե՞լ եք գաղտնաբառը</LinkButton>
+        <LinkButton to="/forgot-password">Մոռացե՞լ ես գաղտնաբառը</LinkButton>
       </p>
 
       <p className="mt-4 text-center text-sm text-text-muted">
