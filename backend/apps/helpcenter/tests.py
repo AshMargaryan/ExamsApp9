@@ -1,4 +1,7 @@
+from io import StringIO
+
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -275,3 +278,90 @@ class TicketAttachmentValidationTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(TicketAttachment.objects.get().mime_type, "image/png")
+
+class HelpRegisterCommandTests(TestCase):
+    """`fix_help_register` converts the register, and only the register.
+
+    The risk this guards is the one DESIGN.md §4 records: a blanket sweep over
+    `-եք` would rewrite a genuine plural into a grammatical error, so the
+    command works from a reviewed table of exact strings. These assert that it
+    changes what it should, leaves a real plural alone, and is safe to rerun.
+    """
+
+    def setUp(self):
+        self.category = _make_category(key="ai-assistant", name="AI Օգնական")
+
+    def _article(self, *, slug, summary, content):
+        return Article.objects.create(
+            category=self.category, slug=slug, title="Ինչպե՞ս", summary=summary, content=content
+        )
+
+    def _run(self, **opts):
+        out = StringIO()
+        call_command("fix_help_register", stdout=out, **opts)
+        return out.getvalue()
+
+    def test_converts_the_formal_register(self):
+        article = self._article(
+            slug="ask-ai",
+            summary="AI Օգնականը կարող է օգնել ձեզ ուսումնական հարցերում։",
+            content="Բացեք **AI Օգնական** բաժինը և գրեք ձեր հարցը։",
+        )
+
+        self._run()
+
+        article.refresh_from_db()
+        self.assertEqual(article.summary, "AI Օգնականը կարող է օգնել քեզ ուսումնական հարցերում։")
+        self.assertEqual(article.content, "Բացիր **AI Օգնական** բաժինը և գրիր քո հարցը։")
+
+    def test_dry_run_writes_nothing(self):
+        article = self._article(
+            slug="ask-ai",
+            summary="AI Օգնականը կարող է օգնել ձեզ ուսումնական հարցերում։",
+            content="Բացեք **AI Օգնական** բաժինը և գրեք ձեր հարցը։",
+        )
+
+        output = self._run(dry_run=True)
+
+        article.refresh_from_db()
+        self.assertIn("would be updated", output)
+        self.assertIn("ձեզ", article.summary)
+
+    def test_rerunning_changes_nothing(self):
+        self._article(
+            slug="ask-ai",
+            summary="AI Օգնականը կարող է օգնել ձեզ ուսումնական հարցերում։",
+            content="Բացեք **AI Օգնական** բաժինը և գրեք ձեր հարցը։",
+        )
+        self._run()
+
+        output = self._run()
+
+        self.assertIn("0 article(s) updated", output)
+
+    def test_leaves_a_genuine_plural_alone(self):
+        """"ընկերներ եք" is two people, not politeness."""
+        article = self._article(
+            slug="friends-note",
+            summary="Դուք և Անին այժմ ընկերներ եք։",
+            content="Դուք և Անին այժմ ընկերներ եք։",
+        )
+
+        output = self._run()
+
+        article.refresh_from_db()
+        self.assertEqual(article.content, "Դուք և Անին այժմ ընկերներ եք։")
+        # Reported for a human to judge, never rewritten.
+        self.assertIn("friends-note", output)
+
+    def test_reports_an_article_the_table_has_never_seen(self):
+        self._article(
+            slug="unknown-article",
+            summary="Խնդրում ենք ուղարկեք ձեր հարցը։",
+            content="Սեղմեք կոճակը։",
+        )
+
+        output = self._run()
+
+        self.assertIn("unknown-article", output)
+        self.assertIn("Still reads as formal", output)
