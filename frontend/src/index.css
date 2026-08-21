@@ -36,6 +36,37 @@ body {
   }
 }
 
+/*
+  Grows a small control's touch target without growing the control.
+
+  The persistent header's right-hand cluster is 34px icon buttons, while the
+  hamburger and reload on its left are 44px — the same row disagreeing with
+  itself, with the smaller half being the one a thumb reaches for on a phone.
+  They cannot simply be made bigger: at 375px that row is already budgeted to
+  the pixel (see HeaderStrip's own note — 128px of reserved overlay, 222px of
+  cluster, 8px of gutter, in a 375px viewport), and widening the buttons is
+  what used to push the account menu off-screen.
+
+  So the target grows and the button does not. The pseudo-element is centred
+  on the control and clipped by nothing, so it costs no layout at all. The
+  defaults are chosen to tile the header's own `gap-1.5`: 40px wide expands a
+  34px button by exactly 3px per side, meeting its neighbour's target with no
+  overlap and no dead strip between them, and 44px tall simply fills the
+  64px-high row. Raise either with --tap-w / --tap-h where there is room.
+*/
+.tap-target {
+  position: relative;
+}
+.tap-target::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: max(100%, var(--tap-w, 40px));
+  height: max(100%, var(--tap-h, 44px));
+}
+
 /* Minimal markdown spacing for AI assistant chat messages. */
 .prose-chat p {
   margin: 0 0 0.6em 0;

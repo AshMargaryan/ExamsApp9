@@ -47,7 +47,7 @@ function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; 
       to={item.to}
       aria-current={active ? "page" : undefined}
       title={collapsed ? item.label : undefined}
-      className={`relative flex items-center gap-3 rounded-[var(--radius)] py-2.5 text-[15px] font-medium transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+      className={`relative flex min-h-11 items-center gap-3 rounded-[var(--radius)] py-2.5 text-[15px] font-medium transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
         active ? "bg-primary/10 text-primary" : "text-text hover:bg-surface-muted"
       } ${collapsed ? "justify-center px-0" : "px-3.5"}`}
     >

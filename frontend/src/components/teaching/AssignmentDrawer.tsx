@@ -73,7 +73,7 @@ export function AssignmentDrawer() {
         onClick={handleToggle}
         aria-label="Առաջադրանքներ"
         title="Առաջադրանքներ"
-        className="flex h-[34px] items-center gap-1.5 rounded-full border border-border bg-surface px-2 text-sm font-medium text-text transition-colors hover:border-primary sm:px-3"
+        className="tap-target flex h-[34px] items-center gap-1.5 rounded-full border border-border bg-surface px-2 text-sm font-medium text-text transition-colors hover:border-primary sm:px-3"
       >
         <span aria-hidden="true"><ClipboardCheck size={16} strokeWidth={1.75} /></span>
         <span className="hidden sm:inline">Առաջադրանքներ</span>

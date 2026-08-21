@@ -88,7 +88,7 @@ export function HeaderStrip() {
               onClick={toggleTheme}
               aria-label={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
               title={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-text-muted transition-colors hover:border-primary hover:text-text"
+              className="tap-target flex h-[34px] w-[34px] items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-text-muted transition-colors hover:border-primary hover:text-text"
             >
               {theme === "dark" ? (
                 <Sun size={16} strokeWidth={1.75} aria-hidden />

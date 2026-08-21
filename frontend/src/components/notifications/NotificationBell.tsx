@@ -346,7 +346,7 @@ export function NotificationBell() {
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         className={cn(
-          "relative flex h-[34px] w-[34px] items-center justify-center rounded-[var(--radius-full)] border",
+          "tap-target flex h-[34px] w-[34px] items-center justify-center rounded-[var(--radius-full)] border",
           "transition-colors duration-[var(--motion-fast)]",
           open ? "border-primary bg-primary-bg text-primary" : "border-border bg-surface text-text-muted hover:border-primary hover:text-text",
         )}
