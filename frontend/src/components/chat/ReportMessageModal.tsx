@@ -64,7 +64,7 @@ export function ReportMessageModal({ messageId, onClose }: { messageId: number; 
               onChange={(e) => setDetails(e.target.value)}
               placeholder="Մանրամասներ (ոչ պարտադիր)"
               rows={2}
-              className="mb-3 w-full resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+              className="mb-3 w-full resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-primary"
             />
             <button
               type="button"

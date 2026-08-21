@@ -120,7 +120,7 @@ export function OtpInput({
             }}
             className={cn(
               "h-12 w-10 rounded-[var(--radius-md)] border bg-bg text-center",
-              "text-[length:var(--text-lg)] tabular-nums text-text outline-none",
+              "text-[length:var(--text-lg)] tabular-nums text-text",
               "transition-colors duration-[var(--motion-fast)]",
               invalid ? "border-incorrect" : "border-border focus:border-primary",
             )}

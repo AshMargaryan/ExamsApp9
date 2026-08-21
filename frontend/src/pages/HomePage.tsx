@@ -88,7 +88,7 @@ function ExamDatePrompt({ onUpdated }: { onUpdated: (p: Profile) => void }) {
           aria-label="Քննության ամսաթիվը"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-sm)] text-text outline-none focus:border-primary"
+          className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-sm)] text-text focus:border-primary"
         />
         <button
           type="button"

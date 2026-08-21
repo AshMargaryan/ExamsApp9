@@ -158,7 +158,7 @@ export function TeachingModal({
     <>
       <input
         autoFocus
-        className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+        className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
         placeholder="Փնտրեք օգտանունով..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}

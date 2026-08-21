@@ -136,7 +136,7 @@ function SendRequestCard({ onRefreshChildren }: { onRefreshChildren: () => void 
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Երեխայի օգտանունը..."
-        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary"
+        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary"
       />
 
       {error && <p className="text-sm text-incorrect">{error}</p>}
@@ -236,7 +236,7 @@ function GoalForm({
         <select
           value={goalType}
           onChange={(e) => setGoalType(e.target.value as GoalType)}
-          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary"
+          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-primary"
         >
           {GOAL_TYPES.map((t) => (
             <option key={t} value={t}>{GOAL_TYPE_LABELS[t]}</option>
@@ -250,7 +250,7 @@ function GoalForm({
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
             required
-            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary"
+            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-primary"
           >
             <option value="">Ընտրեք...</option>
             {subjects.map((s) => (
@@ -266,7 +266,7 @@ function GoalForm({
           min={1}
           value={targetValue}
           onChange={(e) => setTargetValue(e.target.value)}
-          className="w-24 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary"
+          className="w-24 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-primary"
         />
       </div>
       <Button type="submit" size="sm" loading={busy}>

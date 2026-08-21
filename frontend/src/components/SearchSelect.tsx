@@ -70,14 +70,14 @@ export function SearchSelect({
         <button
           type="button"
           onClick={handleFocus}
-          className="flex w-full items-center justify-between rounded-md border border-border bg-bg px-3 py-2 text-left text-text outline-none focus:border-primary"
+          className="flex w-full items-center justify-between rounded-md border border-border bg-bg px-3 py-2 text-left text-text focus:border-primary"
         >
           <span className="truncate">{value.label}</span>
           <span className="ml-2 shrink-0 text-xs text-text-muted hover:text-primary">Փոխել</span>
         </button>
       ) : (
         <input
-          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
           placeholder={placeholder}
           value={query}
           onFocus={handleFocus}

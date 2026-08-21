@@ -94,7 +94,7 @@ export function CompleteRegistrationPage() {
   }
 
   const inputClass =
-    "mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
+    "mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary";
   const labelClass = "mb-1 block text-sm text-text-muted";
 
   if (!role) {

@@ -84,7 +84,7 @@ export function ChallengeModal({
                       setSubjectId(Number(e.target.value));
                       setTopicId(null);
                     }}
-                    className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+                    className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
                   >
                     {subjects.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -100,7 +100,7 @@ export function ChallengeModal({
                     <select
                       value={topicId ?? ""}
                       onChange={(e) => setTopicId(e.target.value ? Number(e.target.value) : null)}
-                      className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+                      className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
                     >
                       <option value="">Բոլոր թեմաները</option>
                       {topics.map((t) => (

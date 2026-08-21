@@ -321,7 +321,7 @@ function FocusPanel({
                 setNote(e.target.value);
                 setNoteSaved(false);
               }}
-              className="min-w-0 flex-1 rounded-md border border-border bg-surface px-2.5 py-2 text-sm text-text outline-none focus:border-primary"
+              className="min-w-0 flex-1 rounded-md border border-border bg-surface px-2.5 py-2 text-sm text-text focus:border-primary"
             />
             {noteDirty ? (
               <Button

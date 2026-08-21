@@ -377,7 +377,7 @@ function EditComposer({
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={2}
-        className="resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+        className="resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-primary"
       />
       <div className="flex justify-end gap-2 text-xs">
         <button type="button" onClick={onCancel} className="px-2 py-1 text-text-muted hover:text-text">

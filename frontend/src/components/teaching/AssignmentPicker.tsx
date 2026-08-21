@@ -247,7 +247,7 @@ export function AssignmentPicker({
               value={contentQuery}
               onChange={(e) => setContentQuery(e.target.value)}
               placeholder="Փնտրել..."
-              className="w-full rounded-md border border-border bg-bg py-2 pl-9 pr-3 text-sm text-text outline-none focus:border-primary"
+              className="w-full rounded-md border border-border bg-bg py-2 pl-9 pr-3 text-sm text-text focus:border-primary"
             />
           </div>
 
@@ -290,7 +290,7 @@ export function AssignmentPicker({
                 value={studentQuery}
                 onChange={(e) => setStudentQuery(e.target.value)}
                 placeholder="Փնտրել աշակերտի..."
-                className="w-full rounded-md border border-border bg-bg py-2 pl-9 pr-3 text-sm text-text outline-none focus:border-primary"
+                className="w-full rounded-md border border-border bg-bg py-2 pl-9 pr-3 text-sm text-text focus:border-primary"
               />
             </div>
           )}
@@ -354,13 +354,13 @@ export function AssignmentPicker({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Վերնագիր"
-                  className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                  className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
                 />
                 <textarea
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="Հաղորդագրություն"
-                  className="min-h-16 w-full resize-y rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                  className="min-h-16 w-full resize-y rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
                 />
                 <div>
                   <label className="mb-1 block text-xs text-text-muted" htmlFor="assign-picker-due">
@@ -371,7 +371,7 @@ export function AssignmentPicker({
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full max-w-48 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                    className="w-full max-w-48 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary"
                   />
                 </div>
               </div>

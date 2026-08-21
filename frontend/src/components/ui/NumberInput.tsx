@@ -94,6 +94,21 @@ export function NumberInput({
         className={cn(
           "flex h-11 min-w-0 flex-1 items-center rounded-[var(--radius)] border bg-bg px-3",
           "transition-colors duration-[var(--motion-fast)]",
+          /* The ring belongs on the visible box, not on the borderless
+             input inside it, so the wrapper carries it — the same idiom
+             AppearanceSection's radio labels use. */
+          "has-[:focus-visible]:outline has-[:focus-visible]:outline-[length:var(--focus-ring-width)]",
+          "has-[:focus-visible]:outline-offset-[var(--focus-ring-offset)] has-[:focus-visible]:outline-[var(--focus-ring-color)]",
+          /* The ring belongs on the visible box, not on the borderless input
+             inside it — so the wrapper carries it, the same way
+             AppearanceSection's radio labels do. */
+          "has-[:focus-visible]:outline has-[:focus-visible]:outline-[length:var(--focus-ring-width)]",
+          "has-[:focus-visible]:outline-offset-[var(--focus-ring-offset)] has-[:focus-visible]:outline-[var(--focus-ring-color)]",
+          /* The ring belongs on the visible box, not on the borderless input
+             inside it — so the wrapper carries it, the same way
+             AppearanceSection's radio labels do. */
+          "has-[:focus-visible]:outline has-[:focus-visible]:outline-[length:var(--focus-ring-width)]",
+          "has-[:focus-visible]:outline-offset-[var(--focus-ring-offset)] has-[:focus-visible]:outline-[var(--focus-ring-color)]",
           invalid ? "border-incorrect" : "border-border focus-within:border-primary",
           disabled && "opacity-50",
         )}

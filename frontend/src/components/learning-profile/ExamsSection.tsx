@@ -70,7 +70,7 @@ function ExamForm({ onCreated, onCancel }: { onCreated: (e: StudentExam) => void
   }
 
   const inputClass =
-    "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary";
+    "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary";
 
   return (
     <div className="rounded-[var(--radius)] border border-border bg-bg p-4 sm:p-5">

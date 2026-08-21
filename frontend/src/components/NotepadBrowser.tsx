@@ -128,7 +128,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
                   if (e.key === "Enter") commitRename();
                   if (e.key === "Escape") setEditingId(null);
                 }}
-                className="mr-2 min-w-0 flex-1 rounded border border-primary bg-surface px-1 py-0.5 text-sm outline-none"
+                className="mr-2 min-w-0 flex-1 rounded border border-primary bg-surface px-1 py-0.5 text-sm"
               />
             ) : (
               <button

@@ -325,7 +325,7 @@ export function MessageInput({
             placeholder="Գրեք հաղորդագրություն..."
             rows={1}
             disabled={disabled}
-            className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary disabled:opacity-50"
+            className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary disabled:opacity-50"
           />
 
           {!text.trim() && attachments.length === 0 ? (

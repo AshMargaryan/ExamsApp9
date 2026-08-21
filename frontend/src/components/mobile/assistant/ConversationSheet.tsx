@@ -101,7 +101,7 @@ export function ConversationSheet({
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Փնտրել զրույց"
-              className="w-full rounded-2xl border border-border bg-bg py-3 pl-10 pr-3 text-[16px] text-text outline-none focus:border-primary"
+              className="w-full rounded-2xl border border-border bg-bg py-3 pl-10 pr-3 text-[16px] text-text focus:border-primary"
               autoCapitalize="none"
               autoCorrect="off"
             />

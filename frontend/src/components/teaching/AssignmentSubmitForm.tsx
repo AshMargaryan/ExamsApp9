@@ -44,7 +44,7 @@ export function AssignmentSubmitForm({
         Ի՞նչ սովորեցիր։ Գրիր բացատրություն և ուղարկիր ուսուցչին ստուգելու համար։
       </label>
       <textarea
-        className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+        className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text focus:border-primary"
         rows={3}
         value={explanation}
         onChange={(e) => setExplanation(e.target.value)}

@@ -233,7 +233,7 @@ export function StudentDashboardPage() {
                     type="date"
                     value={examDateInput}
                     onChange={(e) => setExamDateInput(e.target.value)}
-                    className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+                    className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus:border-primary"
                   />
                   <Button size="sm" onClick={handleSetExamDate}>
                     Հաստատել

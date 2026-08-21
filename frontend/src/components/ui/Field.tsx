@@ -55,10 +55,22 @@ export interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   containerClassName?: string;
 }
 
+/*
+  `outline-none` used to sit here, which meant a keyboard user moving through
+  a form watched the indicator change character halfway: buttons, links and
+  the section nav draw the global 2px primary ring from theme.css, and then
+  the text inputs drew nothing but a 1px border recolour. The global rule is
+  written with `:where()` so it has zero specificity — any utility beats it,
+  and `outline-none` did.
+
+  The border recolour stays, because it marks the field itself rather than a
+  ring around it, but the ring is no longer suppressed. One focus treatment
+  across every control the student can land on.
+*/
 export const fieldInputClass = cn(
   "w-full rounded-[var(--radius-md)] border border-border bg-bg",
   "px-[var(--space-3)] py-[var(--space-2)] text-text",
-  "outline-none transition-colors focus:border-primary",
+  "transition-colors focus:border-primary",
   "disabled:cursor-not-allowed disabled:opacity-60",
 );
 
