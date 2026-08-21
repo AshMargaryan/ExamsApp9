@@ -46,7 +46,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
                * keeps it correct for the ~45 routes at once, and it is the
                * only place that knows whether the launchers are mounted at
                * all (the native shell renders none of this). */}
-              <div className="pb-[84px] pl-[var(--rail-w)] pt-16">{children}</div>
+              <div className="pb-[var(--chrome-bottom)] pl-[var(--rail-w)] pt-[var(--chrome-top)]">{children}</div>
               <ReloadButton />
               {showStudyTools && <FloatingAssistantWidget />}
               {showStudyTools && <ToolsDock />}

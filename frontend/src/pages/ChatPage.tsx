@@ -249,7 +249,7 @@ export function ChatPage() {
   );
 
   return (
-    <div className="flex h-screen bg-bg">
+    <div className="flex h-[calc(100dvh-var(--chrome-top)-var(--chrome-bottom))] bg-bg">
       <div className={`${sidebarOpen ? "block" : "hidden"} fixed inset-0 z-20 md:hidden`}>
         <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
         <div className="absolute inset-y-0 left-0 flex w-80 flex-col border-r border-border bg-surface">

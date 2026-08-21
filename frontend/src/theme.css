@@ -364,6 +364,16 @@
   --mobile-topbar-h: 3.25rem;
   --mobile-tabbar-h: 3.5rem;
 
+  /* Height of the persistent header strip, and the space reserved below every
+     page for the floating launchers pinned to the bottom corners. AppChrome
+     turns these into the page's padding; a page that wants to fill exactly
+     what is left of the viewport (chat) subtracts both instead of guessing.
+     Before this the chat pane was a flat `h-screen` inside that padding, so it
+     overflowed by exactly these two numbers and put the message composer —
+     the only thing the page is for — permanently below the fold. */
+  --chrome-top: 4rem;
+  --chrome-bottom: 84px;
+
   /* Width of the persistent desktop navigation rail. Zero below the lg
      breakpoint, where navigation collapses back into the drawer — so every
      element that has to clear the rail (page content, header strip, the
