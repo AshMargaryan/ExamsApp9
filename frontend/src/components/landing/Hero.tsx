@@ -1,156 +1,136 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight, Clock, ListChecks, Zap } from "lucide-react";
+import { DemoNote } from "./Section";
 
-function useHeroStage() {
-  const [stage, setStage] = useState(0);
-  useEffect(() => {
-    const timers = [
-      setTimeout(() => setStage(1), 250),
-      setTimeout(() => setStage(2), 850),
-      setTimeout(() => setStage(3), 1500),
-      setTimeout(() => setStage(4), 2200),
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, []);
-  return stage;
-}
+/*
+  MOVEMENT 1 — the question.
 
-function HeroMockup() {
-  const stage = useHeroStage();
+  What this replaces: a headline reading "Սովորիր ավելի խելացի։ Հասիր ավելի
+  հեռու։" beside a mockup that ran on four hardcoded setTimeouts and whose
+  payoff was a leaderboard rank moving from #7 to #4. Two things were wrong
+  with that. The slogan fits any education product in any language, which is
+  the one thing this page cannot afford; and the first idea the page taught a
+  visitor was that Gitus is about beating classmates.
 
-  return (
-    <div
-      className={`relative w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-2xl shadow-black/10 transition-all duration-700 ${
-        stage >= 1 ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-      }`}
-    >
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm font-semibold text-text">Այսօրվա նպատակը</p>
-        <span
-          className={`flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-semibold text-text transition-all duration-500 ${
-            stage >= 1 ? "scale-100 opacity-100" : "scale-75 opacity-0"
-          }`}
-        >
-          🔥 7 օրյա շարք
-        </span>
-      </div>
+  What replaces it is the question a student preparing for the ընդունելության
+  քննություններ actually asks at 9pm — "what do I study now?" — answered on
+  screen, immediately, by the real thing.
 
-      <div className="rounded-xl border border-border bg-bg p-4">
-        <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 font-medium text-text">🧮 Մաթեմատիկա</span>
-          <span className="text-text-muted">Քառակուսի հավասարումներ</span>
-        </div>
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-muted">
-          <div
-            className="h-full rounded-full bg-accent transition-all duration-[1200ms] ease-out"
-            style={{ width: stage >= 2 ? "82%" : "0%" }}
-          />
-        </div>
-        <p className="mt-1.5 text-right text-xs font-medium text-text-muted">
-          {stage >= 2 ? "82%" : "0%"}
-        </p>
-      </div>
+  The card below is the shape `apps/profiles/analytics.py:next_mission()`
+  returns: a title built from the weakest topic, a question count derived from
+  the mistake count, an estimate, potential XP, and — the part that matters —
+  a `reason` string. Nothing here is a picture of a feature. It is the output
+  format of an engine that exists.
 
-      <div className="mt-4 rounded-xl border border-border bg-bg p-4">
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-text">🤖 AI Tutor</p>
-        <p className="mb-2 inline-block rounded-lg rounded-tr-sm bg-surface-muted px-3 py-1.5 text-xs text-text">
-          Ինչպե՞ս լուծեմ այս հավասարումը։
-        </p>
-        <div
-          className={`inline-block rounded-lg rounded-tl-sm bg-primary px-3 py-1.5 text-xs text-primary-contrast transition-opacity duration-500 ${
-            stage >= 3 ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {stage >= 3 ? "Եկ քայլ առ քայլ լուծենք…" : "···"}
-        </div>
-      </div>
+  The values are invented, because a visitor has no account; the note says so.
+*/
 
-      <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-bg px-4 py-3">
-        <span
-          className={`text-sm font-semibold text-correct transition-all duration-500 ${
-            stage >= 4 ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
-          }`}
-        >
-          +42 XP
-        </span>
-        <span className="flex items-center gap-1.5 text-sm text-text">
-          <span className={stage >= 4 ? "text-text-muted line-through" : "font-semibold"}>#7</span>
-          {stage >= 4 && (
-            <>
-              <span className="text-text-muted">→</span>
-              <span className="font-semibold text-primary">#4</span>
-            </>
-          )}
-        </span>
-      </div>
-    </div>
-  );
-}
+const MISSION = {
+  topic: "Քառակուսի հավասարումներ",
+  questionCount: 10,
+  minutes: 15,
+  xp: 30,
+  mistakes: 5,
+};
 
 export function Hero() {
+  /* RESOLVE (see landing.css): the answer arrives out of focus and settles.
+     One beat, not a sequence — the old hero's four-stage timeline made the
+     reader wait 2.2 seconds to see a static card. */
+  const [resolved, setResolved] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setResolved(true), 420);
+    return () => window.clearTimeout(t);
+  }, []);
+
   return (
-    <div id="top" className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24">
-      {/* Subtle grid + soft glow — no gradients/blobs */}
+    <div id="top" className="lp-night relative overflow-hidden">
+      {/* A single soft lapis rise behind the question. The universe below is
+          where this page spends its spectacle; the hero stays quiet so the
+          transition into it reads as opening up rather than continuing. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
         style={{
-          backgroundImage:
-            "linear-gradient(to right, var(--color-border) 1px, transparent 1px), linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-          opacity: 0.35,
-          maskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 90%)",
-          WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 90%)",
+          background:
+            "radial-gradient(ellipse 70% 100% at 50% 0%, color-mix(in srgb, var(--color-brand-1) 40%, transparent), transparent 70%)",
         }}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-[-10%] left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full opacity-[0.10]"
-        style={{ backgroundColor: "var(--color-primary)", filter: "blur(120px)" }}
-      />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8 lg:px-8">
-        <div className="text-center lg:text-left">
-          <h1 className="text-balance text-4xl leading-[1.1] font-bold tracking-tight text-text sm:text-5xl lg:text-6xl">
-            Սովորիր ավելի խելացի։
-            <br />
-            Հասիր ավելի հեռու։
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-28 pb-20 sm:gap-12 sm:px-6 sm:pt-40 sm:pb-32 lg:px-8 xl:grid-cols-[1fr_minmax(0,26rem)] xl:gap-16">
+        <div>
+          <h1 className="font-display text-balance text-[clamp(2.5rem,7vw,4.75rem)] leading-[var(--leading-display)] font-normal text-night-ink">
+            Ի՞նչ սովորեմ հիմա։
           </h1>
-
-          {/* subtle Armenian-inspired diamond-chain divider */}
-          <div className="my-6 flex justify-center gap-2 lg:justify-start" aria-hidden>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <span
-                key={i}
-                className="h-2 w-2 rotate-45 border border-primary"
-                style={{ opacity: 0.25 + i * 0.12 }}
-              />
-            ))}
-          </div>
-
-          <p className="mx-auto max-w-lg text-lg text-text-muted lg:mx-0">
-            Gitus-ը AI ուսումնական հարթակ է, որը օգնում է հասկանալ բարդ թեմաները, պատրաստվել քննություններին
-            և կառուցել քո սեփական առաջընթացը։
+          {/* Steps down on a phone. At `--text-xl` (22px) this ran to five
+              lines at 360px and read as a second headline competing with the
+              first, rather than as the sentence under it. */}
+          <p className="mt-6 max-w-lg text-[length:var(--text-lg)] leading-[var(--leading-body)] text-night-ink-muted sm:text-[length:var(--text-xl)] sm:leading-[var(--leading-snug)]">
+            Gitus-ը հետևում է, թե որ թեմաներում ես սխալվում, և ամեն օր ասում է՝ կոնկրետ ինչ պարապել
+            հաջորդը։ Ոչ թե ցուցակ առաջարկում է։ Մեկ քայլ։
           </p>
 
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Link
               to="/register"
-              className="bg-primary w-full rounded-lg px-6 py-3.5 text-center text-base font-semibold text-primary-contrast shadow-lg shadow-violet-600/20 transition-colors hover:bg-primary-hover sm:w-auto"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-full)] bg-night-ink px-7 py-3.5 text-[length:var(--text-base)] font-semibold whitespace-nowrap text-night transition-opacity hover:opacity-90"
             >
-              🚀 Սկսել սովորել
+              Կառուցել իմ ուղին
+              <ArrowRight size={18} strokeWidth={2} aria-hidden />
             </Link>
-            <Link
-              to="/register"
-              className="w-full rounded-lg border border-border bg-surface px-6 py-3.5 text-center text-base font-semibold text-text transition-colors hover:border-primary sm:w-auto"
+            <a
+              href="#subjects"
+              className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-full)] border border-night-line px-7 py-3.5 text-[length:var(--text-base)] font-medium whitespace-nowrap text-night-ink-muted transition-colors hover:text-night-ink"
             >
-              🤖 Փորձել AI Tutor-ը
-            </Link>
+              Տես՝ ինչպես է աշխատում
+            </a>
           </div>
+
+          <p className="mt-6 text-[length:var(--text-sm)] text-night-ink-dim">
+            Անվճար՝ մինչ կառուցում ենք հարթակը։
+          </p>
         </div>
 
-        <div className="flex justify-center lg:justify-end">
-          <HeroMockup />
+        <div
+          className="lp-resolve lp-night-panel rounded-[var(--radius-2xl)] p-6"
+          data-resolved={resolved}
+        >
+          <p className="text-[length:var(--text-sm)] font-semibold text-night-ink-dim">
+            Քո հաջորդ քայլը
+          </p>
+          <p className="mt-2 font-display text-[length:var(--text-2xl)] leading-[var(--leading-heading)] text-night-ink">
+            Ուղղիր «{MISSION.topic}» թեմայի սխալները
+          </p>
+
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[length:var(--text-sm)] text-night-ink-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <ListChecks size={16} strokeWidth={1.75} aria-hidden />
+              <span className="tabular-nums">{MISSION.questionCount}</span> հարց
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock size={16} strokeWidth={1.75} aria-hidden />~
+              <span className="tabular-nums">{MISSION.minutes}</span> րոպե
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Zap size={16} strokeWidth={1.75} aria-hidden />+
+              <span className="tabular-nums">{MISSION.xp}</span> XP
+            </span>
+          </div>
+
+          {/* The reason is the whole point. A recommendation without one is a
+              guess the student has to trust; `next_mission()` returns this
+              string precisely so it never has to be. */}
+          <div className="mt-5 border-t border-night-line pt-5">
+            <p className="text-[length:var(--text-sm)] leading-[var(--leading-body)] text-night-ink-muted">
+              <span className="font-semibold text-night-ink">Ինչու՞ սա։</span> «{MISSION.topic}»
+              թեմայում ունես <span className="tabular-nums">{MISSION.mistakes}</span> սխալ պատասխան։
+            </p>
+          </div>
+
+          <DemoNote tone="night" className="mt-5">
+            Ցուցադրական օրինակ։ Իրական հաշվում այս քարտը կառուցվում է քո սեփական սխալներից։
+          </DemoNote>
         </div>
       </div>
     </div>

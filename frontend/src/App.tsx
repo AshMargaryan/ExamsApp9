@@ -8,7 +8,7 @@ import { applyStoredAccent } from "./lib/accentTheme";
 import { applyStoredTheme } from "./hooks/useTheme";
 import { applyStoredSidebarCollapsed } from "./hooks/useSidebarCollapsed";
 import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
 import { CompleteRegistrationPage } from "./pages/CompleteRegistrationPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -90,7 +90,11 @@ export default function App() {
         >
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            {/* Sign-up is the onboarding flow. The old eleven-field form is
+                gone; /register is kept as the address every CTA on the
+                marketing page and every "create an account" link already
+                points at, so nothing has to be rewritten to reach it. */}
+            <Route path="/register" element={<OnboardingPage />} />
             <Route path="/complete-registration" element={<CompleteRegistrationPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />

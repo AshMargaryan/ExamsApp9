@@ -15,6 +15,23 @@ import { useIsNativeApp } from "../../lib/platform";
   platforms.
 */
 
+/* One element, 90 stars, no images — the same seeded box-shadow trick the
+   landing page's universe uses, so the two grounds are literally the same sky.
+   Seeded so it never shifts between renders. */
+const AUTH_STARS = (() => {
+  let seed = 7;
+  const rand = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+  return Array.from({ length: 90 }, () => {
+    const x = (rand() * 42).toFixed(2);
+    const y = (rand() * 100).toFixed(2);
+    const o = (0.2 + rand() * 0.6).toFixed(2);
+    return `${x}vw ${y}vh 0 rgba(255,255,255,${o})`;
+  }).join(",");
+})();
+
 interface Props {
   title: string;
   subtitle?: string;
@@ -49,45 +66,84 @@ export function AuthScreen({
 
   if (!isNative) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-10">
+      <div className="min-h-screen bg-bg lg:grid lg:grid-cols-[minmax(0,42%)_1fr]">
         {/*
-          The logged-out screens used to be an unbranded `max-w-sm` box with a
-          one-word title in it. A first-time visitor arriving at /login saw a
-          generic form and no indication of what they were signing in to. The
-          mark and the one-line statement of what Gitus is cost 60px and are
-          the only thing on this screen that says the product is real.
-        */}
-        <div className="mb-[var(--space-6)] flex flex-col items-center gap-[var(--space-2)] text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] text-on-brand" style={{ background: "var(--gradient-brand)" }}>
-            <Logo className="h-6 w-6" />
-          </span>
-          <p className="font-display text-[length:var(--text-xl)] font-semibold tracking-[var(--tracking-tight)] text-text">
-            Gitus
-          </p>
-          <p className="max-w-[18rem] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
-            Միասնական քննությունների նախապատրաստում՝ պարապմունք, փորձնական քննություններ և AI օգնական
-          </p>
-        </div>
+          The left half is the landing page's ground, continued.
 
-        <Body
-          {...bodyProps}
-          className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-[var(--shadow-sm)]"
-        >
-          <div className="mb-6">
-            <div className="flex items-center justify-between gap-3">
-              <h1 className="font-display text-[length:var(--text-2xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text">
-                {title}
-              </h1>
-              {headerAction}
-            </div>
-            {subtitle && (
-              <p className="mt-2 text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
-                {subtitle}
-              </p>
-            )}
+          Before this, a visitor who had just scrolled a near-black knowledge
+          universe and pressed «Կառուցել իմ ուղին» landed on an unbranded card
+          floating on warm paper — a different product, one click after the
+          strongest thing the marketing page does. This keeps the world they
+          came from on screen while they fill the form in.
+
+          The form itself deliberately stays on paper. Every control inside it
+          comes from the `ui/` kit, which is built against `--color-surface`
+          and `--color-border`; those follow the theme, `--color-night` does
+          not, and putting theme-following inputs on a fixed dark ground is
+          how a light-mode user ends up typing into white boxes on black.
+          Splitting the screen gets the continuity without that fight.
+        */}
+        <aside className="relative hidden overflow-hidden bg-night p-10 text-night-ink lg:flex lg:flex-col lg:justify-between">
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            <div className="absolute h-0.5 w-0.5 rounded-full" style={{ boxShadow: AUTH_STARS }} />
           </div>
-          {children}
-        </Body>
+
+          <div className="relative flex items-center gap-2">
+            <Logo className="h-7 w-7" />
+            <span className="font-display text-[length:var(--text-lg)] font-bold tracking-[var(--tracking-tight)]">
+              Gitus
+            </span>
+          </div>
+
+          <div className="relative">
+            <p className="font-display text-[length:var(--text-3xl)] leading-[var(--leading-display)] font-semibold tracking-[var(--tracking-tight)]">
+              Ամեն օր գիտես՝<br />ինչ սովորել։
+            </p>
+            <p className="mt-4 max-w-sm text-[length:var(--text-base)] leading-[var(--leading-body)] text-night-ink-muted">
+              Gitus-ը հետևում է, թե որ թեմաներում ես սխալվում, և ամեն օր ասում է՝
+              կոնկրետ ինչ պարապել հաջորդը։
+            </p>
+          </div>
+
+          {/* Counted from the question bank in
+              backend/apps/mock_exams/data/exams/. Hardcoded rather than
+              imported from subjectUniverseData: these screens are eagerly
+              loaded, and that module lives in the lazy LandingPage chunk. */}
+          <p className="relative text-[length:var(--text-sm)] text-night-ink-dim">
+            <span className="tabular-nums text-night-ink">229</span> փորձնական քննություն ·{" "}
+            <span className="tabular-nums text-night-ink">16,070</span> հարց
+          </p>
+        </aside>
+
+        <div className="flex flex-col">
+          {/* Phones get a slim band rather than the full panel: half a screen
+              of branding is half a screen not spent on the form. */}
+          <div className="flex items-center gap-2 bg-night px-5 py-4 text-night-ink lg:hidden">
+            <Logo className="h-6 w-6" />
+            <span className="font-display text-[length:var(--text-base)] font-bold tracking-[var(--tracking-tight)]">
+              Gitus
+            </span>
+          </div>
+
+          <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8">
+            <Body {...bodyProps} className="w-full max-w-sm">
+              <div className="mb-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h1 className="font-display text-[length:var(--text-2xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text">
+                    {title}
+                  </h1>
+                  {headerAction}
+                </div>
+                {subtitle && (
+                  <p className="mt-2 text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
+                    {subtitle}
+                  </p>
+                )}
+              </div>
+              {children}
+            </Body>
+          </div>
+        </div>
         {overlay}
       </div>
     );

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
- * Fades/slides children into place the first time they cross into view.
+ * ENTER — the first of the page's four motion verbs (see landing.css).
+ * Rises 12px into place the first time it crosses into view.
+ *
  * `prefers-reduced-motion` is neutralized globally (index.css sets
  * animation/transition durations to ~0), so this stays a no-op there.
  */
@@ -31,11 +33,23 @@ export function Reveal({
       A marketing page whose entire body is wrapped in this cannot depend on
       a callback it has no fallback for.
 
-      So anything already on screen at mount is revealed directly. The
-      `setTimeout(0)` keeps the fade — setting state in the same tick as the
-      first paint would skip the transition and snap it in — and the
-      observer still handles everything below the fold, which is where the
-      scroll effect is actually wanted.
+      So there are three independent ways to become visible, in descending
+      order of preference:
+
+        1. the observer fires          — the scroll effect, the normal path
+        2. already on screen at mount  — measured directly, one tick later
+        3. the idle net                — an unconditional reveal once the
+                                         browser is quiet, for the tab that
+                                         was never foregrounded at all
+
+      (3) is the one that makes this safe rather than merely careful. (2)
+      only helps content that happens to be above the fold; a backgrounded
+      tab scrolled halfway down the page satisfies neither (1) nor (2), and
+      before the net that content stayed invisible until the reader scrolled
+      it *out* and back in.
+
+      The `setTimeout(0)` in (2) keeps the fade — setting state in the same
+      tick as the first paint would skip the transition and snap it in.
     */
     if (typeof IntersectionObserver === "undefined") {
       setVisible(true);
@@ -61,16 +75,37 @@ export function Reveal({
       { threshold: 0.15 },
     );
     observer.observe(el);
+
+    /* Safari has no requestIdleCallback; a 2s timer is the same guarantee,
+       just less polite about when it takes it. */
+    const idle: { cancel: () => void } =
+      typeof window.requestIdleCallback === "function"
+        ? (() => {
+            const id = window.requestIdleCallback(() => setVisible(true), { timeout: 2000 });
+            return { cancel: () => window.cancelIdleCallback(id) };
+          })()
+        : (() => {
+            const id = window.setTimeout(() => setVisible(true), 2000);
+            return { cancel: () => window.clearTimeout(id) };
+          })();
+
     return () => {
       window.clearTimeout(timer);
       observer.disconnect();
+      idle.cancel();
     };
   }, []);
 
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out ${visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"} ${className}`}
+      /* 320ms / 12px, not the 700ms / 24px this used to run. At three-quarters
+         of a second the fade stopped reading as content arriving and started
+         reading as an effect the reader had to wait out — on a page where
+         nearly every block is wrapped in one. */
+      className={`transition-all duration-[var(--motion-normal)] ease-[var(--ease-out)] ${
+        visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+      } ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}

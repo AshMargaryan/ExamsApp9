@@ -21,6 +21,9 @@ declare global {
 
 const APPLE_CLIENT_ID = import.meta.env.VITE_APPLE_CLIENT_ID as string | undefined;
 const APPLE_REDIRECT_URI = import.meta.env.VITE_APPLE_REDIRECT_URI as string | undefined;
+
+/** See GOOGLE_AVAILABLE. Apple needs both a client id and a redirect URI. */
+export const APPLE_AVAILABLE = Boolean(APPLE_CLIENT_ID && APPLE_REDIRECT_URI);
 const APPLE_SDK_SRC =
   "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
 

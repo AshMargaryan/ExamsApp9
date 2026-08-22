@@ -76,6 +76,7 @@ something broke.
 | Accent | `--color-accent`, `-bg`, `-line` |
 | Brand band | `--color-brand-1..4`, `--gradient-brand`, `--color-on-brand`, `-muted`, `-fill`, `-line` (theme-**invariant**) |
 | Paper | `--color-paper`, `--color-paper-line` (theme-**invariant**; the canvas note's ground) |
+| Night | `--color-night`, `-raised`, `--color-night-ink`, `-muted`, `-dim`, `--color-night-fill`, `-line` (theme-**invariant**; the marketing page's cinematic ground) |
 | State | `--color-correct/-bg`, `--color-incorrect/-bg`, `--color-success/-bg`, `--color-warning/-bg`, `--color-info/-bg` |
 | Difficulty | `--color-easy`, `--color-medium/-bg`, `--color-hard` |
 | Rank tiers | `--color-gold/-bg/-line`, `--color-silver/…`, `--color-bronze/…` |
@@ -139,6 +140,18 @@ mode inherited the light values. The study plan's coach card set its heading
 in `--color-purple` inline and rendered a dark violet on a near-black ground
 at **2.04:1** — the title of the card was invisible in dark mode — and the
 same stop dimmed the middle of every large `ProgressRing`.
+
+**d. Where a fixed palette is painted, the ground under it cannot move.** Three
+token families are theme-invariant, and all three are the same argument: the
+brand band (white text at 8.3–11.7:1 on stops that must not follow a primary
+which *inverts* in dark mode), the handwriting paper (24 fixed ink values, four
+of which were unusable on a near-black page), and now **night** — the marketing
+page's cinematic ground, carrying nine subject accents and a four-band mastery
+scale all chosen against `#05050a`. Anything painted on one of the three uses
+that family's own ink token (`--color-on-brand*`, `--color-night-ink*`), never
+`--color-text`. The focus ring is part of this: `--focus-ring-color` defaults to
+`--color-primary`, which on night measures 1.9:1 for a light-theme visitor, so
+`.lp-night` and `.su-sky` re-point it at `--color-night-ink` (17.8:1).
 
 ### Personalisation
 
@@ -571,7 +584,24 @@ Ordered by value ÷ risk.
 11. **`greetingSubtext()` retains a motivational-fallback branch** for when no
     real insight exists. It is grounded in real data today; keep it that way.
 12. **A visual-regression harness.** The checks in §9 are cheap to automate and
-    would catch the next 1024px overflow before a human sees it.
+    would catch the next 1024px overflow before a human sees it. A related gap
+    surfaced during the §14 work: the browser pane only returns a painted frame
+    at `scrollY = 0` on a tall document, so below-the-fold screenshots come back
+    blank. The workaround was a scratch Vite entry mounting one section at a
+    time at the top of its own page on a spare port — worth making permanent
+    rather than re-improvising, since a 16,749px page cannot be reviewed
+    otherwise.
+13. **The subject universe is 47% of the marketing page** — 7,870px of 16,749
+    at 1280px, nine sections at `min-h-[92vh]`. It now has a skip link at the
+    top, which is the fix that mattered, and the artwork is authored at a fixed
+    680px so there is little slack to reclaim without recomposing it. But if
+    the page is ever judged too long, this is the only place the length is.
+14. **Landing demos are hand-written, not generated.** The tutor replies, the
+    mistake explanations and the plan rows are authored constants. Each is the
+    genuine behaviour of the mode/rule it illustrates and each is labelled as
+    an example, but they will drift if the prompts or the ranking rules change.
+    A future option is to generate them at build time from the same fixtures
+    the backend tests use.
 
 ---
 
@@ -686,6 +716,118 @@ Measured on a dashboard mount, dev server (so counts are doubled):
 /teaching/assignments/notifications/` stayed at 4 as an untouched control. Four
 unit tests pin the behaviour, including the one that keeps it honest — that a
 settled request is forgotten.
+
+---
+
+## 14. The marketing page
+
+`/` when logged out. It obeys the same tokens, voice and a11y floor as the
+app — deliberately, because a visitor who signs up should not feel they have
+changed products — but it is the one surface where §39's "spacious, emotional,
+high clarity" applies and the restraint that governs a dashboard does not.
+
+### What it was
+
+Twenty-one sections and **20,082px** at 1280px wide. Five of them made the same
+argument ("Gitus tells you what to study"), four solved the same linear
+equation `2x + 5 = 17`, one was 114px carrying a single sentence and no
+information, and **all nine calls to action pointed at `/register`** — four of
+them promising a product experience ("try the AI Tutor", "practise a similar
+question") and delivering a signup form. The root also set `--gradient-primary`
+to a violet→magenta ramp, which `theme.css`'s `.bg-primary` rule picked up, so
+every CTA on the marketing page was violet while the identical button behind
+`/login` was lapis.
+
+### The seven movements
+
+The page alternates between two grounds, and **the alternation is the visual
+system** — there is no third surface treatment.
+
+| # | Ground | Component | Does |
+|---|---|---|---|
+| 1 | night | `Hero` | The question a student actually asks, answered on screen by the shape `analytics.next_mission()` returns — including its `reason` string |
+| 2 | night | `SubjectJourney` | The subject universe. Scale, and the promise of one system across nine subjects |
+| 3 | paper | `MistakeSection` | The reader answers; **their own** wrong answer is classified and explained |
+| 4 | paper | `AdaptivePlanSection` | Monday's plan and Tuesday's, with the rows re-ordering between them |
+| 5 | night | `KnowledgeMapSection` | An open learner model, including what the system admits it does not know |
+| 6 | paper | `TutorSection` | The tutor's real conversation modes, as three buttons |
+| 7 | paper→night | `TrustSection` → `FoundersSection` → `FaqSection` → `ClosingSection` | Checkable claims, then the payoff and one CTA |
+
+Movements 1 and 7 are the same room: the page opens on one unanswered question
+and closes on five answered ones. Result: **16,749px**, nine rendered blocks,
+**five** `/register` links of which one is the primary action. The
+non-universe content fell 12,276 → 8,879px (−28%).
+
+### Two rules this page holds itself to
+
+**Nothing is claimed that the backend cannot do.** The mistake taxonomy
+(`mistakes/models.py` `ErrorCategory`), the conversation modes
+(`ai_assistant/prompts.py` `CONVERSATION_MODE_FRAMING`), the mastery bands and
+their 75 threshold (`knowledge/scoring.py`, `study_plan/services.py`
+`MASTERED_SCORE_THRESHOLD`), the plan's ordering rules
+(`practice/services.py:get_recommended_subtopics`) and the exam/question counts
+are all real, and each section's header comment names the module it came from.
+
+The one thing deliberately **not** built: a prerequisite-gap demonstration.
+There is no prerequisite graph — `TopicMastery` has no edges and
+`analytics.skill_map()` returns a flat list grouped by domain. Movement 4 shows
+what the engine actually does instead (mistake density, recency, spaced-
+repetition due dates), which is the same emotional beat and is true.
+
+**Every invented number carries a `DemoNote`.** A visitor has no account, so
+the product surface here cannot be real. `Section.tsx` exports the one wording
+in one component precisely so a section cannot quietly ship a statistic
+without it — before this, one section out of the six that invented numbers
+actually labelled them.
+
+The fourth mastery band, «Դեռ չգիտենք», is the same principle as a feature:
+`compute_mastery()` returns `None`, not `0`, when there is no evidence, and
+"we have not seen enough of your answers here" is a different fact from "you
+are weak here". Paired with `data_sufficiency`, it lets the page show
+confidence in its own estimate — which is easier to trust than a system that
+renders every unknown as a red zero.
+
+### Motion — four verbs, and nothing else animates
+
+Defined in `components/landing/landing.css`, durations from `motion.css`.
+
+| Verb | Means | Where |
+|---|---|---|
+| ENTER | this is arriving | `Reveal` — 320ms/12px (was 700ms/24px, which read as an effect to wait out) |
+| TRAVEL | you are moving through this | `subjectJourney.css`, `ClosingSection` |
+| RESOLVE | confusion becoming understanding | Exactly three places: the hero's answer, the mistake explanation, the tutor's reply |
+| REORDER | the system changed its mind | `AdaptivePlanSection` only — a real FLIP, not a fade pretending |
+
+At most **one looping animation per viewport**, and only inside the section the
+reader is looking at; `subjectJourney.css`'s `.is-active` gate is the pattern.
+Any new loop must define a **rest pose** under `prefers-reduced-motion` with
+`animation: none` — the global reset only zeroes durations, which freezes a
+rotation at an arbitrary angle.
+
+### Three things that only showed up when measured
+
+- **`Reveal`'s resting state is `opacity-0`,** and nearly every block on the
+  page is wrapped in one. Two fallbacks were not enough (the observer; an
+  in-viewport check at mount): a backgrounded tab scrolled halfway down
+  satisfies neither. There is now an unconditional `requestIdleCallback`
+  (2s timeout, `setTimeout` on Safari) as a third.
+- **A `sticky` element taller than its scrollport does not pin** — it scrolls,
+  jams, and the composition slides while the scroll driver keeps advancing.
+  Measured at 800×640 the closing column is 1058px against a 640px viewport.
+  A media query cannot express this because it depends on content, so
+  `ClosingSection` measures its own content and falls back to the finished
+  composition. It also does so below 768 and under `prefers-reduced-motion`.
+- **An `opacity: 0` button is still in the tab order.** The closing CTA is
+  therefore *not* tied to scroll progress; only the answers fade in.
+
+### The founders slot is empty on purpose
+
+`FoundersSection` renders `null` and will until real photographs and real
+biography are supplied. It is not waiting for a placeholder. Everything else on
+the page earns its place by being checkable, and a block of stock faces sitting
+directly beneath the section that just told the reader what the product cannot
+do would be the one fabricated thing on it. Filling it is: images into
+`public/landing/founders/`, entries into `FOUNDERS`, nothing else.
 
 ---
 

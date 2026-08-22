@@ -17,6 +17,10 @@ declare global {
 }
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
+/** Whether this provider is configured at all. Exported so callers can decide
+    whether to draw the surrounding chrome — the button itself renders null. */
+export const GOOGLE_AVAILABLE = Boolean(GOOGLE_CLIENT_ID);
 const GSI_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 
 let scriptLoadPromise: Promise<void> | null = null;

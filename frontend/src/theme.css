@@ -145,6 +145,34 @@
   --color-paper-line: #e6e3dd;
 
   /*
+    Night — theme-INVARIANT, third in the same family as the brand band and
+    the handwriting paper above, and for the identical reason.
+
+    The marketing page's two cinematic movements (the subject universe, the
+    knowledge map) are painted with a fixed palette: nine subject accents
+    chosen against #05050a, plus the mastery scale. None of them can follow a
+    theme switch without breaking, so the ground under them does not move
+    either. A visitor in light mode and a visitor in dark mode see the same
+    two rooms, and the paper movements between them are what changes.
+
+    These values were literals repeated ~20 times across
+    `components/landing/SubjectJourney.tsx` and `subjectJourney.css` before
+    they were named here. Contrast on #05050a: ink 17.8:1, ink-muted 11.2:1,
+    ink-dim 6.4:1 — all clear AA for body text, ink clears AAA.
+
+    Anything painted on `--color-night` uses `--color-night-ink*`, never
+    `--color-text`, which flips with the theme. Same rule as the band.
+  */
+  --color-night: #05050a;
+  --color-night-raised: #0a0a12;
+  --color-night-ink: #f5efe4;
+  --color-night-ink-muted: #cfc6b8;
+  --color-night-ink-dim: #a89f92;
+  /* Glass panels laid on night, mirroring the `--color-on-brand-*` pair. */
+  --color-night-fill: rgba(255, 255, 255, 0.04);
+  --color-night-line: rgba(255, 255, 255, 0.14);
+
+  /*
     State inks — light mode.
 
     These are text colours before they are anything else: `text-correct` and
@@ -834,6 +862,15 @@ html[data-native] [contenteditable="true"] {
   --color-surface-raised: var(--color-surface-raised);
   --color-paper: var(--color-paper);
   --color-paper-line: var(--color-paper-line);
+  /* So `bg-night`, `text-night-ink`, `border-night-line` are real utilities
+     and the marketing page's cinematic movements stop hand-rolling hex. */
+  --color-night: var(--color-night);
+  --color-night-raised: var(--color-night-raised);
+  --color-night-ink: var(--color-night-ink);
+  --color-night-ink-muted: var(--color-night-ink-muted);
+  --color-night-ink-dim: var(--color-night-ink-dim);
+  --color-night-fill: var(--color-night-fill);
+  --color-night-line: var(--color-night-line);
   --color-border: var(--color-border);
   --color-text: var(--color-text);
   --color-text-muted: var(--color-text-muted);

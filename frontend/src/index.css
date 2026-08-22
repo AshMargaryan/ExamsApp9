@@ -8,6 +8,9 @@
    that file for why it is a layer rather than a rewrite. */
 @import "./styles/assistant.css";
 @import "./components/learning-profile/learningProfile.css";
+@import "./components/landing/landing.css";
+@import "./components/landing/subjectJourney.css";
+@import "./components/onboarding/onboarding.css";
 @import "katex/dist/katex.min.css";
 
 * {

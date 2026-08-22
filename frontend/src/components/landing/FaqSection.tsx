@@ -1,68 +1,78 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { Plus } from "lucide-react";
 import { Section, SectionHeading } from "./Section";
 import { Reveal } from "./Reveal";
+
+/*
+  MOVEMENT 7c — the questions the page has not already answered.
+
+  Trimmed from eight to five. Three of the originals restated a section the
+  reader had just scrolled through: "how does the AI Tutor work" is movement
+  6, "can it help me prepare for the exam" is movement 4, and "how is my
+  progress calculated" is movement 5. An FAQ that repeats the page teaches the
+  reader that the page was skippable.
+
+  The two answers that changed are the ones that were quietly out of date:
+  subject coverage now says five of nine rather than listing five as though
+  that were the whole set, and the pricing answer says plainly that premium
+  does not exist yet (see TrustSection for why).
+*/
 
 const FAQS = [
   {
     q: "Ի՞նչ է Gitus-ը։",
-    a: "Gitus-ը AI ուսումնական հարթակ է հայ դպրոցականների համար։ Այն օգնում է հասկանալ դժվար նյութը, պարապել իրական թեստերով և հետևել քո առաջընթացին։",
+    a: "Հայ դպրոցականների համար ուսումնական հարթակ՝ ընդունելության քննություններին պատրաստվելու համար։ Այն հետևում է, թե որ թեմաներում ես սխալվում, և ամեն օր առաջարկում է կոնկրետ ինչ պարապել հաջորդը։",
   },
   {
     q: "Արդյո՞ք Gitus-ն անվճար է։",
-    a: "Կարող ես գրանցվել և սկսել օգտվել հարթակի հիմնական հնարավորություններից անվճար։",
+    a: "Այո։ Այս պահին ամեն ինչ անվճար է՝ հարթակը դեռ կառուցվում է։ Ավելի ուշ կավելանա վճարովի փաթեթ, բայց այն, ինչ հիմա հասանելի է, չենք փակի առանց նախապես տեղեկացնելու։",
   },
   {
-    q: "Ինչպե՞ս է աշխատում AI Tutor-ը։",
-    a: "Դու տալիս ես հարցդ, իսկ AI Tutor-ը բացատրում է լուծումը քայլ առ քայլ՝ ոչ թե պարզապես տալիս պատրաստի պատասխան։",
+    q: "Ո՞ր առարկաներն ունեն հարցաշար։",
+    a: "Ինը առարկայից հինգը՝ Մաթեմատիկա, Ֆիզիկա, Քիմիա, Կենսաբանություն և Անգլերեն։ Հայոց լեզվի, Հայոց պատմության, Աշխարհագրության և Ռուսաց լեզվի հարցաշարերը դեռ պատրաստ չեն, և էջում դրանք ցույց են տրվում առանց թվերի։",
   },
   {
-    q: "Ո՞ր առարկաներն են աջակցվում։",
-    a: "Ներկայում՝ Մաթեմատիկա, Ֆիզիկա, Քիմիա, Կենսաբանություն և Անգլերեն։ Նոր բովանդակություն կանոնավոր ավելացվում է։",
+    q: "Ինչպե՞ս է որոշվում՝ ինչ պարապեմ այսօր։",
+    a: "Ոչ ոք ձեռքով չի ընտրում։ Հաշվի են առնվում քո սխալների քանակը ըստ թեմաների, թե որքան վերջերս են դրանք արվել, բառաքարտերի կրկնության ժամկետները և այն թեմաները, որոնց դեռ չես անդրադարձել։ Յուրաքանչյուր առաջադրանքի կողքին գրված է, թե ինչու է այն առաջարկվում։",
   },
   {
-    q: "Կարո՞ղ է Gitus-ն օգնել քննությանը պատրաստվելիս։",
-    a: "Այո։ Մոք-քննություններ, անհատական ուսումնական պլան և թույլ թեմաների վրա կենտրոնացած պարապմունքներ միասին օգնում են կանոնավոր պատրաստվել։",
-  },
-  {
-    q: "Ինչպե՞ս է աշխատում ուսումնական պլանը։",
-    a: "Ամեն օր Gitus-ը վերլուծում է քո լուծած խնդիրները և թույլ թեմաները, ապա առաջարկում է կոնկրետ առաջադրանքներ՝ ինչ սովորել հաջորդը։",
-  },
-  {
-    q: "Ինչպե՞ս է հաշվարկվում իմ առաջընթացը։",
-    a: "Հիմնված է լուծած խնդիրների քանակի, ճշգրտության և ավարտված թեստերի արդյունքների վրա։",
-  },
-  {
-    q: "Անվտա՞նգ են իմ տվյալները։",
-    a: "Այո։ Քո հաշիվը և ուսումնական տվյալները պաշտպանված են և չեն կիսվում երրորդ կողմերի հետ առանց թույլտվության։",
+    q: "Իմ տվյալները ո՞ւր են գնում։",
+    a: "Ոչ մի տեղ։ Քո պատասխանները և առաջընթացը օգտագործվում են միայն քո պլանը կառուցելու համար։ Ծնողի հաշիվը տեսնում է առաջընթացը, բայց ոչ AI Tutor-ի հետ քո զրույցները։",
   },
 ];
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const panelId = useId();
 
   return (
-    <div className="border-b border-border py-4">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between gap-4 text-left"
-      >
-        <span className="text-sm font-medium text-text sm:text-base">{q}</span>
-        <span
-          className={`flex-none text-lg text-text-muted transition-transform duration-300 ${open ? "rotate-45" : ""}`}
-          aria-hidden
+    <div className="border-b border-border">
+      <h3>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="flex w-full min-h-11 items-center justify-between gap-4 py-4 text-left"
         >
-          +
-        </span>
-      </button>
-      <div
-        aria-hidden={!open}
-        className={`grid transition-all duration-300 ease-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
-      >
-        <div className="overflow-hidden">
-          <p className="pt-3 text-sm text-text-muted">{a}</p>
-        </div>
+          <span className="text-[length:var(--text-base)] font-medium text-text">{q}</span>
+          <Plus
+            size={18}
+            strokeWidth={1.75}
+            aria-hidden
+            className={`flex-none text-text-muted transition-transform duration-[var(--motion-normal)] ${
+              open ? "rotate-45" : ""
+            }`}
+          />
+        </button>
+      </h3>
+      {/* `hidden` rather than a zero-height grid row: a collapsed answer must
+          be skipped by Tab and by a screen reader's reading order, and an
+          `aria-hidden` wrapper alone does not remove it from the tab order. */}
+      <div id={panelId} hidden={!open} className="pb-4">
+        <p className="max-w-[var(--measure-base)] text-[length:var(--text-sm)] leading-[var(--leading-body)] text-text-muted">
+          {a}
+        </p>
       </div>
     </div>
   );
@@ -73,7 +83,7 @@ export function FaqSection() {
     <Section id="faq">
       <SectionHeading kicker="Հաճախ տրվող հարցեր" title="Հարցեր ունե՞ս։" />
 
-      <Reveal className="mx-auto mt-10 max-w-2xl">
+      <Reveal className="mx-auto mt-12 max-w-2xl">
         {FAQS.map((item) => (
           <FaqItem key={item.q} q={item.q} a={item.a} />
         ))}

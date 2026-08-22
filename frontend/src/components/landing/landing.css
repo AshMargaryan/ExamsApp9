@@ -1,0 +1,182 @@
+/*
+  THE MARKETING PAGE — motion language and the two grounds.
+
+  Four verbs, and nothing else on this page animates. Each one means exactly
+  one thing, everywhere it appears, so a reader learns the vocabulary once:
+
+    ENTER    this is arriving          .lp-enter        (Reveal.tsx)
+    TRAVEL   you are moving through    subjectJourney.css
+    RESOLVE  confusion -> understanding .lp-resolve
+    REORDER  the system changed its mind .lp-reorder
+
+  RESOLVE is the scarce one. It is used in exactly three places — the hero's
+  answer, the mistake explanation, and the tutor's reply — so blur clearing
+  always carries the same meaning rather than being a texture.
+
+  Durations come from motion.css (`--motion-normal` 320ms, `--ease-out`).
+  Nothing here invents its own number.
+
+  Budget: at most one *looping* animation per viewport, and only inside the
+  section the reader is actually looking at. subjectJourney.css already gates
+  its orbits behind `.is-active`; that is the rule, not an exception.
+*/
+
+/* ── The two grounds ─────────────────────────────────────────────────────
+   Night is theme-invariant (see theme.css). `color-scheme: dark` is what
+   makes native scrollbars and form controls inside it agree with the ground
+   even when the visitor's app theme is light. */
+.lp-night {
+  background: var(--color-night);
+  color: var(--color-night-ink);
+  color-scheme: dark;
+
+  /*
+    The mastery scale, scoped to the night ground because it is painted only
+    there.
+
+    These are not `--color-correct` / `--color-warning` / `--color-incorrect`:
+    those flip with the theme, and this ground does not, so a light-mode
+    visitor would get inks chosen for white laid on #05050a. The three values
+    are the dark faces of the accent presets already vetted in
+    `lib/accentTheme.ts` (forest, apricot, pomegranate), measured here at
+    10.6:1, 11.2:1 and 9.4:1 on night.
+
+    `unknown` is deliberately not a colour at all. "We have not seen enough of
+    your answers here" is a different kind of fact from "you are weak here",
+    and rendering it as a red zero would be the system claiming knowledge it
+    does not have — `knowledge/scoring.py` returns `None`, not 0, for exactly
+    that reason.
+  */
+  --mastery-strong: #5fc79b;
+  --mastery-mid: #f0a85c;
+  --mastery-weak: #f28ba6;
+  --mastery-unknown: rgba(245, 239, 228, 0.3);
+}
+
+/*
+  The focus ring has to survive the ground it lands on.
+
+  theme.css sets `--focus-ring-color: var(--color-primary)` app-wide, which is
+  right everywhere the background follows the theme. It is wrong here: a
+  DARK-theme visitor keeps the dark primary (#8098f0, a light indigo), and on
+  #f2ece2 that measures 2.4:1 — a keyboard user tabbing through the hero CTA,
+  the skip link, the subject tabs or the closing button would see essentially
+  nothing. Canvas ink on night is 15.0:1.
+
+  `.su-sky` is SubjectJourney's own ground class and carries the same problem,
+  so it is named here rather than duplicating the reasoning in two files.
+*/
+.lp-night,
+.su-sky {
+  --focus-ring-color: var(--color-night-ink);
+}
+
+/* A panel laid on night. The equivalent of a Card on paper: on this ground
+   elevation is a hairline plus a glow, never a drop shadow — a shadow on
+   #05050a is invisible, which is why the old mockups' `shadow-2xl` did
+   nothing here. */
+.lp-night-panel {
+  background: var(--color-night-fill);
+  border: 1px solid var(--color-night-line);
+}
+
+/* ── RESOLVE ─────────────────────────────────────────────────────────────
+   Blur clearing into focus. Reserved for the moment something stops being
+   confusing. Driven by a data attribute rather than a class swap so the
+   resting state is declarative and readable in the DOM. */
+.lp-resolve {
+  transition:
+    filter var(--motion-emphasis) var(--ease-out),
+    opacity var(--motion-emphasis) var(--ease-out),
+    transform var(--motion-emphasis) var(--ease-out);
+}
+.lp-resolve[data-resolved='false'] {
+  filter: blur(6px);
+  opacity: 0;
+  transform: translateY(6px);
+}
+.lp-resolve[data-resolved='true'] {
+  filter: blur(0);
+  opacity: 1;
+  transform: none;
+}
+
+/* ── REORDER ─────────────────────────────────────────────────────────────
+   A list that the system has just rewritten. The row slides from wherever it
+   used to be to wherever it now belongs; `--from` is written by the component
+   as a pixel offset, so this is a genuine FLIP rather than a fade that
+   pretends. Only movement 4 uses it. */
+@keyframes lp-reorder {
+  from {
+    transform: translateY(var(--from, 0px));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.lp-reorder {
+  animation: lp-reorder 380ms var(--ease-out) both;
+}
+
+/* ── Scroll-driven transformation (movement 7) ───────────────────────────
+   Fragments that start scattered and end aligned. --t runs 0 (scattered) to
+   1 (resolved) and is written once per frame by one rAF-throttled handler;
+   everything below is CSS, so the scroll never enters React's render path.
+   Same technique as subjectJourney.css, deliberately. */
+.lp-fragment {
+  /* How far "scattered" is. The offsets in the component are authored for a
+     desktop stage; at 1024 and below the same ±180px throws a row clean off
+     the viewport, where it is neither legible nor recognisable as a card.
+     Below 768 the component stops animating altogether — see ClosingSection. */
+  --spread: 1;
+  transform: translate3d(
+      calc(var(--dx, 0px) * var(--spread) * (1 - var(--t, 0))),
+      calc(var(--dy, 0px) * var(--spread) * (1 - var(--t, 0))),
+      0
+    )
+    rotate(calc(var(--rot, 0deg) * (1 - var(--t, 0))));
+  opacity: calc(0.35 + 0.65 * var(--t, 0));
+  will-change: transform, opacity;
+}
+
+@media (max-width: 1023px) {
+  .lp-fragment {
+    --spread: 0.5;
+  }
+}
+
+/* The resolved column's own hairline only draws itself once the fragments
+   have arrived, so the structure reads as a *consequence* of the alignment
+   rather than a container that was always there. */
+.lp-assembled {
+  opacity: var(--t, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+    The global reset in index.css only zeroes durations. For a transition
+    that is fine, but a scroll-driven transform is not a transition — its
+    resting value is whatever --t happens to be, which for a reader who
+    never scrolls is 0, i.e. permanently scattered and 35% opaque. So the
+    scroll-driven pieces are pinned to their finished state here, which is
+    the composition that was actually designed.
+  */
+  .lp-fragment {
+    transform: none;
+    opacity: 1;
+  }
+
+  .lp-assembled {
+    opacity: 1;
+  }
+
+  .lp-resolve[data-resolved='false'] {
+    filter: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .lp-reorder {
+    animation: none;
+  }
+}
