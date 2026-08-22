@@ -1,4 +1,4 @@
-import random
+import secrets
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -7,7 +7,7 @@ ICON_URL = f"{settings.BACKEND_URL}/static/email/icon.png"
 
 
 def generate_verification_code() -> str:
-    return f"{random.randint(0, 999999):06d}"
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def _send_email_with_icon(subject: str, text_body: str, to_email: str) -> None:
@@ -31,11 +31,11 @@ def _send_email_with_icon(subject: str, text_body: str, to_email: str) -> None:
 
 def send_verification_email(user) -> None:
     _send_email_with_icon(
-        subject="Հաստատեք ձեր էլ․ հասցեն",
+        subject="Հաստատիր էլ․ հասցեդ",
         text_body=(
             f"Բարև, {user.first_name or user.username}։\n\n"
-            f"Ձեր հաստատման կոդն է՝ {user.email_verification_code}\n\n"
-            "Կոդը վավեր է 15 րոպե։ Եթե դուք չեք գրանցվել այս կայքում, անտեսեք այս նամակը։"
+            f"Հաստատման կոդդ է՝ {user.email_verification_code}\n\n"
+            "Կոդը վավեր է 15 րոպե։ Եթե դու չես գրանցվել այս կայքում, անտեսիր այս նամակը։"
         ),
         to_email=user.email,
     )
@@ -47,10 +47,10 @@ def send_password_reset_email(user, uid: str, token: str) -> None:
         subject="Գաղտնաբառի վերականգնում",
         text_body=(
             f"Բարև, {user.first_name or user.username}։\n\n"
-            "Դուք հայցել եք ձեր գաղտնաբառի վերականգնումը։ Անցեք հետևյալ հղմամբ՝ "
+            "Հայցել ես գաղտնաբառիդ վերականգնումը։ Անցիր հետևյալ հղմամբ՝ "
             "նոր գաղտնաբառ սահմանելու համար.\n\n"
             f"{reset_url}\n\n"
-            "Եթե դուք չեք հայցել գաղտնաբառի փոփոխություն, անտեսեք այս նամակը։"
+            "Եթե դու չես հայցել գաղտնաբառի փոփոխություն, անտեսիր այս նամակը։"
         ),
         to_email=user.email,
     )

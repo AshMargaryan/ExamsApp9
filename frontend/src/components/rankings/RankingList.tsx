@@ -7,7 +7,7 @@ export function RankingList({ board, meId }: { board: RankingBoard; meId: number
   if (board.no_school) {
     return (
       <p className="p-6 text-center text-text-muted">
-        Ձեր պրոֆիլում դպրոց նշված չէ, ուստի դպրոցական դասակարգումը հասանելի չէ։ Ավելացրեք դպրոցը{" "}
+        Քո պրոֆիլում դպրոց նշված չէ, ուստի դպրոցական դասակարգումը հասանելի չէ։ Ավելացրու դպրոցը{" "}
         <Link to="/profile" className="text-primary hover:underline">
           պրոֆիլում
         </Link>
@@ -19,7 +19,7 @@ export function RankingList({ board, meId }: { board: RankingBoard; meId: number
   if (board.no_grade) {
     return (
       <p className="p-6 text-center text-text-muted">
-        Ձեր պրոֆիլում դասարան նշված չէ, ուստի դասարանի դասակարգումը հասանելի չէ։ Ավելացրեք դասարանը{" "}
+        Քո պրոֆիլում դասարան նշված չէ, ուստի դասարանի դասակարգումը հասանելի չէ։ Ավելացրու դասարանը{" "}
         <Link to="/profile" className="text-primary hover:underline">
           պրոֆիլում
         </Link>

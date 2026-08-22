@@ -1,7 +1,8 @@
-import { Check, Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Check, Copy, ListChecks, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { Task } from "../../api/todo";
 import { formatDueLabel, formatDuration } from "../../lib/todoFormat";
 import { Dropdown } from "../ui/Dropdown";
+import { IconButton } from "../ui/IconButton";
 import { PriorityBadge } from "./PriorityBadge";
 
 interface TaskCardProps {
@@ -55,8 +56,12 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete, onDuplicate
             </span>
           )}
           {task.subtask_progress.total > 0 && (
-            <span className="text-xs text-text-muted">
-              ✓ {task.subtask_progress.completed}/{task.subtask_progress.total}
+            <span
+              className="inline-flex items-center gap-1 text-xs tabular-nums text-text-muted"
+              aria-label={`Ենթաառաջադրանքներ՝ ${task.subtask_progress.completed} ${task.subtask_progress.total}-ից`}
+            >
+              <ListChecks size={12} strokeWidth={2} aria-hidden />
+              {task.subtask_progress.completed}/{task.subtask_progress.total}
             </span>
           )}
           {task.tags_detail.map((tag) => (
@@ -68,19 +73,19 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete, onDuplicate
       <Dropdown
         align="end"
         renderTrigger={(props) => (
-          <button
+          <IconButton
             {...props}
-            type="button"
-            aria-label="Գործողություններ"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-text-muted hover:bg-surface-muted hover:text-text"
-          >
-            <MoreHorizontal size={18} />
-          </button>
+            variant="ghost"
+            size="sm"
+            aria-label={`«${task.title}» առաջադրանքի գործողություններ`}
+            icon={<MoreHorizontal size={18} strokeWidth={1.75} aria-hidden />}
+          />
         )}
         items={[
-          { key: "edit", label: "Խմբագրել", icon: <Pencil size={15} />, onSelect: () => onEdit(task) },
-          { key: "duplicate", label: "Կրկնօրինակել", icon: <Copy size={15} />, onSelect: () => onDuplicate(task) },
-          { key: "delete", label: "Ջնջել", icon: <Trash2 size={15} />, tone: "danger", onSelect: () => onDelete(task) },
+          { key: "edit", label: "Խմբագրել", icon: <Pencil size={15} strokeWidth={1.75} aria-hidden />, onSelect: () => onEdit(task) },
+          { key: "duplicate", label: "Կրկնօրինակել", icon: <Copy size={15} strokeWidth={1.75} aria-hidden />, onSelect: () => onDuplicate(task) },
+          // Separated: deleting sat flush against duplicating, one row apart.
+          { key: "delete", divider: true, label: "Ջնջել", icon: <Trash2 size={15} strokeWidth={1.75} aria-hidden />, tone: "danger", onSelect: () => onDelete(task) },
         ]}
       />
     </div>

@@ -42,23 +42,40 @@ function MathNodeView({ node, updateAttributes, selected }: ReactNodeViewProps) 
     );
   }
 
-  let html = "";
+  // null means "KaTeX could not render this" — in which case the raw LaTeX is
+  // rendered as TEXT below, never fed back through dangerouslySetInnerHTML.
+  // `latex` is whatever the user typed into their note, so treating the error
+  // path as HTML would turn any KaTeX failure into an HTML injection point.
+  // KaTeX's own output is safe to inject: trust defaults to false, so
+  // \href/\url cannot emit javascript: URLs.
+  let html: string | null = null;
   try {
     html = katex.renderToString(latex, { throwOnError: false, displayMode: false });
   } catch {
-    html = latex;
+    html = null;
+  }
+
+  const wrapperClassName = `inline-block cursor-text rounded px-0.5 align-middle hover:bg-surface-muted ${
+    selected ? "ring-2 ring-primary" : ""
+  }`;
+  const startEditing = () => {
+    setDraft(latex);
+    setEditing(true);
+  };
+
+  if (html === null) {
+    return (
+      <NodeViewWrapper as="span" className={wrapperClassName} onClick={startEditing}>
+        {latex}
+      </NodeViewWrapper>
+    );
   }
 
   return (
     <NodeViewWrapper
       as="span"
-      className={`inline-block cursor-text rounded px-0.5 align-middle hover:bg-surface-muted ${
-        selected ? "ring-2 ring-primary" : ""
-      }`}
-      onClick={() => {
-        setDraft(latex);
-        setEditing(true);
-      }}
+      className={wrapperClassName}
+      onClick={startEditing}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

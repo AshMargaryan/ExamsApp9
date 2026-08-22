@@ -150,8 +150,8 @@ class DeckDuplicateView(APIView):
             owner=request.user,
             card_count=deck.card_count,
         )
-        for card in deck.cards.all():
-            Flashcard.objects.create(
+        Flashcard.objects.bulk_create(
+            Flashcard(
                 deck=new_deck,
                 number=card.number,
                 topic=card.topic,
@@ -168,6 +168,8 @@ class DeckDuplicateView(APIView):
                 difficulty=card.difficulty,
                 dataset_id=f"USER-{uuid.uuid4().hex}",
             )
+            for card in deck.cards.all()
+        )
         return Response(FlashcardDeckSerializer(new_deck).data, status=status.HTTP_201_CREATED)
 
 

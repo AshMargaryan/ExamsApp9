@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shuffle, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, ChevronDown, Shuffle, Sparkles, X } from "lucide-react";
 import {
   getDailyProblem, submitDailyProblem,
   type DailyProblem, type DailyProblemSubmitInput, type Question,
@@ -8,6 +8,8 @@ import {
 import { useAssistantLaunch } from "../contexts/AssistantLaunchContext";
 import { MathText } from "./MathText";
 import { Button } from "./ui/Button";
+import { ErrorState } from "./ui/ErrorState";
+import { LoadingRegion, Skeleton } from "./ui/Skeleton";
 import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
 import { ShortAnswerQuestion } from "./questions/ShortAnswerQuestion";
 import { TrueFalseQuestion } from "./questions/TrueFalseQuestion";
@@ -16,13 +18,28 @@ function ReasonNote({ reason }: { reason: DailyProblem["reason"] }) {
   const [open, setOpen] = useState(false);
   const text =
     reason.kind === "weak_topic"
-      ? `Այս թեմայից («${reason.topic_label}») ունեք ${reason.incorrect_count} սխալ, ուստի Haygit-ը առաջարկեց հենց սա։`
-      : "Բավարար տվյալներ դեռ չկան Ձեր մասին, ուստի այս հարցը պատահականորեն է ընտրված։";
+      ? `Այս թեմայից («${reason.topic_label}») ունես ${reason.incorrect_count} սխալ, ուստի Gitus-ը առաջարկեց հենց սա։`
+      : "Բավարար տվյալներ դեռ չկան քո մասին, ուստի այս հարցը պատահականորեն է ընտրված։";
 
   return (
     <div className="mb-3">
-      <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)} className="h-7 px-2 text-xs">
-        Ինչու՞ հենց սա {open ? "▲" : "▼"}
+      {/* Was a raw ▲/▼ with no `aria-expanded`, so the control announced
+          nothing about its own state and drew a glyph from whatever font
+          happened to cover it. */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="h-7 gap-1 px-2 text-xs"
+      >
+        Ինչու՞ հենց սա
+        <ChevronDown
+          size={13}
+          strokeWidth={2}
+          aria-hidden
+          className={`transition-transform duration-[var(--motion-fast)] ${open ? "rotate-180" : ""}`}
+        />
       </Button>
       {open && <p className="mt-1 text-xs text-text-muted">{text}</p>}
     </div>
@@ -38,17 +55,46 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
   const [error, setError] = useState<string | null>(null);
   const { askAboutQuestion } = useAssistantLaunch();
 
+  // `loadFailed` is tracked separately from `problem` because the catch used to
+  // do `setProblem(null)` — the same value as "still loading" — so a failed
+  // fetch rendered as a permanently loading card with no error and no retry.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
+    let active = true;
+    setLoadFailed(false);
     getDailyProblem()
-      .then(setProblem)
-      .catch(() => setProblem(null));
-  }, []);
+      .then((p) => active && setProblem(p))
+      .catch(() => active && setLoadFailed(true));
+    return () => {
+      active = false;
+    };
+  }, [reloadKey]);
+
+  if (loadFailed) {
+    return (
+      <ErrorState
+        title="Չհաջողվեց բեռնել օրվա խնդիրը։"
+        size="sm"
+        onRetry={() => setReloadKey((n) => n + 1)}
+      />
+    );
+  }
 
   if (problem === null) {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-        <p className="text-sm text-text-muted">Բեռնվում է...</p>
-      </div>
+      <LoadingRegion label="Օրվա խնդիրը բեռնվում է">
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="mt-[var(--space-4)] h-3.5 w-3/4" />
+          <div className="mt-[var(--space-4)] flex flex-col gap-[var(--space-2)]">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-11 w-full" />
+            ))}
+          </div>
+        </div>
+      </LoadingRegion>
     );
   }
 
@@ -81,31 +127,43 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
       const updated = await submitDailyProblem(input);
       setProblem(updated);
     } catch {
-      setError("Չհաջողվեց ուղարկել պատասխանը։ Փորձեք կրկին։");
+      setError("Չհաջողվեց ուղարկել պատասխանը։ Փորձիր կրկին։");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-text">
-          <span>📅</span> Օրվա խնդիրը
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
+      <div className="mb-[var(--space-4)] flex items-center justify-between gap-[var(--space-3)]">
+        {/* Emoji rendered as UI iconography picks up per-platform colour and
+            weight, which breaks the otherwise monochrome lucide icon set. */}
+        <h3 className="flex items-center gap-[var(--space-2)] text-[length:var(--text-lg)] font-semibold leading-[var(--leading-heading)] text-text">
+          <CalendarDays size={18} strokeWidth={1.75} className="shrink-0 text-text-muted" /> Օրվա խնդիրը
         </h3>
         {revealed && (
           <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
+            className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
               problem.result!.is_correct ? "bg-correct-bg text-correct" : "bg-incorrect-bg text-incorrect"
             }`}
           >
-            {problem.result!.is_correct ? "✓ Ճիշտ" : "✗ Սխալ"}
+            {problem.result!.is_correct ? (
+              <Check size={13} strokeWidth={2.5} aria-hidden />
+            ) : (
+              <X size={13} strokeWidth={2.5} aria-hidden />
+            )}
+            {problem.result!.is_correct ? "Ճիշտ" : "Սխալ"}
           </span>
         )}
       </div>
 
+      {/* Was `uppercase tracking-wide text-accent`: a three-part Armenian
+          breadcrumb set in tracked-out 11px capitals, in a warm hue that read
+          as a warning. Armenian capitals share far more shape than lowercase
+          does, so caps at this size is the least legible setting available —
+          and the line is context, not an alert. */}
       {question.subject_name && (
-        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-accent">
+        <p className="mb-1 truncate text-xs font-medium text-text-muted">
           {[question.subject_name, question.topic_name, question.subtopic_name].filter(Boolean).join(" · ")}
         </p>
       )}
@@ -152,7 +210,7 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
       )}
 
       {revealed && question.explanation && (
-        <div className="mt-3 rounded-md bg-surface-muted p-3 text-sm leading-relaxed text-text-muted whitespace-pre-line">
+        <div className="mt-3 rounded-[var(--radius-md)] bg-surface-muted p-3 text-sm leading-relaxed text-text-muted whitespace-pre-line">
           <MathText text={question.explanation} />
         </div>
       )}
@@ -162,21 +220,21 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
           <button
             type="button"
             onClick={handleExplain}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+            className="flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
           >
             <Sparkles size={15} strokeWidth={1.75} /> Բացատրել
           </button>
           {question.subtopic_id != null && (
             <Link
               to={`/practice/subtopic/${question.subtopic_id}/${question.tier}`}
-              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+              className="flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
             >
               <Shuffle size={15} strokeWidth={1.75} /> Նման խնդիր
             </Link>
           )}
           <Link
             to={nextHref}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
+            className="flex items-center gap-1.5 rounded-[var(--radius)] border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary"
           >
             <ArrowRight size={15} strokeWidth={1.75} /> Հաջորդը
           </Link>
@@ -190,8 +248,11 @@ export function DailyProblemCard({ nextHref = "/practice" }: { nextHref?: string
           type="button"
           onClick={handleSubmit}
           disabled={busy}
-          style={{ background: "var(--gradient-primary, linear-gradient(45deg, #1d4ed8, #2563eb))" }}
-          className="mt-4 rounded-md px-5 py-2 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          // Was an inline `var(--gradient-primary, linear-gradient(45deg,
+          // #6d28d9, #7c3aed))` with `text-white`: the fallback was the
+          // pre-identity violet, and the hardcoded white broke in dark mode,
+          // where the primary is a light indigo that needs dark text.
+          className="mt-4 rounded-[var(--radius-md)] bg-primary px-5 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {busy ? "..." : "Ուղարկել պատասխանը"}
         </button>

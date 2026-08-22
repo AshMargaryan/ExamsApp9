@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -263,73 +264,80 @@ class FinishAttemptView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        attempt = get_object_or_404(MockExamAttempt, pk=pk, user=request.user)
-        if attempt.status == MockExamAttemptStatus.COMPLETED:
-            return Response({"detail": "Attempt already completed."}, status=status.HTTP_409_CONFLICT)
-
         serializer = FinishAttemptSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
 
-        questions = {
-            q.id: q for q in attempt.exam.questions.prefetch_related("choices", "statements")
-        }
-
-        answered_count = 0
-        tier_correct = {MockExamDifficulty.EASY: 0, MockExamDifficulty.MEDIUM: 0, MockExamDifficulty.HARD: 0}
-        raw_score = 0
-
-        for a in d["answers"]:
-            question = questions.get(a["question_id"])
-            if question is None:
-                continue
-            attempted = was_attempted(a)
-            if attempted:
-                answered_count += 1
-
-            defaults = score_answer(question, a)
-            MockExamAnswer.objects.update_or_create(
-                attempt=attempt, question=question, defaults=defaults,
+        # select_for_update + atomic: without this, two concurrent finish
+        # requests for the same attempt (double-tap, retry-on-timeout) can
+        # both pass the COMPLETED check before either writes, both compute
+        # is_first_completion=True, and both award first-completion XP.
+        with transaction.atomic():
+            attempt = get_object_or_404(
+                MockExamAttempt.objects.select_for_update(), pk=pk, user=request.user,
             )
-            if defaults["is_correct"]:
-                raw_score += 1
-                tier_correct[question.difficulty] += 1
-            else:
-                record_mistake(
-                    request.user, source=MistakeEntrySource.MOCK_EXAM,
-                    subject_name=attempt.exam.get_subject_display(), topic_label=question.topic,
-                    question=question, question_type=question.question_type, answer_data=a,
-                    explanation="\n".join(question.solution_steps) if question.solution_steps else "",
+            if attempt.status == MockExamAttemptStatus.COMPLETED:
+                return Response({"detail": "Attempt already completed."}, status=status.HTTP_409_CONFLICT)
+
+            questions = {
+                q.id: q for q in attempt.exam.questions.prefetch_related("choices", "statements")
+            }
+
+            answered_count = 0
+            tier_correct = {MockExamDifficulty.EASY: 0, MockExamDifficulty.MEDIUM: 0, MockExamDifficulty.HARD: 0}
+            raw_score = 0
+
+            for a in d["answers"]:
+                question = questions.get(a["question_id"])
+                if question is None:
+                    continue
+                attempted = was_attempted(a)
+                if attempted:
+                    answered_count += 1
+
+                defaults = score_answer(question, a)
+                MockExamAnswer.objects.update_or_create(
+                    attempt=attempt, question=question, defaults=defaults,
                 )
-                # Skipped questions aren't evidence of a topic weakness —
-                # only count genuinely wrong attempts toward it.
-                if question.topic and attempted:
-                    from apps.practice.models import MistakeSource  # local import: avoids a load-order dependency
-                    from apps.practice.services import record_topic_mistake
-                    record_topic_mistake(
-                        request.user, source=MistakeSource.MOCK_EXAM,
+                if defaults["is_correct"]:
+                    raw_score += 1
+                    tier_correct[question.difficulty] += 1
+                else:
+                    record_mistake(
+                        request.user, source=MistakeEntrySource.MOCK_EXAM,
                         subject_name=attempt.exam.get_subject_display(), topic_label=question.topic,
+                        question=question, question_type=question.question_type, answer_data=a,
+                        explanation="\n".join(question.solution_steps) if question.solution_steps else "",
                     )
+                    # Skipped questions aren't evidence of a topic weakness —
+                    # only count genuinely wrong attempts toward it.
+                    if question.topic and attempted:
+                        from apps.practice.models import MistakeSource  # local import: avoids a load-order dependency
+                        from apps.practice.services import record_topic_mistake
+                        record_topic_mistake(
+                            request.user, source=MistakeSource.MOCK_EXAM,
+                            subject_name=attempt.exam.get_subject_display(), topic_label=question.topic,
+                        )
 
-        attempt.raw_score = raw_score
-        attempt.percent_answered = round(100 * answered_count / len(questions), 2) if questions else 0.0
-        attempt.easy_correct = tier_correct[MockExamDifficulty.EASY]
-        attempt.medium_correct = tier_correct[MockExamDifficulty.MEDIUM]
-        attempt.hard_correct = tier_correct[MockExamDifficulty.HARD]
-        attempt.scaled_score = compute_scaled_score(
-            raw_score,
-            attempt.easy_correct, attempt.easy_total,
-            attempt.medium_correct, attempt.medium_total,
-            attempt.hard_correct, attempt.hard_total,
-        )
-        is_first_completion = not MockExamAttempt.objects.filter(
-            user=request.user, exam=attempt.exam, status=MockExamAttemptStatus.COMPLETED,
-        ).exists()
+            attempt.raw_score = raw_score
+            attempt.percent_answered = round(100 * answered_count / len(questions), 2) if questions else 0.0
+            attempt.easy_correct = tier_correct[MockExamDifficulty.EASY]
+            attempt.medium_correct = tier_correct[MockExamDifficulty.MEDIUM]
+            attempt.hard_correct = tier_correct[MockExamDifficulty.HARD]
+            attempt.scaled_score = compute_scaled_score(
+                raw_score,
+                attempt.easy_correct, attempt.easy_total,
+                attempt.medium_correct, attempt.medium_total,
+                attempt.hard_correct, attempt.hard_total,
+            )
+            is_first_completion = not MockExamAttempt.objects.filter(
+                user=request.user, exam=attempt.exam, status=MockExamAttemptStatus.COMPLETED,
+            ).exists()
 
-        attempt.status = MockExamAttemptStatus.COMPLETED
-        attempt.completed_at = timezone.now()
-        attempt.time_remaining_seconds = _remaining_seconds(attempt)
-        attempt.save()
+            attempt.status = MockExamAttemptStatus.COMPLETED
+            attempt.completed_at = timezone.now()
+            attempt.time_remaining_seconds = _remaining_seconds(attempt)
+            attempt.save()
 
         record_activity(request.user)
         evaluate_achievements(request.user)

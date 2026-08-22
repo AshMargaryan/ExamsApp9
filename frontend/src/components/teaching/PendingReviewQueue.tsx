@@ -1,14 +1,20 @@
 import type { Assignment } from "../../api/teaching";
 import { assignmentDisplayTitle, assignmentTargetLabel } from "../../lib/assignmentLabels";
 import { formatRelativeTime } from "../../lib/relativeTime";
+import { Avatar } from "../ui/Avatar";
+import { EmptyState } from "../ui/EmptyState";
 import { LinkButton } from "../ui/LinkButton";
+import { PartyPopper } from "lucide-react";
 
 export function PendingReviewQueue({ items }: { items: Assignment[] }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-        Ստուգման սպասող առաջադրանք չկա։ 🎉
-      </p>
+      <EmptyState
+        tone="positive"
+        icon={<PartyPopper size={26} strokeWidth={1.5} aria-hidden />}
+        title="Ստուգման սպասող առաջադրանք չկա"
+        hint="Ամեն ինչ ստուգված է։ Նոր ուղարկված աշխատանքները կհայտնվեն այստեղ։"
+      />
     );
   }
 
@@ -19,16 +25,10 @@ export function PendingReviewQueue({ items }: { items: Assignment[] }) {
         return (
           <div
             key={a.id}
-            className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-3"
+            className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-3 transition-colors duration-[var(--motion-fast)] hover:border-primary"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-sm font-semibold text-text-muted">
-              {a.student.avatar ? (
-                <img src={a.student.avatar} alt={a.student.username} className="h-full w-full object-cover" />
-              ) : (
-                studentName.slice(0, 1).toUpperCase()
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
+            <Avatar src={a.student.avatar} name={studentName} size="md" />
+            <div className="min-w-0 flex-1 basis-40">
               <p className="truncate text-sm font-medium text-text">{studentName}</p>
               <p className="truncate text-xs text-text-muted">
                 {assignmentDisplayTitle(a)} · {assignmentTargetLabel(a)}

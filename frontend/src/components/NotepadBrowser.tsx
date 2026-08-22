@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { X, FolderOpen, Pencil, Trash2 } from "lucide-react";
 import { useNotepad } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 import { Button } from "./ui/Button";
+import { cn } from "../lib/cn";
+import { fieldInputClass } from "./ui/Field";
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleString("hy-AM", {
@@ -76,8 +79,8 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
       }
     >
       {pendingEquation && (
-        <div className="mb-2 rounded-md border border-primary/50 bg-primary/5 px-2 py-2 text-sm">
-          <p className="mb-1 text-xs text-text-muted">Ընտրեք՝ որտե՞ղ տեղադրել այս հավասարումը.</p>
+        <div className="mb-2 rounded-[var(--radius-md)] border border-primary/50 bg-primary/5 px-2 py-2 text-sm">
+          <p className="mb-1 text-xs text-text-muted">Ընտրիր՝ որտե՞ղ տեղադրել այս հավասարումը.</p>
           <div className="overflow-x-auto">
             <MathText text={pendingEquation} />
           </div>
@@ -85,22 +88,24 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
       )}
 
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-text-muted">📁 Իմ նշումները</span>
+        <span className="flex items-center gap-[var(--space-2)] text-sm font-medium text-text-muted">
+          <FolderOpen size={15} strokeWidth={1.75} aria-hidden /> Իմ նշումները
+        </span>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleCreateOrNewInsert}
-            className="rounded-md border border-border px-2 py-1 text-xs hover:border-primary"
+            className="rounded-[var(--radius-md)] border border-border px-2 py-1 text-xs hover:border-primary"
           >
             + Նոր նշում
           </button>
           <button
             type="button"
             onClick={handleClose}
-            aria-label="Close"
+            aria-label="Փակել"
             className="flex h-6 w-6 items-center justify-center text-text-muted hover:text-primary"
           >
-            ✕
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
       </div>
@@ -109,7 +114,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
         {sorted.map((n) => (
           <div
             key={n.id}
-            className={`flex items-center justify-between rounded-md border px-2.5 py-2 shadow-sm transition-colors ${
+            className={`flex items-center justify-between rounded-[var(--radius-md)] border px-2.5 py-2 shadow-sm transition-colors ${
               n.id === activeNoteId
                 ? "border-primary bg-primary/5"
                 : "border-border bg-surface hover:border-primary/50"
@@ -125,7 +130,7 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
                   if (e.key === "Enter") commitRename();
                   if (e.key === "Escape") setEditingId(null);
                 }}
-                className="mr-2 min-w-0 flex-1 rounded border border-primary bg-surface px-1 py-0.5 text-sm outline-none"
+                className={cn(fieldInputClass, "mr-2 w-auto min-w-0 flex-1 border-primary bg-surface px-[var(--space-2)] py-[var(--space-1)] text-[length:var(--text-sm)]")}
               />
             ) : (
               <button
@@ -143,11 +148,11 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
               <button
                 type="button"
                 onClick={() => startRename(n.id, n.name)}
-                aria-label="Rename"
+                aria-label="Վերանվանել"
                 title="Վերանվանել"
                 className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-primary"
               >
-                ✎
+                <Pencil size={14} strokeWidth={1.75} aria-hidden />
               </button>
               {confirmDeleteId === n.id ? (
                 <>
@@ -176,11 +181,11 @@ export function NotepadBrowser({ onClose, fullscreen = false }: { onClose: () =>
                 <button
                   type="button"
                   onClick={() => setConfirmDeleteId(n.id)}
-                  aria-label="Delete"
+                  aria-label="Ջնջել"
                   title="Ջնջել"
-                  className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-primary"
+                  className="flex h-6 w-6 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-muted hover:text-incorrect"
                 >
-                  🗑️
+                  <Trash2 size={14} strokeWidth={1.75} aria-hidden />
                 </button>
               )}
             </div>

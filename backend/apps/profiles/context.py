@@ -14,7 +14,8 @@ isn't forced to also pay for a learning-events query it won't use.
 
 from . import analytics
 from .models import (
-    LearningEvent, LearningPreferences, PersonalGoal, StudentExam, StudentSubject, StudyAvailability,
+    CoachPreferences, LearningEvent, LearningPreferences, PersonalGoal, StudentExam, StudentSubject,
+    StudyAvailability,
 )
 
 
@@ -33,6 +34,7 @@ def get_learner_context(user, *, recent_events_limit=20, include_events=True) ->
         "goals": [],
         "study_availability": None,
         "learning_preferences": None,
+        "coach_preferences": None,
         "recent_events": [],
     }
 
@@ -90,6 +92,14 @@ def get_learner_context(user, *, recent_events_limit=20, include_events=True) ->
             "explanation_style": preferences.explanation_style,
             "hints_before_answers": preferences.hints_before_answers,
             "preferred_language": preferences.preferred_language,
+        }
+
+    coach_preferences = CoachPreferences.objects.filter(user=user).first()
+    if coach_preferences is not None:
+        context["coach_preferences"] = {
+            "mock_exams_per_week": coach_preferences.mock_exams_per_week,
+            "preferred_test_days": coach_preferences.preferred_test_days,
+            "preferred_test_time": coach_preferences.preferred_test_time,
         }
 
     if include_events and recent_events_limit > 0:

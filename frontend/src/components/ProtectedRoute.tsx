@@ -4,17 +4,23 @@ import { useAuth } from "../auth/AuthContext";
 import { AssistantLaunchProvider } from "../contexts/AssistantLaunchContext";
 import { ChatWidgetProvider } from "../context/ChatWidgetContext";
 import { NotepadProvider } from "../context/NotepadContext";
+import { useIsNativeApp } from "../lib/platform";
 import { AppSidebar } from "./AppSidebar";
 import { FloatingAssistantWidget } from "./assistant/FloatingAssistantWidget";
 import { FloatingChatWidget } from "./chat/FloatingChatWidget";
 import { HeaderStrip } from "./HeaderStrip";
+import { MobileShell } from "./mobile/MobileShell";
 import { ReloadButton } from "./ReloadButton";
 import { ToolsDock } from "./ToolsDock";
 
-/** Shared chrome (header strip, sidebar, notifications, assistant widget, floating
- * tools) for any authenticated page. */
+/** Shared chrome for any authenticated page. On the web that's the persistent header
+ * strip, sidebar drawer, and floating widgets — the theme toggle, notifications, and
+ * profile menu need to be reachable from every page, not just "/". Inside the native
+ * shell it's MobileShell (top bar + bottom tab bar) instead; the providers wrap both,
+ * since pages consume them regardless of platform. */
 export function AppChrome({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const isNative = useIsNativeApp();
   // AI assistant, calculator, and notepad are study tools for students — parents
   // have no use for them on their read-only family dashboard.
   const showStudyTools = user?.role !== "parent";
@@ -23,15 +29,30 @@ export function AppChrome({ children }: { children: ReactNode }) {
     <AssistantLaunchProvider>
       <NotepadProvider>
         <ChatWidgetProvider>
-          <HeaderStrip />
-          <AppSidebar />
-          {/* Clears the persistent top strip (h-16) at every viewport width, not just mobile —
-           * the strip used to be just a mobile-only hamburger offset before HeaderStrip shipped. */}
-          <div className="pt-16">{children}</div>
-          <ReloadButton />
-          {showStudyTools && <FloatingAssistantWidget />}
-          {showStudyTools && <ToolsDock />}
-          <FloatingChatWidget />
+          {isNative ? (
+            <MobileShell>{children}</MobileShell>
+          ) : (
+            <>
+              <HeaderStrip />
+              <AppSidebar />
+              {/* Clears the persistent top strip (h-16) and the desktop nav rail,
+               * which is 0-width below lg (see --rail-w in theme.css).
+               *
+               * The bottom padding clears the two floating launchers pinned to
+               * the bottom corners. Without it the last thing on a page sits
+               * underneath one of them permanently — no amount of scrolling
+               * moves a fixed element — so a page's final action could be
+               * unreachable. Reserving the space here rather than in each page
+               * keeps it correct for the ~45 routes at once, and it is the
+               * only place that knows whether the launchers are mounted at
+               * all (the native shell renders none of this). */}
+              <div className="pb-[var(--chrome-bottom)] pl-[var(--rail-w)] pt-[var(--chrome-top)]">{children}</div>
+              <ReloadButton />
+              {showStudyTools && <FloatingAssistantWidget />}
+              {showStudyTools && <ToolsDock />}
+              <FloatingChatWidget />
+            </>
+          )}
         </ChatWidgetProvider>
       </NotepadProvider>
     </AssistantLaunchProvider>

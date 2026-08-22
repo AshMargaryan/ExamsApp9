@@ -4,6 +4,10 @@ import type { ChallengeInvite } from "../../api/challenges";
 import * as practiceApi from "../../api/practice";
 import type { SubjectNode } from "../../api/practice";
 import type { FriendUser } from "../../api/friends";
+import { Swords, X } from "lucide-react";
+import { Button } from "../ui/Button";
+import { Field } from "../ui/Field";
+import { Select } from "../ui/Select";
 
 export function ChallengeModal({
   friend, onClose, onSent,
@@ -51,75 +55,68 @@ export function ChallengeModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text">⚔️ Մարտահրավեր @{friend.username}-ին</h2>
+          <h2 className="flex items-center gap-[var(--space-2)] text-lg font-semibold text-text">
+            <Swords size={18} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
+            Մարտահրավեր @{friend.username}-ին
+          </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Փակել"
-            className="text-lg text-text-muted hover:text-text"
+            className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted hover:bg-surface-muted hover:text-text"
           >
-            ✕
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
 
         {sent ? (
-          <p className="text-sm text-text">Մարտահրավերն ուղարկվեց! Սպասեք {friend.username}-ի պատասխանին։</p>
+          <p className="text-sm text-text">Մարտահրավերն ուղարկվեց։ Սպասիր {friend.username}-ի պատասխանին։</p>
         ) : (
           <>
-            {!subjects && <p className="text-text-muted">Բեռնվում է...</p>}
+            {!subjects && <p className="text-text-muted">Բեռնվում է…</p>}
             {subjects && subjects.length === 0 && (
               <p className="text-sm text-text-muted">Առարկաներ դեռ հասանելի չեն։</p>
             )}
             {subjects && subjects.length > 0 && (
               <div className="flex flex-col gap-3">
-                <label className="text-sm text-text-muted">
-                  Առարկա
-                  <select
-                    value={subjectId ?? ""}
-                    onChange={(e) => {
-                      setSubjectId(Number(e.target.value));
-                      setTopicId(null);
-                    }}
-                    className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
-                  >
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Field label="Առարկա" containerClassName="mb-0">
+                  {(control) => (
+                    <Select<string>
+                      id={control.id}
+                      value={subjectId == null ? "" : String(subjectId)}
+                      onChange={(next) => {
+                        setSubjectId(Number(next));
+                        setTopicId(null);
+                      }}
+                      options={subjects.map((s) => ({ value: String(s.id), label: s.name }))}
+                    />
+                  )}
+                </Field>
 
                 {topics.length > 0 && (
-                  <label className="text-sm text-text-muted">
-                    Թեմա (ընտրովի)
-                    <select
-                      value={topicId ?? ""}
-                      onChange={(e) => setTopicId(e.target.value ? Number(e.target.value) : null)}
-                      className="mt-1 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
-                    >
-                      <option value="">Բոլոր թեմաները</option>
-                      {topics.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <Field label="Թեմա (ընտրովի)" containerClassName="mb-0">
+                    {(control) => (
+                      <Select<string>
+                        id={control.id}
+                        value={topicId == null ? "" : String(topicId)}
+                        onChange={(next) => setTopicId(next ? Number(next) : null)}
+                        placeholder="Բոլոր թեմաները"
+                        options={[
+                          { value: "", label: "Բոլոր թեմաները" },
+                          ...topics.map((t) => ({ value: String(t.id), label: t.name })),
+                        ]}
+                      />
+                    )}
+                  </Field>
                 )}
 
                 <p className="text-xs text-text-muted">
                   10 հարց, խառը դժվարություն։ Հաղթողը ստանում է +20 XP բոնուս։
                 </p>
 
-                <button
-                  type="button"
-                  onClick={handleSend}
-                  disabled={sending || !subjectId}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
-                >
-                  {sending ? "Ուղարկվում է..." : "Ուղարկել մարտահրավերը"}
-                </button>
+                <Button onClick={handleSend} loading={sending} disabled={!subjectId}>
+                  Ուղարկել մարտահրավերը
+                </Button>
               </div>
             )}
           </>

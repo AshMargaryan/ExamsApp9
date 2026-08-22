@@ -1,0 +1,119 @@
+/*
+  Native (Capacitor) design layer.
+
+  Everything here is gated on the `data-native` attribute lib/platform.ts stamps
+  on <html>, so the website is untouched. The strategy is leverage: the app has
+  ~60 pages, and rewriting each one would be both enormous and impossible to
+  keep consistent. Instead this file retunes the *tokens and primitives* every
+  page already composes from — one change to `--radius` restyles every
+  `rounded-[var(--radius)]` surface in the codebase at once.
+
+  Component-level native behaviour that CSS can't express (modals becoming
+  bottom sheets, buttons growing to thumb size) lives with those components;
+  see ui/Modal.tsx and ui/buttonStyles.ts.
+*/
+
+html[data-native] {
+  /* Phone UI wants softer corners than a dense desktop layout. This single
+     variable is consumed by Card, Modal, inputs, and most page surfaces. */
+  --radius: 1rem;
+
+  /* Shadows on a phone read as haze rather than depth — flatten them and let
+     borders and spacing carry the hierarchy instead. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.22);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+/* Scrollbars are a desktop affordance; a visible track instantly reads as a
+   web page embedded in an app. Scrolling itself is untouched. */
+html[data-native] * {
+  scrollbar-width: none;
+}
+html[data-native] *::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+  The `.btn-fx` treatment in index.css is built around hover: a shine sweep, a
+  4px lift, a brightness bump. None of that can happen on a touch screen, and
+  worse, iOS latches :hover after a tap so the button stays lifted and bright
+  until you touch something else. Native gets a press response instead —
+  the thing a finger actually produces.
+*/
+html[data-native] .btn-fx::after {
+  display: none;
+}
+html[data-native] .btn-fx:hover {
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+html[data-native] .btn-fx:active {
+  transform: scale(0.96);
+  filter: brightness(0.97);
+  transition-duration: 80ms;
+}
+
+/* The ambient pulsing glow on the primary CTA is a landing-page flourish; in
+   an app it's a button that won't sit still. */
+html[data-native] .btn-fx-glow {
+  animation: none;
+}
+html[data-native] .btn-fx-glow:hover {
+  transform: none;
+  box-shadow: var(--shadow-md);
+}
+
+/* Same reasoning for the icon-button wiggle: keep the press, drop the hover. */
+html[data-native] .btn-icon-fx:hover {
+  animation: none;
+}
+
+/*
+  A blanket press response for the app's many hand-rolled buttons and link-
+  buttons — the ones that never went through the shared primitives. Scoped to
+  elements that opt out via [data-no-press] so a control whose layout depends
+  on its own transform (drag handles, the tools dock) can decline.
+
+  `transform` on an :active element is safe here because it only exists for the
+  duration of the touch.
+*/
+html[data-native] button:not(:disabled):not([data-no-press]):active,
+html[data-native] [role="button"]:not([data-no-press]):active {
+  transform: scale(0.97);
+  transition: transform 80ms var(--ease-out, ease-out);
+}
+
+/* Anything scrollable gets iOS momentum and stops at its own edges rather than
+   handing the overscroll to the WebView (which shows the grey shell behind). */
+html[data-native] .overflow-y-auto,
+html[data-native] .overflow-x-auto,
+html[data-native] .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Focus rings are a keyboard affordance. On touch they flash on every tap and
+   look like a rendering bug — but they must survive for anyone using a
+   hardware keyboard, so this only drops the ring for actual pointer input. */
+html[data-native] :focus:not(:focus-visible) {
+  outline: none;
+}
+
+/*
+  The AI composer (assistant/MessageInput) is shared with the web, where its
+  attach / code / mic controls are 34px icon buttons — fine for a cursor, under
+  the 44pt touch minimum on a phone. Sized up here rather than by forking a
+  383-line component that also owns voice recording and uploads.
+*/
+html[data-native] .assistant-composer button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* The composer's own send/stop button is already round and sized; keep it from
+   being stretched by the rule above. */
+html[data-native] .assistant-composer textarea {
+  min-height: 44px;
+}

@@ -9,7 +9,7 @@ class IsConversationParticipant(BasePermission):
     Requirement #7: only participants may view/send/upload/download.
     """
 
-    message = "Դուք այս զրույցի մասնակից չեք։"
+    message = "Այս զրույցի մասնակից չես։"
 
     def has_object_permission(self, request, view, obj):
         return ConversationParticipant.objects.filter(

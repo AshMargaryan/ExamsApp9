@@ -1,0 +1,42 @@
+{
+  "deck_id": "FC-ENG-GRAM-009",
+  "title": "Անգլերեն — Քերականություն 9",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Which modal does NOT change when reported, because it's already a \"past\" form?",
+      "back": "could",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "\"You must not open this door\" (prohibition) in reported speech:",
+      "back": "stays \"must not\"",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "\"So exhausting was the journey ___ several passengers fell asleep.\" — this cause/intensity structure is completed with:",
+      "back": "that",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "\"This soup ___ amazing!\" — describing a quality (not an active action) uses:",
+      "back": "tastes (Present Simple)",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "\"Why are you always interrupting me?\" — \"always\" + Present Continuous here expresses:",
+      "back": "annoyance at a repeated behaviour",
+      "hint": ""
+    }
+  ]
+}

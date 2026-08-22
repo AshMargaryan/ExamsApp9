@@ -16,16 +16,20 @@ from .models import Assignment, AssignmentStatus, ConnectionStatus, TeacherProfi
 from .permissions import IsStudent, IsTeacher
 from .serializers import (
     AssignmentCreateSerializer, AssignmentDetailSerializer, AssignmentSerializer,
+    ClassTrendsSerializer, StudentAttentionSerializer,
     StudentRosterSerializer, StudentSearchSerializer, TeacherStudentConnectionSerializer,
 )
 from .services import (
+    DEFAULT_TREND_RANGE,
     accepted_student_count,
+    class_trends,
     class_weak_spots,
     dashboard_stats,
     is_connected,
     pending_review_queue,
     recent_activity_feed,
     roster_student_ids,
+    students_needing_attention,
 )
 
 User = get_user_model()
@@ -545,3 +549,39 @@ class TeacherDashboardSummaryView(APIView):
                 for e in feed
             ],
         })
+
+
+class TeacherClassTrendsView(APIView):
+    """
+    GET /api/teaching/analytics/class-trends/?range=week|month|semester
+
+    Class activity over time, bucketed server-side from timestamps that really
+    exist (practice answers, study sessions, completed mock exams, mistake
+    log). Series that would have to be invented — XP, rank, mastery and streak
+    over time — are deliberately not offered; see services.class_trends.
+    """
+
+    permission_classes = [IsTeacher]
+
+    def get(self, request):
+        range_key = request.query_params.get("range", DEFAULT_TREND_RANGE)
+        student_ids = roster_student_ids(request.user)
+        data = class_trends(student_ids, range_key)
+        return Response(ClassTrendsSerializer(data).data)
+
+
+class TeacherNeedsAttentionView(APIView):
+    """
+    GET /api/teaching/students/needs-attention/
+
+    The teacher's worklist: only students showing a concrete warning sign,
+    each with the evidence that flagged them. Students with no signal are
+    omitted rather than listed as fine.
+    """
+
+    permission_classes = [IsTeacher]
+
+    def get(self, request):
+        student_ids = roster_student_ids(request.user)
+        rows = students_needing_attention(request.user, student_ids)
+        return Response(StudentAttentionSerializer(rows, many=True, context={"request": request}).data)

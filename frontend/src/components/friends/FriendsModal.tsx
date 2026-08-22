@@ -7,6 +7,7 @@ import * as friendsApi from "../../api/friends";
 import type { FriendRequest, FriendUser, SearchResultUser } from "../../api/friends";
 import { ChallengeInviteCard } from "../challenges/ChallengeInviteCard";
 import { ChallengeModal } from "../challenges/ChallengeModal";
+import { SearchField } from "../ui/SearchField";
 
 type Tab = "friends" | "requests" | "challenges" | "search";
 
@@ -113,7 +114,7 @@ function PillButton({
 
 function EmptyRow({ icon, text, cta }: { icon: ReactNode; text: string; cta?: { label: string; onClick: () => void } }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border py-10 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-[var(--radius-xl)] border border-dashed border-border py-10 text-center">
       <span className="flex text-text-muted">{icon}</span>
       <p className="text-sm text-text-muted">{text}</p>
       {cta && (
@@ -132,7 +133,7 @@ function EmptyRow({ icon, text, cta }: { icon: ReactNode; text: string; cta?: { 
 
 function Row({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-muted">
+    <div className="flex items-center justify-between gap-3 rounded-[var(--radius)] px-2 py-2.5 transition-colors hover:bg-surface-muted">
       {children}
     </div>
   );
@@ -141,7 +142,7 @@ function Row({ children }: { children: ReactNode }) {
 const STATUS_BADGE: Record<string, { label: string; icon: ReactNode; className: string }> = {
   friends: { label: "Ընկեր է", icon: <UserCheck size={12} strokeWidth={2} />, className: "bg-correct-bg text-correct" },
   request_sent: { label: "Ուղարկված է", icon: <Clock size={12} strokeWidth={2} />, className: "bg-surface-muted text-text-muted" },
-  request_received: { label: "Սպասում է ձեր պատասխանին", icon: <Clock size={12} strokeWidth={2} />, className: "bg-medium/15 text-medium" },
+  request_received: { label: "Սպասում է քո պատասխանին", icon: <Clock size={12} strokeWidth={2} />, className: "bg-medium-bg text-medium" },
 };
 
 export function FriendsModal({ onClose }: { onClose: () => void }) {
@@ -244,7 +245,7 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
       onClick={close}
     >
       <div
-        className={`flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-surface shadow-2xl transition-all duration-200 ${mounted ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
+        className={`flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius-2xl)] bg-surface shadow-2xl transition-all duration-200 ${mounted ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -325,14 +326,14 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
 
           {tab === "challenges" && (
             <>
-              <h3 className="mb-1 mt-2 text-xs font-bold uppercase tracking-wide text-text-muted">Ստացված</h3>
+              <h3 className="mb-1 mt-2 text-xs font-bold tracking-wide text-text-muted">Ստացված</h3>
               {incomingChallenges === null && <p className="py-4 text-center text-text-muted">Բեռնվում է...</p>}
               {incomingChallenges?.length === 0 && <EmptyRow icon={<Swords size={28} strokeWidth={1.5} />} text="Մարտահրավերներ չկան։" />}
               {incomingChallenges?.map((c) => (
                 <ChallengeInviteCard key={c.id} invite={c} onRespond={loadChallenges} />
               ))}
 
-              <h3 className="mb-1 mt-4 text-xs font-bold uppercase tracking-wide text-text-muted">Ուղարկված</h3>
+              <h3 className="mb-1 mt-4 text-xs font-bold tracking-wide text-text-muted">Ուղարկված</h3>
               {outgoingChallenges?.length === 0 && <EmptyRow icon={<Swords size={28} strokeWidth={1.5} />} text="Մարտահրավերներ չկան։" />}
               {outgoingChallenges?.map((c) => (
                 <Row key={c.id}>
@@ -356,7 +357,7 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
 
           {tab === "requests" && (
             <>
-              <h3 className="mb-1 mt-2 text-xs font-bold uppercase tracking-wide text-text-muted">Ստացված</h3>
+              <h3 className="mb-1 mt-2 text-xs font-bold tracking-wide text-text-muted">Ստացված</h3>
               {incoming === null && <p className="py-4 text-center text-text-muted">Բեռնվում է...</p>}
               {incoming?.length === 0 && <EmptyRow icon={<Mail size={28} strokeWidth={1.5} />} text="Հարցումներ չկան։" />}
               {incoming?.map((r) => (
@@ -375,7 +376,7 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
                 </Row>
               ))}
 
-              <h3 className="mb-1 mt-4 text-xs font-bold uppercase tracking-wide text-text-muted">Ուղարկված</h3>
+              <h3 className="mb-1 mt-4 text-xs font-bold tracking-wide text-text-muted">Ուղարկված</h3>
               {outgoing?.length === 0 && <EmptyRow icon={<Mail size={28} strokeWidth={1.5} />} text="Հարցումներ չկան։" />}
               {outgoing?.map((r) => (
                 <Row key={r.id}>
@@ -394,16 +395,14 @@ export function FriendsModal({ onClose }: { onClose: () => void }) {
 
           {tab === "search" && (
             <>
-              <div className="relative mb-3">
-                <Search size={16} strokeWidth={1.75} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  autoFocus
-                  className="w-full rounded-full border border-border bg-bg py-2.5 pl-9 pr-3 text-text outline-none transition-colors focus:border-primary"
-                  placeholder="Փնտրեք օգտանունով..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
+              <SearchField
+                autoFocus
+                containerClassName="mb-3"
+                label="Փնտրիր օգտանունով"
+                placeholder="Փնտրիր օգտանունով…"
+                value={query}
+                onChange={setQuery}
+              />
               {searching && <p className="py-4 text-center text-text-muted">Փնտրվում է...</p>}
               {!searching && query && results?.length === 0 && <EmptyRow icon={<Search size={28} strokeWidth={1.5} />} text="Ոչինչ չի գտնվել։" />}
               {!query && <EmptyRow icon={<Search size={28} strokeWidth={1.5} />} text="Գրեք օգտանուն՝ դասընկերներ գտնելու համար։" />}

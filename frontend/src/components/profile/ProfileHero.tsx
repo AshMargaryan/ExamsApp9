@@ -138,31 +138,35 @@ export function ProfileHero({
 
   const usernameDaysLeft = daysUntil(profile.username_change_available_at);
   const usernameLocked = usernameDaysLeft > 0;
+  // Everything painted on the band reads its colours from the --*-on-brand
+  // tokens rather than from white/xx literals, so the band and the text on it
+  // can never drift apart again.
   const glassInputClass =
-    "w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-white placeholder-white/50 outline-none backdrop-blur-md focus:border-white/60 focus:bg-white/15";
-  const glassLabelClass = "mb-1 block text-xs font-medium uppercase tracking-wide text-white/60";
+    "w-full rounded-[var(--radius-md)] border border-on-brand-line bg-on-brand-fill px-3 py-2 text-on-brand placeholder-on-brand-muted outline-none backdrop-blur-md focus:border-on-brand focus:bg-[color-mix(in_srgb,var(--color-on-brand)_18%,transparent)]";
+  const glassLabelClass =
+    "mb-1 block text-[length:var(--text-xs)] font-medium tracking-[var(--tracking-wide)] text-on-brand-muted";
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
   const xpPercent = profile.xp_for_next_level > 0 ? (profile.xp_into_level / profile.xp_for_next_level) * 100 : 100;
   const isStudent = profile.role === "student";
 
   return (
     <div className="relative isolate w-full overflow-hidden">
-      {/* Full-bleed gradient canvas — deliberately saturated in both themes so white
-          text/glass panels always read cleanly regardless of light/dark mode. */}
+      {/*
+        The band used to be built from `var(--color-primary)` → `--color-accent`
+        → `--color-primary-hover`, on the stated assumption that those stay dark
+        enough for white text in both themes. That stopped being true when the
+        identity work made the primary *invert* in dark mode: dark's primary is
+        a light indigo and its accent a light apricot, so this hero — the
+        largest object on the profile — was rendering white body copy at
+        between 1.7:1 and 2.7:1. Measured in the browser, not guessed.
+
+        `--gradient-brand` is theme-invariant by design and holds white at
+        8.3:1 or better across all four stops. See theme.css for the reasoning.
+      */}
+      <div className="absolute inset-0 -z-10" style={{ background: "var(--gradient-brand)" }} />
       <div
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 55%, var(--color-primary-hover) 100%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute -right-24 -top-32 -z-10 h-96 w-96 rounded-full opacity-40 blur-3xl"
-        style={{ background: "radial-gradient(circle, var(--color-medium) 0%, transparent 70%)" }}
-      />
-      <div
-        className="pointer-events-none absolute -bottom-32 -left-16 -z-10 h-80 w-80 rounded-full opacity-30 blur-3xl"
-        style={{ background: "radial-gradient(circle, #ffffff 0%, transparent 70%)" }}
+        className="pointer-events-none absolute -right-24 -top-32 -z-10 h-96 w-96 rounded-full opacity-25 blur-3xl"
+        style={{ background: "radial-gradient(circle, var(--color-accent) 0%, transparent 70%)" }}
       />
 
       <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
@@ -171,7 +175,7 @@ export function ProfileHero({
             <button
               type="button"
               onClick={startEdit}
-              className="rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
+              className="rounded-full border border-on-brand-line bg-on-brand-fill px-4 py-1.5 text-sm font-medium text-on-brand backdrop-blur-md transition-colors hover:bg-[color-mix(in_srgb,var(--color-on-brand)_22%,transparent)]"
             >
               Խմբագրել
             </button>
@@ -180,7 +184,7 @@ export function ProfileHero({
               <button
                 type="button"
                 onClick={cancelEdit}
-                className="rounded-full border border-white/25 px-4 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10"
+                className="rounded-full border border-on-brand-line px-4 py-1.5 text-sm font-medium text-on-brand-muted transition-colors hover:bg-on-brand-fill"
               >
                 Չեղարկել
               </button>
@@ -188,7 +192,7 @@ export function ProfileHero({
                 type="submit"
                 form="hero-form"
                 disabled={saving}
-                className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-[var(--color-primary)] shadow-lg shadow-black/10 transition-transform hover:scale-105 disabled:opacity-60"
+                className="rounded-full bg-on-brand px-4 py-1.5 text-sm font-semibold text-[var(--color-brand-2)] shadow-lg shadow-black/10 transition-transform hover:scale-105 disabled:opacity-60"
               >
                 {saving ? "..." : "Պահպանել"}
               </button>
@@ -202,7 +206,7 @@ export function ProfileHero({
               <button
                 type="button"
                 onClick={handleAvatarClick}
-                className={`flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 bg-white/15 text-4xl font-bold text-white shadow-[0_0_40px_rgba(255,255,255,0.25)] backdrop-blur-md sm:h-32 sm:w-32 ${editing ? "cursor-pointer" : "cursor-default"}`}
+                className={`flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-on-brand-line bg-[color-mix(in_srgb,var(--color-on-brand)_16%,transparent)] text-4xl font-bold text-on-brand shadow-[0_0_40px_rgba(255,255,255,0.25)] backdrop-blur-md sm:h-32 sm:w-32 ${editing ? "cursor-pointer" : "cursor-default"}`}
               >
                 {avatarPreview || profile.avatar ? (
                   <img src={avatarPreview ?? profile.avatar ?? undefined} alt={profile.username} className="h-full w-full object-cover" />
@@ -211,7 +215,7 @@ export function ProfileHero({
                 )}
               </button>
               {editing && (
-                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white text-[var(--color-primary)] shadow-md">
+                <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-on-brand text-[var(--color-brand-2)] shadow-md">
                   <Camera size={15} strokeWidth={1.75} />
                 </span>
               )}
@@ -222,21 +226,21 @@ export function ProfileHero({
               {!editing ? (
                 <>
                   <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-                    <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{fullName || profile.username}</h1>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-on-brand sm:text-5xl">{fullName || profile.username}</h1>
                     {isStudent && (
-                      <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white backdrop-blur-md">
+                      <span className="rounded-full bg-[color-mix(in_srgb,var(--color-on-brand)_16%,transparent)] px-3 py-1 text-sm font-bold text-on-brand backdrop-blur-md">
                         Մակարդակ {profile.level}
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-lg text-white/70">@{profile.username}</p>
+                  <p className="mt-1 text-lg text-on-brand-muted">@{profile.username}</p>
                   {profile.role === "teacher" && (
-                    <p className="mt-1 flex items-center justify-center gap-1 text-sm text-white/70 sm:justify-start">
+                    <p className="mt-1 flex items-center justify-center gap-1 text-sm text-on-brand-muted sm:justify-start">
                       <GraduationCap size={14} strokeWidth={1.75} /> Ուսուցիչ
                     </p>
                   )}
                   {isStudent && (profile.grade || profile.school) && (
-                    <p className="mt-1 text-sm text-white/70">
+                    <p className="mt-1 text-sm text-on-brand-muted">
                       {[profile.grade ? `${profile.grade}-րդ դասարան` : null, profile.school ? profile.school.name : null]
                         .filter(Boolean)
                         .join(" · ")}
@@ -244,7 +248,7 @@ export function ProfileHero({
                   )}
                 </>
               ) : (
-                <div className="grid gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md sm:grid-cols-2">
+                <div className="grid gap-3 rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md sm:grid-cols-2">
                   <div>
                     <label className={glassLabelClass}>Օգտանուն</label>
                     <input
@@ -254,7 +258,7 @@ export function ProfileHero({
                       disabled={usernameLocked}
                       required
                     />
-                    {usernameLocked && <p className="mt-1 text-xs text-white/60">Օգտանունը կրկին կարող եք փոխել {usernameDaysLeft} օրից։</p>}
+                    {usernameLocked && <p className="mt-1 text-xs text-on-brand-muted">Օգտանունը կրկին կարող ես փոխել {usernameDaysLeft} օրից։</p>}
                   </div>
                   <div>
                     <label className={glassLabelClass}>Անուն</label>
@@ -290,8 +294,8 @@ export function ProfileHero({
 
           {isStudent && (
             <div className="mt-8 max-w-xl">
-              <div className="flex items-baseline justify-between text-sm text-white/80">
-                <span className="font-semibold text-white">{profile.total_xp} XP</span>
+              <div className="flex items-baseline justify-between text-sm text-on-brand-muted">
+                <span className="font-semibold text-on-brand">{profile.total_xp} XP</span>
                 <span>
                   {profile.xp_for_next_level > 0
                     ? `${profile.xp_for_next_level - profile.xp_into_level} XP մինչև ${profile.level + 1}-րդ մակարդակ`
@@ -299,23 +303,23 @@ export function ProfileHero({
                 </span>
               </div>
               <div className="mt-2 drop-shadow-[0_0_12px_rgba(255,255,255,0.35)]">
-                <ProgressBar percent={xpPercent} colorClassName="bg-white" trackClassName="bg-white/20" heightClassName="h-2.5" label="Մակարդակի առաջընթաց" />
+                <ProgressBar percent={xpPercent} colorClassName="bg-on-brand" trackClassName="bg-[color-mix(in_srgb,var(--color-on-brand)_22%,transparent)]" heightClassName="h-2.5" label="Մակարդակի առաջընթաց" />
               </div>
             </div>
           )}
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
             {isStudent && profile.streak && profile.streak.current_streak > 0 && (
-              <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-md">
+              <span className="flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--color-on-brand)_16%,transparent)] px-4 py-1.5 text-sm font-semibold text-on-brand backdrop-blur-md">
                 <Flame size={15} strokeWidth={1.75} /> {profile.streak.current_streak} օրյա շարք
-                <span className="font-normal text-white/60">· լավագույնը {profile.streak.longest_streak}</span>
+                <span className="font-normal text-on-brand-muted">· լավագույնը {profile.streak.longest_streak}</span>
               </span>
             )}
           </div>
 
-          <div className="mt-8 border-t border-white/15 pt-6">
+          <div className="mt-8 border-t border-on-brand-line pt-6">
             {!editing ? (
-              <p className="max-w-2xl whitespace-pre-wrap text-lg italic text-white/90">
+              <p className="max-w-2xl whitespace-pre-wrap text-lg italic text-on-brand">
                 {profile.bio ? `„${profile.bio}“` : "Բիո դեռ ավելացված չէ։"}
               </p>
             ) : (
@@ -327,29 +331,29 @@ export function ProfileHero({
           </div>
 
           {isStudent && (
-            <div className="mt-6 grid gap-4 border-t border-white/15 pt-6 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+            <div className="mt-6 grid gap-4 border-t border-on-brand-line pt-6 sm:grid-cols-3">
+              <div className="rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
                 <p className={glassLabelClass}>Դպրոց</p>
                 {!editing ? (
-                  <p className="mt-1 font-medium text-white">
+                  <p className="mt-1 font-medium text-on-brand">
                     {profile.school ? `${profile.school.name}${profile.school.marz ? ` (${profile.school.marz})` : ""}` : "Չնշված"}
                   </p>
                 ) : (
-                  <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+                  <SearchSelect placeholder="Փնտրիր դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
                 )}
               </div>
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+              <div className="rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
                 <p className={glassLabelClass}>Ցանկալի բուհ</p>
                 {!editing ? (
-                  <p className="mt-1 font-medium text-white">{profile.university ? profile.university.name : "Չնշված"}</p>
+                  <p className="mt-1 font-medium text-on-brand">{profile.university ? profile.university.name : "Չնշված"}</p>
                 ) : (
-                  <SearchSelect placeholder="Փնտրեք բուհ..." value={university} onChange={setUniversity} search={universitySearch} />
+                  <SearchSelect placeholder="Փնտրիր բուհ..." value={university} onChange={setUniversity} search={universitySearch} />
                 )}
               </div>
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+              <div className="rounded-[var(--radius-xl)] border border-on-brand-line bg-on-brand-fill p-4 backdrop-blur-md">
                 <p className={glassLabelClass}>Մասնագիտություն</p>
                 {!editing ? (
-                  <p className="mt-1 font-medium text-white">{profile.target_major || "Չնշված"}</p>
+                  <p className="mt-1 font-medium text-on-brand">{profile.target_major || "Չնշված"}</p>
                 ) : (
                   <input
                     className={glassInputClass}
@@ -365,30 +369,30 @@ export function ProfileHero({
         </form>
 
         {isStudent && (
-          <div className="mt-6 border-t border-white/15 pt-6">
+          <div className="mt-6 border-t border-on-brand-line pt-6">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold uppercase tracking-wide text-white/60">Ցուցադրվող նվաճումներ</p>
+              <p className="text-sm font-semibold tracking-wide text-on-brand-muted">Ցուցադրվող նվաճումներ</p>
               <button
                 type="button"
                 onClick={() => setShowcaseOpen(true)}
-                className="rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-full border border-on-brand-line px-3 py-1 text-xs font-medium text-on-brand-muted backdrop-blur-md transition-colors hover:bg-on-brand-fill hover:text-on-brand"
               >
                 Փոփոխել
               </button>
             </div>
             {showcase.length === 0 ? (
-              <p className="text-sm text-white/60">Դեռ նվաճումներ չկան։</p>
+              <p className="text-sm text-on-brand-muted">Դեռ նվաճումներ չկան։</p>
             ) : (
               <div className="flex flex-wrap gap-3">
                 {showcase.map((ua) => (
                   <div
                     key={ua.id}
                     title={ua.achievement.description}
-                    className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur-md"
+                    className="flex items-center gap-2 rounded-full border border-on-brand-line bg-on-brand-fill px-3 py-1.5 backdrop-blur-md"
                     style={{ boxShadow: `0 0 16px 0 ${RARITY_COLORS[ua.achievement.rarity]}55` }}
                   >
                     <span className="text-lg">{ua.achievement.icon || <Award size={18} strokeWidth={1.75} />}</span>
-                    <span className="text-sm font-medium text-white">{ua.achievement.name}</span>
+                    <span className="text-sm font-medium text-on-brand">{ua.achievement.name}</span>
                   </div>
                 ))}
               </div>
@@ -396,7 +400,7 @@ export function ProfileHero({
           </div>
         )}
 
-        {error && <p className="mt-4 text-sm font-medium text-white">{error}</p>}
+        {error && <p className="mt-4 text-sm font-medium text-on-brand">{error}</p>}
       </div>
 
       {showcaseOpen && achievements && myAchievements && (

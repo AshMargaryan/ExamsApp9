@@ -34,6 +34,17 @@
   from { transform: scale(1); opacity: 1; }
   to { transform: scale(0.96); opacity: 0; }
 }
+/* Bottom-sheet entry/exit — used by ui/Modal.tsx in the native shell, where a
+   dialog rises from the bottom edge instead of scaling from the centre. */
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes sheet-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
 @keyframes slide-up-in {
   from { transform: translateY(8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }

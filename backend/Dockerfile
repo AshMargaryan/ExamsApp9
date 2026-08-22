@@ -82,13 +82,18 @@ RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
-# /admin/login/ always returns 200 without authentication, so it works as a
+# /api/auth/schools/ is AllowAny and always returns 200, so it works as a
 # liveness probe without needing a dedicated /health/ endpoint. This tells
 # Docker (and `depends_on: condition: service_healthy` in other services,
 # should we add any that depend on backend) whether Daphne is actually
 # answering HTTP requests, not just whether the process exists.
+#
+# Deliberately NOT /admin/login/: the admin is mounted at a configurable path
+# now (settings.ADMIN_URL_PATH), so probing it would turn moving the admin —
+# a hardening step — into a silently failing healthcheck and an endlessly
+# restarting container.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:8000/admin/login/ || exit 1
+    CMD curl -f http://localhost:8000/api/auth/schools/ || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
@@ -139,7 +144,7 @@ EXPOSE 8000
 # needs to survive that one-time first-boot cost without the container
 # ever hitting a false "unhealthy".
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=3 \
-    CMD curl -f http://localhost:8000/admin/login/ || exit 1
+    CMD curl -f http://localhost:8000/api/auth/schools/ || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]

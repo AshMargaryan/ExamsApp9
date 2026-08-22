@@ -1,46 +1,46 @@
 import type { WeeklyProgressPoint } from "../api/practice";
+import { BarChart, type BarChartPoint } from "./ui/BarChart";
+import { EmptyState } from "./ui/EmptyState";
 
-const CHART_HEIGHT = 120;
-const BAR_MAX_HEIGHT = 90;
+/*
+  Eight weeks of "questions solved", split into correct and incorrect.
+
+  This used to be a hand-rolled bar strip, deliberately, because `ui/Chart` is
+  a recharts **line** chart and neither the mark nor the ~354KB chunk belongs
+  on the dashboard. Both of those reasons still hold — see `ui/BarChart`,
+  which is that strip promoted into the kit with no library behind it, so the
+  next surface that wants bars has one instead of hand-rolling a third.
+*/
 
 function weekLabel(weekStart: string): string {
   return new Date(weekStart).toLocaleDateString("hy-AM", { day: "numeric", month: "short" });
 }
 
 export function WeeklyProgressChart({ points }: { points: WeeklyProgressPoint[] }) {
-  const max = Math.max(1, ...points.map((p) => p.solved));
   const totalSolved = points.reduce((sum, p) => sum + p.solved, 0);
+  const totalCorrect = points.reduce((sum, p) => sum + p.correct, 0);
+  const activeWeeks = points.filter((p) => p.solved > 0).length;
 
-  if (totalSolved === 0) {
-    return (
-      <div className="flex h-[120px] items-center justify-center text-sm text-text-muted">
-        Դեռ առաջընթաց չկա այս շաբաթների ընթացքում։ Սկսեք պարապել՝ գրաֆիկը լրացնելու համար։
-      </div>
-    );
-  }
+  const bars: BarChartPoint[] = points.map((p) => ({
+    id: p.week_start,
+    label: weekLabel(p.week_start),
+    value: p.solved,
+    highlight: p.correct,
+    readout: `${weekLabel(p.week_start)}՝ ${p.solved} հարց, ${p.correct} ճիշտ`,
+  }));
 
   return (
-    <div className="flex items-end gap-2" style={{ height: CHART_HEIGHT }}>
-      {points.map((p) => {
-        const barHeight = Math.round((p.solved / max) * BAR_MAX_HEIGHT);
-        const correctHeight = p.solved > 0 ? Math.round((p.correct / p.solved) * barHeight) : 0;
-        return (
-          <div key={p.week_start} className="flex flex-1 flex-col items-center justify-end gap-1.5">
-            <div
-              title={`${weekLabel(p.week_start)}՝ ${p.solved} հարց, ${p.correct} ճիշտ`}
-              className="flex w-full max-w-8 flex-col justify-end overflow-hidden rounded-t-md bg-surface-muted"
-              style={{ height: Math.max(barHeight, p.solved > 0 ? 4 : 0) }}
-            >
-              <div className="w-full bg-accent" style={{ height: correctHeight }} />
-              <div
-                className="w-full bg-border"
-                style={{ height: Math.max(barHeight - correctHeight, 0) }}
-              />
-            </div>
-            <span className="text-[10px] text-text-muted">{weekLabel(p.week_start)}</span>
-          </div>
-        );
-      })}
-    </div>
+    <BarChart
+      points={bars}
+      height={120}
+      summary={`Վերջին 8 շաբաթում լուծված է ${totalSolved} հարց, որից ${totalCorrect} ճիշտ։ Պարապել ես ${activeWeeks} շաբաթ։`}
+      empty={
+        <EmptyState
+          size="sm"
+          title="Այս 8 շաբաթում դեռ պարապմունք չկա"
+          hint="Առաջին իսկ լուծված հարցից հետո այստեղ կհայտնվի շաբաթական սյունակը։"
+        />
+      }
+    />
   );
 }

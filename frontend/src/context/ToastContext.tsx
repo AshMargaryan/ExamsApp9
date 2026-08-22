@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { isNativeApp } from "../lib/platform";
+import { CircleCheck, TriangleAlert } from "lucide-react";
 
 type ToastKind = "success" | "error";
 
@@ -6,6 +8,8 @@ interface ToastItem {
   id: number;
   kind: ToastKind;
   message: string;
+  /** Set while the exit animation plays, just before the toast is removed. */
+  exiting?: boolean;
 }
 
 interface ToastContextValue {
@@ -16,13 +20,17 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const AUTO_DISMISS_MS = 4000;
+/** Keep in sync with --motion-fast; the toast is unmounted once its exit
+ *  animation has finished rather than disappearing mid-fade. */
+const EXIT_MS = 200;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const nextId = useRef(0);
 
   const dismiss = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), EXIT_MS);
   }, []);
 
   const push = useCallback(
@@ -40,20 +48,37 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showSuccess, showError }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4">
+      <div
+        className="pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 px-4"
+        // In the app the bottom edge belongs to the tab bar, so toasts sit
+        // above it rather than on top of the navigation.
+        style={{
+          bottom: isNativeApp()
+            ? "calc(var(--safe-bottom) + var(--mobile-tabbar-h) + 0.75rem)"
+            : "1rem",
+        }}
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
             role="status"
-            className={`pointer-events-auto w-full max-w-sm rounded-[var(--radius)] border px-4 py-3 text-sm font-medium shadow-xl transition-all ${
+            className={`pointer-events-auto flex w-full max-w-sm cursor-pointer items-start gap-[var(--space-2)] rounded-[var(--radius)] border px-4 py-3 text-sm font-medium shadow-xl ${
+              t.exiting
+                ? "animate-[fade-out_var(--motion-fast)_var(--ease-out)_forwards]"
+                : "animate-[slide-up-in_var(--motion-fast)_var(--ease-out)]"
+            } ${
               t.kind === "success"
                 ? "border-correct bg-correct-bg text-correct"
                 : "border-incorrect bg-incorrect-bg text-incorrect"
             }`}
             onClick={() => dismiss(t.id)}
           >
-            {t.kind === "success" ? "✅ " : "⚠️ "}
-            {t.message}
+            {t.kind === "success" ? (
+              <CircleCheck size={16} strokeWidth={2} aria-hidden className="mt-0.5 shrink-0" />
+            ) : (
+              <TriangleAlert size={16} strokeWidth={2} aria-hidden className="mt-0.5 shrink-0" />
+            )}
+            <span>{t.message}</span>
           </div>
         ))}
       </div>

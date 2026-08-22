@@ -9,6 +9,7 @@ from . import analytics
 from .analytics import SUBJECT_LABELS
 from .context import get_learner_context
 from .models import (
+    CoachPreferences,
     Achievement,
     GoalType,
     LearningEvent,
@@ -22,6 +23,7 @@ from .models import (
     UserAchievement,
 )
 from .serializers import (
+    CoachPreferencesSerializer,
     AchievementSerializer,
     LearningEventSerializer,
     LearningPreferencesSerializer,
@@ -106,14 +108,16 @@ class ProfileAnalyticsView(APIView):
 
     def get(self, request):
         user = request.user
+        growth_data = analytics.growth(user)
+        mistake = analytics._weakest_topic_mistake(user)
         return Response({
             "subject_mastery": analytics.subject_mastery(user),
             "learning_dna": analytics.learning_dna(user),
-            "academic_power": analytics.academic_power(user),
+            "academic_power": analytics.academic_power(user, growth_data=growth_data),
             "personal_records": analytics.personal_records(user),
-            "growth": analytics.growth(user),
-            "coach": analytics.coach(user),
-            "next_mission": analytics.next_mission(user),
+            "growth": growth_data,
+            "coach": analytics.coach(user, mistake=mistake, growth_data=growth_data),
+            "next_mission": analytics.next_mission(user, mistake=mistake),
         })
 
 
@@ -127,10 +131,12 @@ class HomeInsightView(APIView):
 
     def get(self, request):
         user = request.user
+        mistake = analytics._weakest_topic_mistake(user)
+        mission = analytics.next_mission(user, mistake=mistake)
         return Response({
-            "coach": analytics.coach(user),
-            "next_mission": analytics.next_mission(user),
-            "checklist": analytics.today_checklist(user),
+            "coach": analytics.coach(user, mistake=mistake),
+            "next_mission": mission,
+            "checklist": analytics.today_checklist(user, mission=mission),
         })
 
 
@@ -313,6 +319,20 @@ class StudyAvailabilityView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         availability, _ = StudyAvailability.objects.get_or_create(user=self.request.user)
         return availability
+
+
+class CoachPreferencesView(generics.RetrieveUpdateAPIView):
+    """GET/PATCH /api/profile/coach-preferences/ — how often and when the
+    student is willing to sit a full mock exam. Read by
+    apps.study_plan.services when deciding whether today's plan may include
+    one; see apps.profiles.models.CoachPreferences."""
+
+    serializer_class = CoachPreferencesSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        preferences, _ = CoachPreferences.objects.get_or_create(user=self.request.user)
+        return preferences
 
 
 class LearningPreferencesView(generics.RetrieveUpdateAPIView):

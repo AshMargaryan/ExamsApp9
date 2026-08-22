@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 
 import { Mic, Paperclip, Send, Smile, X } from "lucide-react";
 import { uploadAttachment, type Attachment, type Message } from "../../api/chat";
 import { messagePreviewText } from "../../lib/chatLabels";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 import { AttachmentChip } from "./AttachmentChip";
 import { EmojiPicker } from "./EmojiPicker";
 
@@ -92,7 +94,7 @@ export function MessageInput({
         setAttachments((prev) => [...prev, attachment]);
       }
     } catch {
-      setUploadError("Ֆայլը չհաջողվեց վերբեռնել։ Ստուգեք ձևաչափը և չափսը։");
+      setUploadError("Ֆայլը չհաջողվեց վերբեռնել։ Ստուգիր ձևաչափը և չափսը։");
     } finally {
       setUploading(false);
     }
@@ -211,12 +213,12 @@ export function MessageInput({
       }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
-      className={`rounded-md border p-2 transition-colors ${
+      className={`rounded-[var(--radius)] border p-2 transition-colors ${
         dragOver ? "border-primary bg-surface-muted" : "border-transparent"
       }`}
     >
       {replyingTo && (
-        <div className="mb-2 flex items-start gap-2 rounded-md border-l-4 border-primary bg-surface-muted px-3 py-1.5">
+        <div className="mb-2 flex items-start gap-2 rounded-[var(--radius-md)] border-l-4 border-primary bg-surface-muted px-3 py-1.5">
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-medium text-primary">
               {replyingTo.sender
@@ -229,10 +231,11 @@ export function MessageInput({
           <button
             type="button"
             onClick={onCancelReply}
-            className="shrink-0 text-text-muted hover:text-text"
+            className="flex shrink-0 text-text-muted hover:text-text"
+            aria-label="Չեղարկել պատասխանը"
             title="Չեղարկել"
           >
-            ✕
+            <X size={15} strokeWidth={2} aria-hidden />
           </button>
         </div>
       )}
@@ -253,10 +256,10 @@ export function MessageInput({
       {voiceError && <p className="mb-2 text-sm text-incorrect">{voiceError}</p>}
 
       {recording ? (
-        <div className="flex items-center gap-3 rounded-md border border-incorrect/40 bg-incorrect/5 px-3 py-2">
+        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-incorrect/40 bg-incorrect/5 px-3 py-2">
           <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-incorrect" />
           <span className="text-sm font-medium text-text">{formatDuration(recordingSeconds)}</span>
-          <span className="flex-1 text-xs text-text-muted">Ձայնագրվում է...</span>
+          <span className="flex-1 text-xs text-text-muted">Ձայնագրվում է…</span>
           <button
             type="button"
             onClick={cancelRecording}
@@ -282,7 +285,7 @@ export function MessageInput({
             title="Կցել ֆայլ"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading || sendingVoice}
-            className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+            className="shrink-0 rounded-[var(--radius-md)] border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
           >
             <Paperclip size={18} strokeWidth={1.75} />
           </button>
@@ -310,7 +313,7 @@ export function MessageInput({
               title="Էմոջի"
               onClick={() => setEmojiOpen((v) => !v)}
               disabled={disabled}
-              className="rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+              className="rounded-[var(--radius-md)] border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
             >
               <Smile size={18} strokeWidth={1.75} />
             </button>
@@ -321,10 +324,10 @@ export function MessageInput({
             value={text}
             onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Գրեք հաղորդագրություն..."
+            placeholder="Հաղորդագրություն…"
             rows={1}
             disabled={disabled}
-            className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary disabled:opacity-50"
+            className={cn(fieldInputClass, "max-h-32 min-h-[2.5rem] w-auto flex-1 resize-none")}
           />
 
           {!text.trim() && attachments.length === 0 ? (
@@ -333,7 +336,7 @@ export function MessageInput({
               title="Ձայնային հաղորդագրություն"
               onClick={startRecording}
               disabled={disabled || uploading || sendingVoice}
-              className="shrink-0 rounded-md border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
+              className="shrink-0 rounded-[var(--radius-md)] border border-border px-3 py-2 text-lg text-text-muted hover:text-text disabled:opacity-50"
             >
               <Mic size={18} strokeWidth={1.75} />
             </button>
@@ -342,7 +345,7 @@ export function MessageInput({
               type="button"
               onClick={handleSend}
               disabled={disabled || uploading}
-              className="shrink-0 rounded-md bg-primary px-4 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="shrink-0 rounded-[var(--radius-md)] bg-primary px-4 py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               Ուղարկել
             </button>

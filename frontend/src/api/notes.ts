@@ -21,9 +21,12 @@ export interface DocumentAttachment {
   download_url: string;
 }
 
+export type DocumentKind = "rich_text" | "canvas";
+
 export interface DocumentSummary {
   id: string;
   folder: string | null;
+  kind: DocumentKind;
   title: string;
   icon: string;
   tags: string[];
@@ -36,8 +39,9 @@ export interface DocumentSummary {
 }
 
 export interface Document extends Omit<DocumentSummary, "snippet"> {
-  // Tiptap's JSON document shape — treated as an opaque blob everywhere
-  // except inside the editor itself.
+  // For kind="rich_text": Tiptap's JSON document shape, opaque everywhere
+  // except inside the rich-text editor. For kind="canvas": {strokes: [...]},
+  // opaque everywhere except inside CanvasEditor.
   content: Record<string, unknown>;
   attachments: DocumentAttachment[];
 }
@@ -102,6 +106,7 @@ export async function getDocument(id: string): Promise<Document> {
 export async function createDocument(input: {
   title?: string;
   folder?: string | null;
+  kind?: DocumentKind;
   content?: Record<string, unknown>;
 }): Promise<Document> {
   const { data } = await apiClient.post("/notes/documents/", input);

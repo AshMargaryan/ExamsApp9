@@ -20,6 +20,13 @@ class OpenAIProvider(BaseAIProvider):
     def __init__(self):
         self.api_key = getattr(settings, "OPENAI_API_KEY", "")
         self.model = getattr(settings, "OPENAI_MODEL", "gpt-4o-mini")
+        # The SDK's own default is 600s. Several of these calls happen inside
+        # a page request — apps.study_plan narrates the daily plan during the
+        # first GET of the day — so an unbounded wait means a student staring
+        # at a loading skeleton for minutes with no way out. Bounded, the call
+        # raises, and every caller already has a deterministic fallback.
+        # Mirrors OLLAMA_TIMEOUT_SECONDS in the sibling provider.
+        self.timeout = getattr(settings, "OPENAI_TIMEOUT_SECONDS", 45)
 
     def generate(self, request: AIRequest) -> AIResponse:
         if not self.api_key:
@@ -29,7 +36,7 @@ class OpenAIProvider(BaseAIProvider):
 
         from openai import OpenAI  # local import: keeps the SDK optional for AI_PROVIDER=mock/ollama
 
-        client = OpenAI(api_key=self.api_key)
+        client = OpenAI(api_key=self.api_key, timeout=self.timeout)
         messages = [{"role": "system", "content": request.system_prompt}]
         messages.extend(self._to_openai_message(m) for m in request.messages)
 
@@ -77,7 +84,7 @@ class OpenAIProvider(BaseAIProvider):
 
         from openai import OpenAI
 
-        client = OpenAI(api_key=self.api_key)
+        client = OpenAI(api_key=self.api_key, timeout=self.timeout)
         messages = [{"role": "system", "content": request.system_prompt}]
         messages.extend(self._to_openai_message(m) for m in request.messages)
 

@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
+import { Search, Users } from "lucide-react";
 import * as gamesApi from "../api/games";
 import type { MatchmakingQueue, MatchmakingTicket } from "../api/games";
 import { getHierarchy } from "../api/practice";
 import type { SubjectNode } from "../api/practice";
-import { MessageModal } from "../components/MessageModal";
-import { LinkButton } from "../components/ui/LinkButton";
+import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { Field, FormAlert } from "../components/ui/Field";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { Skeleton } from "../components/ui/Skeleton";
 
 function extractError(err: unknown, fallback: string): string {
   if (err instanceof AxiosError && err.response?.data) {
@@ -44,6 +50,7 @@ export function MatchmakingPage() {
 
   const [subjects, setSubjects] = useState<SubjectNode[] | null>(null);
   const [subjectId, setSubjectId] = useState<string>("");
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const refreshStatus = useCallback(async () => {
     const tickets = await gamesApi.fetchMatchmakingStatus();
@@ -56,15 +63,23 @@ export function MatchmakingPage() {
     setTicket(active);
   }, [navigate]);
 
+  const load = useCallback(() => {
+    setLoadFailed(false);
+    // Both were unguarded `.then()`s, so any failure left the page on
+    // "Բեռնվում է..." with no error and no way to try again.
+    Promise.all([
+      gamesApi.fetchMatchmakingQueues().then(setQueues),
+      getHierarchy().then((data) => {
+        setSubjects(data);
+        if (data.length > 0) setSubjectId((prev) => prev || String(data[0].id));
+      }),
+      refreshStatus(),
+    ]).catch(() => setLoadFailed(true));
+  }, [refreshStatus]);
+
   useEffect(() => {
-    gamesApi.fetchMatchmakingQueues().then(setQueues);
-    getHierarchy().then((data) => {
-      setSubjects(data);
-      if (data.length > 0) setSubjectId(String(data[0].id));
-    });
-    refreshStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    load();
+  }, [load]);
 
   useEffect(() => {
     if (!ticket) return;
@@ -88,7 +103,7 @@ export function MatchmakingPage() {
 
   async function handleFindGame(queueId: number) {
     if (!subjectId) {
-      setError("Ընտրեք առարկան։");
+      setError("Ընտրիր առարկան։");
       return;
     }
     setError(null);
@@ -121,93 +136,119 @@ export function MatchmakingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg px-4 py-8">
-      <div className="mx-auto max-w-xl">
-        <LinkButton to="/games" className="mb-6">← Խաղասենյակներ</LinkButton>
+    <div className="mx-auto max-w-xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        title="Գտնել խաղ"
+        description="Ընտրիր առարկան, մենք կգտնենք մրցակիցներ։"
+        back={{ to: "/games", label: "Խաղասենյակներ" }}
+      />
 
-        <h1 className="mb-6 text-3xl font-semibold text-text">Գտնել խաղ</h1>
+      {error && <FormAlert message={error} />}
 
-        {!ticket && (
-          <div className="flex flex-col gap-4">
-            <div className="rounded-[var(--radius)] border border-border bg-surface p-4">
-              <label className="mb-1 block text-sm text-text-muted">Առարկա</label>
-              <select
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+      {loadFailed && !ticket && (
+        <ErrorState
+          title="Ընտրանքների ցանկը չհաջողվեց բեռնել։"
+          hint="Ստուգիր կապը և փորձիր կրկին։"
+          onRetry={load}
+        />
+      )}
+
+      {!ticket && !loadFailed && (
+        <div className="flex flex-col gap-[var(--space-4)]">
+          <Field label="Առարկա">
+            {({ id }) => (
+              <Select
+                id={id}
                 value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-              >
-                {subjects === null && <option value="">Բեռնվում է...</option>}
-                {subjects?.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {queues === null && <p className="text-text-muted">Բեռնվում է...</p>}
-            {queues?.map((queue) => (
-              <div
-                key={queue.id}
-                className="rounded-[var(--radius)] border border-border bg-surface p-6 shadow-sm"
-              >
-                <h2 className="text-lg font-semibold text-text">{queue.name}</h2>
-                <QueueRules queue={queue} />
-                <button
-                  type="button"
-                  disabled={starting}
-                  onClick={() => handleFindGame(queue.id)}
-                  className="mt-4 w-full rounded-md bg-primary py-2.5 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
-                >
-                  {starting ? "..." : "Գտնել խաղ"}
-                </button>
-              </div>
-            ))}
-            {queues?.length === 0 && (
-              <p className="text-text-muted">Այս պահին հասանելի հանրային ընտրանքներ չկան։</p>
+                onChange={setSubjectId}
+                disabled={subjects === null}
+                placeholder={subjects === null ? "Բեռնվում է..." : "Ընտրիր առարկան"}
+                options={(subjects ?? []).map((s) => ({ value: String(s.id), label: s.name }))}
+              />
             )}
-          </div>
-        )}
+          </Field>
 
-        {ticket && (
-          <div className="rounded-[var(--radius)] border border-border bg-surface p-8 text-center shadow-sm">
-            <p className="text-lg font-medium text-text">{ticket.queue.name}</p>
-            {ticket.subject_name && (
-              <p className="text-sm text-text-muted">{ticket.subject_name}</p>
-            )}
-            <div className="my-6 flex items-center justify-center gap-3">
-              <span className="h-3 w-3 animate-pulse rounded-full bg-primary" />
-              <p className="text-text-muted">Որոնում է հակառակորդներ...</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-md border border-border bg-bg p-4">
-                <p className="text-2xl font-semibold text-text">
-                  {ticket.players_waiting}
-                  {ticket.queue.start_mode === "player_count" ? ` / ${ticket.queue.min_players}` : ""}
-                </p>
-                <p className="mt-1 text-sm text-text-muted">Սպասող խաղացողներ</p>
-              </div>
-              <div className="rounded-md border border-border bg-bg p-4">
-                <p className="text-2xl font-semibold text-text">
-                  {secondsLeft !== null ? `${secondsLeft}վ` : "—"}
-                </p>
-                <p className="mt-1 text-sm text-text-muted">Մինչև մեկնարկը</p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="mt-6 w-full rounded-md border border-border py-2.5 font-medium text-text-muted transition-colors hover:bg-surface-muted"
+          {queues === null && (
+            <>
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </>
+          )}
+          {queues?.map((queue) => (
+            <div
+              key={queue.id}
+              className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)] shadow-[var(--shadow-sm)]"
             >
-              Չեղարկել որոնումը
-            </button>
-          </div>
-        )}
-      </div>
+              <h2 className="font-display text-[length:var(--text-lg)] font-semibold text-text">{queue.name}</h2>
+              <QueueRules queue={queue} />
+              {/* Every queue card carried a button reading "Գտնել խաղ" —
+                  identical to the page title and to each other, so a screen
+                  reader's button list gave no way to tell them apart. The
+                  visible label stays short because the card heading directly
+                  above already names the queue; the accessible name carries
+                  it, which is where the ambiguity actually was. */}
+              <Button
+                type="button"
+                loading={starting}
+                onClick={() => handleFindGame(queue.id)}
+                aria-label={`Միանալ «${queue.name}» ընտրանքին`}
+                className="mt-[var(--space-4)] w-full"
+                iconLeft={<Search size={16} strokeWidth={2} aria-hidden />}
+              >
+                Միանալ
+              </Button>
+            </div>
+          ))}
+          {queues?.length === 0 && (
+            <EmptyState
+              icon={<Users size={24} strokeWidth={1.75} aria-hidden />}
+              title="Այս պահին հասանելի հանրային ընտրանքներ չկան։"
+              hint="Կարող ես սեփական սենյակ ստեղծել և ընկերոջդ կոդն ուղարկել։"
+              cta={{ label: "Խաղասենյակներ", onClick: () => navigate("/games") }}
+            />
+          )}
+        </div>
+      )}
 
-      {error && <MessageModal message={error} onClose={() => setError(null)} />}
+      {ticket && (
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-7)] text-center shadow-[var(--shadow-sm)]">
+          <p className="font-display text-[length:var(--text-lg)] font-semibold text-text">{ticket.queue.name}</p>
+          {ticket.subject_name && (
+            <p className="text-[length:var(--text-sm)] text-text-muted">{ticket.subject_name}</p>
+          )}
+          <p
+            role="status"
+            className="my-[var(--space-6)] flex items-center justify-center gap-[var(--space-3)] text-text-muted"
+          >
+            <span className="h-3 w-3 animate-pulse rounded-full bg-primary motion-reduce:animate-none" />
+            Որոնում ենք մրցակիցներ...
+          </p>
+
+          <div className="grid grid-cols-2 gap-[var(--space-4)]">
+            <div className="rounded-[var(--radius-md)] border border-border bg-bg p-[var(--space-4)]">
+              <p className="text-[length:var(--text-2xl)] font-semibold tabular-nums text-text">
+                {ticket.players_waiting}
+                {ticket.queue.start_mode === "player_count" ? ` / ${ticket.queue.min_players}` : ""}
+              </p>
+              <p className="mt-1 text-[length:var(--text-sm)] text-text-muted">Սպասող խաղացողներ</p>
+            </div>
+            <div className="rounded-[var(--radius-md)] border border-border bg-bg p-[var(--space-4)]">
+              <p className="text-[length:var(--text-2xl)] font-semibold tabular-nums text-text">
+                {secondsLeft !== null ? `${secondsLeft}վ` : "—"}
+              </p>
+              <p className="mt-1 text-[length:var(--text-sm)] text-text-muted">Մինչև մեկնարկը</p>
+            </div>
+          </div>
+
+          <p className="mt-[var(--space-4)] text-[length:var(--text-xs)] text-text-muted">
+            Կարող ես թողնել այս էջը բաց — խաղը կբացվի ինքնաշխատ, հենց մրցակիցները հավաքվեն։
+          </p>
+
+          <Button variant="ghost" onClick={handleCancel} className="mt-[var(--space-4)] w-full">
+            Չեղարկել որոնումը
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

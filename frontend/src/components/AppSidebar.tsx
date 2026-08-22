@@ -1,93 +1,120 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  BarChart3,
-  BookOpen,
-  CalendarDays,
-  ClipboardCheck,
-  Gamepad2,
-  Home,
-  Layers,
-  ListTodo,
-  MessageCircle,
-  NotebookPen,
-  NotebookText,
-  Sparkles,
-  StickyNote,
-  Target,
-  Trophy,
-  Users,
-} from "lucide-react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
-import type { AccountRole } from "../api/auth";
-import { useAssignmentNotifications } from "../hooks/useAssignmentNotifications";
-import { useChatUnreadCount } from "../hooks/useChatUnreadCount";
+import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
+import { Logo } from "./Logo";
+import { isNavItemActive, useNavItems, type NavItem } from "./nav/navItems";
 
-interface NavItem {
-  to: string;
-  icon: ReactNode;
-  label: string;
-  badge?: number;
-}
+/*
+  Primary web navigation, in two forms driven by one item list:
 
-const ICON_SIZE = 19;
-const ICON_STROKE = 1.75;
+  - lg and up: a persistent rail. Navigation on a desktop-class screen should
+    be visible, not hidden a click deep behind a hamburger — every colliding
+    fixed element clears it via the shared --rail-w token.
+  - below lg: the original drawer, unchanged in behaviour.
 
-function dashboardPathFor(role: AccountRole) {
-  if (role === "teacher") return "/teacher-dashboard";
-  if (role === "parent") return "/family";
-  return "/student-dashboard";
-}
+  The native shell doesn't render this at all; it has its own bottom tab bar
+  (see mobile/MobileShell).
+*/
 
-function useNavItems(role: AccountRole, assignmentBadge: number, chatBadge: number): NavItem[] {
-  const items: NavItem[] = [{ to: "/", icon: <Home size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Գլխավոր" }];
-
-  if (role === "student") {
-    items.push(
-      { to: "/todo", icon: <ListTodo size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Իմ խնդիրները" },
-      { to: "/learning-profile", icon: <Target size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Իմ ուսումնական պրոֆիլը" },
-      { to: "/study-plan", icon: <CalendarDays size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Ուսումնական պլան" },
-      { to: "/subjects", icon: <BookOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Առարկաներ" },
-      { to: "/mock-exams", icon: <ClipboardCheck size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Ամբողջական թեստեր" },
-      { to: "/flashcards", icon: <Layers size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Բառաքարտեր" },
-      { to: "/mistake-notebook", icon: <NotebookText size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Սխալների տետր" },
-      { to: "/assistant", icon: <Sparkles size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "AI Օգնական" },
-      { to: "/games", icon: <Gamepad2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Խաղասենյակներ" },
-      { to: "/rankings", icon: <Trophy size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Դասակարգում" },
-      { to: "/groups", icon: <Users size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Ուսումնական խմբեր" },
-      {
-        to: dashboardPathFor(role),
-        icon: <BarChart3 size={ICON_SIZE} strokeWidth={ICON_STROKE} />,
-        label: "Առաջադրանքներ",
-        badge: assignmentBadge,
-      },
-    );
-  } else if (role === "teacher") {
-    items.push({ to: dashboardPathFor(role), icon: <BarChart3 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Վահանակ" });
+/** Buckets items by their `group`, preserving each group's first-appearance
+ *  order (not requiring the source list to be contiguous). Ungrouped items
+ *  stay standalone — no header renders for a role whose list is short enough
+ *  not to need one. */
+function groupNavItems(items: NavItem[]) {
+  const sections: { group?: string; items: NavItem[] }[] = [];
+  const indexByGroup = new Map<string, number>();
+  for (const item of items) {
+    if (!item.group) {
+      sections.push({ items: [item] });
+      continue;
+    }
+    const existingIndex = indexByGroup.get(item.group);
+    if (existingIndex === undefined) {
+      indexByGroup.set(item.group, sections.length);
+      sections.push({ group: item.group, items: [item] });
+    } else {
+      sections[existingIndex].items.push(item);
+    }
   }
+  return sections;
+}
 
-  items.push({ to: "/notepad", icon: <StickyNote size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Նշումներ" });
-  items.push({ to: "/notes", icon: <NotebookPen size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Նշումների տարածք" });
-  items.push({
-    to: "/chat",
-    icon: <MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />,
-    label: "Հաղորդագրություններ",
-    badge: chatBadge,
-  });
-  return items;
+function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
+  return (
+    <Link
+      to={item.to}
+      aria-current={active ? "page" : undefined}
+      title={collapsed ? item.label : undefined}
+      className={`relative flex min-h-11 items-center gap-3 rounded-[var(--radius)] py-2.5 text-[15px] font-medium transition-colors duration-[var(--motion-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+        active ? "bg-primary/10 text-primary" : "text-text hover:bg-surface-muted"
+      } ${collapsed ? "justify-center px-0" : "px-3.5"}`}
+    >
+      {/* Active marker — reads at a glance on a always-visible rail, where
+       * a tint alone is easy to miss. */}
+      <span
+        aria-hidden="true"
+        className={`absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary transition-opacity duration-[var(--motion-fast)] ${
+          active ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <span className="relative flex-none">
+        {item.icon}
+        {collapsed && !!item.badge && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-incorrect ring-2 ring-surface"
+          />
+        )}
+      </span>
+      {!collapsed && <span className="truncate">{item.label}</span>}
+      {!collapsed && !!item.badge && (
+        <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-incorrect px-1 text-xs font-semibold text-white">
+          {item.badge > 99 ? "99+" : item.badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function NavLinks({ items, pathname, collapsed }: { items: NavItem[]; pathname: string; collapsed: boolean }) {
+  const sections = groupNavItems(items);
+  return (
+    <>
+      {sections.map((section, i) => (
+        <div key={section.group ?? section.items[0].to} className={i > 0 ? "mt-4" : undefined}>
+          {section.group && (
+            <div
+              className={
+                collapsed
+                  ? i > 0
+                    ? "mx-2 mb-2 border-t border-border"
+                    : "hidden"
+                  : "px-3.5 pb-1 text-xs font-semibold tracking-wide text-text-muted"
+              }
+              aria-hidden={collapsed || undefined}
+            >
+              {!collapsed && section.group}
+            </div>
+          )}
+          <div className="flex flex-col gap-1">
+            {section.items.map((item) => (
+              <NavLink key={item.to} item={item} active={isNavItemActive(pathname, item.to)} collapsed={collapsed} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
+  );
 }
 
 export function AppSidebar() {
   const { user } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const assignmentNotifications = useAssignmentNotifications();
-  const chatUnreadCount = useChatUnreadCount();
-  const navItems = useNavItems(
-    user!.role,
-    assignmentNotifications?.length ?? 0,
-    chatUnreadCount,
-  );
+  const { collapsed, toggleCollapsed } = useSidebarCollapsed();
+  const navItems = useNavItems(user!.role);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -101,11 +128,62 @@ export function AppSidebar() {
 
   return (
     <>
+      {/* ---- Desktop rail ---- */}
+      <nav
+        aria-label="Հիմնական"
+        className="fixed inset-y-0 left-0 z-[45] hidden w-[var(--rail-w)] flex-col overflow-hidden border-r border-border bg-surface px-3 py-4 transition-[width] duration-[var(--motion-fast)] ease-[var(--ease-out)] lg:flex"
+      >
+        <Link
+          to="/"
+          className={`mb-4 flex items-center gap-2 px-2 py-1 transition-[filter] duration-[var(--motion-fast)] hover:brightness-110 ${
+            collapsed ? "justify-center px-0" : ""
+          }`}
+        >
+          <Logo className="h-6 w-6 flex-none" />
+          {!collapsed && (
+            <span
+              className="truncate text-lg font-bold tracking-tight"
+              style={{
+                background: "var(--gradient-hero)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              Gitus
+            </span>
+          )}
+        </Link>
+        <div className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
+          <NavLinks items={navItems} pathname={location.pathname} collapsed={collapsed} />
+        </div>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Ընդարձակել ցանկը" : "Կրճատել ցանկը"}
+          title={collapsed ? "Ընդարձակել ցանկը" : "Կրճատել ցանկը"}
+          className={`mt-2 flex h-9 flex-none items-center gap-2 rounded-[var(--radius)] text-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text ${
+            collapsed ? "justify-center px-0" : "px-3.5"
+          }`}
+        >
+          {collapsed ? (
+            <ChevronsRight size={17} strokeWidth={1.75} className="flex-none" />
+          ) : (
+            <>
+              <ChevronsLeft size={17} strokeWidth={1.75} className="flex-none" />
+              <span className="truncate">Կրճատել</span>
+            </>
+          )}
+        </button>
+      </nav>
+
+      {/* ---- Mobile drawer ---- */}
       <button
         type="button"
         aria-label="Ցույց տալ/թաքցնել ցանկը"
+        aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="fixed left-4 top-4 z-[70] flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full border border-border bg-surface shadow-lg transition-colors hover:border-primary"
+        className="fixed left-4 top-4 z-[70] flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full border border-border bg-surface shadow-lg transition-colors hover:border-primary lg:hidden"
       >
         <span
           className="h-0.5 w-5 rounded-full bg-text transition-transform duration-300"
@@ -120,38 +198,24 @@ export function AppSidebar() {
 
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-[50] bg-black/45 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[50] bg-black/45 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
 
       <nav
         aria-label="Հիմնական"
-        className={`fixed left-0 top-0 z-[60] flex h-full w-[min(300px,86vw)] flex-col gap-1 border-r border-border bg-surface px-3 pb-4 pt-20 shadow-xl transition-transform duration-300 ${
+        /* Closed, the drawer is only translated off-screen, so without this its
+         * links stay in the tab order and reachable by screen readers. */
+        inert={!open}
+        className={`fixed left-0 top-0 z-[60] flex h-full w-[min(300px,86vw)] flex-col gap-1 border-r border-border bg-surface px-3 pb-4 pt-20 shadow-xl transition-transform duration-300 lg:hidden ${
           open ? "translate-x-0" : "-translate-x-[105%]"
         }`}
       >
-        <div className="flex flex-1 flex-col gap-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`relative flex items-center gap-3 rounded-[var(--radius)] px-3.5 py-2.5 text-[15px] font-medium transition-colors ${
-                  active ? "bg-primary/10 text-primary" : "text-text hover:bg-surface-muted"
-                }`}
-              >
-                <span className="flex-none">{item.icon}</span>
-                <span>{item.label}</span>
-                {!!item.badge && (
-                  <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-incorrect px-1 text-xs font-semibold text-white">
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        <div className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto">
+          {/* The drawer always shows full labels — collapsing is a desktop-rail
+           * affordance only, so it is never in the collapsed presentation. */}
+          <NavLinks items={navItems} pathname={location.pathname} collapsed={false} />
         </div>
         {/* Profile/Subscription/Settings/Help/Logout moved to HeaderStrip's ProfileDropdown,
          * which also gates logout behind a confirmation modal (previously this was a bare

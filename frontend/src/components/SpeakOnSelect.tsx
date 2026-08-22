@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isSpeechSupported, speak, stop } from "../lib/speech";
 import { translateToArmenian } from "../lib/translate";
+import { Languages, Play, Volume2, VolumeX } from "lucide-react";
 
 interface Widget {
   x: number;
@@ -190,11 +191,11 @@ export function SpeakOnSelect({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={handleStop}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-incorrect bg-incorrect-bg text-lg transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-incorrect bg-incorrect-bg text-incorrect transition-colors"
                 aria-label="Կանգնեցնել (Esc կամ Q)"
                 title="Կանգնեցնել (Esc կամ Q)"
               >
-                🔇
+                <VolumeX size={16} strokeWidth={1.75} aria-hidden />
               </button>
             ) : (
               <>
@@ -207,7 +208,12 @@ export function SpeakOnSelect({ children }: { children: React.ReactNode }) {
                     aria-label={`Լսել՝ ${s.label} արագությամբ`}
                     title={`Լսել՝ ${s.label} արագությամբ`}
                   >
-                    {s.rate === 1 ? "🔊" : "▶"} {s.label}
+                    {s.rate === 1 ? (
+                      <Volume2 size={13} strokeWidth={1.75} aria-hidden />
+                    ) : (
+                      <Play size={13} strokeWidth={2} aria-hidden />
+                    )}{" "}
+                    {s.label}
                   </button>
                 ))}
                 <button
@@ -222,14 +228,15 @@ export function SpeakOnSelect({ children }: { children: React.ReactNode }) {
                   aria-label="Ցույց տալ հայերեն թարգմանությունը"
                   title="Ցույց տալ հայերեն թարգմանությունը"
                 >
-                  {translating ? "…" : "🌐"} Թարգմանել
+                  {translating ? <span aria-hidden>…</span> : <Languages size={13} strokeWidth={1.75} aria-hidden />}{" "}
+                  Թարգմանել
                 </button>
               </>
             )}
           </div>
 
           {translation !== null && (
-            <div className="rounded-md border border-border bg-surface px-3 py-1 text-sm font-medium text-primary shadow-lg">
+            <div className="rounded-[var(--radius-md)] border border-border bg-surface px-3 py-1 text-sm font-medium text-primary shadow-lg">
               {translation}
             </div>
           )}

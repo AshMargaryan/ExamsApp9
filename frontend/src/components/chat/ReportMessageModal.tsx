@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Check, X } from "lucide-react";
 import * as chatApi from "../../api/chat";
 import type { ReportReason } from "../../api/chat";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 const REASONS: { value: ReportReason; label: string }[] = [
   { value: "spam", label: "Սպամ" },
@@ -64,13 +66,13 @@ export function ReportMessageModal({ messageId, onClose }: { messageId: number; 
               onChange={(e) => setDetails(e.target.value)}
               placeholder="Մանրամասներ (ոչ պարտադիր)"
               rows={2}
-              className="mb-3 w-full resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+              className={cn(fieldInputClass, "mb-3 resize-none px-[var(--space-2)] py-[var(--space-1)] text-[length:var(--text-sm)]")}
             />
             <button
               type="button"
               onClick={handleSubmit}
               disabled={sending}
-              className="w-full rounded-md bg-incorrect px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+              className="w-full rounded-[var(--radius)] bg-incorrect px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
             >
               {sending ? "..." : "Ուղարկել բողոքը"}
             </button>

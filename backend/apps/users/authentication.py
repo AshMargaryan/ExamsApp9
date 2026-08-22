@@ -1,8 +1,15 @@
+from datetime import timedelta
+
 from django.utils import timezone
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 
 from .models import UserSession
+
+# Debounce window for the last_activity_at write below — this runs on every
+# authenticated request, so without a debounce it's an UPDATE per request
+# against what becomes the hottest table in the database under load.
+ACTIVITY_WRITE_INTERVAL = timedelta(seconds=60)
 
 
 class SessionAwareJWTAuthentication(JWTAuthentication):
@@ -20,5 +27,7 @@ class SessionAwareJWTAuthentication(JWTAuthentication):
         if session is None or not session.is_active:
             raise AuthenticationFailed("Session revoked.", code="session_revoked")
 
-        UserSession.objects.filter(pk=session.pk).update(last_activity_at=timezone.now())
+        now = timezone.now()
+        if now - session.last_activity_at >= ACTIVITY_WRITE_INTERVAL:
+            UserSession.objects.filter(pk=session.pk).update(last_activity_at=now)
         return user

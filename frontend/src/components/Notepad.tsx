@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eraser } from "lucide-react";
+import { Eraser, X, Trash2 } from "lucide-react";
 import { useNotepad, type Stroke, type TextNote } from "../context/NotepadContext";
 import { MathText } from "./MathText";
 
@@ -76,7 +76,7 @@ function TextNoteBox({
   return (
     <div
       ref={boxRef}
-      className={`absolute z-10 min-w-[90px] min-h-[40px] max-w-[420px] touch-none resize overflow-auto rounded-md border bg-surface/95 px-2 py-1 shadow-sm ${
+      className={`absolute z-10 min-w-[90px] min-h-[40px] max-w-[420px] touch-none resize overflow-auto rounded-[var(--radius-md)] border bg-surface/95 px-2 py-1 shadow-sm ${
         selected ? "border-primary" : "border-primary/50"
       }`}
       style={{
@@ -101,7 +101,7 @@ function TextNoteBox({
           title="Ջնջել"
           className="flex h-6 w-6 items-center justify-center rounded text-sm text-text-muted hover:bg-surface-muted hover:text-primary"
         >
-          ✕
+          <X size={16} strokeWidth={2} aria-hidden />
         </button>
       </div>
       {editing ? (
@@ -277,7 +277,7 @@ export function Notepad() {
   return (
     <div className="flex h-full w-full flex-col">
       <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        <div className="flex items-center gap-1.5 rounded-md bg-surface-muted p-1.5">
+        <div className="flex items-center gap-1.5 rounded-[var(--radius)] bg-surface-muted p-1.5">
           {COLORS.map((c) => (
             <button
               key={c}
@@ -297,13 +297,13 @@ export function Notepad() {
           ))}
         </div>
 
-        <div className="flex items-center gap-1.5 rounded-md bg-surface-muted p-1.5">
+        <div className="flex items-center gap-1.5 rounded-[var(--radius)] bg-surface-muted p-1.5">
           {(erase ? ERASER_WIDTHS : WIDTHS).map((w) => (
             <button
               key={w}
               type="button"
               onClick={() => (erase ? setEraserWidth(w) : setPenWidth(w))}
-              className={`flex h-6 w-6 items-center justify-center rounded-md border transition-colors ${
+              className={`flex h-6 w-6 items-center justify-center rounded-[var(--radius-md)] border transition-colors ${
                 width === w ? "border-primary bg-surface" : "border-transparent hover:border-border"
               }`}
             >
@@ -318,7 +318,7 @@ export function Notepad() {
             onClick={() => setErase((v) => !v)}
             aria-label="Eraser"
             title="Eraser"
-            className={`flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${
+            className={`flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border transition-colors ${
               erase ? "border-primary bg-surface" : "border-transparent hover:border-border"
             }`}
           >
@@ -331,7 +331,7 @@ export function Notepad() {
           onClick={handleAddText}
           aria-label="Ավելացնել տեքստ"
           title="Ավելացնել տեքստ"
-          className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
+          className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
         >
           T
         </button>
@@ -339,17 +339,17 @@ export function Notepad() {
         <button
           type="button"
           onClick={clearAll}
-          aria-label="Clear"
+          aria-label="Մաքրել ամեն ինչ"
           title="Մաքրել ամեն ինչ"
-          className="ml-auto flex h-9 w-9 items-center justify-center rounded-md border border-border text-base transition-colors hover:border-primary"
+          className="ml-auto flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-colors hover:border-primary hover:text-text"
         >
-          🗑️
+          <Trash2 size={16} strokeWidth={1.75} aria-hidden />
         </button>
       </div>
 
       <div
         ref={wrapRef}
-        className="relative min-h-0 flex-1 touch-none overflow-hidden rounded-md border border-border bg-surface-muted"
+        className="relative min-h-0 flex-1 touch-none overflow-hidden rounded-[var(--radius)] border border-border bg-surface-muted"
       >
         <canvas
           ref={canvasRef}

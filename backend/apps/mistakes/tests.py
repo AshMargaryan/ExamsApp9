@@ -151,3 +151,92 @@ class MistakeClassifyViewTests(TestCase):
 
         self.assertEqual(resp.status_code, 200)
         mock_generate.assert_not_called()
+
+
+class MistakeListFilterTests(TestCase):
+    """The subject/topic filters are what make a study-plan mistake task able
+    to deep-link at its own slice of the log instead of the whole notebook."""
+
+    def setUp(self):
+        self.user = _make_user()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+        self.algebra = _make_entry(self.user, topic_label="Հանրահաշվական նույնություններ")
+        self.geometry = _make_entry(self.user, topic_label="Երկրաչափություն")
+        self.physics = _make_entry(self.user, subject_name="Ֆիզիկա", topic_label="Ուժեր")
+        self.resolved = _make_entry(
+            self.user, topic_label="Հանրահաշվական նույնություններ", last_retry_correct=True,
+        )
+        # Another student's identical mistake must never leak through a filter.
+        _make_entry(_make_user("bob"), topic_label="Հանրահաշվական նույնություններ")
+
+    def _ids(self, **params):
+        response = self.client.get("/api/mistakes/", params)
+        self.assertEqual(response.status_code, 200)
+        return {row["id"] for row in response.json()}
+
+    def test_unfiltered_returns_only_this_users_entries(self):
+        self.assertEqual(
+            self._ids(),
+            {self.algebra.id, self.geometry.id, self.physics.id, self.resolved.id},
+        )
+
+    def test_subject_filter(self):
+        self.assertEqual(self._ids(subject="Ֆիզիկա"), {self.physics.id})
+
+    def test_topic_filter_narrows_within_a_subject(self):
+        self.assertEqual(
+            self._ids(subject="Մաթեմատիկա", topic="Հանրահաշվական նույնություններ"),
+            {self.algebra.id, self.resolved.id},
+        )
+
+    def test_unresolved_filter_drops_entries_already_re_answered_correctly(self):
+        self.assertEqual(
+            self._ids(subject="Մաթեմատիկա", topic="Հանրահաշվական նույնություններ", unresolved="1"),
+            {self.algebra.id},
+        )
+
+    def test_unknown_topic_returns_empty_rather_than_everything(self):
+        self.assertEqual(self._ids(topic="Գոյություն չունեցող թեմա"), set())
+
+    def test_filters_are_scoped_to_the_requesting_user(self):
+        self.assertEqual(
+            self._ids(topic="Հանրահաշվական նույնություններ"),
+            {self.algebra.id, self.resolved.id},
+        )
+
+
+class MistakeTaskDeepLinkTests(TestCase):
+    """The link a mistake task carries must resolve to the same slice the
+    task's title counted, or the student lands on a different set of
+    questions than the one they were promised."""
+
+    def setUp(self):
+        self.user = _make_user()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_link_path_query_selects_exactly_the_grouped_entries(self):
+        from urllib.parse import parse_qs, urlparse
+
+        from apps.study_plan.services import _mistake_candidates
+
+        for _ in range(3):
+            _make_entry(self.user, topic_label="Հանրահաշվական նույնություններ")
+        _make_entry(self.user, topic_label="Երկրաչափություն")
+
+        candidate = next(
+            c for c in _mistake_candidates(self.user)
+            if c["topic_label"] == "Հանրահաշվական նույնություններ"
+        )
+        query = parse_qs(urlparse(candidate["link_path"]).query)
+
+        self.assertEqual(urlparse(candidate["link_path"]).path, "/mistake-notebook/review")
+        response = self.client.get(
+            "/api/mistakes/", {"subject": query["subject"][0], "topic": query["topic"][0]},
+        )
+        self.assertEqual(response.status_code, 200)
+        # The title says "3 mistakes"; the link must produce those same 3.
+        self.assertEqual(len(response.json()), 3)
+        self.assertIn("3", candidate["title"])

@@ -72,7 +72,7 @@ export function DashboardAssignmentCard({
 
   return (
     <div
-      className={`flex w-[380px] shrink-0 flex-col gap-4 rounded-[20px] border p-6 ${
+      className={`flex w-[380px] shrink-0 flex-col gap-4 rounded-[var(--radius-lg)] border p-6 ${
         tinted ? "border-border bg-surface-muted" : "border-border bg-surface"
       }`}
       style={{ scrollSnapAlign: "start" }}
@@ -101,11 +101,11 @@ export function DashboardAssignmentCard({
           {assignment.is_overdue
             ? "Ուշացած"
             : wasRejected
-              ? "❌ Մերժված"
+              ? "Մերժված"
               : assignment.status === "submitted"
-                ? "⏳ Սպասում է հաստատման"
+                ? "Սպասում է հաստատման"
                 : assignment.status === "completed"
-                  ? "✅ Հաստատված"
+                  ? "Հաստատված"
                   : "Չսկսված"}
         </span>
       </div>
@@ -125,7 +125,7 @@ export function DashboardAssignmentCard({
 
       {assignment.status === "submitted" && assignment.explanation && (
         <div>
-          <p className="mb-1.5 text-xs text-text-muted">Ձեր նշումը</p>
+          <p className="mb-1.5 text-xs text-text-muted">Քո նշումը</p>
           <ClampedText text={assignment.explanation} />
         </div>
       )}
@@ -151,7 +151,7 @@ export function DashboardAssignmentCard({
             to={assignmentLink(assignment)}
             state={navState(assignment)}
             onClick={handleOpen}
-            className="flex-1 rounded-xl bg-text px-4 py-3 text-center text-sm font-semibold text-bg transition-opacity hover:opacity-90"
+            className="flex-1 rounded-[var(--radius)] bg-text px-4 py-3 text-center text-sm font-semibold text-bg transition-opacity hover:opacity-90"
           >
             Կատարել
           </Link>
@@ -161,7 +161,7 @@ export function DashboardAssignmentCard({
         <button
           type="button"
           onClick={handleRedo}
-          className="rounded-xl bg-text px-4 py-3 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
+          className="rounded-[var(--radius)] bg-text px-4 py-3 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
         >
           Կատարել նորից
         </button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { X, Check } from "lucide-react";
 import * as chatApi from "../../api/chat";
 import type { Conversation, Message } from "../../api/chat";
 import { conversationTitle } from "../../lib/chatLabels";
@@ -35,8 +36,8 @@ export function ForwardModal({ message, onClose }: { message: Message; onClose: 
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-lg font-semibold text-text">Փոխանցել</h2>
-          <button type="button" onClick={onClose} className="text-lg text-text-muted hover:text-text">
-            ✕
+          <button type="button" onClick={onClose} aria-label="Փակել" className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted hover:bg-surface-muted hover:text-text">
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
 
@@ -53,12 +54,12 @@ export function ForwardModal({ message, onClose }: { message: Message; onClose: 
               type="button"
               onClick={() => handleForward(c.id)}
               disabled={sendingId !== null}
-              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-surface-muted disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-muted disabled:opacity-60"
             >
               <ConversationAvatar conversation={c} size="h-10 w-10" />
               <span className="min-w-0 flex-1 truncate text-sm text-text">{conversationTitle(c)}</span>
               {sendingId === c.id && <span className="shrink-0 text-xs text-text-muted">...</span>}
-              {sentId === c.id && <span className="shrink-0 text-primary">✓</span>}
+              {sentId === c.id && <Check size={16} strokeWidth={2.5} aria-hidden className="shrink-0 text-primary" />}
             </button>
           ))}
         </div>

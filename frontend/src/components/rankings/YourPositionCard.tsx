@@ -23,7 +23,7 @@ export function YourPositionCard({
         </p>
         <Link
           to="/practice"
-          className="mt-3 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
+          className="mt-3 inline-block rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
         >
           Սկսել պարապել →
         </Link>
@@ -80,7 +80,7 @@ export function YourPositionCard({
           )}
           <Link
             to="/practice"
-            className="mt-3 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
+            className="mt-3 inline-block rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
           >
             Շարունակել →
           </Link>

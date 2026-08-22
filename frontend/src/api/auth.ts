@@ -66,19 +66,19 @@ export interface CompleteOAuthRegistrationPayload {
   university?: number;
 }
 
-export interface DeviceLimitReachedError {
-  code: "device_limit_reached";
-  detail: string;
-  management_ticket: string;
+/** Present on a login response when the account was already at its device cap:
+ *  the oldest device was signed out to make room for this one. */
+export interface SignedOutDevice {
+  /** e.g. "Windows · Chrome", or a generic word when the UA said nothing. */
+  label: string;
+  count: number;
+  device_limit: number;
 }
 
-export function isDeviceLimitReached(data: unknown): data is DeviceLimitReachedError {
-  return !!data && typeof data === "object" && (data as { code?: string }).code === "device_limit_reached";
-}
-
-export async function login(username: string, password: string): Promise<void> {
+export async function login(username: string, password: string): Promise<SignedOutDevice | null> {
   const { data } = await apiClient.post("/auth/login/", { username, password });
   tokenStorage.set(data.access, data.refresh);
+  return (data.signed_out_device as SignedOutDevice | undefined) ?? null;
 }
 
 /** Returns the ticket payload for a brand-new Google account, or null once tokens are stored. */
@@ -104,6 +104,29 @@ export async function appleAuth(idToken: string, firstName: string, lastName: st
 export async function completeOAuthRegistration(payload: CompleteOAuthRegistrationPayload): Promise<void> {
   const { data } = await apiClient.post("/auth/oauth/complete/", payload);
   tokenStorage.set(data.access, data.refresh);
+}
+
+export interface UsernameAvailability {
+  username: string;
+  available: boolean;
+  /** False when the username fails the field's own format rules. */
+  valid: boolean;
+  /** Human-readable reason when unavailable or invalid; empty when free. */
+  detail: string;
+  suggestions: string[];
+}
+
+/** Signup's live availability check. Advisory only — registration re-validates,
+ *  so a name reported free can still be taken by the time the form is sent. */
+export async function checkUsernameAvailability(
+  username: string,
+  signal?: AbortSignal,
+): Promise<UsernameAvailability> {
+  const { data } = await apiClient.get<UsernameAvailability>("/auth/username-available/", {
+    params: { username },
+    signal,
+  });
+  return data;
 }
 
 export async function register(payload: RegisterPayload): Promise<void> {

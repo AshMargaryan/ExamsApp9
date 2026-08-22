@@ -3,59 +3,297 @@
   Semantic names (not "blue-500") so swapping the palette never means
   hunting through components.
 */
+/*
+  The bare :root block is the LIGHT palette, and the
+  `@media (prefers-color-scheme: dark)` block further down supplies dark.
+
+  It used to be the dark palette, which produced a real first-visit bug:
+  applyStoredTheme() only stamps data-theme when localStorage already holds a
+  choice, so a brand-new visitor whose OS prefers *light* matched neither
+  [data-theme] block nor the dark media query, and fell through to this one —
+  landing on a dark background that contradicted their OS preference, and
+  carrying this block's light-mode --color-correct-bg (#e4f7ef, a pale mint)
+  on top of it. Defining light here makes the CSS agree with
+  getInitialTheme()'s own "no stored value → follow the OS" rule.
+*/
 :root {
   /* Tells the browser which palette to use for native form controls
      (inputs, textareas, scrollbars) — without this, Chromium renders them
      per the OS/browser's own preference instead of following data-theme,
      e.g. a dark native textarea box on top of our light theme. */
-  color-scheme: dark;
+  color-scheme: light;
 
-  --color-bg: #1a1a1a;
-  --color-surface: #242424;
-  --color-surface-muted: #2e2e2e;
-  --color-border: #3a3a3a;
+  /*
+    HAYGIT IDENTITY — colour
+    ------------------------
+    The palette before this was Tailwind's defaults verbatim: violet-600
+    (#7c3aed) on gray-200 borders (#e5e7eb) over gray-900 text (#111827).
+    It was coherent but anonymous — it looked like every other project that
+    has never chosen a colour.
 
-  --color-text: #ffffff;
-  --color-text-muted: #a3a3a3;
+    Two structural problems, not just taste:
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+    1. `--color-bg` and `--color-surface` were BOTH #ffffff. A card therefore
+       had no ground to sit on and was defined solely by a 1px grey hairline,
+       which is the main reason the light theme read as flat and cheap. The
+       light theme now has a warm paper ground with white surfaces on top, so
+       elevation is carried by the surfaces themselves.
+    2. Every neutral was blue-cast slate. Mixed with a violet primary, the
+       whole UI sat in one cold corner of the wheel with no warmth anywhere.
+
+    The direction: Armenian manuscript ink. A deep lapis indigo carries the
+    primary — serious, focused, the colour of study rather than of a startup
+    landing page — and apricot (ծիրան) answers it as the accent. Apricot is
+    the flag's third band and is essentially unused in edtech, so it reads as
+    ours. Neutrals are warmed to sit with it rather than fight it.
+
+    Contrast is checked, not assumed. On white: primary 9.4:1, muted text
+    5.9:1, accent 4.6:1 — all pass WCAG AA for body text, primary passes AAA.
+  */
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1ede7;
+  --color-border: #e4ded4;
+
+  --color-text: #1a1714;
+  --color-text-muted: #6b635a;
+
+  --color-primary: #2d3f8f;
+  --color-primary-hover: #223071;
   --color-primary-contrast: #ffffff;
+  /* Tinted grounds for primary-coloured emphasis that must not shout. */
+  --color-primary-bg: #eaedf7;
+  --color-primary-line: #c3cbe6;
 
-  --color-accent: #14b8a6;
+  /* Apricot. Dark enough here to be legible as text on paper (4.6:1); the
+     -bg variant is the fill. */
+  --color-accent: #a35a18;
+  --color-accent-bg: #fbeedd;
+  --color-accent-line: #e8c9a2;
 
-  --color-purple: #7f24b0;
-  --color-pink: #ff5c8d;
-  --gradient-hero: linear-gradient(226deg, var(--color-primary) 0%, var(--color-purple) 55%, var(--color-pink) 100%);
+  /*
+    Two decorative hues, used only as gradient stops (ProgressRing) after the
+    identity work. They are declared in every theme block like everything else
+    — they used to exist only here, so dark mode inherited the *light* values
+    and a dark-violet stop landed on a near-black ground. That was measured at
+    2.04:1 where the coach card set its heading in --color-purple, and it dimmed
+    the middle of every large progress ring. A token that does not appear in
+    the dark block is not a token, it is a light-mode literal.
+  */
+  --color-purple: #4a3c8f;
+  --color-pink: #a35a18;
 
-  --color-correct: #1a9e6d;
+  /*
+    THE BRAND BAND — deliberately theme-invariant.
+
+    `--gradient-hero` used to be built from `var(--color-primary)`,
+    `--color-purple` and `--color-accent`. That was safe while the primary was
+    a dark violet, and it broke the moment the identity work made the primary
+    *invert* in dark mode: dark's primary is a light indigo (#8098f0) and its
+    accent a light apricot (#f0a85c), so every surface painting white text on
+    this gradient — the profile hero, the sidebar mark, the XP chip, avatars,
+    the parent dashboard band, the study-plan journey — dropped to between
+    1.7:1 and 2.7:1 in dark mode. Measured, not guessed.
+
+    The fix is not to stop using a band; it is to recognise that "a strong
+    branded ground that carries white text" is a *different concept* from "the
+    primary action colour", and must not follow it. These stops are fixed
+    literals in both themes: lapis → indigo → plum → burnt apricot, so the
+    band keeps the identity's warm terminal note while holding white at
+    8.3:1–11.7:1 throughout. `--color-on-brand-muted` is the dimmest secondary
+    that still clears 5.1:1 on the lightest stop.
+
+    Anything painting text on `--gradient-brand` must use `--color-on-brand`
+    / `--color-on-brand-muted`, never `--color-text`, which flips with theme.
+  */
+  --color-brand-1: #35479b;
+  --color-brand-2: #2d3f8f;
+  --color-brand-3: #3b2d70;
+  --color-brand-4: #5a3320;
+  --gradient-brand: linear-gradient(
+    226deg,
+    var(--color-brand-1) 0%,
+    var(--color-brand-2) 38%,
+    var(--color-brand-3) 72%,
+    var(--color-brand-4) 100%
+  );
+  --color-on-brand: #ffffff;
+  --color-on-brand-muted: rgba(255, 255, 255, 0.72);
+  /* Glass panels laid over the band. */
+  --color-on-brand-fill: rgba(255, 255, 255, 0.12);
+  --color-on-brand-line: rgba(255, 255, 255, 0.22);
+
+  /* Retained as the name eight call sites already use. */
+  --gradient-hero: var(--gradient-brand);
+
+  /*
+    Handwriting paper — theme-INVARIANT, like the brand band above.
+
+    The canvas note editor drew on `bg-surface-muted`, which follows the
+    theme, while its ink palette is twenty-four fixed hex values whose first
+    row is greys ending at `#1c1d2b`. In dark mode the default pen was
+    therefore near-black ink on a near-black page: a student who switched
+    themes and started drawing produced strokes they could not see, and four
+    of the twenty-four colours were unusable. Worse, a note drawn in one
+    theme did not look the same when opened in the other.
+
+    Ink can only be chosen against a known ground, so the page is one. This
+    is the same reasoning as `--gradient-brand`: where a fixed palette is
+    painted, the surface under it cannot move.
+  */
+  --color-paper: #fdfdfb;
+  --color-paper-line: #e6e3dd;
+
+  /*
+    Night — theme-INVARIANT, third in the same family as the brand band and
+    the handwriting paper above, and for the identical reason.
+
+    The marketing page's two cinematic movements (the subject universe, the
+    knowledge map) are painted with a fixed palette: nine subject accents
+    chosen against #05050a, plus the mastery scale. None of them can follow a
+    theme switch without breaking, so the ground under them does not move
+    either. A visitor in light mode and a visitor in dark mode see the same
+    two rooms, and the paper movements between them are what changes.
+
+    These values were literals repeated ~20 times across
+    `components/landing/SubjectJourney.tsx` and `subjectJourney.css` before
+    they were named here. Contrast on #05050a: ink 17.8:1, ink-muted 11.2:1,
+    ink-dim 6.4:1 — all clear AA for body text, ink clears AAA.
+
+    Anything painted on `--color-night` uses `--color-night-ink*`, never
+    `--color-text`, which flips with the theme. Same rule as the band.
+  */
+  --color-night: #05050a;
+  --color-night-raised: #0a0a12;
+  --color-night-ink: #f5efe4;
+  --color-night-ink-muted: #cfc6b8;
+  --color-night-ink-dim: #a89f92;
+  /* Glass panels laid on night, mirroring the `--color-on-brand-*` pair. */
+  --color-night-fill: rgba(255, 255, 255, 0.04);
+  --color-night-line: rgba(255, 255, 255, 0.14);
+
+  /*
+    State inks — light mode.
+
+    These are text colours before they are anything else: `text-correct` and
+    `text-incorrect` alone appear on ~180 call sites, including the marks that
+    tell a student whether their answer was right. They must therefore clear
+    4.5:1 on BOTH grounds they are ever set on: `--color-surface` and their own
+    `-bg` tint. The earlier values did not — measured in the browser,
+    `--color-correct` was 3.41:1 on white and 3.06:1 on its own mint, and
+    `--color-medium` was 2.47:1. Contrast had been computed for the primary and
+    the accent against the surface, and the state family had simply never been
+    checked as ink.
+
+    Each value below is the *minimum* darkening that clears 4.5:1 on both
+    grounds with hue and saturation held exactly, so the palette reads as the
+    same colours, only deeper — which suits an ink identity anyway. The `-bg`
+    tints are unchanged, and dark mode is unchanged: measured 5.6–10.7:1
+    throughout, it never had this problem.
+
+    If you change one of these, re-check it against its own `-bg` as well as
+    against the surface. The tint is always the tighter of the two.
+  */
+  --color-correct: #157d56;
   --color-correct-bg: #e4f7ef;
-  --color-incorrect: #d64545;
+  --color-incorrect: #ca2c2c;
   --color-incorrect-bg: #fbe8e8;
 
-  --color-easy: #1a9e6d;
-  --color-medium: #d69a1a;
-  --color-hard: #d64545;
+  /*
+    Status colours, distinct from answer-correctness above.
+
+    Previously only correct/incorrect existed, so a warning banner or a neutral
+    notice had to borrow a colour that already meant "you got this wrong" —
+    which is why a few surfaces read as errors when nothing was wrong.
+    `success` is deliberately a separate token from `correct`: one means "the
+    operation worked", the other means "this answer was right", and they should
+    be free to diverge.
+  */
+  --color-success: #157d56;
+  --color-success-bg: #e4f7ef;
+  --color-warning: #986410;
+  --color-warning-bg: #fdf3e0;
+  --color-info: #2361eb;
+  --color-info-bg: #e6eefc;
+
+  --color-easy: #157d56;
+  --color-medium: #8a6311;
+  /* easy/hard borrow --color-correct-bg / --color-incorrect-bg, whose inks
+     they share. Medium was the only tier without a tint of its own, which is
+     why its chips reached for `bg-medium/15` — an alpha of the ink itself,
+     which is not theme-aware and measured 4.42:1 under its own text. */
+  --color-medium-bg: #fdf3e0;
+  --color-hard: #ca2c2c;
 
   /* Rank-tier accents — reserved for #1/#2/#3 placement moments (podium,
      medals, trophy case). Never used as a general-purpose accent, so a gold
      highlight always means "you placed," not just "this is important." */
-  --color-gold: #e7c374;
-  --color-gold-bg: #2c2517;
-  --color-gold-line: #8a6a2c;
-  --color-silver: #c7cbd1;
-  --color-silver-bg: #24262a;
-  --color-silver-line: #52565e;
-  --color-bronze: #d99a68;
-  --color-bronze-bg: #2a2019;
-  --color-bronze-line: #8a5a34;
+  --color-gold: #89630c;
+  --color-gold-bg: #f7ecd3;
+  --color-gold-line: #d9b768;
+  --color-silver: #5a5f66;
+  --color-silver-bg: #eceef0;
+  --color-silver-line: #b9bec6;
+  --color-bronze: #99562e;
+  --color-bronze-bg: #f3e3d6;
+  --color-bronze-line: #cf9868;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+  /* Surface that sits *on* a surface — nested cards, popovers, the raised row
+     inside an already-elevated panel. Before this existed, every such case
+     hand-rolled its own color-mix(). */
+  --color-surface-raised: #ffffff;
 
-  --radius: 0.75rem;
+  /*
+    Elevation is tinted with the ink, not with neutral slate. A warm-paper
+    theme under cold grey shadows looks dirty rather than lifted, and the
+    difference is most visible exactly where it matters — cards on the
+    dashboard, popovers, and modal overlays.
+  */
+  --shadow-xs: 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.07), 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-md: 0 8px 24px rgba(26, 23, 20, 0.09), 0 2px 6px rgba(26, 23, 20, 0.05);
+  --shadow-lg: 0 24px 56px rgba(26, 23, 20, 0.14), 0 4px 12px rgba(26, 23, 20, 0.06);
 
+  /*
+    Radius scale.
+
+    There was one radius token and eight radii in the wild: `rounded-md`
+    (0.375rem) and `rounded-[var(--radius)]` (0.75rem) were each used ~300
+    times for the same kinds of element, plus 2xl/xl/lg/3xl and four arbitrary
+    pixel values. Every Tailwind `rounded-*` utility has since been migrated
+    onto this scale, so the roles below are what the product actually does —
+    read them off the kit, not off intent:
+
+      xs   the smallest marks — heatmap cells
+      sm   (spare; nothing claims it)
+      md   inputs (`fieldInputClass`), list rows, menu and calendar cells,
+           thumbnails, small icon buttons
+      lg   cards, panels, popovers, dialogs and buttons — `Card`, `DataCard`,
+           `StatTile`, `EmptyState`, `Skeleton`, `Popover`, `Dropdown`,
+           `Modal` and `buttonClasses` all use it   <- --radius aliases this
+      xl   chat bubbles, hero panels, and every control in the native shell,
+           which sits exactly one step up this scale from the web
+      2xl  the bottom sheet, and the largest native-shell surfaces
+
+    `rounded-full` is deliberately *not* migrated. A full circle carries no
+    design decision to centralise: 9999px and Tailwind's own value render
+    identically, and rewriting 300 pills to `rounded-[var(--radius-full)]`
+    would buy verbosity and nothing else.
+
+    --radius stays an alias of lg so all ~300 existing
+    `rounded-[var(--radius)]` sites render exactly as they do today.
+  */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+  --radius: var(--radius-lg);
+
+  /* 4px-based ramp. 7 and 8 were 2rem/2.5rem, which skipped 1.75rem and made
+     the top of the scale unpredictable; the named steps below are contiguous. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -64,81 +302,310 @@
   --space-6: 1.5rem;
   --space-7: 2rem;
   --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 4rem;
 
+  /* Space *between* sections, as opposed to --space-* for space within them.
+     Keeping these separate is what stops a page from becoming an undifferentiated
+     stack of identically-spaced blocks. */
+  --section-gap: 2rem;
+  --section-gap-lg: 3rem;
+
+  /*
+    HAYGIT IDENTITY — typography
+    ----------------------------
+    Body stays **Noto Sans Armenian**: it has full Armenian coverage, it is
+    well drawn at every size, and Armenian rendering quality is not
+    negotiable for a display flourish.
+
+    Display headings take **Noto Serif Armenian**, which index.html already
+    loads. It is from the same family as the body face, so the letterforms are
+    harmonious rather than clashing, and it has the same complete Armenian
+    coverage — unlike the Space Grotesk / JetBrains Mono pairing that the old
+    practice navigator used to set Armenian in, which had no Armenian glyphs
+    at all and silently fell back to whatever the OS offered.
+
+    A serif display over a sans body gives Haygit an editorial, studied voice
+    that suits a book-shaped product, and — importantly — it makes headings
+    read as a different *level*, not merely a larger size.
+  */
+  --font-sans: "Noto Sans Armenian", "Noto Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Noto Serif Armenian", "Noto Serif", Georgia, serif;
+
+  /*
+    Scale. The old ramp ran 1rem → 1.125 → 1.25 → 1.5 → 2: a 12% step between
+    body and "large", which is not enough for a heading to register as a level
+    change, so pages read as one undifferentiated size. The steps below open
+    up at the top, where hierarchy is actually established, and stay unchanged
+    at the bottom, where dense UI lives.
+  */
+  /*
+    One step below the scale, for tick and axis labels only.
+
+    It exists because eight week labels share a 343px card on a phone, and at
+    `--text-xs` half of them truncated to "Aug 1…". The alternative — one-off
+    `text-[10px]` — is what ~40 call sites already do, so this is a magic
+    number becoming a token rather than a new size entering the product.
+
+    Hard constraint: **numerals and two-to-three character abbreviations
+    only.** Armenian at 10px is not readable prose, and "shrink the type" is
+    never the answer to an Armenian layout problem — see the leading note
+    below. If a label needs `--text-2xs` to fit, and it is a word rather than
+    a tick, the layout is wrong.
+  */
+  --text-2xs: 0.625rem;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 2rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+  --text-5xl: 3.75rem;
+
+  /*
+    Line heights, tuned for Armenian rather than inherited from a Latin scale.
+
+    Noto Sans Armenian has a tall x-height and a high frequency of both
+    descenders (ղ ը պ ց ջ դ) and full-height ascenders (Հ Ա Մ Ք). At Latin
+    display leading (~1.1) the descenders of one line collide with the
+    ascenders of the next, which is exactly the kind of problem that gets
+    "fixed" by shrinking the font. Display steps therefore stay at 1.2–1.25,
+    and body copy sits at 1.6 rather than 1.5.
+  */
+  --leading-display: 1.2;
+  --leading-heading: 1.3;
+  --leading-snug: 1.45;
+  --leading-body: 1.6;
+  --leading-relaxed: 1.75;
+
+  /* Armenian words are long and the script has no small-caps tradition, so
+     positive tracking on uppercase eyebrows is the only place tracking helps;
+     everywhere else it hurts legibility. */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.08em;
+
+  /* Max line length. Armenian averages longer words than English, so the
+     comfortable measure is a little wider than the usual 65ch advice. */
+  --measure-narrow: 48ch;
+  --measure-base: 72ch;
+
+  /*
+    Focus.
+
+    Only 41 of 321 component files declared a focus style, across 561
+    button/link sites, and `focus-visible:outline-none` appeared 57 times —
+    sometimes with nothing put back. The global rule further down this file
+    gives every interactive element a visible indicator by default, so no
+    call site has to remember.
+  */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-primary);
+
+  /* Hybrid/native shell geometry. env(safe-area-inset-*) resolves to 0px in a
+     desktop browser, so these are safe to use unconditionally — only the iOS
+     build (index.html sets viewport-fit=cover) gets a non-zero inset. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Heights of the two mobile-shell bars, shared by the bars themselves and by
+     the content padding that clears them — one number, never out of sync. */
+  --mobile-topbar-h: 3.25rem;
+  --mobile-tabbar-h: 3.5rem;
+
+  /* Height of the persistent header strip, and the space reserved below every
+     page for the floating launchers pinned to the bottom corners. AppChrome
+     turns these into the page's padding; a page that wants to fill exactly
+     what is left of the viewport (chat) subtracts both instead of guessing.
+     Before this the chat pane was a flat `h-screen` inside that padding, so it
+     overflowed by exactly these two numbers and put the message composer —
+     the only thing the page is for — permanently below the fold. */
+  --chrome-top: 4rem;
+  --chrome-bottom: 84px;
+
+  /* Width of the persistent desktop navigation rail. Zero below the lg
+     breakpoint, where navigation collapses back into the drawer — so every
+     element that has to clear the rail (page content, header strip, the
+     reload button, the floating tools dock) can offset by this one value
+     unconditionally and simply get 0 on smaller screens. */
+  --rail-w: 0px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --rail-w: 16rem;
+  }
+
+  /* User-toggled icon-only rail (AppSidebar's collapse button), persisted via
+     useSidebarCollapsed. Every element offsetting by --rail-w follows this
+     automatically — nothing else needs to know the rail can collapse. */
+  html[data-rail-collapsed='true'] {
+    --rail-w: 4.5rem;
+  }
+}
+
+/*
+  App-only rules, gated on the data-native attribute lib/platform.ts stamps on
+  <html>. The website never matches these selectors.
+*/
+html[data-native] {
+  /* Kills the rubber-band scroll of the whole WebView, which in a Capacitor
+     app exposes the grey shell behind the page and immediately reads as
+     "this is a website in a box". Individual scroll areas still scroll. */
+  overscroll-behavior-y: none;
+
+  /* The app navigates with the bottom tab bar and never renders the desktop
+     rail, so the rail offset must stay zero even on a landscape iPad, whose
+     viewport is wide enough to match the lg breakpoint above. */
+  --rail-w: 0px;
+}
+
+html[data-native] body {
+  -webkit-tap-highlight-color: transparent;
+  /* Long-press on a button shouldn't offer the iOS text-selection callout. */
+  -webkit-touch-callout: none;
+}
+
+/* The bottom tab bar owns the bottom edge in the app, so the floating tools
+   launcher (calculator/notepad) has to sit above it rather than on it. */
+html[data-native] .tools-dock-launcher {
+  bottom: calc(var(--safe-bottom) + var(--mobile-tabbar-h) + 0.75rem);
+}
+
+/* iOS zooms the whole page when a focused field's text is under 16px, and the
+   zoom is never undone — so every text field in the app build gets at least
+   16px, plus a thumb-sized hit area. Applied here rather than at ~40 form call
+   sites. */
+html[data-native] :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  font-size: 16px;
+  min-height: 46px;
+}
+
+/* Text the user actually reads or edits stays selectable. */
+html[data-native] input,
+html[data-native] textarea,
+html[data-native] [contenteditable="true"] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --color-bg: #ffffff;
+  --color-bg: #faf8f5;
   --color-surface: #ffffff;
-  --color-surface-muted: #f3f4f6;
-  --color-border: #e5e7eb;
+  --color-surface-muted: #f1ede7;
+  --color-surface-raised: #ffffff;
+  --color-border: #e4ded4;
 
-  --color-text: #111827;
-  --color-text-muted: #6b7280;
+  --color-text: #1a1714;
+  --color-text-muted: #6b635a;
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-primary: #2d3f8f;
+  --color-primary-hover: #223071;
   --color-primary-contrast: #ffffff;
+  --color-primary-bg: #eaedf7;
+  --color-primary-line: #c3cbe6;
 
-  --color-accent: #14b8a6;
+  --color-accent: #a35a18;
+  --color-accent-bg: #fbeedd;
+  --color-accent-line: #e8c9a2;
 
-  --color-correct: #1a9e6d;
+  --color-correct: #157d56;
   --color-correct-bg: #e4f7ef;
-  --color-incorrect: #d64545;
+  --color-incorrect: #ca2c2c;
   --color-incorrect-bg: #fbe8e8;
 
-  --color-easy: #1a9e6d;
-  --color-medium: #d69a1a;
-  --color-hard: #d64545;
+  --color-success: #157d56;
+  --color-success-bg: #e4f7ef;
+  --color-warning: #986410;
+  --color-warning-bg: #fdf3e0;
+  --color-info: #2361eb;
+  --color-info-bg: #e6eefc;
 
-  --color-gold: #a8790f;
+  --color-easy: #157d56;
+  --color-medium: #8a6311;
+  /* easy/hard borrow --color-correct-bg / --color-incorrect-bg, whose inks
+     they share. Medium was the only tier without a tint of its own, which is
+     why its chips reached for `bg-medium/15` — an alpha of the ink itself,
+     which is not theme-aware and measured 4.42:1 under its own text. */
+  --color-medium-bg: #fdf3e0;
+  --color-hard: #ca2c2c;
+
+  --color-gold: #89630c;
   --color-gold-bg: #f7ecd3;
   --color-gold-line: #d9b768;
   --color-silver: #5a5f66;
   --color-silver-bg: #eceef0;
   --color-silver-line: #b9bec6;
-  --color-bronze: #a15a30;
+  --color-bronze: #99562e;
   --color-bronze-bg: #f3e3d6;
   --color-bronze-line: #cf9868;
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
+  --shadow-xs: 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.07), 0 1px 1px rgba(26, 23, 20, 0.04);
+  --shadow-md: 0 8px 24px rgba(26, 23, 20, 0.09), 0 2px 6px rgba(26, 23, 20, 0.05);
+  --shadow-lg: 0 24px 56px rgba(26, 23, 20, 0.14), 0 4px 12px rgba(26, 23, 20, 0.06);
 }
 
+/*
+  Dark is the same identity after dusk, not a separate one: the neutrals carry
+  the ink's blue rather than the flat #1a1a1a/#242424 greys they used to, so
+  the theme reads as deliberate instead of "the lights are off".
+
+  The primary INVERTS here. A #2d3f8f fill on a near-black ground is too dark
+  to register as an action, so dark mode uses a light indigo fill with dark
+  text — which is why --color-primary-contrast changes with it. Every
+  `bg-primary`/`text-primary-contrast` pair follows automatically. Checked:
+  primary as text on the page ground is 6.7:1, and the dark contrast colour on
+  a primary fill is also 6.7:1, both comfortably past AA.
+*/
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --color-bg: #1a1a1a;
-  --color-surface: #242424;
-  --color-surface-muted: #2e2e2e;
-  --color-border: #3a3a3a;
+  --color-bg: #12141c;
+  --color-surface: #191c26;
+  --color-surface-muted: #222634;
+  --color-surface-raised: #262b3a;
+  --color-border: #2e3444;
 
-  --color-text: #ffffff;
-  --color-text-muted: #a3a3a3;
+  --color-text: #f3f1ee;
+  --color-text-muted: #9aa0b0;
 
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-contrast: #ffffff;
+  --color-primary: #8098f0;
+  --color-primary-hover: #93a8f5;
+  --color-primary-contrast: #10131c;
+  --color-primary-bg: #1c2138;
+  --color-primary-line: #38427a;
 
-  --color-accent: #2dd4c4;
+  --color-purple: #9b8ae0;
+  --color-pink: #f0a85c;
+
+  --color-accent: #f0a85c;
+  --color-accent-bg: #2c2317;
+  --color-accent-line: #6b4c24;
 
   --color-correct: #4ade9a;
   --color-correct-bg: #12301f;
   --color-incorrect: #f2726e;
   --color-incorrect-bg: #3a1717;
 
+  --color-success: #4ade9a;
+  --color-success-bg: #12301f;
+  --color-warning: #f0be5a;
+  --color-warning-bg: #33270f;
+  --color-info: #7aa7f5;
+  --color-info-bg: #16223a;
+
   --color-easy: #4ade9a;
   --color-medium: #f0be5a;
+  --color-medium-bg: #33270f;
   --color-hard: #f2726e;
 
   --color-gold: #e7c374;
@@ -151,34 +618,53 @@
   --color-bronze-bg: #2a2019;
   --color-bronze-line: #8a5a34;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --color-bg: #1a1a1a;
-    --color-surface: #242424;
-    --color-surface-muted: #2e2e2e;
-    --color-border: #3a3a3a;
+    color-scheme: dark;
 
-    --color-text: #ffffff;
-    --color-text-muted: #a3a3a3;
+    --color-bg: #12141c;
+    --color-surface: #191c26;
+    --color-surface-muted: #222634;
+    --color-surface-raised: #262b3a;
+    --color-border: #2e3444;
 
-    --color-primary: #2563eb;
-    --color-primary-hover: #1d4ed8;
-    --color-primary-contrast: #ffffff;
+    --color-text: #f3f1ee;
+    --color-text-muted: #9aa0b0;
 
-    --color-accent: #2dd4c4;
+    --color-primary: #8098f0;
+    --color-primary-hover: #93a8f5;
+    --color-primary-contrast: #10131c;
+    --color-primary-bg: #1c2138;
+    --color-primary-line: #38427a;
+
+    --color-purple: #9b8ae0;
+    --color-pink: #f0a85c;
+
+    --color-accent: #f0a85c;
+    --color-accent-bg: #2c2317;
+    --color-accent-line: #6b4c24;
 
     --color-correct: #4ade9a;
     --color-correct-bg: #12301f;
     --color-incorrect: #f2726e;
     --color-incorrect-bg: #3a1717;
 
+    --color-success: #4ade9a;
+    --color-success-bg: #12301f;
+    --color-warning: #f0be5a;
+    --color-warning-bg: #33270f;
+    --color-info: #7aa7f5;
+    --color-info-bg: #16223a;
+
     --color-easy: #4ade9a;
     --color-medium: #f0be5a;
+    --color-medium-bg: #33270f;
     --color-hard: #f2726e;
 
     --color-gold: #e7c374;
@@ -191,31 +677,237 @@
     --color-bronze-bg: #2a2019;
     --color-bronze-line: #8a5a34;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45);
+    --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.25);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
   }
 }
+
+/*
+  ── ACCENT PRESETS ───────────────────────────────────────────────────────────
+
+  What a student can change about how Gitus looks, and — more importantly —
+  what they cannot.
+
+  This replaces a pair of free-form gradient mixers that let any three colours
+  at any angle be painted over *every* `.bg-primary` element and over the page
+  ground itself. The page-ground one is why this is a token change and not a
+  component change: `--color-text` and `--color-text-muted` are tuned against
+  a known paper (light) or ink (dark) ground and were measured at 5.9:1 for
+  the muted step. Painting an arbitrary magenta gradient behind them voids
+  that measurement everywhere at once, and the picker's own default was a
+  saturated blue→purple→pink — dense Armenian body copy on exactly the ground
+  §15 of the mandate says never to put it on.
+
+  So personalisation survives, and the hazard does not: one choice, five
+  curated alternatives to the default lapis, each one a complete
+  `--color-primary*` set for *both* themes. Every preset was measured, not
+  eyeballed — the lowest ratio in the whole table is 6.05:1 (AAA for large
+  text, comfortably past AA 4.5:1 for body), covering both "the fill carries
+  its contrast text" and "`text-primary` is legible on the surface".
+
+  The brand band (`--gradient-brand`) deliberately does NOT follow the accent.
+  See the note beside it above: "a strong branded ground that carries white
+  text" is a different concept from "the primary action colour", and it is the
+  one part of the identity that stays put whatever the student picks.
+
+  Cascade note: these blocks must stay *after* the `[data-theme]` blocks.
+  `:root[data-accent='x']` and `:root[data-theme='light']` have identical
+  specificity, so the light values only win on source order. The dark values
+  use `[data-theme='dark'][data-accent='x']` (one step more specific) and the
+  system-preference variant excludes an explicit light choice via `:not()`.
+*/
+
+/* Ծիրան — the identity's own accent, promoted to the action colour. */
+:root[data-accent='apricot'] {
+  --color-primary: #8a430f;
+  --color-primary-hover: #6f350c;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #fbeedd;
+  --color-primary-line: #e8c9a2;
+}
+
+:root[data-theme='dark'][data-accent='apricot'] {
+  --color-primary: #f0a85c;
+  --color-primary-hover: #f5b878;
+  --color-primary-contrast: #20150a;
+  --color-primary-bg: #2c2317;
+  --color-primary-line: #6b4c24;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='apricot'] {
+    --color-primary: #f0a85c;
+    --color-primary-hover: #f5b878;
+    --color-primary-contrast: #20150a;
+    --color-primary-bg: #2c2317;
+    --color-primary-line: #6b4c24;
+  }
+}
+
+/* Նուռ. */
+:root[data-accent='pomegranate'] {
+  --color-primary: #9d1f3c;
+  --color-primary-hover: #7f1830;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #fbe7ec;
+  --color-primary-line: #eec0cc;
+}
+
+:root[data-theme='dark'][data-accent='pomegranate'] {
+  --color-primary: #f28ba6;
+  --color-primary-hover: #f5a2b8;
+  --color-primary-contrast: #22101a;
+  --color-primary-bg: #2e1720;
+  --color-primary-line: #6d2f42;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='pomegranate'] {
+    --color-primary: #f28ba6;
+    --color-primary-hover: #f5a2b8;
+    --color-primary-contrast: #22101a;
+    --color-primary-bg: #2e1720;
+    --color-primary-line: #6d2f42;
+  }
+}
+
+/* Անտառ. */
+:root[data-accent='forest'] {
+  --color-primary: #1a6248;
+  --color-primary-hover: #144d39;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #e3f3ec;
+  --color-primary-line: #b8ddcd;
+}
+
+:root[data-theme='dark'][data-accent='forest'] {
+  --color-primary: #5fc79b;
+  --color-primary-hover: #7ad4ae;
+  --color-primary-contrast: #0c1a15;
+  --color-primary-bg: #152720;
+  --color-primary-line: #2c5645;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='forest'] {
+    --color-primary: #5fc79b;
+    --color-primary-hover: #7ad4ae;
+    --color-primary-contrast: #0c1a15;
+    --color-primary-bg: #152720;
+    --color-primary-line: #2c5645;
+  }
+}
+
+/* Սալոր. */
+:root[data-accent='plum'] {
+  --color-primary: #6a3391;
+  --color-primary-hover: #542674;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #f2eaf9;
+  --color-primary-line: #d8c3e9;
+}
+
+:root[data-theme='dark'][data-accent='plum'] {
+  --color-primary: #c091ea;
+  --color-primary-hover: #cda6f0;
+  --color-primary-contrast: #180f22;
+  --color-primary-bg: #251a30;
+  --color-primary-line: #4c3564;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='plum'] {
+    --color-primary: #c091ea;
+    --color-primary-hover: #cda6f0;
+    --color-primary-contrast: #180f22;
+    --color-primary-bg: #251a30;
+    --color-primary-line: #4c3564;
+  }
+}
+
+/* Գրաֆիտ — for a student who wants the interface to disappear. */
+:root[data-accent='graphite'] {
+  --color-primary: #3a4150;
+  --color-primary-hover: #2a303c;
+  --color-primary-contrast: #ffffff;
+  --color-primary-bg: #edeef1;
+  --color-primary-line: #ced2da;
+}
+
+:root[data-theme='dark'][data-accent='graphite'] {
+  --color-primary: #a9b3c6;
+  --color-primary-hover: #bcc4d4;
+  --color-primary-contrast: #12141c;
+  --color-primary-bg: #232732;
+  --color-primary-line: #3d4453;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-accent='graphite'] {
+    --color-primary: #a9b3c6;
+    --color-primary-hover: #bcc4d4;
+    --color-primary-contrast: #12141c;
+    --color-primary-bg: #232732;
+    --color-primary-line: #3d4453;
+  }
+}
+
 
 @theme inline {
   --color-bg: var(--color-bg);
   --color-surface: var(--color-surface);
   --color-surface-muted: var(--color-surface-muted);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-paper: var(--color-paper);
+  --color-paper-line: var(--color-paper-line);
+  /* So `bg-night`, `text-night-ink`, `border-night-line` are real utilities
+     and the marketing page's cinematic movements stop hand-rolling hex. */
+  --color-night: var(--color-night);
+  --color-night-raised: var(--color-night-raised);
+  --color-night-ink: var(--color-night-ink);
+  --color-night-ink-muted: var(--color-night-ink-muted);
+  --color-night-ink-dim: var(--color-night-ink-dim);
+  --color-night-fill: var(--color-night-fill);
+  --color-night-line: var(--color-night-line);
   --color-border: var(--color-border);
   --color-text: var(--color-text);
   --color-text-muted: var(--color-text-muted);
   --color-primary: var(--color-primary);
   --color-primary-hover: var(--color-primary-hover);
   --color-primary-contrast: var(--color-primary-contrast);
+  --color-primary-bg: var(--color-primary-bg);
+  --color-primary-line: var(--color-primary-line);
   --color-accent: var(--color-accent);
+  --color-accent-bg: var(--color-accent-bg);
+  --color-accent-line: var(--color-accent-line);
+
+  /* Makes `font-display` / `font-sans` real utilities, so a heading opts into
+     the display face the same way it opts into any other token. */
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
   --color-purple: var(--color-purple);
   --color-pink: var(--color-pink);
+  /* So `text-on-brand`, `border-on-brand-line`, `bg-on-brand-fill` are real
+     utilities and nothing painting on the band has to hand-roll white/xx. */
+  --color-on-brand: var(--color-on-brand);
+  --color-on-brand-muted: var(--color-on-brand-muted);
+  --color-on-brand-fill: var(--color-on-brand-fill);
+  --color-on-brand-line: var(--color-on-brand-line);
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-info: var(--color-info);
+  --color-info-bg: var(--color-info-bg);
   --color-correct: var(--color-correct);
   --color-correct-bg: var(--color-correct-bg);
   --color-incorrect: var(--color-incorrect);
   --color-incorrect-bg: var(--color-incorrect-bg);
   --color-easy: var(--color-easy);
   --color-medium: var(--color-medium);
+  --color-medium-bg: var(--color-medium-bg);
   --color-hard: var(--color-hard);
   --color-gold: var(--color-gold);
   --color-gold-bg: var(--color-gold-bg);
@@ -229,19 +921,59 @@
 }
 
 /*
-  Student-customizable button gradient (Settings page). --gradient-primary is
-  set/cleared at runtime via lib/buttonGradient.ts; painting it as a
-  background-image over every .bg-primary element lets one CSS variable
-  restyle every button site-wide with no per-component changes.
+  One visible focus indicator for the whole app.
+
+  Audit before this rule: 41 of 321 component files declared any focus style,
+  across 561 button/link call sites, split between two idioms
+  (`focus-visible:ring-2 ring-primary` and `focus-visible:outline-2
+  outline-primary`) — with `focus-visible:outline-none` appearing 57 times,
+  sometimes with no replacement. Keyboard users could not reliably see where
+  they were.
+
+  Declaring it once here means a new component is accessible by default rather
+  than by remembering. `:focus-visible` (not `:focus`) keeps the ring off
+  mouse clicks. Components that need a different treatment can still override
+  locally — this is a floor, not a ceiling.
+
+  NOTE: the radius scale above is deliberately NOT registered in `@theme
+  inline`. Tailwind v4 maps the `--radius-*` namespace onto its own
+  `rounded-*` utilities, and its scale is offset from this one by exactly one
+  step (its `md` is 0.375rem where this one's is 0.5rem), so registering it
+  would silently repoint every remaining `rounded-*` call site — including any
+  a future dependency ships. Code opts in explicitly with
+  `rounded-[var(--radius-md)]` instead. `rounded-full` is the one utility left
+  in use, because it means the same thing under either scale.
 */
-.bg-primary {
-  background-image: var(--gradient-primary, none);
+/* Longhands, not the `outline:` shorthand. With a var() in the shorthand the
+   whole declaration is invalid-at-computed-value-time if any substitution
+   fails, which silently drops outline-color back to its initial `currentColor`
+   — a white ring on a primary-filled button, which is exactly what happened
+   here before. Longhands fail independently. */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline-width: var(--focus-ring-width);
+  outline-style: solid;
+  outline-color: var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /*
-  Student-customizable page background (Settings page). Same technique as
-  the button gradient above, applied to .bg-bg instead of .bg-primary.
+  A scoped opt-in for a gradient-filled primary button.
+
+  This used to be the delivery mechanism for a settings control that let a
+  student paint any gradient over every `.bg-primary` element in the product;
+  that control is gone (see ACCENT PRESETS above for why, and for what
+  replaced it). The rule survives because the *marketing* page still wants
+  it: `LandingPage` sets `--gradient-primary` on its own root, so its CTAs
+  carry the campaign gradient while nothing behind `/login` does.
+
+  It is inert everywhere else — no `--gradient-primary`, no background-image —
+  so it costs one unmatched custom-property lookup and nothing else.
+
+  The matching `.bg-bg { background-image: var(--gradient-bg) }` rule is
+  deleted rather than kept: it had exactly one setter, the page-background
+  mixer, and a gradient behind the app's entire text ground is the thing that
+  must not come back.
 */
-.bg-bg {
-  background-image: var(--gradient-bg, none);
+.bg-primary {
+  background-image: var(--gradient-primary, none);
 }

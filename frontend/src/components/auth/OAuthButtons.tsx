@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { MessageModal } from "../MessageModal";
-import { GoogleSignInButton } from "./GoogleSignInButton";
-import { AppleSignInButton } from "./AppleSignInButton";
+import { GOOGLE_AVAILABLE, GoogleSignInButton } from "./GoogleSignInButton";
+import { APPLE_AVAILABLE, AppleSignInButton } from "./AppleSignInButton";
 import type { User } from "../../api/auth";
 
 interface Props {
@@ -41,7 +41,7 @@ export function OAuthButtons({ getRedirectPath }: Props) {
     try {
       handleResult(await loginWithGoogle(idToken));
     } catch {
-      setError("Google մուտքը ձախողվեց։ Փորձեք կրկին։");
+      setError("Google մուտքը ձախողվեց։ Փորձիր կրկին։");
     } finally {
       setLoading(false);
     }
@@ -53,11 +53,21 @@ export function OAuthButtons({ getRedirectPath }: Props) {
     try {
       handleResult(await loginWithApple(idToken, firstName, lastName));
     } catch {
-      setError("Apple մուտքը ձախողվեց։ Փորձեք կրկին։");
+      setError("Apple մուտքը ձախողվեց։ Փորձիր կրկին։");
     } finally {
       setLoading(false);
     }
   }
+
+  /*
+    Both buttons return null when their provider is not configured, but this
+    wrapper drew the «կամ» rule regardless — so a build with neither client id
+    set (any environment that has not been given them, including this one)
+    rendered a separator dividing nothing from nothing, directly under the
+    submit button. A divider is a statement that there is another way in; if
+    there is not, it should not be on screen.
+  */
+  if (!GOOGLE_AVAILABLE && !APPLE_AVAILABLE) return null;
 
   return (
     <div className="mt-6">
@@ -70,7 +80,7 @@ export function OAuthButtons({ getRedirectPath }: Props) {
         <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
         <AppleSignInButton
           onCredential={handleAppleCredential}
-          onError={() => setError("Apple մուտքը ձախողվեց։ Փորձեք կրկին։")}
+          onError={() => setError("Apple մուտքը ձախողվեց։ Փորձիր կրկին։")}
           disabled={loading}
         />
       </div>

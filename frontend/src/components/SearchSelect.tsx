@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
+import { cn } from "../lib/cn";
+import { fieldInputClass } from "./ui/Field";
 
 interface Option {
   id: number;
@@ -69,14 +72,14 @@ export function SearchSelect({
         <button
           type="button"
           onClick={handleFocus}
-          className="flex w-full items-center justify-between rounded-md border border-border bg-bg px-3 py-2 text-left text-text outline-none focus:border-primary"
+          className={cn(fieldInputClass, "flex items-center justify-between text-left")}
         >
           <span className="truncate">{value.label}</span>
           <span className="ml-2 shrink-0 text-xs text-text-muted hover:text-primary">Փոխել</span>
         </button>
       ) : (
         <input
-          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+          className={fieldInputClass}
           placeholder={placeholder}
           value={query}
           onFocus={handleFocus}
@@ -85,7 +88,7 @@ export function SearchSelect({
       )}
 
       {open && (
-        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border bg-surface shadow-lg">
+        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-[var(--radius)] border border-border bg-surface shadow-lg">
           {value && (
             <button
               type="button"
@@ -94,9 +97,9 @@ export function SearchSelect({
                 setOpen(false);
                 setQuery("");
               }}
-              className="block w-full px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-muted"
+              className="flex w-full items-center gap-[var(--space-2)] px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-muted"
             >
-              ✕ Չընտրել
+              <X size={14} strokeWidth={2} aria-hidden /> Չընտրել
             </button>
           )}
           {loading && <div className="px-3 py-2 text-sm text-text-muted">Բեռնվում է...</div>}

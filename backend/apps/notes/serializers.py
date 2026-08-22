@@ -80,7 +80,7 @@ class DocumentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = [
-            "id", "folder", "title", "icon", "tags", "is_favorite", "is_pinned",
+            "id", "folder", "kind", "title", "icon", "tags", "is_favorite", "is_pinned",
             "created_at", "updated_at", "deleted_at", "snippet",
         ]
         read_only_fields = fields
@@ -95,7 +95,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = [
-            "id", "folder", "title", "icon", "content", "tags", "is_favorite",
+            "id", "folder", "kind", "title", "icon", "content", "tags", "is_favorite",
             "is_pinned", "created_at", "updated_at", "deleted_at", "attachments",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "deleted_at", "attachments"]

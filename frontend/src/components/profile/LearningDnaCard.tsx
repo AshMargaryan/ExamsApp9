@@ -1,6 +1,8 @@
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
+import { Brain, Lock } from "lucide-react";
 import type { DnaMetric, LearningDna } from "../../api/profile";
 import { EmptyState } from "../ui/EmptyState";
+import { DataCard } from "../ui/DataCard";
 
 const DIMENSION_LABELS: Record<keyof LearningDna, string> = {
   accuracy: "Ճշգրտություն",
@@ -21,10 +23,12 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
 
   if (unlocked.length === 0) {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-        <p className="mb-3 text-sm font-semibold text-text">🧠 Ուսումնական ԴՆԹ</p>
-        <EmptyState icon="🧠" title="Շարունակեք սովորել՝ բացելու համար ձեր Ուսումնական ԴՆԹ-ն" />
-      </div>
+      <DataCard icon={Brain} title="Ուսումնական ԴՆԹ">
+        <EmptyState
+          icon={<Brain size={22} strokeWidth={1.75} />}
+          title="Շարունակիր սովորել՝ բացելու համար քո Ուսումնական ԴՆԹ-ն"
+        />
+      </DataCard>
     );
   }
 
@@ -34,10 +38,11 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
   }));
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-1 text-sm font-semibold text-text">🧠 Ուսումնական ԴՆԹ</p>
-      <p className="mb-3 text-xs text-text-muted">Հաշվարկված է ձեր իրական ուսումնական վարքագծից</p>
-
+    <DataCard
+      icon={Brain}
+      title="Ուսումնական ԴՆԹ"
+      description="Հաշվարկված է քո իրական ուսումնական վարքագծից"
+    >
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData} outerRadius="75%">
@@ -50,7 +55,7 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
 
       <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {unlocked.map(([key, m]) => (
-          <div key={key} className="rounded-md border border-border bg-bg px-3 py-2">
+          <div key={key} className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2">
             <p className="text-xs text-text-muted">{DIMENSION_LABELS[key]}</p>
             <p className="text-sm font-semibold text-text">
               {!isLocked(m) ? Math.round(m.value) : ""}
@@ -67,14 +72,18 @@ export function LearningDnaCard({ dna }: { dna: LearningDna }) {
           <div className="flex flex-wrap gap-1.5">
             {locked.map(([key, m]) =>
               isLocked(m) ? (
-                <span key={key} title={m.reason} className="rounded-full border border-border px-2 py-0.5 text-xs text-text-muted">
-                  🔒 {DIMENSION_LABELS[key]}
+                <span
+                  key={key}
+                  title={m.reason}
+                  className="flex items-center gap-1 rounded-[var(--radius-full)] border border-border px-[var(--space-2)] py-[2px] text-[length:var(--text-xs)] text-text-muted"
+                >
+                  <Lock size={11} strokeWidth={2.25} aria-hidden="true" /> {DIMENSION_LABELS[key]}
                 </span>
               ) : null
             )}
           </div>
         </div>
       )}
-    </div>
+    </DataCard>
   );
 }

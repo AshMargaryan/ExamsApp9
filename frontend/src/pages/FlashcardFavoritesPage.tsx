@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Star } from "lucide-react";
 import {
   flagCard, listFavoriteCards, type FavoriteCardEntry, type FlashcardSubject,
 } from "../api/flashcards";
@@ -7,21 +8,28 @@ import { MathText } from "../components/MathText";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { SUBJECTS } from "../lib/subjects";
 import { LinkButton } from "../components/ui/LinkButton";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { LoadingRegion, Skeleton } from "../components/ui/Skeleton";
 
 export function FlashcardFavoritesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const subject = (searchParams.get("subject") as FlashcardSubject | null) ?? SUBJECTS[0].key;
   const [entries, setEntries] = useState<FavoriteCardEntry[] | null>(null);
   const [busyCardId, setBusyCardId] = useState<number | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const { showError } = useToast();
 
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  // The failure used to be reported through a toast while `entries` stayed
+  // null, so once the toast had gone the page sat on skeletons for ever with
+  // nothing explaining why. A toast is not an error state for a whole list.
   useEffect(() => {
     setEntries(null);
-    listFavoriteCards(subject)
-      .then(setEntries)
-      .catch((err) => showError(extractErrorMessage(err)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subject]);
+    setLoadFailed(false);
+    listFavoriteCards(subject).then(setEntries).catch(() => setLoadFailed(true));
+  }, [subject, reloadKey]);
 
   async function unfavorite(cardId: number) {
     setBusyCardId(cardId);
@@ -40,8 +48,9 @@ export function FlashcardFavoritesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <LinkButton to="/flashcards" className="btn-fx mb-4 rounded-full px-1.5 py-0.5">← Բառաքարտեր</LinkButton>
-      <h1 className="mb-1 text-3xl font-semibold text-text">
-        ⭐ Ընտրյալներ · {activeSubject.icon} {activeSubject.label}
+      <h1 className="mb-1 flex items-center gap-[var(--space-2)] font-display text-[length:var(--text-3xl)] leading-[var(--leading-display)] font-semibold tracking-[var(--tracking-tight)] text-text">
+        <Star size={22} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent" />
+        Ընտրյալներ · {activeSubject.label}
       </h1>
       <p className="mb-6 text-sm text-text-muted">
         {activeSubject.label} առարկայից ընտրյալ նշված քարտերը՝ մեկ տեղում։
@@ -60,23 +69,35 @@ export function FlashcardFavoritesPage() {
                 : "border-border text-text hover:border-primary"
             }`}
           >
-            <span aria-hidden>{s.icon}</span>
+            <s.Icon size={15} strokeWidth={1.75} aria-hidden />
             {s.label}
           </button>
         ))}
       </div>
 
-      {entries === null ? (
-        <div className="flex flex-col gap-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-[var(--radius)] border border-border bg-surface" />
-          ))}
-        </div>
+      {loadFailed ? (
+        <ErrorState
+          title="Ընտրյալ քարտերը չհաջողվեց բեռնել։"
+          hint="Ստուգիր կապը և փորձիր կրկին։"
+          onRetry={() => setReloadKey((k) => k + 1)}
+        />
+      ) : entries === null ? (
+        <LoadingRegion>
+          <div className="flex flex-col gap-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        </LoadingRegion>
       ) : entries.length === 0 ? (
-        <div className="flex flex-col items-center rounded-[var(--radius)] border border-dashed border-border bg-surface p-10 text-center text-text-muted">
-          <span className="mb-3 text-3xl" aria-hidden>⭐</span>
-          {activeSubject.label} առարկայից դեռ ընտրյալ քարտեր չկան։ Ուսումնասիրելիս սեղմիր ⭐-ի վրա՝ քարտը այստեղ պահելու համար։
-        </div>
+        /* The ⭐ here was an emoji standing in for a control that is a lucide
+           star, so the empty state pointed at a glyph the page does not
+           contain. */
+        <EmptyState
+          icon={<Star size={26} strokeWidth={1.5} aria-hidden />}
+          title={`${activeSubject.label} առարկայից դեռ ընտրյալ քարտեր չկան։`}
+          hint="Քարտը ուսումնասիրելիս սեղմիր աստղիկը՝ այստեղ պահելու համար։"
+        />
       ) : (
         <div key={subject} className="flex flex-col gap-3 animate-[slide-up-in_var(--motion-normal)_var(--ease-out)]">
           {entries.map(({ card, deck }) => (
@@ -89,7 +110,7 @@ export function FlashcardFavoritesPage() {
                   <LinkButton
                     to={`/flashcards/${deck.id}`}
                     variant="ghost"
-                    className="h-6 px-2 text-xs tracking-wide uppercase"
+                    className="h-6 px-2 text-xs tracking-wide"
                   >
                     {deck.title}
                   </LinkButton>

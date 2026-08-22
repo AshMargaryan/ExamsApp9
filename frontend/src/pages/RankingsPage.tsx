@@ -1,191 +1,258 @@
-import { useEffect, useState } from "react";
-import { Award, History, TrendingUp } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Award, Building2, History, TrendingUp } from "lucide-react";
 import * as profileApi from "../api/profile";
 import type { PersonalRecords, PrivacySettings } from "../api/profile";
 import * as rankingsApi from "../api/rankings";
-import type { RankingAward, RankingBoard, RankHistoryPoint, SchoolComparisonBoard, SubjectKey } from "../api/rankings";
+import type { RankingAward, RankingBoard, RankHistoryPoint, SchoolComparisonBoard } from "../api/rankings";
 import { useAuth } from "../auth/AuthContext";
+import { useAsyncResource } from "../hooks/useAsyncResource";
 import { PersonalRecordsCard } from "../components/rankings/PersonalRecordsCard";
 import { Podium } from "../components/rankings/Podium";
-import { RankBadge } from "../components/rankings/RankBadge";
+import { RankBadge } from "../components/ui/RankBadge";
 import { RankingList } from "../components/rankings/RankingList";
-import type { MainTab } from "../components/rankings/RankingTabs";
-import { RankingTabs } from "../components/rankings/RankingTabs";
+import {
+  RankingTabs,
+  subjectOf,
+  type MainTab,
+  type RankingScopeKey,
+} from "../components/rankings/RankingTabs";
 import { RankProgressChart } from "../components/rankings/RankProgressChart";
 import { SeasonHeader } from "../components/rankings/SeasonHeader";
 import { SeasonHistoryList } from "../components/rankings/SeasonHistoryList";
 import { StickyOwnRow } from "../components/rankings/StickyOwnRow";
 import { YourPositionCard } from "../components/rankings/YourPositionCard";
+import { DataCard } from "../components/ui/DataCard";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
 import { LinkButton } from "../components/ui/LinkButton";
+import { SkeletonRows, SkeletonText } from "../components/ui/Skeleton";
+import { cn } from "../lib/cn";
 
-function SidePanelSection({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-4">
-      <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-muted">{title}</p>
-      {children}
-    </div>
-  );
-}
+/*
+  THE LEADERBOARD
+
+  The control came after the thing it controlled. Reading order was:
+  season header → your position → podium → the whole top-50 list → **the
+  tabs that choose which list that was** → the sticky "my row" → a footnote.
+  A student wanting "Իմ դասարանը" had to scroll past an entire leaderboard
+  they had not asked for to find the switch, then scroll back up to read the
+  result. When the "Դպրոցներ" tab was active the board block was skipped
+  entirely, so the page's layout order changed depending on the tab —
+  the one thing a tab strip must never do.
+
+  The scope selector is now the first thing under the title, and the board
+  follows it.
+
+  The other structural problem was that scope was two pieces of state
+  pretending to be one control — see RankingTabs.
+
+  And every one of the nine reads shared a single `error` string with no
+  retry, so a failed season-history call printed "Չհաջողվեց բեռնել
+  դասակարգումը։" under a leaderboard that had loaded perfectly.
+*/
 
 function SchoolComparisonList({ board, mySchoolId }: { board: SchoolComparisonBoard; mySchoolId: number | undefined }) {
   if (board.results.length === 0) {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-6 text-center text-text-muted">
-        Այս ամիս դեռ ոչ մի դպրոց միավոր չի վաստակել։
-      </div>
+      <EmptyState
+        icon={<Building2 size={24} strokeWidth={1.75} />}
+        title="Այս ամիս դեռ ոչ մի դպրոց միավոր չի վաստակել"
+        hint="Առաջին իսկ լուծված հարցից հետո քո դպրոցը կհայտնվի այստեղ։"
+      />
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+    <ul className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
       {board.results.map((entry) => {
         const isMySchool = entry.school.id === mySchoolId;
         const avgXp = Math.round(entry.total_xp / entry.student_count);
         return (
-          <div
+          <li
             key={entry.school.id}
-            className={`grid grid-cols-[1.75rem_2rem_1fr_auto] items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 ${
-              isMySchool ? "bg-primary/10" : ""
-            }`}
+            className={cn(
+              "grid grid-cols-[1.75rem_2rem_1fr_auto] items-center gap-[var(--space-3)]",
+              "border-b border-border px-[var(--space-4)] py-[var(--space-3)] last:border-b-0",
+              isMySchool && "bg-primary-bg",
+            )}
           >
             <RankBadge rank={entry.rank} size="sm" />
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-sm text-text-muted">
-              🏫
-            </div>
+            <span
+              aria-hidden="true"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-surface-muted text-text-muted"
+            >
+              <Building2 size={14} strokeWidth={1.75} />
+            </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-text">
+              <p className="truncate text-[length:var(--text-sm)] font-medium text-text">
                 {entry.school.name}
-                {isMySchool && <span className="ml-1 text-xs text-primary">(Ձեր դպրոցը)</span>}
+                {isMySchool && (
+                  <span className="ml-1 text-[length:var(--text-xs)] font-semibold text-primary">(Քո դպրոցը)</span>
+                )}
               </p>
-              <p className="truncate text-xs text-text-muted">
+              <p className="truncate text-[length:var(--text-xs)] text-text-muted">
                 {entry.school.marz || "—"} · {entry.student_count} սովորող · միջինը {avgXp} XP
               </p>
             </div>
-            <p className="shrink-0 font-mono text-sm font-bold tabular-nums text-text">{entry.total_xp} XP</p>
-          </div>
+            <p className="shrink-0 font-mono text-[length:var(--text-sm)] font-bold tabular-nums text-text">
+              {entry.total_xp} XP
+            </p>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }
 
+const MAIN_FETCHERS: Record<MainTab, () => Promise<RankingBoard | null>> = {
+  global: rankingsApi.fetchGlobalRanking,
+  school: rankingsApi.fetchSchoolRanking,
+  class: rankingsApi.fetchClassRanking,
+  friends: rankingsApi.fetchFriendsRanking,
+  schools: () => Promise.resolve(null),
+};
+
 export function RankingsPage() {
   const { user } = useAuth();
-  const [mainTab, setMainTab] = useState<MainTab>("global");
-  const [activeSubject, setActiveSubject] = useState<SubjectKey | null>(null);
+  const [scope, setScope] = useState<RankingScopeKey>("global");
+  const subject = subjectOf(scope);
+  const isSchoolsView = scope === "schools";
 
-  const [global, setGlobal] = useState<RankingBoard | null>(null);
-  const [school, setSchool] = useState<RankingBoard | null>(null);
-  const [classBoard, setClassBoard] = useState<RankingBoard | null>(null);
-  const [friends, setFriends] = useState<RankingBoard | null>(null);
-  const [schools, setSchools] = useState<SchoolComparisonBoard | null>(null);
-  const [subjectBoards, setSubjectBoards] = useState<Partial<Record<SubjectKey, RankingBoard>>>({});
+  // One resource per view, keyed on the scope: switching tabs re-fetches the
+  // board you actually asked for, and a failure is scoped to that board
+  // rather than to a page-wide error string.
+  const boardResource = useAsyncResource<RankingBoard | null>(
+    useCallback(
+      () => (subject ? rankingsApi.fetchSubjectRanking(subject) : MAIN_FETCHERS[scope as MainTab]()),
+      [scope, subject],
+    ),
+    [scope],
+  );
+  const schoolsResource = useAsyncResource<SchoolComparisonBoard | null>(
+    useCallback(() => (isSchoolsView ? rankingsApi.fetchSchoolComparison() : Promise.resolve(null)), [isSchoolsView]),
+    [isSchoolsView],
+  );
+
+  const board = boardResource.data;
+  const schools = schoolsResource.data;
+
+  /*
+    The boards themselves are useful to any role — a teacher watching their
+    class, for instance — but "your position", "your records" and "your season
+    history" only mean something for a student who competes on them. For
+    everyone else they'd be three permanently empty cards, so they aren't
+    rendered and their requests are never made.
+  */
+  const isCompetitor = user?.role === "student";
 
   const [rankHistory, setRankHistory] = useState<RankHistoryPoint[] | null>(null);
   const [personalRecords, setPersonalRecords] = useState<PersonalRecords | null>(null);
   const [awards, setAwards] = useState<RankingAward[] | null>(null);
   const [privacy, setPrivacy] = useState<PrivacySettings | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [sideFailed, setSideFailed] = useState(false);
 
-  useEffect(() => {
-    const fail = () => setError("Չհաջողվեց բեռնել դասակարգումը։");
-    rankingsApi.fetchGlobalRanking().then(setGlobal).catch(fail);
-    rankingsApi.fetchSchoolRanking().then(setSchool).catch(fail);
-    rankingsApi.fetchClassRanking().then(setClassBoard).catch(fail);
-    rankingsApi.fetchFriendsRanking().then(setFriends).catch(fail);
-    rankingsApi.fetchSchoolComparison().then(setSchools).catch(fail);
-    rankingsApi.fetchRankHistory("global").then(setRankHistory).catch(fail);
-    rankingsApi.fetchMyRankingAwards().then(setAwards).catch(fail);
-    profileApi.fetchAnalytics().then((a) => setPersonalRecords(a.personal_records)).catch(fail);
-    profileApi.fetchPrivacySettings().then(setPrivacy).catch(fail);
-  }, []);
+  const loadSidePanel = useCallback(() => {
+    if (!isCompetitor) return;
+    setSideFailed(false);
+    Promise.allSettled([
+      rankingsApi.fetchRankHistory("global"),
+      rankingsApi.fetchMyRankingAwards(),
+      profileApi.fetchAnalytics(),
+      profileApi.fetchPrivacySettings(),
+    ]).then(([history, myAwards, analytics, privacySettings]) => {
+      if (history.status === "fulfilled") setRankHistory(history.value);
+      if (myAwards.status === "fulfilled") setAwards(myAwards.value);
+      if (analytics.status === "fulfilled") setPersonalRecords(analytics.value.personal_records);
+      if (privacySettings.status === "fulfilled") setPrivacy(privacySettings.value);
+      setSideFailed([history, myAwards, analytics, privacySettings].every((r) => r.status === "rejected"));
+    });
+  }, [isCompetitor]);
 
-  useEffect(() => {
-    if (!activeSubject || subjectBoards[activeSubject]) return;
-    rankingsApi
-      .fetchSubjectRanking(activeSubject)
-      .then((board) => setSubjectBoards((prev) => ({ ...prev, [activeSubject]: board })))
-      .catch(() => setError("Չհաջողվեց բեռնել դասակարգումը։"));
-  }, [activeSubject, subjectBoards]);
-
-  const board = activeSubject
-    ? subjectBoards[activeSubject] ?? null
-    : mainTab === "global"
-      ? global
-      : mainTab === "school"
-        ? school
-        : mainTab === "class"
-          ? classBoard
-          : mainTab === "friends"
-            ? friends
-            : null;
+  useEffect(loadSidePanel, [loadSidePanel]);
 
   const top3 = board?.results.filter((e) => e.rank <= 3) ?? [];
+  const activeResource = isSchoolsView ? schoolsResource : boardResource;
 
   return (
     <div className="mx-auto min-h-screen max-w-5xl bg-bg px-4 py-8">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <SeasonHeader
-          monthLabel={board?.month_label ?? schools?.month_label ?? ""}
-          year={board?.year ?? schools?.year ?? new Date().getFullYear()}
-          month={board?.month ?? schools?.month ?? new Date().getMonth() + 1}
-        />
-        <LinkButton to="/" className="mt-1 shrink-0">← Գլխավոր</LinkButton>
+      <div className="mb-[var(--space-4)] flex flex-wrap items-start justify-between gap-[var(--space-3)]">
+        <div className="min-w-0 flex-1">
+          <SeasonHeader
+            monthLabel={board?.month_label ?? schools?.month_label ?? ""}
+            year={board?.year ?? schools?.year ?? new Date().getFullYear()}
+            month={board?.month ?? schools?.month ?? new Date().getMonth() + 1}
+          />
+        </div>
+        {/* The back link was `shrink-0` beside a heading that could not
+            shrink, so at 375px it hung off the right edge of the document. */}
+        <LinkButton to="/" className="mt-1 shrink-0">
+          ← Գլխավոր
+        </LinkButton>
       </div>
 
-      {mainTab !== "schools" && board && (
-        <div className="mb-6 overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
-          <YourPositionCard board={board} meId={user?.id} hidden={privacy ? !privacy.show_on_leaderboard : false} />
-          <Podium top3={top3} meId={user?.id} />
-          <RankingList board={board} meId={user?.id} />
-        </div>
-      )}
+      {/* The switch comes before the thing it switches. */}
+      <RankingTabs scope={scope} onScopeChange={setScope} className="mb-[var(--space-5)]" />
 
-      <RankingTabs
-        active={mainTab}
-        onChange={setMainTab}
-        activeSubject={activeSubject}
-        onSubjectChange={setActiveSubject}
-      />
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div>
-          {mainTab === "schools" && !activeSubject ? (
-            schools ? (
-              <SchoolComparisonList board={schools} mySchoolId={user?.school?.id} />
-            ) : (
-              <p className="text-text-muted">Բեռնվում է...</p>
-            )
-          ) : board ? (
-            <StickyOwnRow board={board} meId={user?.id} />
+      <div className={cn("grid gap-[var(--space-6)]", isCompetitor && "lg:grid-cols-[1fr_320px]")}>
+        <div className="min-w-0">
+          {activeResource.isLoading ? (
+            <div className="rounded-[var(--radius)] border border-border bg-surface p-[var(--space-5)]">
+              <SkeletonRows count={6} />
+            </div>
+          ) : activeResource.error !== null ? (
+            <ErrorState
+              title="Չհաջողվեց բեռնել այս դասակարգումը։"
+              hint="Մյուս դասակարգումները մնում են հասանելի։"
+              onRetry={activeResource.retry}
+            />
+          ) : isSchoolsView ? (
+            schools && <SchoolComparisonList board={schools} mySchoolId={user?.school?.id} />
           ) : (
-            <p className="text-text-muted">Բեռնվում է...</p>
+            board && (
+              <>
+                <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+                  {isCompetitor && (
+                    <YourPositionCard
+                      board={board}
+                      meId={user?.id}
+                      hidden={privacy ? !privacy.show_on_leaderboard : false}
+                    />
+                  )}
+                  <Podium top3={top3} meId={user?.id} />
+                  <RankingList board={board} meId={user?.id} />
+                </div>
+                <StickyOwnRow board={board} meId={user?.id} />
+              </>
+            )
           )}
 
-          {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
-
-          <p className="mt-6 text-center text-xs text-text-muted">
-            🥇🥈🥉 Ամսվա վերջում թոփ 3 սովորողները ստանում են մեդալ և կոչում իրենց պրոֆիլում։
+          <p className="mt-[var(--space-6)] flex items-center justify-center gap-[var(--space-2)] text-center text-[length:var(--text-xs)] text-text-muted">
+            <Award size={14} strokeWidth={1.75} aria-hidden="true" />
+            Ամսվա վերջում թոփ 3 սովորողները ստանում են մեդալ և կոչում իրենց պրոֆիլում։
           </p>
         </div>
 
-        <div className="flex flex-col gap-6">
-          <SidePanelSection title={<><TrendingUp size={13} strokeWidth={1.75} /> Սեզոնի առաջընթաց</>}>
-            <RankProgressChart points={rankHistory ?? []} />
-          </SidePanelSection>
-
-          <SidePanelSection title={<><Award size={13} strokeWidth={1.75} /> Անձնական ռեկորդներ</>}>
-            {personalRecords ? (
-              <PersonalRecordsCard records={personalRecords} />
+        {isCompetitor && (
+          <div className="flex min-w-0 flex-col gap-[var(--space-5)]">
+            {sideFailed ? (
+              <ErrorState size="sm" title="Չհաջողվեց բեռնել քո վիճակագրությունը։" onRetry={loadSidePanel} />
             ) : (
-              <p className="text-sm text-text-muted">Բեռնվում է...</p>
-            )}
-          </SidePanelSection>
+              <>
+                <DataCard icon={TrendingUp} title="Սեզոնի առաջընթաց">
+                  {rankHistory ? <RankProgressChart points={rankHistory} /> : <SkeletonText lines={4} />}
+                </DataCard>
 
-          <SidePanelSection title={<><History size={13} strokeWidth={1.75} /> Սեզոնների պատմություն</>}>
-            {awards ? <SeasonHistoryList awards={awards} /> : <p className="text-sm text-text-muted">Բեռնվում է...</p>}
-          </SidePanelSection>
-        </div>
+                <DataCard icon={Award} title="Անձնական ռեկորդներ">
+                  {personalRecords ? <PersonalRecordsCard records={personalRecords} /> : <SkeletonText lines={4} />}
+                </DataCard>
+
+                <DataCard icon={History} title="Սեզոնների պատմություն">
+                  {awards ? <SeasonHistoryList awards={awards} /> : <SkeletonText lines={3} />}
+                </DataCard>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

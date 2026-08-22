@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
+import { Check, Flame } from "lucide-react";
 import { ProgressBar } from "../ui/ProgressBar";
+import { DataCard } from "../ui/DataCard";
 
 const MILESTONES = [7, 14, 30, 60, 100, 365];
 
@@ -33,14 +35,20 @@ export function StreakCard({ currentStreak, longestStreak }: { currentStreak: nu
   }, [currentStreak]);
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-2xl font-semibold text-text">🔥 {currentStreak}-օրյա շարք</p>
-      </div>
-      <p className="mt-1 text-sm text-text-muted">Լավագույն շարք՝ {longestStreak} օր</p>
+    <DataCard
+      icon={Flame}
+      title="Ուսումնական շարք"
+      description={`Լավագույն շարք՝ ${longestStreak} օր`}
+    >
+      <p className="font-display text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-display)] text-text">
+        {currentStreak}
+        <span className="ml-[var(--space-2)] text-[length:var(--text-base)] font-normal text-text-muted">
+          օր անընդմեջ
+        </span>
+      </p>
 
       {nextMilestone && (
-        <div className="mt-3">
+        <div className="mt-[var(--space-4)]">
           <div className="flex items-baseline justify-between text-xs text-text-muted">
             <span>Հաջորդ նպատակակետ՝ {nextMilestone} օր</span>
             <span>{currentStreak}/{nextMilestone}</span>
@@ -51,18 +59,27 @@ export function StreakCard({ currentStreak, longestStreak }: { currentStreak: nu
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {MILESTONES.map((m) => (
-          <span
-            key={m}
-            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
-              currentStreak >= m ? "border-medium text-medium" : "border-border text-text-muted"
-            }`}
-          >
-            {m}
-          </span>
-        ))}
-      </div>
-    </div>
+      {/* Reached milestones are marked with a tick as well as a colour —
+          "which of these have I passed" must survive greyscale. */}
+      <ul className="mt-[var(--space-4)] flex flex-wrap gap-[var(--space-2)]">
+        {MILESTONES.map((m) => {
+          const reached = currentStreak >= m;
+          return (
+            <li
+              key={m}
+              className={`flex items-center gap-1 rounded-[var(--radius-full)] border px-[var(--space-2)] py-[2px] text-[length:var(--text-xs)] font-medium ${
+                reached ? "border-medium text-medium" : "border-border text-text-muted"
+              }`}
+            >
+              {reached && <Check size={11} strokeWidth={3} aria-hidden="true" />}
+              <span>{m}</span>
+              <span className="sr-only">
+                {reached ? " օր՝ հասած" : " օր՝ դեռ չհասած"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </DataCard>
   );
 }

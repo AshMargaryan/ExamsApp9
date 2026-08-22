@@ -17,7 +17,7 @@ export function Battery({ percent, avgScore }: { percent: number; avgScore: numb
           className="absolute inset-y-0 left-0 rounded-[1px] transition-all"
           style={{ width: `${Math.max(percent, 0)}%`, backgroundColor: fillColor }}
         />
-        <span className="absolute top-1/2 -right-[3px] h-1.5 w-[2px] -translate-y-1/2 rounded-r-sm bg-text-muted" />
+        <span className="absolute top-1/2 -right-[3px] h-1.5 w-[2px] -translate-y-1/2 rounded-r-[var(--radius-xs)] bg-text-muted" />
       </span>
       <span className="text-xs text-text-muted">{percent}%</span>
     </span>

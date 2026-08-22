@@ -115,7 +115,10 @@ class TicketDetailView(APIView):
     """GET /api/help/tickets/<id>/ — one ticket with its full message thread."""
 
     def get(self, request, pk):
-        ticket = get_object_or_404(SupportTicket, pk=pk, user=request.user)
+        ticket = get_object_or_404(
+            SupportTicket.objects.prefetch_related("attachments", "messages__attachments"),
+            pk=pk, user=request.user,
+        )
         return Response(TicketDetailSerializer(ticket, context={"request": request}).data)
 
 

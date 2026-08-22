@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { BarChart3, BookOpen, CalendarDays, Flame, GraduationCap, Send, Star, Target, Trophy } from "lucide-react";
 import * as profileApi from "../api/profile";
 import type { ActivityDay, Profile, UserAchievement } from "../api/profile";
 import * as teachingApi from "../api/teaching";
@@ -7,34 +8,17 @@ import type { Assignment } from "../api/teaching";
 import { TeachingModal } from "../components/teaching/TeachingModal";
 import { DailyProgressChart } from "../components/dashboard/DailyProgressChart";
 import { DashboardAssignmentCard } from "../components/dashboard/DashboardAssignmentCard";
+import { Avatar } from "../components/ui/Avatar";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { EmptyState } from "../components/ui/EmptyState";
 import { LinkButton } from "../components/ui/LinkButton";
+import { Skeleton } from "../components/ui/Skeleton";
+import { StatTile } from "../components/ui/StatTile";
+import { DatePicker } from "../components/ui/DatePicker";
 
 const ACCURACY_RING_R = 24;
 const ACCURACY_RING_CIRCUMFERENCE = 2 * Math.PI * ACCURACY_RING_R;
-
-function StatCard({
-  label,
-  className = "",
-  labelClassName = "text-text-muted",
-  style,
-  children,
-}: {
-  label: string;
-  className?: string;
-  labelClassName?: string;
-  style?: React.CSSProperties;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={`flex flex-col justify-between gap-4 rounded-[20px] border border-border p-5 ${className}`}
-      style={style}
-    >
-      <div className={`text-xs font-medium tracking-wide uppercase ${labelClassName}`}>{label}</div>
-      {children}
-    </div>
-  );
-}
 
 export function StudentDashboardPage() {
   const navigate = useNavigate();
@@ -82,7 +66,18 @@ export function StudentDashboardPage() {
   }
 
   if (!profile) {
-    return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
+    return (
+      <div className="min-h-screen bg-bg px-4 py-8 sm:px-8 lg:px-16">
+        <div className="mx-auto max-w-6xl">
+          <Skeleton className="mb-10 h-16 w-full" />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const active = assignments ?? [];
@@ -105,13 +100,10 @@ export function StudentDashboardPage() {
         {/* HEADER */}
         <div className="mb-10 flex flex-col gap-6 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div
-              className="mb-2.5 text-sm font-medium tracking-[0.16em] text-text-muted uppercase"
-              style={{ fontFamily: "'Noto Serif Armenian', serif" }}
-            >
+            <div className="mb-2.5 text-sm font-medium tracking-[0.16em] text-text-muted">
               Աշակերտի վահանակ
             </div>
-            <h1 className="text-3xl font-semibold text-text sm:text-4xl" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
+            <h1 className="text-3xl font-semibold text-text sm:text-4xl">
               Բարի վերադարձ, {fullName.split(" ")[0]}
             </h1>
           </div>
@@ -120,27 +112,20 @@ export function StudentDashboardPage() {
               <div className="text-sm font-semibold text-text">{fullName}</div>
               <div className="text-xs text-text-muted">{profile.grade ? `${profile.grade}-րդ դասարան` : profile.username}</div>
             </div>
-            <span className="flex h-13 w-13 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-lg font-semibold text-text-muted">
-              {profile.avatar ? (
-                <img src={profile.avatar} alt={fullName} className="h-full w-full object-cover" />
-              ) : (
-                fullName.slice(0, 1).toUpperCase()
-              )}
-            </span>
+            <Avatar src={profile.avatar} name={fullName} size="lg" />
           </div>
         </div>
 
         {/* TEACHERS */}
         <div className="mb-8">
           <div className="mb-3.5 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-text">👩‍🏫 Ուսուցիչներ</h2>
-            <button
-              type="button"
-              onClick={() => setTeachingOpen(true)}
-              className="rounded-md border border-primary px-4 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
-            >
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-text">
+              <GraduationCap size={19} strokeWidth={1.75} className="text-text-muted" />
+              Ուսուցիչներ
+            </h2>
+            <Button variant="secondary" size="sm" onClick={() => setTeachingOpen(true)}>
               Հրավերներ
-            </button>
+            </Button>
           </div>
           {profile.teachers && profile.teachers.length > 0 ? (
             <div className="flex flex-wrap gap-3">
@@ -153,13 +138,7 @@ export function StudentDashboardPage() {
                     onClick={() => navigate(`/profile/${t.id}`)}
                     className="flex items-center gap-3.5 rounded-full border border-border bg-surface py-2.5 pr-6 pl-2.5 text-left transition-colors hover:border-primary"
                   >
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-muted text-base font-semibold text-text-muted">
-                      {t.avatar ? (
-                        <img src={t.avatar} alt={name} className="h-full w-full object-cover" />
-                      ) : (
-                        name.slice(0, 1).toUpperCase()
-                      )}
-                    </span>
+                    <Avatar src={t.avatar} name={name} size="md" />
                     <div>
                       <div className="text-base font-semibold text-text">{name}</div>
                       <div className="text-xs text-text-muted">@{t.username}</div>
@@ -169,28 +148,32 @@ export function StudentDashboardPage() {
               })}
             </div>
           ) : (
-            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-sm text-text-muted">
-              Դեռ կապակցված ուսուցիչներ չկան։ Ուսուցչի հրավերները հայտնվում են «Հրավերներ» կոճակի տակ։
-            </p>
+            <EmptyState
+              size="sm"
+              title="Դեռ կապակցված ուսուցիչներ չկան"
+              hint="Ուսուցչի հրավերները հայտնվում են «Հրավերներ» կոճակի տակ։"
+            />
           )}
         </div>
 
         {/* STATS */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[1.7fr_1fr_1fr_1fr_1.2fr]">
-          <StatCard label="📊 Շաբաթական առաջընթաց" className="col-span-2 sm:col-span-3 lg:col-span-1">
-            {activity ? <DailyProgressChart days={activity} /> : <p className="text-sm text-text-muted">Բեռնվում է...</p>}
-          </StatCard>
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 2xl:grid-cols-[minmax(14rem,1.7fr)_1fr_1fr_1fr_minmax(9rem,1.2fr)]">
+          {/* Full width until the five-across strip turns on, because this is
+              the only cell with a chart in it: at one-of-three it measured a
+              161px plot, and seven weekday labels do not fit in 161px. */}
+          <Card className="col-span-2 flex flex-col justify-between gap-4 sm:col-span-3 2xl:col-span-1">
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
+              <BarChart3 size={14} strokeWidth={1.75} /> Շաբաթական առաջընթաց
+            </p>
+            {activity ? <DailyProgressChart days={activity} /> : <Skeleton className="h-[90px] w-full" />}
+          </Card>
 
-          <StatCard label="🔥 Հաջորդականություն">
-            <div>
-              <div className="text-4xl leading-none font-semibold text-text" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-                {profile.streak?.current_streak ?? 0}
-              </div>
-              <div className="mt-1 text-xs text-text-muted">օր անընդմեջ</div>
-            </div>
-          </StatCard>
+          <StatTile icon={<Flame size={20} strokeWidth={1.75} />} value={`${profile.streak?.current_streak ?? 0}`} label="Հաջորդականություն" hint="օր անընդմեջ" size="hero" />
 
-          <StatCard label="🎯 Ճշգրտություն">
+          <Card className="flex flex-col justify-between gap-4">
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
+              <Target size={14} strokeWidth={1.75} /> Ճշգրտություն
+            </p>
             <div className="flex items-center gap-3.5">
               <svg width="56" height="56" viewBox="0 0 56 56">
                 <circle cx="28" cy="28" r={ACCURACY_RING_R} fill="none" stroke="var(--color-border)" strokeWidth="4" />
@@ -199,7 +182,7 @@ export function StudentDashboardPage() {
                   cy="28"
                   r={ACCURACY_RING_R}
                   fill="none"
-                  stroke="var(--color-text)"
+                  stroke="var(--color-primary)"
                   strokeWidth="4"
                   strokeDasharray={ACCURACY_RING_CIRCUMFERENCE}
                   strokeDashoffset={accuracyOffset}
@@ -207,91 +190,87 @@ export function StudentDashboardPage() {
                   transform="rotate(-90 28 28)"
                 />
               </svg>
-              <div className="text-2xl font-semibold text-text" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-                {Math.round(accuracy)}%
-              </div>
+              <div className="text-2xl font-semibold text-text">{Math.round(accuracy)}%</div>
             </div>
-          </StatCard>
+          </Card>
 
-          <StatCard label="⭐ Մակարդակ">
+          <Card className="flex flex-col justify-between gap-4">
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
+              <Star size={14} strokeWidth={1.75} /> Մակարդակ
+            </p>
             <div>
-              <div className="text-2xl font-semibold text-text" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-                {profile.level}-րդ մակարդակ
-              </div>
+              <div className="text-2xl font-semibold text-text">{profile.level}-րդ մակարդակ</div>
               <div className="mt-2.5">
                 <div className="h-2 w-full rounded-full bg-surface-muted">
-                  <div className="h-full rounded-full bg-text" style={{ width: `${xpPercent}%` }} />
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${xpPercent}%` }} />
                 </div>
                 <div className="mt-1.5 text-xs text-text-muted">
                   {profile.xp_into_level} / {profile.xp_for_next_level} XP
                 </div>
               </div>
             </div>
-          </StatCard>
+          </Card>
 
           {profile.target_exam_date ? (
-            <StatCard
-              label="📅 Քննության ամսաթիվ"
-              className="text-white"
-              labelClassName="text-white/70"
+            <Card
+              className="flex flex-col justify-between gap-4 border-none text-white"
               style={{ backgroundImage: "linear-gradient(226deg, #2563EB, #7F24B0, #FF5C8D)" }}
             >
+              <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-white/70">
+                <CalendarDays size={14} strokeWidth={1.75} /> Քննության ամսաթիվ
+              </p>
               <div>
-                <div className="text-3xl leading-none font-semibold" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-                  {Math.max(profile.days_until_exam ?? 0, 0)}
-                </div>
+                <div className="text-3xl leading-none font-semibold">{Math.max(profile.days_until_exam ?? 0, 0)}</div>
                 <div className="mt-1.5 text-xs opacity-70">
                   օր մնաց · {new Date(profile.target_exam_date).toLocaleDateString("hy-AM", { day: "numeric", month: "short" })}
                 </div>
               </div>
-            </StatCard>
+            </Card>
           ) : (
-            <StatCard label="📅 Քննության ամսաթիվ">
+            <Card className="flex flex-col justify-between gap-4">
+              <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-text-muted">
+                <CalendarDays size={14} strokeWidth={1.75} /> Քննության ամսաթիվ
+              </p>
               {settingExamDate ? (
                 <div className="flex flex-col gap-2">
-                  <input
-                    type="date"
+                  {/* A short placeholder deliberately: this picker lives in one
+                      cell of a five-across stat strip, and the default
+                      "Ընտրիր ամսաթիվը" sets a min-content width that pushed the
+                      whole row 37px past the viewport. */}
+                  <DatePicker
                     value={examDateInput}
-                    onChange={(e) => setExamDateInput(e.target.value)}
-                    className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+                    onChange={setExamDateInput}
+                    label="Քննության ամսաթիվ"
+                    placeholder="Ամսաթիվ"
+                    clearable={false}
                   />
-                  <button
-                    type="button"
-                    onClick={handleSetExamDate}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-contrast hover:bg-primary-hover"
-                  >
+                  <Button size="sm" onClick={handleSetExamDate}>
                     Հաստատել
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <>
-                  <div className="text-sm text-text-muted">Նշված չէ</div>
-                  <button
-                    type="button"
-                    onClick={() => setSettingExamDate(true)}
-                    className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-xs text-text hover:border-primary"
-                  >
+                <div>
+                  <div className="mb-2 text-sm text-text-muted">Նշված չէ</div>
+                  <Button variant="secondary" size="sm" onClick={() => setSettingExamDate(true)}>
                     Սահմանել ամսաթիվը
-                  </button>
-                </>
+                  </Button>
+                </div>
               )}
-            </StatCard>
+            </Card>
           )}
         </div>
 
         {/* ASSIGNMENTS */}
         <div className="mb-8">
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-2xl font-semibold text-text" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-              📚 Ակտիվ առաջադրանքներ{" "}
-              <span className="text-sm font-normal text-text-muted">({activeAssignments.length})</span>
+            <h2 className="flex items-center gap-2 text-2xl font-semibold text-text">
+              <BookOpen size={20} strokeWidth={1.75} className="text-text-muted" />
+              Ակտիվ առաջադրանքներ <span className="text-sm font-normal text-text-muted">({activeAssignments.length})</span>
             </h2>
           </div>
-          {assignments === null && <p className="text-text-muted">Բեռնվում է...</p>}
+          {assignments === null && <Skeleton className="h-40 w-full" />}
           {assignments !== null && activeAssignments.length === 0 && (
-            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-              Այլ ընթացիկ առաջադրանքներ չկան։
-            </p>
+            <EmptyState tone="positive" title="Այլ ընթացիկ առաջադրանքներ չկան" />
           )}
           {activeAssignments.length > 0 && (
             <div className="flex gap-5 overflow-x-auto pb-2" style={{ scrollSnapType: "x mandatory" }}>
@@ -304,15 +283,13 @@ export function StudentDashboardPage() {
 
         <div className="mb-8">
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-2xl font-semibold text-text" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-              📨 Ուղարկված առաջադրանքներ{" "}
-              <span className="text-sm font-normal text-text-muted">({sentAssignments.length})</span>
+            <h2 className="flex items-center gap-2 text-2xl font-semibold text-text">
+              <Send size={20} strokeWidth={1.75} className="text-text-muted" />
+              Ուղարկված առաջադրանքներ <span className="text-sm font-normal text-text-muted">({sentAssignments.length})</span>
             </h2>
           </div>
           {sentAssignments.length === 0 ? (
-            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-              Ուղարկված առաջադրանքներ դեռ չկան։
-            </p>
+            <EmptyState title="Ուղարկված առաջադրանքներ դեռ չկան" />
           ) : (
             <div className="flex gap-5 overflow-x-auto pb-2" style={{ scrollSnapType: "x mandatory" }}>
               {sentAssignments.map((a) => (
@@ -324,19 +301,24 @@ export function StudentDashboardPage() {
 
         {/* ACHIEVEMENTS */}
         <div>
-          <h2 className="mb-5 text-2xl font-semibold text-text" style={{ fontFamily: "'Noto Serif Armenian', serif" }}>
-            🏆 Նվաճումներ
+          <h2 className="mb-5 flex items-center gap-2 text-2xl font-semibold text-text">
+            <Trophy size={20} strokeWidth={1.75} className="text-text-muted" />
+            Նվաճումներ
           </h2>
-          {achievements === null && <p className="text-text-muted">Բեռնվում է...</p>}
+          {achievements === null && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          )}
           {achievements !== null && achievements.length === 0 && (
-            <p className="rounded-[var(--radius)] border border-border bg-surface p-5 text-text-muted">
-              Դեռ նվաճումներ չկան։ Շարունակեք սովորել՝ դրանք բացելու համար։
-            </p>
+            <EmptyState tone="positive" title="Դեռ նվաճումներ չկան" hint="Շարունակիր սովորել՝ դրանք բացելու համար։" />
           )}
           {achievements !== null && achievements.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {achievements.map((ua) => (
-                <div key={ua.id} className="flex items-start gap-3.5 rounded-2xl border border-border p-4.5">
+                <div key={ua.id} className="flex items-start gap-3.5 rounded-[var(--radius-xl)] border border-border p-4.5">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-text text-base">
                     {ua.achievement.icon || "🏆"}
                   </div>

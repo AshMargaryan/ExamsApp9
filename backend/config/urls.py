@@ -4,7 +4,13 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Path is configurable (default unchanged) so production can move the
+    # admin off the URL every scanner tries first. This is defense in depth,
+    # NOT a substitute for rate limiting: the admin login is plain Django
+    # auth, so the DRF throttles protecting /api/auth/login/ do not apply to
+    # it and password guessing there is currently unbounded. See
+    # ADMIN_URL_PATH in backend/.env.example.
+    path(settings.ADMIN_URL_PATH, admin.site.urls),
     path("api/auth/", include("apps.users.urls")),
     path("api/practice/", include("apps.practice.urls")),
     path("api/assistant/", include("apps.ai_assistant.urls")),
@@ -29,6 +35,7 @@ urlpatterns = [
     path("api/groups/", include("apps.study_groups.urls")),
     path("api/todo/", include("apps.todo.urls")),
     path("api/notes/", include("apps.notes.urls")),
+    path("api/calls/", include("apps.calls.urls")),
 ]
 
 if settings.DEBUG:

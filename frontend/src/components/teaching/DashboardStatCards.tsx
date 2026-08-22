@@ -1,56 +1,53 @@
+import { Clock, GraduationCap, Radio } from "lucide-react";
 import type { DashboardStats } from "../../api/teaching";
+import { StatTile } from "../ui/StatTile";
 
-function StatCard({
-  label,
-  value,
-  tone = "default",
-  pulse = false,
-}: {
-  label: string;
-  value: number;
-  tone?: "default" | "primary" | "danger" | "success";
-  pulse?: boolean;
-}) {
-  const toneClass =
-    tone === "danger"
-      ? "text-incorrect"
-      : tone === "success"
-        ? "text-correct"
-        : tone === "primary"
-          ? "text-primary"
-          : "text-text";
+/*
+  The teacher's metrics band.
 
-  return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-4">
-      <p className="flex items-center gap-2 text-sm text-text-muted">
-        {label}
-        {pulse && value > 0 && (
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-correct opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-correct" />
-          </span>
-        )}
-      </p>
-      <p className={`mt-1 text-3xl font-bold ${toneClass}`}>{value}</p>
-    </div>
-  );
-}
+  It used to be five tiles, of which two restated a section rendered on the
+  same screen. "Ուշադրության կարիք ունեն" was a full-width hero tile whose own
+  hint read "Տես ցանկը ներքևում" — and that list was 150px below it; and
+  "Սպասում է հաստատման" counted the review queue further down the page. A
+  number whose whole job is to label a list already on screen is a heading,
+  not a statistic, so both counts moved onto their section headings.
+
+  What is left are the three figures with no list on this page. That also
+  fixed a presentation problem: on a real teacher account four of the five
+  tiles read 0, and a band of zeros reads as broken rather than as calm.
+
+  Tone still does the work of the old hero treatment — a non-zero overdue
+  count is the one number here that changes what a teacher does next, so it
+  is the only one that can turn red.
+*/
 
 export function DashboardStatCards({ stats }: { stats: DashboardStats }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatCard label="Աշակերտներ" value={stats.student_count} />
-      <StatCard
-        label="Սպասում է հաստատման"
-        value={stats.pending_review_count}
-        tone={stats.pending_review_count > 0 ? "primary" : "default"}
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <StatTile
+        size="sm"
+        align="start"
+        icon={<GraduationCap size={18} strokeWidth={1.75} />}
+        label="Աշակերտներ"
+        value={String(stats.student_count)}
       />
-      <StatCard
+      <StatTile
+        size="sm"
+        align="start"
+        tone={stats.online_now_count > 0 ? "correct" : "default"}
+        icon={<Radio size={18} strokeWidth={1.75} />}
+        label="Հիմա սովորում են"
+        value={String(stats.online_now_count)}
+      />
+      <StatTile
+        size="sm"
+        align="start"
+        tone={stats.overdue_count > 0 ? "incorrect" : "default"}
+        icon={<Clock size={18} strokeWidth={1.75} />}
         label="Ուշացած առաջադրանք"
-        value={stats.overdue_count}
-        tone={stats.overdue_count > 0 ? "danger" : "default"}
+        value={String(stats.overdue_count)}
+        className="col-span-2 sm:col-span-1"
       />
-      <StatCard label="Հիմա սովորում են" value={stats.online_now_count} tone="success" pulse />
     </div>
   );
 }

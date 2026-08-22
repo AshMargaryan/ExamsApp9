@@ -25,7 +25,7 @@ function RequestRow({
   }
 
   return (
-    <div className="flex items-start gap-3 rounded-md border border-border p-3">
+    <div className="flex items-start gap-3 rounded-[var(--radius)] border border-border p-3">
       <ConversationAvatar conversation={conversation} size="h-10 w-10" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-text">
@@ -38,7 +38,7 @@ function RequestRow({
             type="button"
             disabled={busy}
             onClick={() => respond("accept")}
-            className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
+            className="rounded-[var(--radius)] bg-primary px-3 py-1 text-xs font-medium text-primary-contrast hover:bg-primary-hover disabled:opacity-60"
           >
             Ընդունել
           </button>
@@ -46,7 +46,7 @@ function RequestRow({
             type="button"
             disabled={busy}
             onClick={() => respond("decline")}
-            className="rounded-md border border-border px-3 py-1 text-xs font-medium text-text-muted hover:bg-surface-muted disabled:opacity-60"
+            className="rounded-[var(--radius)] border border-border px-3 py-1 text-xs font-medium text-text-muted hover:bg-surface-muted disabled:opacity-60"
           >
             Մերժել
           </button>
@@ -54,7 +54,7 @@ function RequestRow({
             type="button"
             disabled={busy}
             onClick={() => respond("block")}
-            className="rounded-md border border-incorrect px-3 py-1 text-xs font-medium text-incorrect hover:bg-incorrect/10 disabled:opacity-60"
+            className="rounded-[var(--radius)] border border-incorrect px-3 py-1 text-xs font-medium text-incorrect hover:bg-incorrect-bg disabled:opacity-60"
           >
             Արգելափակել
           </button>

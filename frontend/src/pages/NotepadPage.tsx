@@ -6,6 +6,8 @@ import { Modal } from "../components/ui/Modal";
 import { EmptyState } from "../components/ui/EmptyState";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { LinkButton } from "../components/ui/LinkButton";
+import { cn } from "../lib/cn";
+import { fieldInputClass } from "../components/ui/Field";
 
 function NoteFormModal({
   open,
@@ -68,14 +70,14 @@ function NoteFormModal({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Վերնագիր"
-          className="rounded-[var(--radius)] border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className={cn(fieldInputClass, "text-[length:var(--text-sm)]")}
         />
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Գրիր այստեղ..."
+          placeholder="Գրիր այստեղ…"
           rows={8}
-          className="resize-none rounded-[var(--radius)] border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className={cn(fieldInputClass, "resize-none text-[length:var(--text-sm)]")}
         />
       </div>
     </Modal>
@@ -86,7 +88,10 @@ function NoteCard({ note, onEdit, onDelete }: { note: Note; onEdit: () => void; 
   return (
     <div className="flex flex-col rounded-[var(--radius)] border border-border bg-surface p-5">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h2 className="line-clamp-1 text-lg font-semibold text-text">{note.title || "(առանց վերնագրի)"}</h2>
+        {/* min-w-0 so line-clamp can actually clamp: a flex child's default
+            min-width is its min-content width, which a long unbroken Armenian
+            title exceeds, so the clamp never gets the chance to apply. */}
+        <h2 className="line-clamp-1 min-w-0 text-lg font-semibold text-text">{note.title || "(առանց վերնագրի)"}</h2>
         <span className="shrink-0 text-xs text-text-muted">
           {new Date(note.updated_at).toLocaleDateString("hy-AM")}
         </span>

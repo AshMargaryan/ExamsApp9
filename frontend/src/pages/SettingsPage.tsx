@@ -1,154 +1,179 @@
-import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
-import { extractErrorMessage, useToast } from "../context/ToastContext";
-import { useAuth } from "../auth/AuthContext";
-import { changePassword } from "../api/auth";
-import { ColorMixPicker, type ColorMix } from "../components/ColorMixPicker";
-import { clearGradient, getStoredGradient, saveGradient } from "../lib/buttonGradient";
-import { clearBackground, getStoredBackground, saveBackground } from "../lib/backgroundGradient";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Section } from "../components/ui/Section";
+import {
+  SectionNav,
+  SectionNavBar,
+  scrollToSection,
+  useScrollSpy,
+  type SectionNavItem,
+} from "../components/ui/SectionNav";
+import { AppearanceSection } from "../components/settings/AppearanceSection";
+import { SecuritySection } from "../components/settings/SecuritySection";
+import { PrivacySection } from "../components/settings/PrivacySection";
 
-const BUTTON_DEFAULTS: ColorMix = { colors: ["#2563eb", "#1d4ed8"], angle: 90 };
-const BACKGROUND_DEFAULTS: ColorMix = { colors: ["#2563EB", "#7F24B0", "#FF5C8D"], angle: 226 };
+/*
+  What "Settings" was
+  -------------------
+  Three things: a password form, and two free-form gradient mixers. Above them,
+  one line of copy reading "the rest of your account settings are on your
+  profile page" — a settings page whose first act is to tell you the settings
+  are somewhere else.
 
-function ChangePasswordCard() {
-  const { user } = useAuth();
-  const { showSuccess, showError } = useToast();
-  const hasPassword = user?.has_usable_password ?? true;
+  And they genuinely were. Privacy lived in an overlay behind a menu on the
+  profile. Active devices lived on their own route reachable from a grey text
+  link on the profile. Light/dark lived only as an unlabelled icon in the
+  header, on every page except this one. So the page named after settings held
+  the two least consequential controls in the product, and the consequential
+  ones were each hidden somewhere different.
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  What it is now
+  --------------
+  One place, three sections in descending order of how often a student touches
+  them: how it looks, who can get in, who can see what. Each is anchored, so a
+  link can point at the part it means (`/settings#devices` from the profile),
+  and the nav is a rail on wide screens and a scrolling strip on a phone —
+  the same pattern the profile already uses, so it is one product's idea of a
+  long page rather than a second one.
+*/
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+const SECTIONS: SectionNavItem[] = [
+  { id: "settings-appearance", label: "Տեսք" },
+  { id: "settings-security", label: "Անվտանգություն" },
+  { id: "settings-privacy", label: "Գաղտնիություն" },
+];
 
-    if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-      showError("Նոր գաղտնաբառը պետք է լինի առնվազն 8 նիշ և պարունակի տառեր ու թվեր։");
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      showError("Գաղտնաբառերը չեն համընկնում։");
-      return;
-    }
+/** Hash aliases so older links keep landing somewhere sensible: the profile's
+ *  "active devices" item and the retired /account/sessions route both mean the
+ *  security section. */
+const HASH_TARGETS: Record<string, string> = {
+  "#appearance": "settings-appearance",
+  "#security": "settings-security",
+  "#devices": "settings-security",
+  "#privacy": "settings-privacy",
+};
 
-    setSubmitting(true);
-    try {
-      await changePassword(currentPassword, newPassword, confirmNewPassword);
-      showSuccess(hasPassword ? "Գաղտնաբառը հաջողությամբ փոփոխվեց։" : "Գաղտնաբառը սահմանվեց։");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-    } catch (err) {
-      showError(extractErrorMessage(err, "Չհաջողվեց փոխել գաղտնաբառը։"));
-    } finally {
-      setSubmitting(false);
-    }
-  }
+/** Height of everything pinned above the content: the 64px app header, plus
+ *  the section strip that pins under it below `lg`. Without this a jump lands
+ *  the heading underneath the strip that sent you there. */
+const STICKY_OFFSET = 124;
 
+function AnchoredSection({
+  id,
+  title,
+  description,
+  first = false,
+  children,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  /** The first section already has the page header and the nav strip above
+   *  it; a full section gap on top of those is dead space on a phone. */
+  first?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="mt-6 rounded-[var(--radius)] border border-border bg-surface p-5">
-      <h2 className="font-medium text-text">{hasPassword ? "Փոխել գաղտնաբառը" : "Սահմանել գաղտնաբառ"}</h2>
-      <p className="mt-1 text-sm text-text-muted">
-        {hasPassword
-          ? "Մուտքագրեք ձեր ընթացիկ գաղտնաբառը և նոր գաղտնաբառը։"
-          : "Ձեր հաշիվը մուտք է գործել Google/Apple-ով և դեռ գաղտնաբառ չունի։ Սահմանեք մեկը՝ նաև գաղտնաբառով մուտք գործելու համար։"}
-      </p>
-
-      <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-3">
-        {hasPassword && (
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Ընթացիկ գաղտնաբառ"
-            autoComplete="current-password"
-            required
-            className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-          />
-        )}
-        <input
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="Նոր գաղտնաբառ"
-          autoComplete="new-password"
-          required
-          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-        />
-        <input
-          type="password"
-          value={confirmNewPassword}
-          onChange={(e) => setConfirmNewPassword(e.target.value)}
-          placeholder="Կրկնել նոր գաղտնաբառը"
-          autoComplete="new-password"
-          required
-          className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="self-start rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-50"
-        >
-          {submitting ? "Ուղարկվում է…" : hasPassword ? "Փոխել գաղտնաբառը" : "Սահմանել գաղտնաբառ"}
-        </button>
-      </form>
+    // tabIndex=-1 so scrollToSection can move focus here: keyboard and
+    // screen-reader users land where sighted users just scrolled.
+    <section id={id} tabIndex={-1} className="focus:outline-none">
+      <Section title={title} description={description} spacing={first ? "tight" : "loose"}>
+        {children}
+      </Section>
     </section>
   );
 }
 
 export function SettingsPage() {
-  const { showSuccess } = useToast();
+  const location = useLocation();
+  const active = useScrollSpy(SECTIONS.map((s) => s.id));
 
-  const buttonInitial = getStoredGradient() ?? BUTTON_DEFAULTS;
-  const backgroundInitial = getStoredBackground() ?? BACKGROUND_DEFAULTS;
+  useEffect(() => {
+    const target = HASH_TARGETS[location.hash];
+    if (!target) return;
+
+    // Twice, deliberately. The first pass runs against the skeleton layout,
+    // which is close but not final; the sections above the target grow as
+    // their data arrives and push it down. The second pass corrects for that,
+    // but only if the reader has not taken over scrolling in the meantime —
+    // yanking the page out from under someone is worse than landing a little
+    // high.
+    scrollToSection(target, STICKY_OFFSET);
+
+    // `wheel`/`touchmove`/`keydown`, not `scroll` — a `scroll` listener would
+    // be tripped by our own programmatic scroll above and cancel the
+    // correction every time. These three only fire for a real gesture.
+    let takenOver = false;
+    const takeOver = () => {
+      takenOver = true;
+    };
+    const events = ["wheel", "touchmove", "keydown"] as const;
+    for (const type of events) window.addEventListener(type, takeOver, { passive: true });
+
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(target);
+      if (takenOver || !el) return;
+      if (Math.abs(el.getBoundingClientRect().top - STICKY_OFFSET) > 8) scrollToSection(target, STICKY_OFFSET);
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      for (const type of events) window.removeEventListener(type, takeOver);
+    };
+  }, [location.hash]);
 
   return (
-    <div className="min-h-screen bg-bg px-4 py-6">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold text-text">Կարգավորումներ</h1>
-        <p className="mt-2 text-sm text-text-muted">
-          Հաշվի մյուս կարգավորումները հասանելի են ձեր{" "}
-          <Link to="/profile" className="text-primary hover:underline">
-            պրոֆիլի էջում
-          </Link>
-          ։
-        </p>
+    <div className="mx-auto max-w-6xl px-[var(--space-4)] pb-[var(--space-16)] pt-[var(--space-8)] sm:px-[var(--space-6)]">
+      <PageHeader
+        title="Կարգավորումներ"
+        description="Ինչպես է Gitus-ը երևում, ով կարող է մուտք գործել քո հաշիվ և ինչ են տեսնում ուրիշները։"
+      />
 
-        <ChangePasswordCard />
+      {/* The rail turns on at xl, not lg. At 1024 the app's own 200px
+          sidebar is already showing, so a 180px rail plus a 40px gutter left
+          the settings content about 590px wide and the three mode cards
+          wrapped their one-line hints onto two. Below that width the nav is a
+          horizontal strip pinned under the top bar instead. */}
+      <div className="sticky top-16 z-20 -mx-[var(--space-4)] bg-bg/90 px-[var(--space-4)] backdrop-blur xl:hidden">
+        <SectionNavBar items={SECTIONS} active={active} offset={STICKY_OFFSET} className="border-b-0 bg-transparent" />
+      </div>
 
-        <ColorMixPicker
-          title="Կոճակների գույնը"
-          description="Ընտրեք 1, 2 կամ 3 գույն (եթե նախընտրում եք մեկ միատեսակ գույն, ընտրեք 1) և միախառնման աստիճանը՝ կայքի բոլոր կոճակների տեսքը փոխելու համար։"
-          initial={buttonInitial}
-          defaults={BUTTON_DEFAULTS}
-          previewLabel="Օրինակ կոճակ"
-          onApply={(mix) => {
-            saveGradient(mix);
-            showSuccess("Կոճակների գույնը թարմացվեց։");
-          }}
-          onReset={() => {
-            clearGradient();
-            showSuccess("Կոճակների գույնը վերականգնվեց կանխադրվածին։");
-          }}
-        />
+      <div className="gap-[var(--space-10)] xl:grid xl:grid-cols-[180px_minmax(0,1fr)]">
+        <div className="hidden xl:block">
+          {/* 80px = the 64px fixed header plus a gap. `top-8` would have
+              parked the rail behind the header once the page scrolled. */}
+          <div className="sticky top-20">
+            <SectionNav items={SECTIONS} active={active} offset={96} />
+          </div>
+        </div>
 
-        <ColorMixPicker
-          title="Ֆոնի գույնը"
-          description="Ընտրեք 1, 2 կամ 3 գույն և միախառնման աստիճանը՝ էջի ֆոնի տեսքը փոխելու համար։ Կանխադրված ֆոնը մուգ մոխրագույն է։"
-          initial={backgroundInitial}
-          defaults={BACKGROUND_DEFAULTS}
-          previewLabel="Էջի ֆոն"
-          previewClassName="flex h-24 items-center justify-center rounded-[var(--radius)] border border-border font-medium text-white"
-          onApply={(mix) => {
-            saveBackground(mix);
-            showSuccess("Ֆոնի գույնը թարմացվեց։");
-          }}
-          onReset={() => {
-            clearBackground();
-            showSuccess("Ֆոնի գույնը վերականգնվեց կանխադրվածին։");
-          }}
-        />
+        <div className="min-w-0">
+          <AnchoredSection
+            id="settings-appearance"
+            first
+            title="Տեսք"
+            description="Ինչպես է Gitus-ը երևում այս սարքում։ Փոփոխությունները կիրառվում են անմիջապես։"
+          >
+            <AppearanceSection />
+          </AnchoredSection>
+
+          <AnchoredSection
+            id="settings-security"
+            title="Անվտանգություն"
+            description="Քո գաղտնաբառը և այն սարքերը, որոնցից հաշիվը մուտք է գործած։"
+          >
+            <SecuritySection />
+          </AnchoredSection>
+
+          <AnchoredSection
+            id="settings-privacy"
+            title="Գաղտնիություն"
+            description="Ինչ են տեսնում այլ աշակերտները քո մասին։"
+          >
+            <PrivacySection />
+          </AnchoredSection>
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,19 @@
 import time
 from datetime import timedelta
 
+from asgiref.sync import async_to_sync
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.practice.models import Choice, Domain, Question, QuestionType, Subject, Subtopic, Tier, Topic
 from apps.rankings.models import SubjectXP
+from apps.users.models import UserSession
+from apps.users.utils import issue_tokens_for_user
 
 from . import services
+from .auth_middleware import _get_user_from_token
 from .gameplay import record_answer
 from .models import (
     GameParticipant,
@@ -783,3 +788,45 @@ class GameXPAntiFarmTests(TestCase):
             self._settle_one(score=10)
         log = SuspiciousActivityLog.objects.get(user=self.user)
         self.assertEqual(log.detail["games_today"], 21)
+
+
+class WebSocketJWTAuthTests(TransactionTestCase):
+    """TransactionTestCase, not TestCase: the middleware under test runs its
+    query through channels' database_sync_to_async, which hands the work to a
+    worker thread and closes that thread's connection afterwards — which a
+    TestCase's outer atomic block does not survive.
+
+    WebSocket auth is a separate code path from DRF's, so the guarantee
+    that revoking a device cuts it off everywhere only holds if this path
+    checks the session too. Without these, a revoked or logged-out device
+    would keep receiving chat/notification/game traffic in realtime until its
+    access token expired."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="wsuser", email="wsuser@example.com", password="StrongPass1"
+        )
+        self.session = UserSession.objects.create(user=self.user)
+        self.token = issue_tokens_for_user(self.user, self.session)["access"]
+
+    def _resolve(self, token):
+        return async_to_sync(_get_user_from_token)(token)
+
+    def test_token_with_active_session_authenticates(self):
+        self.assertEqual(self._resolve(self.token), self.user)
+
+    def test_token_whose_session_was_revoked_is_rejected(self):
+        self.session.revoke()
+
+        self.assertTrue(self._resolve(self.token).is_anonymous)
+
+    def test_token_without_a_session_claim_is_rejected(self):
+        """A signature-valid token that never went through
+        issue_tokens_for_user has no session to revoke, so it must not be
+        accepted — otherwise it would be an unrevocable socket credential."""
+        bare = str(RefreshToken.for_user(self.user).access_token)
+
+        self.assertTrue(self._resolve(bare).is_anonymous)
+
+    def test_garbage_token_is_rejected(self):
+        self.assertTrue(self._resolve("not-a-token").is_anonymous)

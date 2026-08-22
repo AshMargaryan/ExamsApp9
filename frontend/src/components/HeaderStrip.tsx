@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Moon, Sun } from "lucide-react";
 import * as profileApi from "../api/profile";
 import type { Profile } from "../api/profile";
 import { useTheme } from "../hooks/useTheme";
@@ -32,18 +33,27 @@ export function HeaderStrip() {
   const name = profile ? profile.first_name || profile.username : "";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-surface/90 pl-36 pr-2 backdrop-blur-sm sm:pr-5">
-      {/* pl-36 clears two pre-existing fixed overlays this strip now sits behind: the
-       * hamburger (left-4, 44px) and ReloadButton (left-20, 44px) — both still fixed rather
-       * than moved inside the header, to keep this phase's blast radius small.
+    <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-surface/90 pl-32 pr-2 backdrop-blur-sm sm:pl-36 sm:pr-5 lg:pl-[calc(var(--rail-w)+1.25rem)]">
+      {/* The left padding clears two pre-existing fixed overlays this strip sits behind: the
+       * hamburger (left-4, 44px) and ReloadButton (left-20, 44px, ending at 124px) — both
+       * still fixed rather than moved inside the header, to keep that phase's blast radius
+       * small. pl-32 (128px) is the tightest value that still clears them, and is used only
+       * at the narrowest widths where every pixel is contested; sm and up keep pl-36.
+       *
        * z-50 (not z-30): a `position: fixed` element with a z-index establishes its own
        * stacking context, so ProfileDropdown's z-50 menu (a descendant) was being capped at
        * this header's z-index when compared against siblings like NotificationBell's z-40
        * toggle — raising the header itself above every other persistent overlay's z-40 fixes
        * that regardless of what any single descendant sets. */}
+
+      {/* Hidden below sm. At 375px the overlays reserve 128px, the right-hand cluster needs
+       * 222px and the gutter 8px — 358px of a 375px viewport — so the logo could not fit
+       * without pushing the account menu off-screen, which is what used to happen (it was
+       * clipped by ~19px on every page). Home stays reachable on mobile through the drawer's
+       * "Գլխավոր" item, which the hamburger to the left of this opens. */}
       <Link
         to="/"
-        className="flex items-center gap-2 transition-[filter] duration-[var(--motion-fast)] hover:brightness-110"
+        className="hidden items-center gap-2 transition-[filter] duration-[var(--motion-fast)] hover:brightness-110 sm:flex"
       >
         <Logo className="h-7 w-7 text-text" />
         <span className="hidden text-lg font-bold tracking-tight text-text sm:inline">Gitus</span>
@@ -68,14 +78,23 @@ export function HeaderStrip() {
         <NotificationBell />
         {profile && (
           <>
+            {/* Two emoji used to do this job (☀️/🌙), which put a pair of
+             * platform-coloured glyphs in the middle of an otherwise
+             * monochrome lucide icon row. The label says which way it goes,
+             * because a sun icon alone is ambiguous about whether it shows
+             * the current mode or the one you would switch to. */}
             <button
               type="button"
               onClick={toggleTheme}
-              aria-label="Փոխել տեսքի ռեժիմը"
-              title="Փոխել տեսքի ռեժիմը"
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-border bg-surface text-base transition-colors hover:border-primary"
+              aria-label={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+              title={theme === "dark" ? "Անցնել լուսավոր ռեժիմի" : "Անցնել մուգ ռեժիմի"}
+              className="tap-target flex h-[34px] w-[34px] items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-text-muted transition-colors hover:border-primary hover:text-text"
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              {theme === "dark" ? (
+                <Sun size={16} strokeWidth={1.75} aria-hidden />
+              ) : (
+                <Moon size={16} strokeWidth={1.75} aria-hidden />
+              )}
             </button>
             <ProfileDropdown avatar={profile.avatar} name={name} />
           </>

@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the Capacitor iOS build paint under the notch and
+         home indicator; the --safe-* tokens in theme.css inset content back out. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
 
     <title>Gitus — AI ուսումնական հարթակ դպրոցականների համար</title>
     <meta
@@ -36,14 +41,13 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Armenian:wght@400;500;600;700;800&family=Noto+Serif+Armenian:wght@400;500;600;700&family=Noto+Serif:wght@400;600&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Work+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <!-- Used only by the knowledge-hierarchy spatial map (see
-         components/hierarchy); the app's default body font above is
-         untouched, and Armenian text there falls back to system-ui
-         per-glyph, since none of these three families cover Armenian. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=Space+Grotesk:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap"
-      rel="stylesheet"
-    />
+    <!-- The second font request that used to sit here (Newsreader / Space
+         Grotesk / JetBrains Mono) served only the knowledge-hierarchy spatial
+         map, and its own comment noted that none of those three families
+         cover Armenian — so Armenian names in that view fell back to
+         system-ui per glyph. That view has been replaced by a navigator that
+         uses the app's own type system, so the request is gone: one fewer
+         render-blocking stylesheet on every page load. -->
 
     <script type="application/ld+json">
       {

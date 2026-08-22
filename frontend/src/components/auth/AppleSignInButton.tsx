@@ -21,6 +21,9 @@ declare global {
 
 const APPLE_CLIENT_ID = import.meta.env.VITE_APPLE_CLIENT_ID as string | undefined;
 const APPLE_REDIRECT_URI = import.meta.env.VITE_APPLE_REDIRECT_URI as string | undefined;
+
+/** See GOOGLE_AVAILABLE. Apple needs both a client id and a redirect URI. */
+export const APPLE_AVAILABLE = Boolean(APPLE_CLIENT_ID && APPLE_REDIRECT_URI);
 const APPLE_SDK_SRC =
   "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
 
@@ -94,7 +97,7 @@ export function AppleSignInButton({ onCredential, onError, disabled }: Props) {
       type="button"
       onClick={handleClick}
       disabled={disabled || !ready}
-      className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-bg py-2.5 font-medium text-text transition-colors hover:border-primary disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-[var(--radius)] border border-border bg-bg py-2.5 font-medium text-text transition-colors hover:border-primary disabled:opacity-60"
     >
       <span aria-hidden></span>
       Շարունակել Apple-ով

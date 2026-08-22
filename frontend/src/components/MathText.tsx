@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import katex from "katex";
 import { useNotepadOptional } from "../context/NotepadContext";
+import { NotebookPen } from "lucide-react";
 
 // Splits on $$...$$ (block) and $...$ (inline) LaTeX segments, rendering
 // each with KaTeX and leaving the rest as plain text.
@@ -39,9 +40,9 @@ function renderSegment(
         onClick={() => onInsert(segment)}
         title="Ավելացնել այս հավասարումը իմ նշումներում"
         aria-label="Ավելացնել այս հավասարումը իմ նշումներում"
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border align-middle text-[11px] leading-none hover:border-primary"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border align-middle text-text-muted leading-none hover:border-primary hover:text-primary"
       >
-        📝
+        <NotebookPen size={11} strokeWidth={2} aria-hidden />
       </button>
     </span>
   );
@@ -59,8 +60,20 @@ export function MathText({
   const notepad = useNotepadOptional();
   const parts = useMemo(() => text.split(MATH_SPLIT).filter((p) => p !== ""), [text]);
 
-  const onInsert =
-    allowInsert && notepad ? (latex: string) => notepad.requestInsertEquation(latex) : null;
+  const requestInsertEquation = notepad?.requestInsertEquation;
+  const onInsert = useCallback(
+    (latex: string) => requestInsertEquation?.(latex),
+    [requestInsertEquation],
+  );
+  const hasInsert = allowInsert && !!notepad;
 
-  return <span className={className}>{parts.map((part, i) => renderSegment(part, i, onInsert))}</span>;
+  // KaTeX rendering (renderSegment) is real work per segment — memoize the
+  // rendered nodes so a parent re-render (e.g. a countdown timer tick)
+  // doesn't re-run katex.renderToString for unchanged text.
+  const rendered = useMemo(
+    () => parts.map((part, i) => renderSegment(part, i, hasInsert ? onInsert : null)),
+    [parts, hasInsert, onInsert],
+  );
+
+  return <span className={className}>{rendered}</span>;
 }

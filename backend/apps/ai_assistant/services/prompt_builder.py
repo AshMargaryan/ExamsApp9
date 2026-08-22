@@ -75,11 +75,21 @@ class PromptBuilder:
     def _build_system_prompt(
         self, context: EducationalContext, user
     ) -> str:
+        """Assembled most-stable-first, most-situational-last.
+
+        Order is doing two jobs at once, and they happen to want the same
+        thing. Instruction-following: the per-message conversation mode is
+        the narrowest, most situation-specific rule here (it is what says
+        'do NOT finish this derivation'), and it loses to the general
+        pedagogy above it when it sits in the middle — so it goes last,
+        closest to the student's message. Prompt caching: everything before
+        it is stable for this student turn over turn, while the mode can
+        change on any single message; a volatile block in the middle would
+        invalidate the cached prefix of every block behind it too.
+        """
         parts = [BASE_SYSTEM_PROMPT, TOOLS_SYSTEM_ADDENDUM]
 
         mode_explicitly_set = bool(context.conversation_mode and context.conversation_mode in CONVERSATION_MODE_FRAMING)
-        if mode_explicitly_set:
-            parts.append(CONVERSATION_MODE_FRAMING[context.conversation_mode])
 
         learner_ctx = get_learner_context(user, recent_events_limit=_LEARNER_CONTEXT_EVENTS_LIMIT)
 
@@ -89,6 +99,11 @@ class PromptBuilder:
         learner_section = self._format_learner_context(learner_ctx)
         if learner_section:
             parts.append(learner_section)
+
+        if mode_explicitly_set:
+            parts.append(
+                "RIGHT NOW\n" + CONVERSATION_MODE_FRAMING[context.conversation_mode]
+            )
 
         return "\n\n".join(parts)
 
@@ -126,10 +141,19 @@ class PromptBuilder:
         return directives
 
     def _format_learner_context(self, ctx: dict) -> str:
-        """Compact, human-readable summary of the learner profile (goals,
-        active subjects, upcoming exams, availability, recent activity) —
-        not the raw dict, so the model reads it like a briefing, not JSON."""
+        """Compact, human-readable summary of the learner profile (grade,
+        goals, active subjects, upcoming exams, availability, recent
+        activity) — not the raw dict, so the model reads it like a briefing,
+        not JSON. Anything that can't be phrased as a fact the tutor could
+        act on is left out rather than dumped: a line the model can't use is
+        pure token cost on every single turn."""
         lines = []
+
+        grade = ctx["identity"].get("grade")
+        if grade:
+            # The bank spans 7th-grade physics to 12th-grade maths, so
+            # without this the tutor has no way to pitch an explanation.
+            lines.append(f"School grade: {grade}")
 
         profile = ctx["profile"]
         if profile and profile.get("target_major"):
@@ -149,27 +173,53 @@ class PromptBuilder:
                 for e in ctx["upcoming_exams"][:3]
             ))
 
-        if ctx["goals"]:
-            goal_lines = []
-            for g in ctx["goals"][:3]:
-                label = g["goal_type"] + (f" [{g['subject_name']}]" if g["subject_name"] else "")
-                if g["progress"] is not None:
-                    label += f" — {g['progress']}% done"
-                goal_lines.append(label)
+        goal_lines = [self._format_goal(g) for g in ctx["goals"][:3]]
+        if goal_lines:
             lines.append("Active goals: " + ", ".join(goal_lines))
 
         availability = ctx["study_availability"]
         if availability and availability.get("typical_session_minutes"):
             lines.append(f"Typically studies ~{availability['typical_session_minutes']} min/session")
 
-        if ctx["recent_events"]:
-            lines.append("Recent activity: " + ", ".join(
-                e["event_type"] for e in ctx["recent_events"][:3]
-            ))
+        recent = self._format_recent_events(ctx["recent_events"])
+        if recent:
+            lines.append("Recent activity: " + recent)
 
         if not lines:
             return ""
         return "--- Student profile ---\n" + "\n".join(lines) + "\n--- End of student profile ---"
+
+    @staticmethod
+    def _format_goal(goal: dict) -> str:
+        """analytics.goal_progress() returns a dict, not a number — formatting
+        it as `{progress}% done` printed a raw Python dict repr into the
+        system prompt of every turn."""
+        label = goal["goal_type"] + (f" [{goal['subject_name']}]" if goal["subject_name"] else "")
+        progress = goal["progress"]
+        if not isinstance(progress, dict):
+            return label
+        current, target, unit = progress.get("current"), progress.get("target"), progress.get("unit")
+        if current is not None and target is not None:
+            return f"{label} — {current}/{target}{' ' + unit if unit else ''}"
+        if progress.get("percent") is not None:
+            return f"{label} — {progress['percent']}% done"
+        return label
+
+    @staticmethod
+    def _format_recent_events(events: list[dict]) -> str:
+        """A bare list of event *types* ('hint_requested, exam_completed')
+        tells the tutor nothing it can act on — what makes an event useful is
+        which subject/topic it happened on and how it went."""
+        parts = []
+        for event in events[:4]:
+            detail = event["topic_label"] or event["subject_key"]
+            part = event["event_type"]
+            if detail:
+                part += f" ({detail})"
+            if event["result"]:
+                part += f": {event['result']}"
+            parts.append(part)
+        return ", ".join(parts)
 
     def _history_messages(self, conversation: Conversation) -> list[AIMessage]:
         window = getattr(settings, "AI_ASSISTANT_HISTORY_WINDOW", 20)

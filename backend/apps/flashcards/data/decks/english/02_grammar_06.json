@@ -1,0 +1,49 @@
+{
+  "deck_id": "FC-ENG-GRAM-006",
+  "title": "Անգլերեն — Քերականություն 6",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "\"She has studied French ___ three years.\" (duration, not a starting point) needs:",
+      "back": "for",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "Which preposition always follows \"responsible\"?",
+      "back": "for",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "The prefix \"in-\" changes to \"il-\" before words starting with which letter?",
+      "back": "l (illegal, illogical)",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "The negative form of \"honest\" is irregularly formed with:",
+      "back": "dis- (dishonest)",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "\"___ the heavy traffic, we arrived on time.\" (followed by a noun phrase, not a full clause) needs:",
+      "back": "Despite",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "",
+      "front": "\"Despite of\" is:",
+      "back": "always incorrect — use \"despite\" or \"in spite of\"",
+      "hint": ""
+    }
+  ]
+}

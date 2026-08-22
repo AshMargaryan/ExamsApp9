@@ -121,12 +121,21 @@ export function useConversationChat(conversationId: number | null) {
       });
   }, [conversationId]);
 
+  // Aborts on unmount *and* whenever the conversation changes. The second
+  // case matters: with an empty dep array, selecting another conversation
+  // mid-answer left the old stream running against the newly-loaded message
+  // list — every paced update looked for the pending id in an array that no
+  // longer contained it, so the answer went nowhere, and `sending` stayed
+  // true until the abandoned stream ended, silently freezing the composer in
+  // the conversation the student had just opened. Aborting is lossless: the
+  // server's finally block persists whatever streamed as a `stopped` message
+  // (apps/ai_assistant/services/message_service.py), so it is there on return.
   useEffect(
     () => () => {
       stopReveal();
       abortControllerRef.current?.abort();
     },
-    [],
+    [conversationId],
   );
 
   function stopReveal() {

@@ -1,9 +1,11 @@
 import { memo, useRef, useState } from "react";
-import { StopCircle } from "lucide-react";
+import { StopCircle, Check, TriangleAlert, Volume2 } from "lucide-react";
 import { synthesizeVoice, type Message } from "../../api/assistant";
 import { AttachmentChip } from "./AttachmentChip";
-import { MarkdownMessage } from "./MarkdownMessage";
+import { AssistantContent } from "./content/AssistantContent";
 import { TypingIndicator } from "./TypingIndicator";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -44,7 +46,7 @@ function MessageBubbleImpl({
   async function handleListen() {
     if (audioRef.current) {
       // Toggle: a second click while already-generated audio is loaded just
-      // replays it, no need to hit Azure TTS again for the same text.
+      // replays it, no need to hit OpenAI TTS again for the same text.
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {});
       return;
@@ -52,7 +54,7 @@ function MessageBubbleImpl({
     setSpeakError(false);
     setSpeaking(true);
     try {
-      const blob = await synthesizeVoice(message.content, "hy-AM-AnahitNeural");
+      const blob = await synthesizeVoice(message.content, "nova");
       const audio = new Audio(URL.createObjectURL(blob));
       audioRef.current = audio;
       audio.play().catch(() => {});
@@ -97,7 +99,7 @@ function MessageBubbleImpl({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={3}
-              className="min-w-[16rem] rounded-md border border-border bg-surface p-2 text-sm text-text"
+              className={cn(fieldInputClass, "min-w-[16rem] bg-surface text-[length:var(--text-sm)]")}
               autoFocus
             />
             <div className="flex gap-2 text-sm">
@@ -124,10 +126,11 @@ function MessageBubbleImpl({
           <TypingIndicator label={activityLabel} />
         ) : message.status === "failed" || message.status === "stopped" ? (
           <div className="flex flex-col gap-2">
-            {message.content && <MarkdownMessage content={message.content} />}
+            {message.content && <AssistantContent content={message.content} />}
             {message.status === "failed" ? (
-              <p className="text-incorrect">
-                ⚠️ Չհաջողվեց ստանալ պատասխան{message.error_message ? `. ${message.error_message}` : "։"}
+              <p className="flex items-start gap-1.5 text-incorrect">
+                <TriangleAlert size={15} strokeWidth={2} aria-hidden className="mt-0.5 shrink-0" />
+                Չհաջողվեց ստանալ պատասխան{message.error_message ? `. ${message.error_message}` : "։"}
               </p>
             ) : (
               <p className="flex items-center gap-1.5 text-text-muted">
@@ -140,12 +143,20 @@ function MessageBubbleImpl({
             {message.content}
           </p>
         ) : (
-          <MarkdownMessage content={message.content} />
+          <AssistantContent content={message.content} streaming={pending} />
         )}
       </div>
 
       <div
-        className={`mt-1 flex items-center gap-2 text-xs text-text-muted opacity-0 transition-opacity group-hover:opacity-100 ${
+        /*
+          Was `opacity-0 group-hover:opacity-100` alone. A phone has no hover,
+          so copy / edit / listen / regenerate were invisible *and* unreachable
+          on the platform most students read these answers on — and a keyboard
+          user could tab into a button they could not see. Visible by default
+          below sm; the quiet hover reveal is kept where a pointer exists, with
+          focus-within added so tabbing brings them back.
+        */
+        className={`mt-1 flex items-center gap-2 text-xs text-text-muted transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 ${
           isUser ? "flex-row-reverse" : ""
         }`}
       >
@@ -153,7 +164,13 @@ function MessageBubbleImpl({
         {message.edited_at && <span>(խմբագրված)</span>}
         {!editing && !pending && message.content && (
           <button type="button" onClick={handleCopy} className="hover:text-text">
-            {copied ? "Պատճենվեց ✓" : "Պատճենել"}
+            {copied ? (
+              <span className="flex items-center gap-1">
+                <Check size={12} strokeWidth={2.5} aria-hidden /> Պատճենվեց
+              </span>
+            ) : (
+              "Պատճենել"
+            )}
           </button>
         )}
         {isUser && !editing && onEdit && (
@@ -163,7 +180,14 @@ function MessageBubbleImpl({
         )}
         {!isUser && !pending && message.status === "sent" && (
           <button type="button" onClick={handleListen} disabled={speaking} className="hover:text-text disabled:opacity-50">
-            {speaking ? "…" : speakError ? "⚠️ Կրկին" : "🔊 Լսել"}
+            <span className="flex items-center gap-1">
+              {speakError ? (
+                <TriangleAlert size={12} strokeWidth={2} aria-hidden />
+              ) : (
+                <Volume2 size={12} strokeWidth={2} aria-hidden />
+              )}
+              {speaking ? "…" : speakError ? "Կրկին" : "Լսել"}
+            </span>
           </button>
         )}
         {!isUser && !pending && message.status !== "sending" && onRegenerate && (

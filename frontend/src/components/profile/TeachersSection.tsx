@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { GraduationCap, Users } from "lucide-react";
 import type { Profile } from "../../api/profile";
 import { PersonBox } from "../PersonBox";
+import { Button } from "../ui/Button";
+import { EmptyState } from "../ui/EmptyState";
 import { TeachingModal } from "../teaching/TeachingModal";
+import { DataCard } from "../ui/DataCard";
 
 export function TeachersSection({ profile, onProfileChange }: { profile: Profile; onProfileChange: () => void }) {
   const navigate = useNavigate();
@@ -13,8 +16,8 @@ export function TeachersSection({ profile, onProfileChange }: { profile: Profile
   const people = isTeacher ? profile.students : profile.teachers;
   const count = isTeacher ? profile.total_students ?? 0 : profile.teachers?.length ?? 0;
   const title = isTeacher ? "Աշակերտներ" : "Ուսուցիչներ";
-  const icon = isTeacher ? <Users size={20} strokeWidth={1.75} /> : <GraduationCap size={20} strokeWidth={1.75} />;
-  const emptyText = isTeacher ? "Դեռ կապակցված աշակերտներ չկան։" : "Դեռ կապակցված ուսուցիչներ չկան։";
+  const Icon = isTeacher ? Users : GraduationCap;
+  const emptyText = isTeacher ? "Դեռ կապակցված աշակերտներ չկան" : "Դեռ կապակցված ուսուցիչներ չկան";
 
   function handleTeachingClose() {
     setTeachingOpen(false);
@@ -22,40 +25,32 @@ export function TeachersSection({ profile, onProfileChange }: { profile: Profile
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-      <div
-        className="flex items-center justify-between px-5 py-4"
-        style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent))" }}
-      >
-        <div className="flex items-center gap-2 text-white">
-          <span className="text-xl">{icon}</span>
-          <div>
-            <p className="text-sm font-bold leading-tight">{title}</p>
-            <p className="text-xs leading-tight text-white/75">{count} {isTeacher ? "աշակերտ" : "ուսուցիչ"}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setTeachingOpen(true)}
-          className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/25"
-        >
+    <DataCard
+      icon={Icon}
+      title={title}
+      description={`${count} ${isTeacher ? "աշակերտ" : "ուսուցիչ"}`}
+      action={
+        <Button variant="secondary" size="sm" onClick={() => setTeachingOpen(true)}>
           {isTeacher ? "Հրավիրել" : "Հրավերներ"}
-        </button>
-      </div>
-
-      <div className="p-5">
-        {people && people.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {people.map((p) => (
-              <PersonBox key={p.id} person={p} onClick={() => navigate(`/profile/${p.id}`)} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-text-muted">{emptyText}</p>
-        )}
-      </div>
+        </Button>
+      }
+    >
+      {people && people.length > 0 ? (
+        <div className="grid grid-cols-3 gap-[var(--space-2)] sm:grid-cols-6">
+          {people.map((p) => (
+            <PersonBox key={p.id} person={p} onClick={() => navigate(`/profile/${p.id}`)} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          size="sm"
+          icon={<Icon size={22} strokeWidth={1.75} />}
+          title={emptyText}
+          hint={isTeacher ? "Հրավիրեք Ձեր աշակերտներին։" : "Ուսուցիչը կարող է հրավեր ուղարկել քեզ։"}
+        />
+      )}
 
       {teachingOpen && <TeachingModal role={profile.role} onClose={handleTeachingClose} onChange={onProfileChange} />}
-    </div>
+    </DataCard>
   );
 }

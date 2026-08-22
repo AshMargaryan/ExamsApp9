@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Gem, HelpCircle, LogOut, Settings, User } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { cn } from "../lib/cn";
+import { accountNavLinks } from "./nav/navItems";
 import { Avatar } from "./ui/Avatar";
 import { Dropdown } from "./ui/Dropdown";
 import { LogoutConfirmModal } from "./LogoutConfirmModal";
@@ -45,30 +46,12 @@ export function ProfileDropdown({ avatar, name }: ProfileDropdownProps) {
           </button>
         )}
         items={[
-          {
-            key: "profile",
-            label: "Իմ պրոֆիլը",
-            icon: <User size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
-            onSelect: () => navigate("/profile"),
-          },
-          {
-            key: "subscription",
-            label: "Բաժանորդագրություն",
-            icon: <Gem size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
-            onSelect: () => navigate("/subscription"),
-          },
-          {
-            key: "settings",
-            label: "Կարգավորումներ",
-            icon: <Settings size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
-            onSelect: () => navigate("/settings"),
-          },
-          {
-            key: "help",
-            label: "Օգնության կենտրոն",
-            icon: <HelpCircle size={MENU_ICON_SIZE} strokeWidth={MENU_ICON_STROKE} />,
-            onSelect: () => navigate("/help"),
-          },
+          ...accountNavLinks.map((link) => ({
+            key: link.to.slice(1),
+            label: link.label,
+            icon: link.icon,
+            onSelect: () => navigate(link.to),
+          })),
           {
             key: "logout",
             label: "Ելք",

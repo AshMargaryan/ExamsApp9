@@ -3,6 +3,8 @@ Shared answer-scoring logic for anything that grades a practice Question —
 currently the solo practice flow (views.SubmitTierView) and the multiplayer
 gameplay engine (apps.games).
 """
+from apps.answer_matching import answers_match
+
 from .models import Question, QuestionType
 
 
@@ -27,9 +29,9 @@ def score_answer(question: Question, answer_data: dict) -> dict:
         )
 
     if qtype == QuestionType.SHORT_ANSWER:
-        user_text = answer_data.get("answer_text", "").strip().lower()
-        correct = question.correct_answer_text.strip().lower()
-        is_correct = bool(user_text) and user_text == correct
+        is_correct = answers_match(
+            answer_data.get("answer_text", ""), question.correct_answer_text
+        )
         return dict(
             is_correct=is_correct, selected_choice=None,
             answer_text=answer_data.get("answer_text", ""), selected_statement_ids=[],

@@ -1,0 +1,49 @@
+{
+  "deck_id": "FC-ENG-GRAM-008",
+  "title": "Անգլերեն — Քերականություն 8",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "In reported speech, \"tomorrow\" (said today) becomes:",
+      "back": "the next day",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "General, always-true facts (e.g. \"Water boils at 100°C\") in reported speech:",
+      "back": "may keep their original present tense (backshift is optional)",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "Reporting a yes/no question (\"Are you coming?\") requires starting with:",
+      "back": "if / whether",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "In reported questions, the word order after the question word is:",
+      "back": "normal statement order, never inverted",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "\"Suggest\" is never followed directly by \"person + to\"; instead it takes:",
+      "back": "a gerund (\"suggested going\")",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "",
+      "front": "The basic structure for reporting a command is:",
+      "back": "tell/ask + person + to + base verb",
+      "hint": ""
+    }
+  ]
+}

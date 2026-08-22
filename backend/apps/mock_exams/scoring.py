@@ -2,6 +2,8 @@
 Shared answer-scoring logic for Mock Exams — mirrors apps.practice.scoring
 but against this app's own models, plus the raw-score -> 20-point conversion.
 """
+from apps.answer_matching import answers_match
+
 from .models import MockExamQuestion, MockExamQuestionType
 
 
@@ -25,9 +27,9 @@ def score_answer(question: MockExamQuestion, answer_data: dict) -> dict:
         )
 
     if qtype == MockExamQuestionType.FREE_RESPONSE:
-        user_text = answer_data.get("answer_text", "").strip().lower()
-        correct = question.correct_answer_text.strip().lower()
-        is_correct = bool(user_text) and user_text == correct
+        is_correct = answers_match(
+            answer_data.get("answer_text", ""), question.correct_answer_text
+        )
         return dict(
             is_correct=is_correct, selected_choice=None,
             answer_text=answer_data.get("answer_text", ""), selected_statement_ids=[],

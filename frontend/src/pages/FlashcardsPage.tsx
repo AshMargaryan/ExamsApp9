@@ -1,29 +1,38 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Star } from "lucide-react";
 import {
   createDeck, deleteDeck, duplicateDeck, listFlashcardDecks, listMyDecks,
   type FlashcardDeckSummary, type FlashcardSubject,
 } from "../api/flashcards";
-import { ConfirmModal } from "../components/ConfirmModal";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { DeckFormModal } from "../components/flashcards/DeckFormModal";
 import { DeckProgressRing } from "../components/flashcards/DeckProgressRing";
+import { Button } from "../components/ui/Button";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
 import { LinkButton } from "../components/ui/LinkButton";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Skeleton } from "../components/ui/Skeleton";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { SUBJECTS, subjectMeta } from "../lib/subjects";
+import { cn } from "../lib/cn";
 
 type Tab = "library" | "mine";
 
 const TAB_OPTIONS: { value: Tab; label: string }[] = [
-  { value: "library", label: "📚 Գրադարան" },
-  { value: "mine", label: "👤 Իմ փաթեթները" },
+  { value: "library", label: "Գրադարան" },
+  { value: "mine", label: "Իմ փաթեթները" },
 ];
 
 function DeckCard({
-  deck, onStudy, extraActions,
+  deck, onStudy, onAddCards, extraActions,
 }: {
   deck: FlashcardDeckSummary;
   onStudy: () => void;
+  /** Only owned decks can be empty *and* fixable, so only they pass this. */
+  onAddCards?: () => void;
   extraActions?: React.ReactNode;
 }) {
   const subject = subjectMeta(deck.subject);
@@ -32,8 +41,8 @@ function DeckCard({
     <div className="group flex flex-col justify-between rounded-[var(--radius)] border border-border bg-surface p-5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-[var(--shadow-md)]">
       <div>
         {subject && (
-          <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium tracking-wide text-text-muted uppercase">
-            <span aria-hidden>{subject.icon}</span>
+          <span className="mb-2 inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium tracking-wide text-text-muted">
+            <subject.Icon size={13} strokeWidth={1.75} aria-hidden />
             {subject.label}
           </span>
         )}
@@ -58,19 +67,26 @@ function DeckCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={onStudy}
-          className="btn-fx btn-fx-glow flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 font-medium text-primary-contrast focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          Սովորել
-          {deck.due_count > 0 && (
-            <span className="rounded-full bg-primary-contrast/20 px-2 py-0.5 text-xs font-semibold">
-              {deck.due_count}
-            </span>
-          )}
-        </button>
+      <div className="flex flex-col gap-[var(--space-3)]">
+        {/*
+          "Սովորել" vs "Կրկնել N քարտ": in spaced repetition these are
+          different acts, and the count of cards actually due is the only
+          number that tells the student whether opening this deck is worth it
+          right now. It used to be a small badge inside the button.
+        */}
+        {deck.card_count === 0 && onAddCards ? (
+          /* A deck with no cards cannot be studied. Offering "Սովորել" as its
+             primary action sent the student to a study screen whose only
+             content was another empty state — a whole navigation to be told
+             what this card already knows. */
+          <Button onClick={onAddCards} className="w-full justify-center">
+            Ավելացնել քարտեր
+          </Button>
+        ) : (
+          <Button onClick={onStudy} className="w-full justify-center">
+            {deck.due_count > 0 ? `Կրկնել ${deck.due_count} քարտ` : "Սովորել"}
+          </Button>
+        )}
         {extraActions}
       </div>
     </div>
@@ -79,27 +95,17 @@ function DeckCard({
 
 function DeckCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-[var(--radius)] border border-border bg-surface p-5">
-      <div className="mb-3 h-4 w-20 rounded-full bg-surface-muted" />
-      <div className="mb-4 h-5 w-3/4 rounded bg-surface-muted" />
-      <div className="mb-5 flex items-center gap-4">
-        <div className="h-14 w-14 shrink-0 rounded-full bg-surface-muted" />
-        <div className="flex-1 space-y-2">
-          <div className="h-3 w-16 rounded bg-surface-muted" />
-          <div className="h-3 w-32 rounded bg-surface-muted" />
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
+      <Skeleton className="h-4 w-20 rounded-full" />
+      <Skeleton className="mt-[var(--space-3)] h-5 w-3/4" />
+      <div className="mt-[var(--space-4)] flex items-center gap-[var(--space-4)]">
+        <Skeleton className="h-14 w-14 shrink-0 rounded-full" />
+        <div className="flex-1 space-y-[var(--space-2)]">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-32" />
         </div>
       </div>
-      <div className="h-10 rounded-full bg-surface-muted" />
-    </div>
-  );
-}
-
-function EmptyState({ icon, message, action }: { icon: string; message: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-center rounded-[var(--radius)] border border-dashed border-border bg-surface p-10 text-center">
-      <span className="mb-3 text-3xl" aria-hidden>{icon}</span>
-      <p className="mb-5 max-w-sm text-text-muted">{message}</p>
-      {action}
+      <Skeleton className="mt-[var(--space-5)] h-10 w-full rounded-full" />
     </div>
   );
 }
@@ -120,20 +126,46 @@ export function FlashcardsPage() {
   const [deleteTarget, setDeleteTarget] = useState<FlashcardDeckSummary | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [libraryError, setLibraryError] = useState(false);
+  const [myDecksError, setMyDecksError] = useState(false);
+
+  function loadLibrary() {
+    setLibraryDecks(null);
+    setLibraryError(false);
+    // Without the catch, a failed request left the skeleton grid shimmering
+    // forever with no explanation and no way to retry.
+    listFlashcardDecks(subject).then(setLibraryDecks).catch(() => setLibraryError(true));
+  }
+
   useEffect(() => {
     if (tab !== "library") return;
-    setLibraryDecks(null);
-    listFlashcardDecks(subject).then(setLibraryDecks);
+    loadLibrary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, subject]);
 
   function loadMyDecks() {
     setMyDecks(null);
-    listMyDecks().then(setMyDecks);
+    setMyDecksError(false);
+    listMyDecks().then(setMyDecks).catch(() => setMyDecksError(true));
   }
 
   useEffect(() => {
     if (tab === "mine") loadMyDecks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  // Spaced repetition only works if the student comes back on the day cards
+  // fall due, so "how much is due right now, and where" is the question this
+  // page exists to answer. It was answerable only by reading a badge on each
+  // of N deck buttons and adding them up.
+  const visibleDecks = tab === "library" ? libraryDecks : myDecks;
+  const dueSummary = useMemo(() => {
+    const decks = (visibleDecks ?? []).filter((d) => d.due_count > 0);
+    return {
+      decks,
+      cards: decks.reduce((sum, d) => sum + d.due_count, 0),
+    };
+  }, [visibleDecks]);
 
   async function handleCreateDeck(input: { title: string; description?: string; subject: FlashcardSubject }) {
     setBusy(true);
@@ -178,52 +210,77 @@ export function FlashcardsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-4 flex items-center justify-between">
-        <LinkButton to="/">
-          ← Գլխավոր
-        </LinkButton>
-        <Link
-          to={`/flashcards/favorites?subject=${subject}`}
-          className="btn-fx inline-block rounded-full border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          ⭐ Ընտրյալներ
-        </Link>
-      </div>
-      <h1 className="mb-1 text-3xl font-semibold text-text">🗂️ Բառաքարտեր</h1>
-      <p className="mb-6 text-sm text-text-muted">
-        Կրկնիր բանաձևերն ու հասկացությունները, կամ ստեղծիր քո սեփական քարտերը։
-      </p>
+    <div className="mx-auto max-w-5xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        title="Բառաքարտեր"
+        description="Կրկնիր բանաձևերն ու հասկացությունները, կամ ստեղծիր քո սեփական քարտերը։"
+        back={{ to: "/", label: "Գլխավոր" }}
+        actions={
+          <LinkButton
+            to={`/flashcards/favorites?subject=${subject}`}
+            iconLeft={<Star size={15} strokeWidth={1.75} />}
+          >
+            Ընտրյալներ
+          </LinkButton>
+        }
+      />
 
-      <SegmentedControl options={TAB_OPTIONS} value={tab} onChange={setTab} className="mb-6 w-fit" />
+      {dueSummary.cards > 0 && (
+        <section className="mb-[var(--space-6)] flex flex-wrap items-center justify-between gap-[var(--space-4)] rounded-[var(--radius-lg)] border border-primary-line bg-primary-bg p-[var(--space-5)]">
+          <div className="min-w-0">
+            <h2 className="font-display text-[length:var(--text-lg)] font-semibold text-text">
+              Այսօր կրկնելու է {dueSummary.cards} քարտ
+            </h2>
+            <p className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-text-muted">
+              {dueSummary.decks.length} փաթեթում։ Կրկնությունը ամենաարդյունավետն է հենց ժամկետին։
+            </p>
+          </div>
+          <Button onClick={() => navigate(`/flashcards/${dueSummary.decks[0].id}`)}>
+            Սկսել կրկնությունը
+          </Button>
+        </section>
+      )}
+
+      <SegmentedControl options={TAB_OPTIONS} value={tab} onChange={setTab} className="mb-[var(--space-6)] w-fit" />
 
       {tab === "library" ? (
         <>
-          <div className="mb-6 flex flex-wrap gap-2">
+          <div className="mb-[var(--space-6)] flex flex-wrap gap-[var(--space-2)]">
             {SUBJECTS.map((s) => (
               <button
                 key={s.key}
                 type="button"
                 onClick={() => setSubject(s.key)}
                 aria-pressed={subject === s.key}
-                className={`btn-fx flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                className={cn(
+                  "flex items-center gap-[var(--space-2)] rounded-full border px-[var(--space-5)] py-[var(--space-2)]",
+                  "text-[length:var(--text-sm)] font-medium transition-colors",
                   subject === s.key
-                    ? "border-primary bg-primary text-primary-contrast shadow-[var(--shadow-sm)]"
-                    : "border-border text-text hover:border-primary"
-                }`}
+                    ? "border-primary bg-primary text-primary-contrast"
+                    : "border-border text-text hover:border-primary",
+                )}
               >
-                <span aria-hidden>{s.icon}</span>
+                <s.Icon size={15} strokeWidth={1.75} aria-hidden />
                 {s.label}
               </button>
             ))}
           </div>
 
-          {!libraryDecks ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {libraryError ? (
+            <ErrorState
+              title="Չհաջողվեց բեռնել բառաքարտերը։"
+              hint="Ստուգիր կապը և փորձիր կրկին։"
+              onRetry={loadLibrary}
+            />
+          ) : !libraryDecks ? (
+            <div className="grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, i) => <DeckCardSkeleton key={i} />)}
             </div>
           ) : libraryDecks.length === 0 ? (
-            <EmptyState icon="🗂️" message="Այս առարկայի բառաքարտերը շուտով կավելացվեն։" />
+            <EmptyState
+              title="Այս առարկայի բառաքարտերը շուտով կավելացվեն։"
+              hint="Այս ընթացքում կարող ես ստեղծել քո սեփական փաթեթը։"
+            />
           ) : (
             <div
               key={subject}
@@ -237,66 +294,67 @@ export function FlashcardsPage() {
         </>
       ) : (
         <>
-          <div className="mb-6 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setShowCreateDeck(true)}
-              className="btn-fx btn-fx-glow rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              + Ստեղծել փաթեթ
-            </button>
+          <div className="mb-[var(--space-6)] flex justify-end">
+            <Button onClick={() => setShowCreateDeck(true)}>Ստեղծել փաթեթ</Button>
           </div>
 
-          {!myDecks ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {myDecksError ? (
+            <ErrorState
+              title="Չհաջողվեց բեռնել քո փաթեթները։"
+              hint="Ստուգիր կապը և փորձիր կրկին։"
+              onRetry={loadMyDecks}
+            />
+          ) : !myDecks ? (
+            <div className="grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, i) => <DeckCardSkeleton key={i} />)}
             </div>
           ) : myDecks.length === 0 ? (
             <EmptyState
-              icon="👤"
-              message="Դուք դեռ չունեք ձեր փաթեթներ։ Ստեղծեք առաջինը՝ ձեր սեփական բառաքարտերով։"
-              action={
-                <button
-                  type="button"
-                  onClick={() => setShowCreateDeck(true)}
-                  className="btn-fx btn-fx-glow rounded-full bg-primary px-4 py-2 font-medium text-primary-contrast hover:bg-primary-hover"
-                >
-                  + Ստեղծել փաթեթ
-                </button>
-              }
+              title="Դեռ չունես սեփական փաթեթներ։"
+              hint="Ստեղծիր առաջինը՝ քո սեփական բառաքարտերով։"
+              cta={{ label: "Ստեղծել փաթեթ", onClick: () => setShowCreateDeck(true) }}
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 animate-[slide-up-in_var(--motion-normal)_var(--ease-out)] sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-[var(--space-4)] animate-[slide-up-in_var(--motion-normal)_var(--ease-out)] sm:grid-cols-2 lg:grid-cols-3">
               {myDecks.map((deck) => (
                 <DeckCard
                   key={deck.id}
                   deck={deck}
                   onStudy={() => navigate(`/flashcards/${deck.id}`)}
+                  onAddCards={() => navigate(`/flashcards/create?deck=${deck.id}`)}
                   extraActions={
-                    <div className="flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/flashcards/${deck.id}/manage`)}
-                          className="btn-fx flex-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                        >
-                          Կառավարել
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDuplicate(deck)}
-                          className="btn-fx flex-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                        >
-                          Կրկնօրինակել
-                        </button>
-                      </div>
-                      <button
-                        type="button"
+                    /*
+                      Delete used to be a full-width outlined button directly
+                      under two neutral ones — the most destructive action on
+                      the card given the most visual weight of the three. It is
+                      now a quiet text action, and its confirm says how many
+                      cards go with the deck.
+                    */
+                    <div className="flex items-center gap-[var(--space-2)]">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 justify-center"
+                        onClick={() => navigate(`/flashcards/${deck.id}/manage`)}
+                      >
+                        Կառավարել
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 justify-center"
+                        onClick={() => handleDuplicate(deck)}
+                      >
+                        Կրկնօրինակել
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-text-muted hover:text-incorrect"
                         onClick={() => setDeleteTarget(deck)}
-                        className="btn-fx w-full rounded-full border border-incorrect px-3 py-1.5 text-xs font-medium text-incorrect hover:bg-incorrect-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incorrect"
                       >
                         Ջնջել
-                      </button>
+                      </Button>
                     </div>
                   }
                 />
@@ -306,24 +364,26 @@ export function FlashcardsPage() {
         </>
       )}
 
-      {showCreateDeck && (
-        <DeckFormModal
-          title="Ստեղծել նոր փաթեթ"
-          initial={{ title: "", description: "", subject }}
-          busy={busy}
-          onSave={handleCreateDeck}
-          onClose={() => setShowCreateDeck(false)}
-        />
-      )}
+      <DeckFormModal
+        open={showCreateDeck}
+        onOpenChange={setShowCreateDeck}
+        title="Ստեղծել նոր փաթեթ"
+        initial={{ title: "", description: "", subject }}
+        busy={busy}
+        onSave={handleCreateDeck}
+      />
 
-      {deleteTarget && (
-        <ConfirmModal
-          message={`Ջնջե՞լ «${deleteTarget.title}» փաթեթը իր ${deleteTarget.card_count} քարտերով։`}
-          confirmLabel="Ջնջել"
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteTarget(null)}
-        />
-      )}
+      {/* ConfirmModal has no focus trap, no Escape handling and no scroll
+          lock; ui/ConfirmDialog (Radix) has all three. */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Ջնջե՞լ «${deleteTarget?.title ?? ""}» փաթեթը`}
+        description={`Փաթեթի ${deleteTarget?.card_count ?? 0} քարտը նույնպես կջնջվի։ Այս գործողությունը հետարկելի չէ։`}
+        confirmLabel="Ջնջել"
+        busy={busy}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

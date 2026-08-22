@@ -48,6 +48,13 @@ def _room_queryset():
     )
 
 
+# Rooms tables are never purged — cap a single response instead of
+# serializing every open/joined room ever created. Plain slicing (not
+# pagination_class) keeps the response a flat array, matching every
+# existing caller's expectations.
+MAX_ROOMS_RETURNED = 100
+
+
 class GameRoomListCreateView(generics.ListCreateAPIView):
     """GET /api/games/rooms/ — open public rooms. POST — create a room (creator auto-joins)."""
 
@@ -58,7 +65,9 @@ class GameRoomListCreateView(generics.ListCreateAPIView):
         return GameRoomCreateSerializer if self.request.method == "POST" else GameRoomSerializer
 
     def get_queryset(self):
-        return _room_queryset().filter(type=GameRoomType.PUBLIC, status=GameRoomStatus.WAITING)
+        return _room_queryset().filter(
+            type=GameRoomType.PUBLIC, status=GameRoomStatus.WAITING,
+        )[:MAX_ROOMS_RETURNED]
 
     def create(self, request, *args, **kwargs):
         serializer = GameRoomCreateSerializer(data=request.data)
@@ -82,7 +91,7 @@ class MyGameRoomsView(generics.ListAPIView):
             .filter(Q(creator=me) | Q(participants__user=me))
             .exclude(status=GameRoomStatus.FINISHED)
             .distinct()
-        )
+        )[:MAX_ROOMS_RETURNED]
 
 
 class GameRoomDetailView(generics.RetrieveAPIView):

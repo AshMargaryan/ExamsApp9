@@ -1,0 +1,49 @@
+{
+  "deck_id": "FC-ENG-GRAM-005",
+  "title": "Անգլերեն — Քերականություն 5",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "\"I'm looking forward to ___ you.\" (see) — because \"to\" here is a preposition, not an infinitive marker:",
+      "back": "seeing",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "\"I regret ___ you that the flight is cancelled.\" (formal bad news) uses:",
+      "back": "to inform",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "In an embedded question (\"Do you know where...?\"), the word order after the question word is:",
+      "back": "normal statement order (subject + verb), no inversion",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "\"Who called you last night?\" — no \"did\" is added because:",
+      "back": "\"who\" is itself the subject of the sentence",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "\"He had to leave early, ___?\" — because \"had to\" acts like an ordinary past verb here, the tag is:",
+      "back": "didn't he",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "",
+      "front": "The tag for \"I am late\" is irregularly:",
+      "back": "aren't I",
+      "hint": ""
+    }
+  ]
+}

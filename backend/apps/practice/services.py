@@ -5,6 +5,8 @@ from datetime import timedelta
 from django.db.models import F
 from django.utils import timezone
 
+from apps.profiles.subjects import canonical_key_for_practice_subject
+
 from .models import (
     AttemptAnswer, DailyProblemAttempt, MistakeSource, Question, Subtopic, Tier, TopicMistake,
 )
@@ -114,6 +116,7 @@ def get_recommended_subtopics(user, limit=5):
             "topic_name": s.topic.name,
             "domain_name": s.topic.domain.name,
             "subject_name": s.topic.domain.subject.name,
+            "subject_key": canonical_key_for_practice_subject(s.topic.domain.subject),
             "mistake_count": count,
             "suggested_tier": tier,
         }

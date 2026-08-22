@@ -1,38 +1,222 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
-import { getHierarchy, type SubjectNode } from "../api/practice";
-import { AmbientBackground } from "../components/hierarchy/AmbientBackground";
-import { ConnectionLines } from "../components/hierarchy/ConnectionLines";
-import { HierarchyNode } from "../components/hierarchy/HierarchyNode";
-import { IntroOverlay } from "../components/hierarchy/IntroOverlay";
-import "../components/hierarchy/hierarchy.css";
-import {
-  accentFor,
-  computeLayout,
-  INTRO_GLYPH,
-  type NodeVisual,
-} from "../components/hierarchy/hierarchyLayout";
-import { LinkButton } from "../components/ui/LinkButton";
+import { useCallback, useEffect } from "react";
+import { useNavigate, useLocation, useParams, useSearchParams, Link } from "react-router-dom";
+import { ChevronDown, ChevronRight, Info } from "lucide-react";
+import { getHierarchy, type DomainNode, type SubjectNode, type TopicNode } from "../api/practice";
+import { useAsyncResource } from "../hooks/useAsyncResource";
+import { TierStatus, nextTier, tierSummary } from "../components/practice/TierStatus";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { ProgressBar } from "../components/ui/ProgressBar";
+import { LoadingRegion, Skeleton } from "../components/ui/Skeleton";
 import { useStudyActivityTracker } from "../hooks/useStudyActivityTracker";
+import { cn } from "../lib/cn";
 
-// Re-settles the entrance animation on every level change: briefly drop to
-// the "just about to arrive" transform (draw=0), then a tick later ease
-// back to draw=1 — same trick the design uses so newly-revealed nodes
-// always animate in, even though React would otherwise just jump straight
-// to their final position.
-const REDRAW_DELAY_MS = 70;
-const SUBTOPIC_TRANSITION_MS = 420;
+/*
+  The practice navigator.
 
-function useViewportSize() {
-  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
-  useEffect(() => {
-    function onResize() {
-      setSize({ w: window.innerWidth, h: window.innerHeight });
-    }
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  return size;
+  What was here before, and why it was replaced
+  ---------------------------------------------
+  This page used to be a fixed, full-viewport radial "constellation": a
+  hard-coded #06070b background with domain/topic/subtopic names inside
+  circles, laid out by trigonometry against window.innerWidth/innerHeight.
+  It looked striking in a desktop screenshot and failed as an interface:
+
+  1. `position: fixed; inset: 0; overflow: hidden` with nodes placed on a
+     radius meant that at 375x812 the ring did not fit. Nodes below the fold
+     were clipped away with no scroll — a topic could be **unreachable on a
+     phone**, which is a functional defect, not a cosmetic one.
+  2. Names were set in 'Space Grotesk' / 'JetBrains Mono', neither of which
+     has Armenian coverage, inside fixed-diameter circles. Six of eight labels
+     broke mid-word into orphans ("Հանրահաշի / վ", "Հավասարում / ներ"), and
+     the breadcrumb was 10px uppercase at .26em tracking — Armenian has no
+     uppercase tradition, so this was the least legible text in the product.
+  3. The layout centred on window.innerWidth while the 256px desktop nav rail
+     covered the left edge, so the composition sat 128px left of the visual
+     centre of the area it actually occupied.
+  4. It ignored the theme entirely: a student in light mode got a black
+     full-screen takeover between two light pages.
+  5. Every level change cost a 420ms scripted transition, and only one level
+     was ever visible, so reaching a subtopic meant three blind hops.
+
+  What replaces it keeps the same information architecture and the same URL
+  contract (`?domain=&topic=`), so assignment deep-links and browser
+  back/forward behave exactly as before. The differences are that it scrolls,
+  it uses the theme, it shows progress next to every choice rather than a
+  percentage hidden inside a circle, and topics reveal their subtopics inline
+  — which removes one full navigation from the path to a question.
+*/
+
+function subtopicCount(topic: TopicNode): number {
+  return topic.subtopics.length;
+}
+
+function ProgressRow({ percent, avgScore }: { percent: number; avgScore: number | null }) {
+  return (
+    <div className="mt-[var(--space-4)]">
+      <div className="mb-[var(--space-2)] flex items-baseline justify-between gap-[var(--space-3)]">
+        <span className="text-[length:var(--text-xs)] text-text-muted">
+          {percent > 0 ? "Անցած նյութ" : "Դեռ չսկսված"}
+        </span>
+        <span className="text-[length:var(--text-xs)] font-semibold text-text">{percent}%</span>
+      </div>
+      <ProgressBar percent={percent} heightClassName="h-1" />
+      {avgScore !== null && (
+        <p className="mt-[var(--space-2)] text-[length:var(--text-xs)] text-text-muted">
+          Միջին միավորը՝ {avgScore}%
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* Intro text is real authored content, so it is kept — but as a disclosure at
+   the top of the level it describes, rather than as a floating satellite
+   circle that overlapped the breadcrumb at narrow widths. */
+function IntroPanel({ text }: { text: string }) {
+  if (!text?.trim()) return null;
+  return (
+    <details className="mb-[var(--space-5)] rounded-[var(--radius-lg)] border border-border bg-surface-muted">
+      <summary className="flex cursor-pointer items-center gap-[var(--space-2)] rounded-[var(--radius-lg)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-sm)] font-medium text-text">
+        <Info size={16} strokeWidth={1.75} className="shrink-0 text-primary" aria-hidden />
+        Ներածություն
+      </summary>
+      <p className="max-w-[var(--measure-base)] px-[var(--space-4)] pb-[var(--space-4)] text-[length:var(--text-sm)] leading-[var(--leading-body)] whitespace-pre-line text-text-muted">
+        {text}
+      </p>
+    </details>
+  );
+}
+
+function DomainCard({ domain, onSelect }: { domain: DomainNode; onSelect: () => void }) {
+  const topics = domain.topics.length;
+  const subtopics = domain.topics.reduce((s, t) => s + t.subtopics.length, 0);
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="group flex w-full flex-col rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)] text-left transition-colors hover:border-primary"
+    >
+      <div className="flex items-start justify-between gap-[var(--space-4)]">
+        <div className="min-w-0">
+          <h2 className="text-[length:var(--text-lg)] leading-[var(--leading-heading)] font-semibold text-text">
+            {domain.name}
+          </h2>
+          <p className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-text-muted">
+            {topics} թեմա · {subtopics} ենթաթեմա
+          </p>
+        </div>
+        <ChevronRight
+          size={20}
+          strokeWidth={1.75}
+          className="mt-1 shrink-0 text-text-muted transition-colors group-hover:text-primary"
+          aria-hidden
+        />
+      </div>
+      <ProgressRow percent={domain.progress.percent} avgScore={domain.progress.avg_score} />
+    </button>
+  );
+}
+
+/*
+  A topic row that opens in place. Expanding rather than navigating is what
+  removes a level from the old flow: the student can compare subtopics under
+  two topics without losing their place, and the URL still records which topic
+  is open so back/forward and deep links keep working.
+*/
+function TopicRow({
+  topic,
+  expanded,
+  onToggle,
+}: {
+  topic: TopicNode;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const panelId = `topic-panel-${topic.id}`;
+
+  return (
+    <li className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        className="flex w-full items-center gap-[var(--space-4)] p-[var(--space-4)] text-left transition-colors hover:bg-surface-muted"
+      >
+        <ChevronDown
+          size={18}
+          strokeWidth={2}
+          aria-hidden
+          className={cn(
+            "shrink-0 text-text-muted transition-transform duration-200 motion-reduce:transition-none",
+            expanded ? "rotate-0" : "-rotate-90",
+          )}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-[length:var(--text-base)] leading-[var(--leading-snug)] font-medium text-text">
+            {topic.name}
+          </p>
+          <p className="mt-[var(--space-1)] text-[length:var(--text-xs)] text-text-muted">
+            {subtopicCount(topic)} ենթաթեմա · {topic.progress.percent}%
+          </p>
+        </div>
+        <div className="hidden w-28 shrink-0 sm:block">
+          <ProgressBar percent={topic.progress.percent} heightClassName="h-1" />
+        </div>
+      </button>
+
+      {expanded && (
+        <div id={panelId} className="border-t border-border bg-surface-muted/50 p-[var(--space-3)]">
+          <IntroPanel text={topic.intro_text} />
+          {topic.subtopics.length === 0 ? (
+            <EmptyState
+              size="sm"
+              title="Այս թեմայի ենթաթեմաները դեռ պատրաստ չեն։"
+              hint="Նյութը ավելացվում է աստիճանաբար։"
+            />
+          ) : (
+            <ul className="flex flex-col gap-[var(--space-2)]">
+              {topic.subtopics.map((subtopic) => {
+                const { done, total } = tierSummary(subtopic.tier_scores);
+                const next = nextTier(subtopic.tier_scores);
+                return (
+                  <li key={subtopic.id}>
+                    <Link
+                      to={`/practice/subtopic/${subtopic.id}`}
+                      className="group flex items-center gap-[var(--space-3)] rounded-[var(--radius-md)] border border-border bg-surface p-[var(--space-3)] transition-colors hover:border-primary"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[length:var(--text-sm)] leading-[var(--leading-snug)] font-medium text-text">
+                          {subtopic.name}
+                        </p>
+                        <p className="mt-[var(--space-1)] text-[length:var(--text-xs)] text-text-muted">
+                          {done === 0
+                            ? "Դեռ չսկսված"
+                            : done === total
+                              ? "Երեք մակարդակն էլ անցած են"
+                              : `${done}/${total} մակարդակ անցած`}
+                          {next && done > 0 ? " · շարունակիր" : ""}
+                        </p>
+                      </div>
+                      <TierStatus scores={subtopic.tier_scores} className="shrink-0" />
+                      <ChevronRight
+                        size={16}
+                        strokeWidth={1.75}
+                        aria-hidden
+                        className="shrink-0 text-text-muted transition-colors group-hover:text-primary"
+                      />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+    </li>
+  );
 }
 
 export function PracticeSubjectPage() {
@@ -44,39 +228,26 @@ export function PracticeSubjectPage() {
   const location = useLocation();
   const navState = location.state as { subtopicId?: number; topicId?: number } | null;
   const [searchParams, setSearchParams] = useSearchParams();
-  const { w, h } = useViewportSize();
 
-  const [subject, setSubject] = useState<SubjectNode | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [draw, setDraw] = useState(1);
-  const [introOpen, setIntroOpen] = useState<"domain" | "topic" | null>(null);
-  const [leavingSubtopicId, setLeavingSubtopicId] = useState<number | null>(null);
+  const fetchSubject = useCallback(
+    async (): Promise<SubjectNode | null> => {
+      const subjects = await getHierarchy();
+      return subjects.find((s) => s.id === id) ?? null;
+    },
+    [id],
+  );
 
-  useEffect(() => {
-    setSubject(null);
-    setNotFound(false);
-    getHierarchy().then((subjects) => {
-      const found = subjects.find((s) => s.id === id) ?? null;
-      setSubject(found);
-      setNotFound(!found);
-    });
-  }, [id]);
+  const { data: subject, isLoading, error, retry } = useAsyncResource(fetchSubject, [id]);
 
   const domainParam = searchParams.get("domain");
   const topicParam = searchParams.get("topic");
-  const domainIndex = subject && domainParam
-    ? subject.domains.findIndex((d) => String(d.id) === domainParam)
-    : -1;
-  const selectedDomain = domainIndex >= 0 ? subject!.domains[domainIndex] : null;
-  const topicIndex = selectedDomain && topicParam
-    ? selectedDomain.topics.findIndex((t) => String(t.id) === topicParam)
-    : -1;
-  const selectedTopic = topicIndex >= 0 ? selectedDomain!.topics[topicIndex] : null;
+  const selectedDomain = subject && domainParam
+    ? subject.domains.find((d) => String(d.id) === domainParam) ?? null
+    : null;
 
-  // Deep-link support for "topic" assignments (subtopic assignments now go
-  // straight to /practice/subtopic/:id — see lib/assignmentLabels.ts).
-  // Only ever runs once the hierarchy actually needs resolving, and only
-  // from nav state, so it never fights the user's own navigation.
+  // Deep-link support for "topic" assignments (subtopic assignments go straight
+  // to /practice/subtopic/:id — see lib/assignmentLabels.ts). Only runs from
+  // nav state, so it never fights the student's own navigation.
   useEffect(() => {
     if (!subject || !navState?.topicId) return;
     for (const domain of subject.domains) {
@@ -89,351 +260,113 @@ export function PracticeSubjectPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject, location.key]);
 
-  // Replays the entrance transition on every level change, whichever
-  // direction it came from (a click, a browser back/forward, or a direct
-  // URL visit) — search params are the single source of truth here.
-  useEffect(() => {
-    setIntroOpen(null);
-    setDraw(0);
-    const t = setTimeout(() => setDraw(1), REDRAW_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [domainParam, topicParam]);
-
-  function selectDomain(domainId: number | null) {
-    if (domainId === null) {
-      setSearchParams({});
-    } else {
-      setSearchParams({ domain: String(domainId) });
-    }
+  function selectDomain(domainId: number) {
+    setSearchParams({ domain: String(domainId) });
   }
 
-  function selectTopic(topicId: number | null) {
+  function toggleTopic(topicId: number) {
     if (!selectedDomain) return;
-    if (topicId === null) {
+    if (String(topicId) === topicParam) {
       setSearchParams({ domain: String(selectedDomain.id) });
     } else {
       setSearchParams({ domain: String(selectedDomain.id), topic: String(topicId) });
     }
   }
 
-  function selectSubtopic(subtopicId: number) {
-    if (leavingSubtopicId !== null) return;
-    setLeavingSubtopicId(subtopicId);
-    setTimeout(() => navigate(`/practice/subtopic/${subtopicId}`), SUBTOPIC_TRANSITION_MS);
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="mt-[var(--space-3)] h-9 w-1/2" />
+        <LoadingRegion className="mt-[var(--space-7)] flex flex-col gap-[var(--space-3)]">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="mt-[var(--space-2)] h-3.5 w-1/4" />
+              <Skeleton className="mt-[var(--space-5)] h-1 w-full" />
+            </div>
+          ))}
+        </LoadingRegion>
+      </div>
+    );
   }
 
-  if (notFound) {
+  if (error) {
     return (
-      <div className="p-8">
-        <p className="text-lg text-text-muted">Առարկան չի գտնվել։</p>
-        <LinkButton to="/practice">← Առարկաներ</LinkButton>
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <PageHeader title="Պարապել" back={{ to: "/practice", label: "Առարկաներ" }} />
+        <ErrorState
+          title="Չհաջողվեց բեռնել առարկայի բովանդակությունը։"
+          hint="Ստուգիր կապը և փորձիր կրկին։"
+          onRetry={retry}
+        />
       </div>
     );
   }
 
   if (!subject) {
-    return <div className="p-8 text-lg text-text-muted">Բեռնվում է...</div>;
+    return (
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <PageHeader title="Առարկան չի գտնվել" back={{ to: "/practice", label: "Առարկաներ" }} />
+        <EmptyState
+          title="Այս առարկան հասանելի չէ։"
+          hint="Հնարավոր է հղումը հնացած է։"
+          cta={{ label: "Բոլոր առարկաները", onClick: () => navigate("/practice") }}
+        />
+      </div>
+    );
   }
-
-  const layout = computeLayout({
-    domains: subject.domains,
-    domainIndex: domainIndex >= 0 ? domainIndex : null,
-    topicIndex: topicIndex >= 0 ? topicIndex : null,
-    width: w,
-    height: h,
-    draw,
-    onSelectDomain: selectDomain,
-    onSelectTopic: selectTopic,
-    onSelectSubtopic: (_topic, subtopic) => selectSubtopic(subtopic.id),
-  });
-
-  const level = selectedTopic ? "subtopic" : selectedDomain ? "topic" : "domain";
-  const small = Math.min(w, h) < 720;
-
-  // Small satellite "Ներածություն" node(s) — deliberately NOT part of the
-  // radial layout math (hierarchyLayout.computeLayout only places
-  // domain/topic/subtopic nodes): fixed near the top corners so they never
-  // collide with the ring of nodes or the focal center node, per the
-  // design not specifying a location for this (it doesn't exist in the
-  // uploaded design at all — see the written plan).
-  const introNodes: NodeVisual[] = [];
-  if (selectedDomain && level === "topic") {
-    introNodes.push({
-      key: "intro-domain",
-      kind: "intro",
-      name: "Ներածություն",
-      glyph: INTRO_GLYPH,
-      accent: accentFor(domainIndex),
-      x: small ? 64 : 96,
-      y: small ? 96 : 120,
-      size: small ? 64 : 78,
-      scale: draw,
-      opacity: draw,
-      z: 25,
-      delayMs: 260,
-      active: false,
-      interactive: draw >= 0.6,
-      pct: null,
-      onSelect: () => setIntroOpen("domain"),
-    });
-  }
-  if (selectedDomain && selectedTopic && level === "subtopic") {
-    introNodes.push({
-      key: "intro-topic",
-      kind: "intro",
-      name: "Ներածություն",
-      glyph: INTRO_GLYPH,
-      accent: accentFor(domainIndex),
-      x: w - (small ? 64 : 96),
-      y: small ? 96 : 120,
-      size: small ? 64 : 78,
-      scale: draw,
-      opacity: draw,
-      z: 25,
-      delayMs: 260,
-      active: false,
-      interactive: draw >= 0.6,
-      pct: null,
-      onSelect: () => setIntroOpen("topic"),
-    });
-  }
-
-  const leavingSubtopicName = leavingSubtopicId
-    ? selectedTopic?.subtopics.find((s) => s.id === leavingSubtopicId)?.name
-    : null;
-
-  const hint = leavingSubtopicId
-    ? ""
-    : level === "domain"
-      ? "Ընտրեք ոլորտ՝ դրա կառուցվածքը տեսնելու համար"
-      : level === "topic"
-        ? "Ընտրեք թեմա · սեղմեք կենտրոնական հանգույցը՝ դուրս գալու համար"
-        : "Ընտրեք ենթաթեմա՝ դասը բացելու համար · սեղմեք կենտրոնական հանգույցը՝ հետ գնալու համար";
 
   return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "#06070b",
-          fontFamily: "'Space Grotesk', system-ui, sans-serif",
-          color: "#e8ecf4",
-          overflow: "hidden",
-        }}
-      >
-        <AmbientBackground accent={layout.ambientAccent} />
+    <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+      {selectedDomain ? (
+        <PageHeader
+          eyebrow={subject.name}
+          title={selectedDomain.name}
+          description={`${selectedDomain.topics.length} թեմա։ Ընտրիր թեման՝ ենթաթեմաները տեսնելու համար։`}
+          back={{ to: `/practice/${subject.id}`, label: "Բոլոր ոլորտները" }}
+        />
+      ) : (
+        <PageHeader
+          title={subject.name}
+          description="Ընտրիր ոլորտը, ապա՝ թեման։"
+          back={{ to: "/practice", label: "Առարկաներ" }}
+        />
+      )}
 
-        <ConnectionLines links={layout.links} />
-
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%,-50%)",
-            opacity: layout.coreOpacity,
-            transition: "opacity 900ms ease",
-            pointerEvents: "none",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 18,
-          }}
-        >
-          <div
-            style={{
-              width: 78,
-              height: 78,
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,.07)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "50%",
-                border: "1px solid rgba(255,255,255,.11)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,.5)",
-                  boxShadow: "0 0 18px 4px rgba(160,190,255,.35)",
-                }}
-              />
-            </div>
-          </div>
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', system-ui, monospace",
-              fontSize: 10,
-              letterSpacing: ".34em",
-              textTransform: "uppercase",
-              color: "rgba(232,236,244,.38)",
-            }}
-          >
-            {subject.name}
-          </div>
-        </div>
-
-        <div style={{ position: "absolute", inset: 0 }}>
-          {layout.nodes.map((n) => (
-            <HierarchyNode
-              key={n.key}
-              node={
-                n.kind === "subtopic" && n.key === `subtopic-${leavingSubtopicId}`
-                  ? { ...n, scale: n.scale * 1.35, opacity: 1, z: 50 }
-                  : n
-              }
+      {selectedDomain ? (
+        <>
+          <IntroPanel text={selectedDomain.intro_text} />
+          {selectedDomain.topics.length === 0 ? (
+            <EmptyState
+              title="Այս ոլորտի թեմաները դեռ պատրաստ չեն։"
+              hint="Նյութը ավելացվում է աստիճանաբար։"
             />
+          ) : (
+            <ul className="flex flex-col gap-[var(--space-3)]">
+              {selectedDomain.topics.map((topic) => (
+                <TopicRow
+                  key={topic.id}
+                  topic={topic}
+                  expanded={String(topic.id) === topicParam}
+                  onToggle={() => toggleTopic(topic.id)}
+                />
+              ))}
+            </ul>
+          )}
+        </>
+      ) : subject.domains.length === 0 ? (
+        <EmptyState
+          title="Այս առարկայի նյութը դեռ պատրաստ չէ։"
+          hint="Նյութը ավելացվում է աստիճանաբար։"
+        />
+      ) : (
+        <div className="grid gap-[var(--space-4)] sm:grid-cols-2">
+          {subject.domains.map((domain) => (
+            <DomainCard key={domain.id} domain={domain} onSelect={() => selectDomain(domain.id)} />
           ))}
-          {introNodes.map((n) => (
-            <HierarchyNode key={n.key} node={n} />
-          ))}
         </div>
-
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            padding: small ? "20px 20px" : "30px 40px",
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            gap: 24,
-            pointerEvents: "none",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, pointerEvents: "auto", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => navigate("/practice")}
-              style={{
-                fontFamily: "'JetBrains Mono', system-ui, monospace",
-                fontSize: 10,
-                letterSpacing: ".26em",
-                textTransform: "uppercase",
-                color: "rgba(232,236,244,.5)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-              }}
-            >
-              ← Առարկաներ
-            </button>
-            <Crumb label="Ոլորտներ" active={!selectedDomain} onClick={() => selectDomain(null)} />
-            {selectedDomain && (
-              <Crumb label={selectedDomain.name} active={!selectedTopic} onClick={() => selectTopic(null)} />
-            )}
-            {selectedTopic && <Crumb label={selectedTopic.name} active clickable={false} />}
-          </div>
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', system-ui, monospace",
-              fontSize: 10,
-              letterSpacing: ".26em",
-              textTransform: "uppercase",
-              color: "rgba(232,236,244,.3)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {layout.levelLabel}
-          </div>
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 34,
-            display: "flex",
-            justifyContent: "center",
-            pointerEvents: "none",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
-              fontWeight: 300,
-              fontSize: 13,
-              letterSpacing: ".04em",
-              color: "rgba(232,236,244,.34)",
-              transition: "color 400ms ease",
-              textAlign: "center",
-              padding: "0 16px",
-            }}
-          >
-            {leavingSubtopicId ? `Բացվում է՝ ${leavingSubtopicName ?? ""}...` : hint}
-          </div>
-        </div>
-
-        {introOpen === "domain" && selectedDomain && (
-          <IntroOverlay
-            pathLabel={subject.name}
-            title={selectedDomain.name}
-            introText={selectedDomain.intro_text}
-            accent={accentFor(domainIndex)}
-            onClose={() => setIntroOpen(null)}
-          />
-        )}
-        {introOpen === "topic" && selectedDomain && selectedTopic && (
-          <IntroOverlay
-            pathLabel={[subject.name, selectedDomain.name].join("  /  ")}
-            title={selectedTopic.name}
-            introText={selectedTopic.intro_text}
-            accent={accentFor(domainIndex)}
-            onClose={() => setIntroOpen(null)}
-          />
-        )}
-      </div>
-  );
-}
-
-function Crumb({
-  label,
-  active,
-  onClick,
-  clickable = true,
-}: {
-  label: string;
-  active: boolean;
-  onClick?: () => void;
-  clickable?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-      <div style={{ fontFamily: "'JetBrains Mono', system-ui, monospace", fontSize: 10, color: "rgba(232,236,244,.22)" }}>
-        /
-      </div>
-      <div
-        onClick={clickable ? onClick : undefined}
-        role={clickable ? "button" : undefined}
-        style={{
-          fontFamily: "'JetBrains Mono', system-ui, monospace",
-          fontSize: 10,
-          letterSpacing: ".26em",
-          textTransform: "uppercase",
-          color: active ? "rgba(255,255,255,.9)" : "rgba(232,236,244,.42)",
-          cursor: clickable ? "pointer" : "default",
-          transition: "color 300ms ease",
-        }}
-      >
-        {label}
-      </div>
+      )}
     </div>
   );
 }

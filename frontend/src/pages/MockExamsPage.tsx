@@ -8,9 +8,14 @@ import { ExamCard } from "../components/exams/ExamCard";
 import { SubjectNav } from "../components/exams/SubjectNav";
 import { StatTile } from "../components/ui/StatTile";
 import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { LoadingRegion, Skeleton } from "../components/ui/Skeleton";
+import { useAsyncResource } from "../hooks/useAsyncResource";
 import { SUBJECTS, type SubjectKey } from "../lib/subjects";
 import { extractExamNumber } from "../lib/examTitle";
-import { LinkButton } from "../components/ui/LinkButton";
+import { SearchField } from "../components/ui/SearchField";
 
 type StatusFilter = "all" | "not_started" | "in_progress" | "completed";
 type SortKey = "number" | "recent" | "best_score";
@@ -31,16 +36,20 @@ export function MockExamsPage() {
     const s = searchParams.get("subject");
     return SUBJECTS.some((x) => x.key === s) ? (s as SubjectKey) : "math";
   });
-  const [allExams, setAllExams] = useState<MockExamSummary[] | null>(null);
-  const [overview, setOverview] = useState<MockExamOverview | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("number");
 
-  useEffect(() => {
-    listMockExams().then(setAllExams);
-    getOverview().then(setOverview);
-  }, []);
+  const {
+    data: allExams,
+    isLoading: examsLoading,
+    error: examsError,
+    retry: retryExams,
+  } = useAsyncResource<MockExamSummary[]>(listMockExams, []);
+
+  // The overview is supporting detail, so it degrades on its own: a failed
+  // stats call must not take the exam list down with it.
+  const { data: overview } = useAsyncResource<MockExamOverview>(getOverview, []);
 
   function openExam(exam: MockExamSummary) {
     if (exam.has_draft && exam.draft_attempt_id) {
@@ -89,13 +98,42 @@ export function MockExamsPage() {
     return sorted;
   }, [subjectExams, statusFilter, search, sortKey]);
 
+  // An exam already in progress is the only thing on this page that is
+  // time-sensitive, and it used to be indistinguishable from the other twenty
+  // cards in the grid — the student had to find it. It gets its own band.
+  const inProgress = useMemo(
+    () => (allExams ?? []).filter((e) => e.has_draft && e.draft_attempt_id),
+    [allExams],
+  );
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <LinkButton to="/" className="mb-4">← Գլխավոր</LinkButton>
-      <div className="mt-10 sm:mt-0">
-        <h1 className="mb-1 text-2xl font-semibold text-text sm:text-3xl">📝 Ամբողջական թեստեր</h1>
-        <p className="mb-6 text-text-muted">Փորձիր քեզ իրական քննության պայմաններում</p>
-      </div>
+    <div className="mx-auto max-w-6xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        title="Ամբողջական թեստեր"
+        description="Փորձիր քեզ իրական քննության պայմաններում։"
+        back={{ to: "/", label: "Գլխավոր" }}
+      />
+
+      {inProgress.length > 0 && (
+        <section className="mb-[var(--space-7)] rounded-[var(--radius-lg)] border border-primary-line bg-primary-bg p-[var(--space-5)]">
+          <h2 className="font-display text-[length:var(--text-lg)] font-semibold text-text">
+            {inProgress.length === 1 ? "Անավարտ թեստ" : "Անավարտ թեստեր"}
+          </h2>
+          <p className="mt-[var(--space-1)] text-[length:var(--text-sm)] text-text-muted">
+            Շարունակիր այնտեղից, որտեղ կանգ առար։
+          </p>
+          <div className="mt-[var(--space-4)] grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-3">
+            {inProgress.map((exam) => (
+              <ExamCard
+                key={exam.id}
+                exam={exam}
+                primaryTo={`/mock-exams/attempt/${exam.draft_attempt_id}`}
+                historyTo={exam.completed_attempts_count > 0 ? `/mock-exams/${exam.id}/history` : undefined}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {overview && overview.completed_count > 0 && (
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -114,45 +152,76 @@ export function MockExamsPage() {
 
       <SubjectNav exams={allExams} active={subject} onSelect={setSubject} />
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <input
-          type="text"
+      {/* The two native <select>s here rendered as OS widgets that ignored the
+          app's font, radius and theme, and the search input overrode the
+          global focus ring with a second, competing idiom. Both now use the
+          kit. */}
+      <div className="mb-[var(--space-6)] flex flex-col gap-[var(--space-3)] sm:flex-row sm:items-center sm:justify-between">
+        <SearchField
+          containerClassName="w-full max-w-xs"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Փնտրել թեստ..."
-          className="w-full max-w-xs rounded-[var(--radius)] border border-border bg-surface px-4 py-2 text-sm text-text placeholder:text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onChange={setSearch}
+          label="Փնտրել թեստ"
+          placeholder="Փնտրել թեստ…"
+          className="bg-surface text-[length:var(--text-sm)]"
         />
-        <div className="flex flex-wrap gap-2">
-          <select
+        <div className="flex flex-wrap gap-[var(--space-2)]">
+          <Select<StatusFilter>
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="rounded-[var(--radius)] border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <option value="all">Բոլորը</option>
-            <option value="not_started">Չսկսված</option>
-            <option value="in_progress">Ընթացքի մեջ</option>
-            <option value="completed">Ավարտված</option>
-          </select>
-          <select
+            onChange={setStatusFilter}
+            label="Վիճակ"
+            options={[
+              { value: "all", label: "Բոլորը" },
+              { value: "not_started", label: "Չսկսված" },
+              { value: "in_progress", label: "Ընթացքի մեջ" },
+              { value: "completed", label: "Ավարտված" },
+            ]}
+          />
+          <Select<SortKey>
             value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="rounded-[var(--radius)] border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <option value="number">Թեստի համար</option>
-            <option value="recent">Վերջին ակտիվություն</option>
-            <option value="best_score">Լավագույն արդյունք</option>
-          </select>
+            onChange={setSortKey}
+            label="Դասավորել"
+            options={[
+              { value: "number", label: "Թեստի համար" },
+              { value: "recent", label: "Վերջին ակտիվություն" },
+              { value: "best_score", label: "Լավագույն արդյունք" },
+            ]}
+          />
         </div>
       </div>
 
-      {!visibleExams ? (
-        <div className="text-lg text-text-muted">Բեռնվում է...</div>
-      ) : visibleExams.length === 0 && !search && statusFilter === "all" ? (
-        <EmptyState icon="📝" title="Այս առարկայի թեստերը շուտով կավելացվեն։" />
+      {examsLoading ? (
+        <LoadingRegion className="grid grid-cols-1 gap-[var(--space-4)] sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="mt-[var(--space-3)] h-6 w-3/4" />
+              <Skeleton className="mt-[var(--space-6)] h-9 w-full" />
+            </div>
+          ))}
+        </LoadingRegion>
+      ) : examsError ? (
+        <ErrorState
+          title="Չհաջողվեց բեռնել թեստերը։"
+          hint="Ստուգիր կապը և փորձիր կրկին։"
+          onRetry={retryExams}
+        />
+      ) : !visibleExams ? null : visibleExams.length === 0 && !search && statusFilter === "all" ? (
+        <EmptyState title="Այս առարկայի թեստերը շուտով կավելացվեն։" hint="Փորձիր մեկ այլ առարկա։" />
       ) : visibleExams.length === 0 ? (
-        <EmptyState icon="🔍" title="Ոչ մի թեստ չի համապատասխանում ընտրված զտիչներին։" />
+        <EmptyState
+          title="Ոչ մի թեստ չի համապատասխանում ընտրված զտիչներին։"
+          hint="Փոխիր որոնումը կամ զտիչը։"
+          cta={{
+            label: "Մաքրել զտիչները",
+            onClick: () => {
+              setSearch("");
+              setStatusFilter("all");
+            },
+          }}
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleExams.map((exam) => (
             <ExamCard
               key={exam.id}

@@ -1,11 +1,17 @@
-from django.db.models import Count, Q
+from datetime import datetime, time, timedelta
+
+from django.contrib.auth import get_user_model
+from django.db.models import Avg, Count, Max, Q
+from django.db.models.functions import TruncDate, TruncWeek
 from django.utils import timezone
 
 from apps.activity.models import StudySession
 from apps.activity.services import IDLE_THRESHOLD
+from apps.knowledge.models import TopicMastery
 from apps.mistakes.models import MistakeEntry
 from apps.mock_exams.models import MockExamAttempt, MockExamAttemptStatus
-from apps.practice.models import PracticeAttempt, Tier
+from apps.practice.models import AttemptAnswer, PracticeAttempt, Tier
+from apps.streaks.models import LearningStreak
 
 from .models import Assignment, AssignmentStatus, AssignmentType, ConnectionStatus, TeacherStudentConnection
 
@@ -154,22 +160,36 @@ def mock_exam_status(assignment) -> str | None:
 
 
 def _question_review(question, answer) -> dict:
+    # `order`, `match_target` and `match_pairs` exist so the review page can
+    # render a `matching` question as what it is. Without them it fell into
+    # the statements branch and was drawn as a true/false list, printing
+    # "Ճիշտ"/"Սխալ" beside each left-hand item from an `is_true` that
+    # MockExamStatement's own docstring says is unused for matching items.
+    # Practice questions have no matching type and their models carry
+    # neither field, hence the getattr defaults.
     return {
         "id": question.id,
         "text": question.text,
         "question_type": question.question_type,
         "choices": [
-            {"id": c.id, "text": c.text, "is_correct": c.is_correct}
+            {"id": c.id, "text": c.text, "is_correct": c.is_correct, "order": c.order}
             for c in question.choices.all()
         ],
         "statements": [
-            {"id": s.id, "label": s.label, "text": s.text, "is_true": s.is_true}
+            {
+                "id": s.id,
+                "label": s.label,
+                "text": s.text,
+                "is_true": s.is_true,
+                "match_target": getattr(s, "match_target", None),
+            }
             for s in question.statements.all()
         ],
         "correct_answer_text": question.correct_answer_text or None,
         "selected_choice_id": answer.selected_choice_id if answer else None,
         "answer_text": answer.answer_text if answer else "",
         "selected_statement_ids": answer.selected_statement_ids if answer else [],
+        "match_pairs": getattr(answer, "match_pairs", None) or {} if answer else {},
         "is_correct": answer.is_correct if answer else False,
     }
 
@@ -321,3 +341,362 @@ def build_problem_sets(assignment) -> list[dict]:
     if assignment.assignment_type == AssignmentType.TOPIC:
         return _practice_problem_sets(assignment, assignment.topic.subtopics.all())
     return _mock_exam_problem_sets(assignment)
+
+
+# ---------------------------------------------------------------------------
+# Class analytics
+#
+# Everything below is computed from timestamps that genuinely exist. Notably
+# absent, because the data does not support them: XP over time (MonthlyXP is
+# monthly and mutated in place, with no transaction ledger), rank over time
+# (RankHistory is only written when a student personally opens a leaderboard,
+# so it's absent for anyone who doesn't), and mastery/streak over time (both
+# store current state only, with no snapshots). A chart of any of those would
+# be fabricated, so none is offered.
+# ---------------------------------------------------------------------------
+
+# range key -> (days back, bucket granularity)
+TREND_RANGES = {
+    "week": (7, "day"),
+    "month": (30, "day"),
+    "semester": (126, "week"),
+}
+DEFAULT_TREND_RANGE = "month"
+
+# Below this many answers in a week, a week-over-week accuracy comparison is
+# noise rather than a trend.
+MIN_ANSWERS_FOR_ACCURACY_TREND = 5
+ACCURACY_DROP_THRESHOLD = 10.0
+INACTIVE_DAYS = 7
+REPEATED_MISTAKE_MIN = 3
+REPEATED_MISTAKE_WINDOW_DAYS = 30
+WEAK_MASTERY_THRESHOLD = 50.0
+WEAK_MASTERY_MIN_ATTEMPTS = 3
+LOW_TEST_SCORE_THRESHOLD = 50.0
+
+
+def _bucket_start(d, granularity: str):
+    """Monday-anchored for weekly buckets, so a bucket key from Python matches
+    what TruncWeek produced in SQL."""
+    return d - timedelta(days=d.weekday()) if granularity == "week" else d
+
+
+def _start_of_day(d):
+    """Local midnight on `d`, as an aware datetime for timestamp filtering."""
+    return timezone.make_aware(datetime.combine(d, time.min), timezone.get_current_timezone())
+
+
+def class_trends(student_ids: list[int], range_key: str = DEFAULT_TREND_RANGE) -> dict:
+    """
+    Class-wide activity over time, bucketed server-side.
+
+    Empty buckets are returned explicitly with null accuracy / null exam score
+    rather than zeros, so the chart can show "no data that day" instead of
+    implying the class scored 0%.
+    """
+    if range_key not in TREND_RANGES:
+        range_key = DEFAULT_TREND_RANGE
+    days_back, granularity = TREND_RANGES[range_key]
+
+    today = timezone.localdate()
+    start_date = _bucket_start(today - timedelta(days=days_back - 1), granularity)
+    start_dt = _start_of_day(start_date)
+
+    trunc = TruncWeek if granularity == "week" else TruncDate
+
+    # Build the full bucket skeleton up front so gaps stay visible.
+    buckets: dict = {}
+    step = timedelta(days=7 if granularity == "week" else 1)
+    cursor = start_date
+    while cursor <= today:
+        buckets[cursor] = {
+            "date": cursor.isoformat(),
+            "questions": 0,
+            "correct": 0,
+            "accuracy": None,
+            "study_minutes": 0,
+            "active_students": 0,
+            "mistakes": 0,
+            "exam_avg_score": None,
+            "exam_count": 0,
+        }
+        cursor += step
+
+    if not student_ids:
+        return {"range": range_key, "granularity": granularity, "buckets": list(buckets.values())}
+
+    # Practice answers -> volume + accuracy.
+    answer_rows = (
+        AttemptAnswer.objects.filter(
+            attempt__user_id__in=student_ids,
+            attempt__completed_at__isnull=False,
+            attempt__revealed_answers=False,
+            answered_at__gte=start_dt,
+        )
+        .annotate(bucket=trunc("answered_at"))
+        .values("bucket")
+        .annotate(questions=Count("id"), correct=Count("id", filter=Q(is_correct=True)))
+    )
+    for row in answer_rows:
+        b = buckets.get(row["bucket"])
+        if b is None:
+            continue
+        b["questions"] = row["questions"]
+        b["correct"] = row["correct"]
+        b["accuracy"] = round(100 * row["correct"] / row["questions"], 1) if row["questions"] else None
+
+    # Mistake log -> how much the class is getting wrong. Append-only and never
+    # deduped, so these counts are honest.
+    for row in (
+        MistakeEntry.objects.filter(user_id__in=student_ids, created_at__gte=start_dt)
+        .annotate(bucket=trunc("created_at"))
+        .values("bucket")
+        .annotate(count=Count("id"))
+    ):
+        b = buckets.get(row["bucket"])
+        if b is not None:
+            b["mistakes"] = row["count"]
+
+    # Completed mock exams -> average scaled score. Usually sparse: most
+    # students sit only a handful of exams, so most buckets stay null.
+    for row in (
+        MockExamAttempt.objects.filter(
+            user_id__in=student_ids,
+            status=MockExamAttemptStatus.COMPLETED,
+            completed_at__gte=start_dt,
+            scaled_score__isnull=False,
+        )
+        .annotate(bucket=trunc("completed_at"))
+        .values("bucket")
+        .annotate(avg_score=Avg("scaled_score"), count=Count("id"))
+    ):
+        b = buckets.get(row["bucket"])
+        if b is not None:
+            b["exam_avg_score"] = round(row["avg_score"], 1)
+            b["exam_count"] = row["count"]
+
+    # Study sessions -> minutes and distinct active students. Bucketed in
+    # Python because a session's length is (end - start) rather than a stored
+    # column; a session spanning midnight is attributed to the day it began,
+    # matching the approximation apps.profiles.analytics already uses.
+    actives: dict = {}
+    for session in StudySession.objects.filter(
+        user_id__in=student_ids, started_at__gte=start_dt
+    ).values("user_id", "started_at", "last_activity_at", "ended_at"):
+        key = _bucket_start(timezone.localtime(session["started_at"]).date(), granularity)
+        b = buckets.get(key)
+        if b is None:
+            continue
+        finish = session["ended_at"] or session["last_activity_at"]
+        b["study_minutes"] += max(0, round((finish - session["started_at"]).total_seconds() / 60))
+        actives.setdefault(key, set()).add(session["user_id"])
+    for key, users in actives.items():
+        buckets[key]["active_students"] = len(users)
+
+    return {"range": range_key, "granularity": granularity, "buckets": list(buckets.values())}
+
+
+def _weekly_accuracy_drops(student_ids: list[int]) -> dict:
+    """{user_id: (drop_points, latest_accuracy)} for students whose accuracy fell
+    week-over-week. One query for the whole roster.
+
+    Caveat worth knowing: AttemptAnswer rows are updated in place on a retake
+    while keeping their original answered_at, so an old week's accuracy can
+    shift retroactively. Good enough to flag a trend, not an audit record."""
+    two_weeks_ago = timezone.now() - timedelta(days=14)
+    rows = (
+        AttemptAnswer.objects.filter(
+            attempt__user_id__in=student_ids,
+            attempt__completed_at__isnull=False,
+            attempt__revealed_answers=False,
+            answered_at__gte=two_weeks_ago,
+        )
+        .annotate(bucket=TruncWeek("answered_at"))
+        .values("attempt__user_id", "bucket")
+        .annotate(total=Count("id"), correct=Count("id", filter=Q(is_correct=True)))
+    )
+
+    per_user: dict = {}
+    for row in rows:
+        per_user.setdefault(row["attempt__user_id"], []).append(row)
+
+    drops = {}
+    for user_id, user_rows in per_user.items():
+        user_rows.sort(key=lambda r: r["bucket"])
+        if len(user_rows) < 2:
+            continue
+        prior, latest = user_rows[-2], user_rows[-1]
+        if min(prior["total"], latest["total"]) < MIN_ANSWERS_FOR_ACCURACY_TREND:
+            continue
+        prior_acc = 100 * prior["correct"] / prior["total"]
+        latest_acc = 100 * latest["correct"] / latest["total"]
+        drop = prior_acc - latest_acc
+        if drop >= ACCURACY_DROP_THRESHOLD:
+            drops[user_id] = (round(drop, 1), round(latest_acc, 1))
+    return drops
+
+
+def students_needing_attention(teacher, student_ids: list[int]) -> list[dict]:
+    """
+    Students showing at least one concrete warning sign, each returned with the
+    evidence that flagged them so the teacher sees *why*, not just a red dot.
+
+    Only signals backed by real data are checked. Deliberately excluded:
+    rank drops (RankHistory is too sparse to be trustworthy), XP decline (no
+    ledger), and error-type profiles (error_category is only filled in when a
+    student personally asks for classification, so it's overwhelmingly unset).
+
+    A student with no signal is omitted entirely rather than listed as "fine" —
+    this is a worklist, not a roster.
+    """
+    if not student_ids:
+        return []
+
+    now = timezone.now()
+    today = timezone.localdate()
+    signals: dict = {sid: [] for sid in student_ids}
+
+    # --- Inactivity -------------------------------------------------------
+    last_session = {
+        row["user_id"]: row["last"]
+        for row in StudySession.objects.filter(user_id__in=student_ids)
+        .values("user_id")
+        .annotate(last=Max("last_activity_at"))
+    }
+    streak_by_user = {
+        s.user_id: s for s in LearningStreak.objects.filter(user_id__in=student_ids)
+    }
+    for sid in student_ids:
+        candidates = []
+        if sid in last_session and last_session[sid]:
+            candidates.append(timezone.localtime(last_session[sid]).date())
+        streak = streak_by_user.get(sid)
+        if streak and streak.last_activity_date:
+            candidates.append(streak.last_activity_date)
+        if not candidates:
+            signals[sid].append({
+                "kind": "never_active",
+                "label": "Դեռ չի սկսել սովորել",
+                "value": None,
+                "detail": "Ակտիվություն դեռ չի գրանցվել։",
+            })
+            continue
+        days_idle = (today - max(candidates)).days
+        if days_idle >= INACTIVE_DAYS:
+            signals[sid].append({
+                "kind": "inactive",
+                "label": "Վաղուց ակտիվ չէ",
+                "value": days_idle,
+                "detail": f"Վերջին ակտիվությունը՝ {days_idle} օր առաջ։",
+            })
+
+    # --- Accuracy decline -------------------------------------------------
+    for user_id, (drop, latest) in _weekly_accuracy_drops(student_ids).items():
+        signals[user_id].append({
+            "kind": "accuracy_drop",
+            "label": "Ճշգրտությունն ընկնում է",
+            "value": drop,
+            "detail": f"{latest}% այս շաբաթ ({drop} տոկոսային կետով ցածր)։",
+        })
+
+    # --- Repeated mistakes on one topic -----------------------------------
+    window_start = now - timedelta(days=REPEATED_MISTAKE_WINDOW_DAYS)
+    worst_topic: dict = {}
+    for row in (
+        MistakeEntry.objects.filter(user_id__in=student_ids, created_at__gte=window_start)
+        .values("user_id", "subject_name", "topic_label")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    ):
+        if row["count"] < REPEATED_MISTAKE_MIN or row["user_id"] in worst_topic:
+            continue
+        worst_topic[row["user_id"]] = row
+    for user_id, row in worst_topic.items():
+        topic = row["topic_label"] or row["subject_name"]
+        signals[user_id].append({
+            "kind": "repeated_mistakes",
+            "label": "Կրկնվող սխալներ",
+            "value": row["count"],
+            "detail": f"{topic} — {row['count']} սխալ վերջին ամսում։",
+        })
+
+    # --- Weak topic (FK-backed mastery, practice subjects only) -----------
+    seen_weak = set()
+    for tm in (
+        TopicMastery.objects.filter(
+            user_id__in=student_ids,
+            mastery_score__isnull=False,
+            mastery_score__lt=WEAK_MASTERY_THRESHOLD,
+            attempts_count__gte=WEAK_MASTERY_MIN_ATTEMPTS,
+        )
+        .select_related("subtopic")
+        .order_by("mastery_score")
+    ):
+        if tm.user_id in seen_weak:
+            continue
+        seen_weak.add(tm.user_id)
+        signals[tm.user_id].append({
+            "kind": "weak_topic",
+            "label": "Թույլ թեմա",
+            "value": round(tm.mastery_score, 1),
+            "detail": f"{tm.subtopic.name} — {round(tm.mastery_score)}% յուրացում։",
+        })
+
+    # --- Poor most-recent mock exam ---------------------------------------
+    seen_exam = set()
+    for attempt in (
+        MockExamAttempt.objects.filter(
+            user_id__in=student_ids,
+            status=MockExamAttemptStatus.COMPLETED,
+            scaled_score__isnull=False,
+        )
+        .select_related("exam")
+        .order_by("-completed_at")
+    ):
+        if attempt.user_id in seen_exam:
+            continue
+        seen_exam.add(attempt.user_id)
+        if attempt.scaled_score < LOW_TEST_SCORE_THRESHOLD:
+            signals[attempt.user_id].append({
+                "kind": "low_test_score",
+                "label": "Ցածր թեստի արդյունք",
+                "value": round(attempt.scaled_score, 1),
+                "detail": f"{attempt.exam.title} — {round(attempt.scaled_score)} միավոր։",
+            })
+
+    # --- Overdue assignments ----------------------------------------------
+    for row in (
+        Assignment.objects.filter(
+            teacher=teacher,
+            student_id__in=student_ids,
+            due_date__isnull=False,
+            due_date__lt=now,
+            status__in=[AssignmentStatus.ASSIGNED, AssignmentStatus.IN_PROGRESS],
+        )
+        .values("student_id")
+        .annotate(count=Count("id"))
+    ):
+        signals[row["student_id"]].append({
+            "kind": "overdue_assignment",
+            "label": "Ուշացած առաջադրանք",
+            "value": row["count"],
+            "detail": f"{row['count']} առաջադրանք ժամկետանց է։",
+        })
+
+    flagged_ids = [sid for sid, s in signals.items() if s]
+    if not flagged_ids:
+        return []
+
+    user_by_id = {
+        u.id: u
+        for u in get_user_model().objects.filter(id__in=flagged_ids).select_related("profile")
+    }
+
+    rows = [
+        {"student": user_by_id[sid], "signals": signals[sid]}
+        for sid in flagged_ids
+        if sid in user_by_id
+    ]
+    # Most-signals first: the students in the deepest trouble lead the list.
+    rows.sort(key=lambda r: len(r["signals"]), reverse=True)
+    return rows

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CircleCheck, CircleX } from "lucide-react";
 import { retryMistake, type MistakeEntry, type MistakeRetryResult } from "../../api/mistakes";
 import { MathText } from "../MathText";
 import { Button } from "../ui/Button";
@@ -12,7 +13,7 @@ const TEXT_TYPES = new Set(["short_answer", "free_response"]);
 const STATEMENT_TYPES = new Set(["true_false", "multi_statement"]);
 
 const SUBMIT_BUTTON =
-  "mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-50";
+  "mt-3 rounded-[var(--radius)] bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-50";
 
 interface Props {
   entry: MistakeEntry;
@@ -42,12 +43,19 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
   if (result) {
     return (
       <div
-        className={`mt-3 rounded-md border p-4 ${
+        className={`mt-3 rounded-[var(--radius)] border p-4 ${
           result.is_correct ? "border-correct bg-correct-bg" : "border-incorrect bg-incorrect-bg"
         }`}
       >
-        <p className={`font-medium ${result.is_correct ? "text-correct" : "text-incorrect"}`}>
-          {result.is_correct ? "Ճիշտ է հիմա 🎉" : "Դեռ սխալ է"}
+        {/* Correctness was carried by a colour, a word and a 🎉. The icon
+            makes it legible in greyscale, which is the point of rule 7. */}
+        <p className={`flex items-center gap-1.5 font-medium ${result.is_correct ? "text-correct" : "text-incorrect"}`}>
+          {result.is_correct ? (
+            <CircleCheck size={16} strokeWidth={2} aria-hidden />
+          ) : (
+            <CircleX size={16} strokeWidth={2} aria-hidden />
+          )}
+          {result.is_correct ? "Ճիշտ է հիմա" : "Դեռ սխալ է"}
         </p>
         {!result.is_correct && (
           <p className="mt-1 text-sm text-text">
@@ -65,7 +73,7 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
 
   if (entry.source === "flashcard") {
     return (
-      <div className="mt-3 rounded-md border border-border bg-surface-muted p-4">
+      <div className="mt-3 rounded-[var(--radius)] border border-border bg-surface-muted p-4">
         {!flipped ? (
           <Button variant="secondary" size="sm" onClick={() => setFlipped(true)}>
             Ցույց տալ պատասխանը
@@ -80,7 +88,7 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
                 type="button"
                 disabled={submitting}
                 onClick={() => submit({ knew_it: true })}
-                className="rounded-md border border-correct px-3 py-1.5 text-sm font-medium text-correct transition-colors hover:bg-correct-bg disabled:opacity-50"
+                className="rounded-[var(--radius)] border border-correct px-3 py-1.5 text-sm font-medium text-correct transition-colors hover:bg-correct-bg disabled:opacity-50"
               >
                 Գիտեի
               </button>
@@ -88,7 +96,7 @@ export function MistakeRetryPanel({ entry, onResult }: Props) {
                 type="button"
                 disabled={submitting}
                 onClick={() => submit({ knew_it: false })}
-                className="rounded-md border border-incorrect px-3 py-1.5 text-sm font-medium text-incorrect transition-colors hover:bg-incorrect-bg disabled:opacity-50"
+                className="rounded-[var(--radius)] border border-incorrect px-3 py-1.5 text-sm font-medium text-incorrect transition-colors hover:bg-incorrect-bg disabled:opacity-50"
               >
                 Դեռ չգիտեմ
               </button>

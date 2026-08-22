@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -15,21 +16,28 @@ def record_heartbeat(user) -> StudySession:
     The frontend only calls this while it has observed real activity
     (clicks/keys/scroll/nav) on a learning page, so a heartbeat arriving is
     itself evidence the user was active up to `now`.
+
+    select_for_update below guards against two concurrent heartbeats (e.g.
+    multiple open tabs) both reading "no open session" and double-inserting,
+    or racing to write conflicting last_activity_at values.
     """
     now = timezone.now()
-    session = StudySession.objects.filter(user=user, ended_at__isnull=True).first()
+    with transaction.atomic():
+        session = StudySession.objects.select_for_update().filter(
+            user=user, ended_at__isnull=True,
+        ).first()
 
-    if session is None:
-        return StudySession.objects.create(user=user, last_activity_at=now)
+        if session is None:
+            return StudySession.objects.create(user=user, last_activity_at=now)
 
-    if now - session.last_activity_at > IDLE_THRESHOLD:
-        session.ended_at = session.last_activity_at
-        session.save(update_fields=["ended_at"])
-        return StudySession.objects.create(user=user, last_activity_at=now)
+        if now - session.last_activity_at > IDLE_THRESHOLD:
+            session.ended_at = session.last_activity_at
+            session.save(update_fields=["ended_at"])
+            return StudySession.objects.create(user=user, last_activity_at=now)
 
-    session.last_activity_at = now
-    session.save(update_fields=["last_activity_at"])
-    return session
+        session.last_activity_at = now
+        session.save(update_fields=["last_activity_at"])
+        return session
 
 
 def total_seconds_since(user, since) -> int:

@@ -1,7 +1,10 @@
 import { useMemo } from "react";
+import { CalendarDays } from "lucide-react";
 import type { ActivityDay } from "../../api/profile";
 import { ActivityHeatmap } from "../ActivityHeatmap";
 import { EmptyState } from "../ui/EmptyState";
+import { SkeletonRows } from "../ui/Skeleton";
+import { DataCard } from "../ui/DataCard";
 
 export function ActivityHeatmapSection({ activityDays }: { activityDays: ActivityDay[] | null }) {
   const stats = useMemo(() => {
@@ -22,13 +25,19 @@ export function ActivityHeatmapSection({ activityDays }: { activityDays: Activit
     })) ?? [];
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
-      <p className="mb-3 text-sm font-semibold text-text">📅 Ակտիվության քարտեզ</p>
-
+    <DataCard
+      icon={CalendarDays}
+      title="Ակտիվության քարտեզ"
+      description="Վերջին 365 օրը"
+    >
       {activityDays === null ? (
-        <p className="text-sm text-text-muted">Բեռնվում է...</p>
+        <SkeletonRows count={3} />
       ) : stats && stats.totalActiveDays === 0 ? (
-        <EmptyState icon="📅" title="Դեռ ակտիվություն չկա" />
+        <EmptyState
+          icon={<CalendarDays size={22} strokeWidth={1.75} />}
+          title="Դեռ ակտիվություն չկա"
+          hint="Առաջին իսկ պարապմունքից հետո այստեղ կհայտնվի քո օրերի քարտեզը։"
+        />
       ) : (
         <>
           <ActivityHeatmap points={points} rangeDays={365} />
@@ -40,6 +49,6 @@ export function ActivityHeatmapSection({ activityDays }: { activityDays: Activit
           )}
         </>
       )}
-    </div>
+    </DataCard>
   );
 }

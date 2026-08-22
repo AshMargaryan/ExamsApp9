@@ -14,9 +14,14 @@ export function SeasonHeader({ monthLabel, year, month }: { monthLabel: string; 
 
   return (
     <div className="mb-6">
-      <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Դասակարգում · {monthLabel}</p>
-      <h1 className="mt-0.5 flex items-center gap-2 text-3xl font-bold tracking-tight text-text">
-        <Trophy size={28} strokeWidth={1.75} /> Դասակարգում
+      {/* The eyebrow used to read "Դասակարգում · Օգոստոս" directly above an
+          h1 reading "Դասակարգում" — the same word twice, four pixels apart.
+          The eyebrow now carries only what the title does not: the season. */}
+      <p className="text-[length:var(--text-xs)] font-semibold tracking-[var(--tracking-wide)] text-text-muted">
+        {monthLabel} · սեզոն
+      </p>
+      <h1 className="mt-[var(--space-1)] flex items-center gap-[var(--space-2)] font-display text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text">
+        <Trophy size={26} strokeWidth={1.75} aria-hidden="true" /> Դասակարգում
       </h1>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
         <span>Թոփ 50 սովորողներ</span>

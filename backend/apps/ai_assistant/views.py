@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import Attachment, Conversation, Message, MessageRole
@@ -157,6 +158,10 @@ class ConversationActionView(APIView):
 class MessageListSendView(APIView):
     """GET (paginated-ish list of active messages) / POST (send a message)."""
     permission_classes = [permissions.IsAuthenticated]
+    # POST bills an OpenAI call; scope covers both verbs on this view since
+    # DRF throttles per-view, not per-method — see DEFAULT_THROTTLE_RATES.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-assistant"
 
     def _get_conversation(self, request, conversation_id):
         conversation = get_object_or_404(
@@ -218,6 +223,8 @@ class MessageDetailView(APIView):
 
 class MessageRegenerateView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsMessageOwner]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-assistant"
 
     def post(self, request, pk):
         message = get_object_or_404(Message, pk=pk, conversation__owner=request.user)
@@ -289,13 +296,15 @@ class AttachmentDetailView(APIView):
 # ---------------------------------------------------------------------------
 
 class VoiceTranscribeView(APIView):
-    """POST an audio file, get back {"text": "..."} via the local small_v2
-    Armenian Whisper model running in the voice sidecar. Deliberately doesn't
+    """POST an audio file, get back {"text": "..."} via OpenAI's
+    gpt-4o-mini-transcribe, called through the voice sidecar. Deliberately doesn't
     persist the audio or create an Attachment — the transcript just becomes
     normal message text, so no schema change was needed for this first slice.
     """
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-voice"
 
     def post(self, request):
         audio_file = request.FILES.get("audio")
@@ -323,11 +332,13 @@ class VoiceTranscribeView(APIView):
 
 
 class VoiceSynthesizeView(APIView):
-    """POST {"text": ..., "voice": "hy-AM-AnahitNeural"|"hy-AM-HaykNeural"},
-    get back playable audio/wav bytes via Azure TTS (called by the sidecar,
-    which holds the Azure credentials — Django never sees the Azure key).
+    """POST {"text": ..., "voice": "nova"|"onyx"}, get back playable audio/wav
+    bytes via OpenAI TTS (gpt-4o-mini-tts, called by the sidecar, which holds
+    the OpenAI key — Django never sees it).
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-voice"
 
     def post(self, request):
         serializer = VoiceSynthesizeSerializer(data=request.data)

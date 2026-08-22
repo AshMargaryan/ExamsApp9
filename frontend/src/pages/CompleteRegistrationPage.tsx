@@ -94,7 +94,7 @@ export function CompleteRegistrationPage() {
   }
 
   const inputClass =
-    "mb-4 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary";
+    "mb-4 w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-text focus:border-primary";
   const labelClass = "mb-1 block text-sm text-text-muted";
 
   if (!role) {
@@ -102,18 +102,16 @@ export function CompleteRegistrationPage() {
       <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
         <div className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-sm">
           <h1 className="mb-2 text-2xl font-semibold text-text">Ավարտել գրանցումը</h1>
-          <p className="mb-6 text-sm text-text-muted">Ընտրեք, թե ինչպես եք ցանկանում գրանցվել</p>
+          <p className="mb-6 text-sm text-text-muted">Ընտրիր, թե ինչպես ես ցանկանում գրանցվել</p>
 
           {ROLE_CARDS.map((card) => (
             <button
               key={card.role}
               type="button"
               onClick={() => setRole(card.role)}
-              className="mb-4 w-full rounded-md border border-border bg-bg p-4 text-left transition-colors hover:border-primary last:mb-0"
+              className="mb-4 w-full rounded-[var(--radius)] border border-border bg-bg p-4 text-left transition-colors hover:border-primary last:mb-0"
             >
-              <span className="block font-medium text-text">
-                {card.icon} {card.title}
-              </span>
+              <span className="block font-medium text-text">{card.title}</span>
               <span className="mt-1 block text-sm text-text-muted">{card.description}</span>
             </button>
           ))}
@@ -187,13 +185,13 @@ export function CompleteRegistrationPage() {
 
             <label className={labelClass}>Դպրոց</label>
             <div className="mb-4">
-              <SearchSelect placeholder="Փնտրեք դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
+              <SearchSelect placeholder="Փնտրիր դպրոց..." value={school} onChange={setSchool} search={schoolSearch} />
             </div>
 
-            <label className={labelClass}>Բուհ, որին ցանկանում եք դիմել</label>
+            <label className={labelClass}>Բուհ, որին ցանկանում ես դիմել</label>
             <div className="mb-4">
               <SearchSelect
-                placeholder="Փնտրեք բուհ..."
+                placeholder="Փնտրիր բուհ..."
                 value={university}
                 onChange={setUniversity}
                 search={universitySearch}
@@ -205,7 +203,7 @@ export function CompleteRegistrationPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-md bg-primary py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className="w-full rounded-[var(--radius)] bg-primary py-2 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {submitting ? "..." : "Ավարտել գրանցումը"}
         </button>

@@ -1,11 +1,21 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Check, FileText, ThumbsDown, ThumbsUp } from "lucide-react";
-import { getArticle, submitArticleFeedback, type ArticleDetail, type FeedbackReason } from "../api/help";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Check, ChevronRight, FileText, LifeBuoy, ThumbsDown, ThumbsUp } from "lucide-react";
+import {
+  getArticle, getCategory, submitArticleFeedback,
+  type ArticleDetail, type ArticleSummary, type FeedbackReason,
+} from "../api/help";
 import { MarkdownMessage } from "../components/assistant/MarkdownMessage";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { Field, FormAlert } from "../components/ui/Field";
 import { LinkButton } from "../components/ui/LinkButton";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Section } from "../components/ui/Section";
+import { Select } from "../components/ui/Select";
+import { Skeleton } from "../components/ui/Skeleton";
+import { cn } from "../lib/cn";
 
 const REASON_OPTIONS: { value: FeedbackReason; label: string }[] = [
   { value: "not_solved", label: "Չլուծեց իմ խնդիրը" },
@@ -19,127 +29,229 @@ function ArticleFeedback({ slug }: { slug: string }) {
   const [vote, setVote] = useState<"helpful" | "unhelpful" | "sent" | null>(null);
   const [reason, setReason] = useState<FeedbackReason>("not_solved");
   const [comment, setComment] = useState("");
-  const navigate = useNavigate();
 
-  async function sendHelpful() {
-    setVote("helpful");
-    await submitArticleFeedback(slug, true);
-    setVote("sent");
-  }
+  const [sending, setSending] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  async function sendUnhelpful() {
-    await submitArticleFeedback(slug, false, reason, comment);
-    setVote("sent");
+  // Both were bare `await`s: a rejected request left the control in a state
+  // the render did not handle, so the question simply appeared again with no
+  // explanation of why the answer had not registered.
+  async function send(helpful: boolean) {
+    setSending(true);
+    setFailed(false);
+    try {
+      await submitArticleFeedback(slug, helpful, helpful ? undefined : reason, helpful ? undefined : comment);
+      setVote("sent");
+    } catch {
+      setFailed(true);
+    } finally {
+      setSending(false);
+    }
   }
 
   if (vote === "sent") {
     return (
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-5 text-center">
-        <p className="flex items-center justify-center gap-1.5 text-sm text-text">
-          <Check size={14} strokeWidth={1.75} /> Շնորհակալություն կարծիքի համար
+      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)] text-center">
+        <p className="flex items-center justify-center gap-1.5 text-[length:var(--text-sm)] text-text">
+          <Check size={14} strokeWidth={1.75} aria-hidden className="text-correct" /> Շնորհակալություն կարծիքի համար
         </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-surface p-5">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-[var(--space-5)]">
       {vote !== "unhelpful" ? (
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-text">Օգտակա՞ր էր այս հոդվածը</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={sendHelpful}
-              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-correct hover:text-correct"
-            >
-              <ThumbsUp size={14} strokeWidth={1.75} /> Այո
-            </button>
-            <button
-              type="button"
-              onClick={() => setVote("unhelpful")}
-              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-incorrect hover:text-incorrect"
-            >
-              <ThumbsDown size={14} strokeWidth={1.75} /> Ոչ
-            </button>
+        <div>
+          {failed && <FormAlert message="Կարծիքը չհաջողվեց ուղարկել։ Փորձիր կրկին։" />}
+          <div className="flex flex-wrap items-center justify-between gap-[var(--space-3)]">
+            <p className="text-[length:var(--text-sm)] font-medium text-text">Օգտակա՞ր էր այս հոդվածը</p>
+            <div className="flex gap-[var(--space-2)]">
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={sending}
+                onClick={() => send(true)}
+                iconLeft={<ThumbsUp size={14} strokeWidth={1.75} aria-hidden />}
+              >
+                Այո
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setVote("unhelpful")}
+                iconLeft={<ThumbsDown size={14} strokeWidth={1.75} aria-hidden />}
+              >
+                Ոչ
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium text-text">Ի՞նչն էր անհարմար</p>
-          <select
-            value={reason}
-            onChange={(e) => setReason(e.target.value as FeedbackReason)}
-            className="rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
-          >
-            {REASON_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Ասեք ավելին (կամընտիր)"
-            rows={2}
-            className="resize-none rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-          />
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={sendUnhelpful}
-              className="rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-primary-contrast hover:opacity-90"
-            >
-              Ուղարկել
-            </button>
-            <Button variant="secondary" size="sm" onClick={() => navigate(`/help/tickets?article=${slug}`)}>
-              Դեռ խնդի՞ր ունեք → Դիմել աջակցության թիմին
-            </Button>
-          </div>
+        <div>
+          <p className="mb-[var(--space-3)] text-[length:var(--text-sm)] font-medium text-text">Ի՞նչն էր անհարմար</p>
+          {failed && <FormAlert message="Կարծիքը չհաջողվեց ուղարկել։ Փորձիր կրկին։" />}
+          <Field label="Պատճառը">
+            {({ id }) => (
+              <Select
+                id={id}
+                value={reason}
+                onChange={(v) => setReason(v as FeedbackReason)}
+                options={REASON_OPTIONS}
+              />
+            )}
+          </Field>
+          <Field label="Մանրամասներ" hint="Կամընտիր">
+            {(props) => (
+              <textarea
+                {...props}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Ասա ավելին…"
+                rows={2}
+                className={cn(props.className, "resize-none")}
+              />
+            )}
+          </Field>
+          <Button size="sm" loading={sending} onClick={() => send(false)}>
+            Ուղարկել
+          </Button>
         </div>
       )}
     </div>
   );
 }
 
-export function HelpArticlePage() {
-  const { articleSlug } = useParams<{ articleSlug: string }>();
-  const [article, setArticle] = useState<ArticleDetail | null>(null);
-  const [notFound, setNotFound] = useState(false);
-
-  useEffect(() => {
-    if (!articleSlug) return;
-    setArticle(null);
-    setNotFound(false);
-    getArticle(articleSlug).then(setArticle).catch(() => setNotFound(true));
-  }, [articleSlug]);
-
+/*
+  The article page used to end at the thumbs-up/thumbs-down row. If the
+  article had not solved the problem, the only way onward was to vote "Ոչ"
+  and find a support link inside the follow-up form — the escape hatch was
+  behind a negative rating, and there was no route to the next article at
+  all. Both are unconditional now.
+*/
+function NextSteps({ article, siblings }: { article: ArticleDetail; siblings: ArticleSummary[] }) {
   return (
-    <div className="mx-auto max-w-2xl px-4 pt-8 pb-28">
-      {article ? (
-        <LinkButton to={`/help/${article.category.key}`} className="mb-4">
-          ← {article.category.name}
-        </LinkButton>
-      ) : (
-        <LinkButton to="/help" className="mb-4">← Օգնության կենտրոն</LinkButton>
+    <>
+      {siblings.length > 0 && (
+        <Section title="Նույն թեմայով" level={3} spacing="default">
+          <ul className="flex flex-col gap-[var(--space-2)]">
+            {siblings.map((a) => (
+              <li key={a.id}>
+                <Link
+                  to={`/help/articles/${a.slug}`}
+                  className={cn(
+                    "flex items-center justify-between gap-[var(--space-3)] rounded-[var(--radius-md)]",
+                    "border border-border bg-surface px-[var(--space-4)] py-[var(--space-3)]",
+                    "text-[length:var(--text-sm)] text-text transition-colors hover:border-primary",
+                  )}
+                >
+                  <span className="min-w-0 truncate">{a.title}</span>
+                  <ChevronRight size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
       )}
 
-      {notFound ? (
-        <EmptyState icon={<FileText size={26} strokeWidth={1.75} />} title="Հոդվածը չի գտնվել" />
+      <Section title="Դեռ խնդի՞ր ունես" level={3} spacing="default">
+        <p className="mb-[var(--space-3)] text-[length:var(--text-sm)] text-text-muted">
+          Բացիր հարցում՝ այս հոդվածի հետ կապված, և թիմը կպատասխանի քեզ։
+        </p>
+        <div className="flex flex-wrap gap-[var(--space-3)]">
+          <LinkButton
+            to={`/help/tickets?article=${article.slug}`}
+            // The slug is the contract the form needs; the title is what the
+            // student should read there. Carried in router state so the form
+            // never has to print `reset-password` at a person.
+            state={{ articleTitle: article.title }}
+            variant="primary"
+            size="md"
+            iconLeft={<LifeBuoy size={15} strokeWidth={1.75} aria-hidden />}
+          >
+            Բացել հարցում
+          </LinkButton>
+          <LinkButton to="/assistant" variant="secondary" size="md">
+            Հարցնել AI Օգնականին
+          </LinkButton>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+export function HelpArticlePage() {
+  const { articleSlug } = useParams<{ articleSlug: string }>();
+  const navigate = useNavigate();
+  const [article, setArticle] = useState<ArticleDetail | null>(null);
+  const [siblings, setSiblings] = useState<ArticleSummary[]>([]);
+  // "Not found" and "could not reach the server" are different answers and
+  // used to share one branch, so an offline student was told the article did
+  // not exist — and offered no retry, because there is nothing to retry about
+  // a 404.
+  const [status, setStatus] = useState<"loading" | "ready" | "missing" | "failed">("loading");
+
+  const load = useCallback(() => {
+    if (!articleSlug) return;
+    setStatus("loading");
+    setArticle(null);
+    setSiblings([]);
+    getArticle(articleSlug)
+      .then((a) => {
+        setArticle(a);
+        setStatus("ready");
+        // Supplementary — the page is complete without it.
+        getCategory(a.category.key)
+          .then(({ articles }) => setSiblings(articles.filter((s) => s.slug !== a.slug).slice(0, 3)))
+          .catch(() => setSiblings([]));
+      })
+      .catch((e: { response?: { status?: number } }) => {
+        setStatus(e?.response?.status === 404 ? "missing" : "failed");
+      });
+  }, [articleSlug]);
+
+  useEffect(load, [load]);
+
+  return (
+    <div className="mx-auto max-w-2xl px-[var(--space-4)] py-[var(--space-8)]">
+      {status === "missing" || status === "failed" ? (
+        <>
+          <PageHeader title="Հոդված" back={{ to: "/help", label: "Օգնության կենտրոն" }} />
+          {status === "missing" ? (
+            <EmptyState
+              icon={<FileText size={26} strokeWidth={1.75} aria-hidden />}
+              title="Հոդվածը չի գտնվել"
+              hint="Հնարավոր է՝ հասցեն փոխվել է։ Փնտրիր օգնության կենտրոնում։"
+              cta={{ label: "Դեպի օգնության կենտրոն", onClick: () => navigate("/help") }}
+            />
+          ) : (
+            <ErrorState
+              title="Հոդվածը չհաջողվեց բեռնել։"
+              hint="Ստուգիր կապը և փորձիր կրկին։"
+              onRetry={load}
+            />
+          )}
+        </>
       ) : !article ? (
-        <div className="flex flex-col gap-4">
-          <div className="h-8 w-3/4 animate-pulse rounded bg-surface-muted" />
-          <div className="h-40 animate-pulse rounded-[var(--radius)] bg-surface-muted" />
+        <div className="flex flex-col gap-[var(--space-4)]">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-9 w-3/4" />
+          <Skeleton className="h-40 w-full" />
         </div>
       ) : (
         <>
-          <h1 className="mb-1 text-2xl font-semibold text-text">{article.title}</h1>
-          {article.summary && <p className="mb-6 text-sm text-text-muted">{article.summary}</p>}
+          <PageHeader
+            back={{ to: `/help/${article.category.key}`, label: article.category.name }}
+            title={article.title}
+            description={article.summary || undefined}
+          />
 
-          <div className="mb-8">
+          <div className="mb-[var(--space-8)]">
             <MarkdownMessage content={article.content} />
           </div>
 
           <ArticleFeedback slug={article.slug} />
+          <NextSteps article={article} siblings={siblings} />
         </>
       )}
     </div>

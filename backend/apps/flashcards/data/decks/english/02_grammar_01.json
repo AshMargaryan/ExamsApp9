@@ -1,0 +1,49 @@
+{
+  "deck_id": "FC-ENG-GRAM-001",
+  "title": "Անգլերեն — Քերականություն 1",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "Which verb never takes the -ing (continuous) form?",
+      "back": "know",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "\"At the exact same instant, both drivers ___ lanes.\" Which form is correct for two short, simultaneous actions?",
+      "back": "changed (Past Simple)",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "\"Whenever thunder rumbled, our dog ___ under the bed.\" Repeated past habits use:",
+      "back": "Past Simple, even if each event was long",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "\"The museum has received two million visitors since it opened.\" A specific countable number pushes you toward:",
+      "back": "Present Perfect Simple",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "Which signal most strongly suggests Present Perfect Continuous over Simple?",
+      "back": "\"still haven't\" / \"keeps + verb-ing\" (unfinished, ongoing)",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "",
+      "front": "\"By the time the police arrived, the thief ___ into the crowd.\" (disappear)",
+      "back": "had already disappeared (instant action)",
+      "hint": ""
+    }
+  ]
+}

@@ -3,7 +3,10 @@ import { createPortal } from "react-dom";
 import { Archive, ArchiveRestore, Pencil, Pin, PinOff, Trash2 } from "lucide-react";
 import type { Conversation } from "../../api/assistant";
 import { Button } from "../ui/Button";
-import { HamburgerIcon, MoreIcon, PlusCircleIcon, SearchIcon } from "./icons";
+import { HamburgerIcon, MoreIcon, PlusCircleIcon } from "./icons";
+import { SearchField } from "../ui/SearchField";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 
 function ConversationRow({
   conversation,
@@ -75,7 +78,7 @@ function ConversationRow({
             if (e.key === "Escape") setEditing(false);
           }}
           onBlur={saveRename}
-          className="w-full rounded border border-primary bg-surface px-2 py-1 text-sm text-text"
+          className={cn(fieldInputClass, "border-primary bg-surface px-[var(--space-2)] py-[var(--space-1)] text-[length:var(--text-sm)]")}
         />
       </div>
     );
@@ -83,14 +86,16 @@ function ConversationRow({
 
   return (
     <div
-      className={`flex items-center justify-between rounded-xl border-l-2 px-3 py-2.5 text-[15px] transition-colors ${
+      className={`flex items-center justify-between rounded-[var(--radius)] border-l-2 px-3 py-2.5 text-[15px] transition-colors ${
         active
           ? "border-primary bg-surface-muted font-medium text-text"
           : "border-transparent text-text hover:bg-surface-muted"
       }`}
     >
       <button type="button" onClick={onSelect} className="min-w-0 flex-1 truncate text-left">
-        {conversation.is_pinned && "📌 "}
+        {conversation.is_pinned && (
+          <Pin size={12} strokeWidth={2} aria-hidden className="mr-1 inline-block align-[-1px] text-text-muted" />
+        )}
         {conversation.title || "Նոր զրույց"}
       </button>
 
@@ -112,7 +117,7 @@ function ConversationRow({
             <div
               ref={menuRef}
               style={{ top: menuPos.top, right: menuPos.right }}
-              className="fixed z-50 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-lg"
+              className="fixed z-50 w-44 overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 shadow-lg"
             >
               <button
                 type="button"
@@ -224,15 +229,13 @@ export function ConversationSidebar({
       </div>
 
       <div className="px-3 py-3">
-        <div className="relative">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
-          <input
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Փնտրել"
-            className="w-full appearance-none rounded-full border border-border bg-surface-muted py-1.5 pr-3 pl-9 text-sm text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-          />
-        </div>
+        <SearchField
+          value={search}
+          onChange={onSearchChange}
+          label="Փնտրել զրույցներում"
+          placeholder="Փնտրել"
+          className="bg-surface-muted text-[length:var(--text-sm)]"
+        />
       </div>
 
       <Button

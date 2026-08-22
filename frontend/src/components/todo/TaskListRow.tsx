@@ -79,7 +79,7 @@ export function TaskListRow({
         items={[
           { key: "edit", label: "Խմբագրել", icon: <Pencil size={15} />, onSelect: () => onEdit(task) },
           { key: "duplicate", label: "Կրկնօրինակել", icon: <Copy size={15} />, onSelect: () => onDuplicate(task) },
-          { key: "delete", label: "Ջնջել", icon: <Trash2 size={15} />, tone: "danger", onSelect: () => onDelete(task) },
+          { key: "delete", divider: true, label: "Ջնջել", icon: <Trash2 size={15} />, tone: "danger", onSelect: () => onDelete(task) },
         ]}
       />
     </div>

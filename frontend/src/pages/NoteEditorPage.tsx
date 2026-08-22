@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -22,7 +22,24 @@ import {
   uploadAttachment,
   type Document as NoteDocument,
 } from "../api/notes";
-import { ConfirmModal } from "../components/ConfirmModal";
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  Loader2,
+  MoreHorizontal,
+  Paperclip,
+  Pin,
+  Star,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Dropdown } from "../components/ui/Dropdown";
+import { ErrorState } from "../components/ui/ErrorState";
+import { Skeleton } from "../components/ui/Skeleton";
+import { cn } from "../lib/cn";
+import { CanvasEditor } from "../components/notes/canvas/CanvasEditor";
 import { AuthenticatedImage } from "../components/notes/editor/AuthenticatedImage";
 import { EditorToolbar } from "../components/notes/editor/EditorToolbar";
 import { MathInline } from "../components/notes/editor/MathInline";
@@ -30,6 +47,7 @@ import { Button } from "../components/ui/Button";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
 import { useDebouncedCallback } from "../hooks/useDebouncedCallback";
 import { downloadAuthenticatedFile } from "../lib/authenticatedFile";
+import { formatBytes } from "../lib/formatBytes";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 type UpdatePatch = Parameters<typeof updateDocument>[1];
@@ -40,6 +58,7 @@ export function NoteEditorPage() {
   const { showError, showSuccess } = useToast();
 
   const [doc, setDoc] = useState<NoteDocument | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [title, setTitle] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -50,8 +69,9 @@ export function NoteEditorPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const loadDoc = useCallback(() => {
     if (!id) return;
+    setLoadError(false);
     getDocument(id)
       .then((d) => {
         setDoc(d);
@@ -60,17 +80,41 @@ export function NoteEditorPage() {
         setIsFavorite(d.is_favorite);
         setIsPinned(d.is_pinned);
       })
-      .catch((e) => showError(extractErrorMessage(e)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      // Was `.catch(showError)`, which left `doc` at null — i.e. the note
+      // read "Բեռնվում է..." forever behind a toast that had already gone.
+      .catch(() => setLoadError(true));
   }, [id]);
 
-  const [persist, flushPersist] = useDebouncedCallback((patch: UpdatePatch) => {
-    if (!id) return;
-    setSaveStatus("saving");
-    updateDocument(id, patch)
-      .then(() => setSaveStatus("saved"))
-      .catch(() => setSaveStatus("error"));
-  }, 800);
+  useEffect(loadDoc, [loadDoc]);
+
+  // The last patch that failed, so the error state can offer a retry that
+  // actually retries. Previously the label promised "կրկին կփորձենք" and
+  // nothing ever did — the debounced save only fires again on the next edit,
+  // so a student who stopped typing after a failure silently lost the change.
+  const failedPatchRef = useRef<UpdatePatch | null>(null);
+
+  const savePatch = useCallback(
+    (patch: UpdatePatch) => {
+      if (!id) return;
+      setSaveStatus("saving");
+      updateDocument(id, patch)
+        .then(() => {
+          failedPatchRef.current = null;
+          setSaveStatus("saved");
+        })
+        .catch(() => {
+          failedPatchRef.current = patch;
+          setSaveStatus("error");
+        });
+    },
+    [id],
+  );
+
+  const [persist, flushPersist] = useDebouncedCallback(savePatch, 800);
+
+  function retrySave() {
+    if (failedPatchRef.current) savePatch(failedPatchRef.current);
+  }
 
   useEffect(() => {
     return () => flushPersist();
@@ -78,14 +122,14 @@ export function NoteEditorPage() {
   }, [id]);
 
   const editor = useEditor(
-    doc
+    doc && doc.kind !== "canvas"
       ? {
           extensions: [
             StarterKit,
             Underline,
             Highlight,
             Link.configure({ openOnClick: false }),
-            Placeholder.configure({ placeholder: "Սկսեք գրել..." }),
+            Placeholder.configure({ placeholder: "Սկսիր գրել..." }),
             TaskList,
             TaskItem.configure({ nested: true }),
             Table.configure({ resizable: true }),
@@ -208,21 +252,27 @@ export function NoteEditorPage() {
     }
   }
 
-  if (!doc) {
-    return <div className="mx-auto max-w-3xl px-4 py-8 text-text-muted">Բեռնվում է...</div>;
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <ErrorState title="Չհաջողվեց բացել նշումը։" onRetry={loadDoc} />
+      </div>
+    );
   }
 
-  const statusLabel =
-    saveStatus === "saving"
-      ? "↻ Պահպանվում է..."
-      : saveStatus === "error"
-        ? "⚠️ Չհաջողվեց համաժամեցնել, կրկին կփորձենք"
-        : saveStatus === "saved"
-          ? "✓ Պահպանված է"
-          : "";
+  if (!doc) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8" aria-busy="true">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="mt-6 h-10 w-2/3" />
+        <Skeleton className="mt-4 h-4 w-24" />
+        <Skeleton className="mt-6 h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className={doc.kind === "canvas" ? "mx-auto max-w-full px-4 py-6" : "mx-auto max-w-3xl px-4 py-8"}>
       {doc.deleted_at && (
         <div className="mb-4 flex items-center justify-between rounded-[var(--radius)] border border-incorrect bg-incorrect-bg px-4 py-3 text-sm text-incorrect">
           <span>Այս նշումը աղբարկղում է։</span>
@@ -232,34 +282,62 @@ export function NoteEditorPage() {
         </div>
       )}
 
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/notes")}>
-          ← Նշումներ
+      <div className="mb-[var(--space-4)] flex items-center justify-between gap-[var(--space-3)]">
+        <Button
+          variant="ghost"
+          size="sm"
+          iconLeft={<ArrowLeft size={15} strokeWidth={1.75} />}
+          onClick={() => navigate("/notes")}
+        >
+          Նշումներ
         </Button>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-text-muted">{statusLabel}</span>
-          <button
-            type="button"
+        <div className="flex items-center gap-[var(--space-2)]">
+          <SaveIndicator status={saveStatus} onRetry={retrySave} />
+          <ToggleIconButton
+            pressed={isPinned}
             onClick={togglePin}
-            title="Ամրակցել"
-            className={isPinned ? "text-primary" : "text-text-muted hover:text-text"}
-          >
-            📌
-          </button>
-          <button
-            type="button"
+            label={isPinned ? "Հանել ամրակցումը" : "Ամրակցել"}
+            icon={<Pin size={16} strokeWidth={2} />}
+          />
+          <ToggleIconButton
+            pressed={isFavorite}
             onClick={toggleFavorite}
-            title="Ընտրյալ"
-            className={isFavorite ? "text-primary" : "text-text-muted hover:text-text"}
-          >
-            ⭐
-          </button>
-          <Button variant="secondary" size="sm" onClick={handleDuplicate}>
-            Կրկնօրինակել
-          </Button>
-          <Button variant="danger" size="sm" onClick={() => setConfirmingDelete(true)}>
-            Ջնջել
-          </Button>
+            label={isFavorite ? "Հանել ընտրյալներից" : "Ավելացնել ընտրյալներում"}
+            icon={<Star size={16} strokeWidth={2} />}
+          />
+          {/*
+            Delete used to be a solid `variant="danger"` button here — the
+            single loudest control on the page, sitting one tab stop from the
+            note's own text. Deleting a note is rare and irreversible-feeling;
+            it belongs behind the overflow, not in front of it. (§41)
+          */}
+          <Dropdown
+            align="end"
+            renderTrigger={(props) => (
+              <button
+                {...props}
+                aria-label="Նշումի գործողություններ"
+                className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-text-muted transition-colors hover:bg-surface-muted hover:text-text"
+              >
+                <MoreHorizontal size={17} strokeWidth={2} />
+              </button>
+            )}
+            items={[
+              {
+                key: "duplicate",
+                label: "Կրկնօրինակել",
+                icon: <Copy size={15} strokeWidth={1.75} />,
+                onSelect: handleDuplicate,
+              },
+              {
+                key: "delete",
+                label: "Ջնջել",
+                tone: "danger",
+                icon: <Trash2 size={15} strokeWidth={1.75} />,
+                onSelect: () => setConfirmingDelete(true),
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -267,7 +345,8 @@ export function NoteEditorPage() {
         value={title}
         onChange={(e) => handleTitleChange(e.target.value)}
         placeholder="Անանուն նշում"
-        className="mb-2 w-full border-none bg-transparent text-3xl font-bold text-text outline-none placeholder:text-text-muted"
+        aria-label="Նշումի վերնագիր"
+        className="mb-[var(--space-2)] w-full border-none bg-transparent font-display text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-display)] tracking-[var(--tracking-tight)] text-text outline-none placeholder:text-text-muted"
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-1.5">
@@ -277,7 +356,12 @@ export function NoteEditorPage() {
             className="flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-1 text-xs text-text-muted"
           >
             #{tag}
-            <button type="button" onClick={() => removeTag(tag)} className="hover:text-incorrect">
+            <button
+              type="button"
+              onClick={() => removeTag(tag)}
+              aria-label={`Հեռացնել «${tag}» պիտակը`}
+              className="rounded-[var(--radius-full)] leading-none hover:text-incorrect"
+            >
               ×
             </button>
           </span>
@@ -296,18 +380,22 @@ export function NoteEditorPage() {
         />
       </div>
 
-      <div className="rounded-[var(--radius)] border border-border bg-surface">
-        {editor && (
-          <EditorToolbar
-            editor={editor}
-            onInsertImage={() => imageInputRef.current?.click()}
-            onInsertAttachment={() => fileInputRef.current?.click()}
-          />
-        )}
-        <div className="min-h-[50vh] px-4 py-4">
-          <EditorContent editor={editor} />
+      {doc.kind === "canvas" ? (
+        <CanvasEditor content={doc.content} onChange={(content) => persist({ content })} />
+      ) : (
+        <div className="rounded-[var(--radius)] border border-border bg-surface">
+          {editor && (
+            <EditorToolbar
+              editor={editor}
+              onInsertImage={() => imageInputRef.current?.click()}
+              onInsertAttachment={() => fileInputRef.current?.click()}
+            />
+          )}
+          <div className="min-h-[50vh] px-4 py-4">
+            <EditorContent editor={editor} />
+          </div>
         </div>
-      </div>
+      )}
 
       <input
         ref={imageInputRef}
@@ -341,22 +429,105 @@ export function NoteEditorPage() {
               onClick={() => downloadAuthenticatedFile(a.download_url, a.original_filename)}
               className="flex w-full items-center gap-2 rounded-[var(--radius)] border border-border bg-surface px-3 py-2 text-left text-sm text-text hover:border-primary"
             >
-              <span>📄</span>
+              <Paperclip size={14} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
               <span className="truncate">{a.original_filename}</span>
-              <span className="ml-auto text-xs text-text-muted">{Math.round(a.file_size / 1024)} ԿԲ</span>
+              <span className="ml-auto shrink-0 text-xs text-text-muted">{formatBytes(a.file_size)}</span>
             </button>
           ))}
         </div>
       )}
 
-      {confirmingDelete && (
-        <ConfirmModal
-          message={`Ջնջե՞լ «${title || "(անանուն)"}» նշումը։`}
-          confirmLabel="Ջնջել"
-          onConfirm={handleDelete}
-          onCancel={() => setConfirmingDelete(false)}
-        />
-      )}
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title={`Ջնջե՞լ «${title || "(անանուն)"}» նշումը`}
+        description="Նշումը կտեղափոխվի աղբարկղ, որտեղից կարող ես վերականգնել այն։"
+        confirmLabel="Ջնջել"
+        onConfirm={handleDelete}
+      />
     </div>
+  );
+}
+
+/** A pin/favourite toggle. `aria-pressed` is what makes it a toggle rather
+ *  than a button that happens to change colour — the previous version was a
+ *  bare emoji with a `title`, which a screen reader reports as
+ *  "pushpin, Ամրակցել" whether it is on or off. */
+function ToggleIconButton({
+  pressed,
+  onClick,
+  label,
+  icon,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  label: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border transition-colors",
+        "duration-[var(--motion-fast)] ease-[var(--ease-out)]",
+        pressed
+          ? "border-primary-line bg-primary-bg text-primary"
+          : "border-transparent text-text-muted hover:bg-surface-muted hover:text-text",
+      )}
+    >
+      {icon}
+    </button>
+  );
+}
+
+/*
+  Whether the student's work is safe.
+
+  This was a `text-xs text-text-muted` string that rendered as empty in the
+  idle state, next to a solid red delete button — so the loudest thing on the
+  page was the destructive action and the quietest was the reassurance. It is
+  now always present once anything has been typed, and its error branch
+  offers a retry that actually retries, instead of the old label's promise
+  that "we'll try again" when nothing would.
+*/
+function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
+  if (status === "idle") return null;
+
+  if (status === "error") {
+    return (
+      <button
+        type="button"
+        onClick={onRetry}
+        className="flex items-center gap-[var(--space-2)] rounded-[var(--radius-md)] border border-incorrect bg-incorrect-bg px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-xs)] font-medium text-incorrect"
+      >
+        <TriangleAlert size={13} strokeWidth={2} aria-hidden="true" />
+        Չպահպանվեց — փորձել կրկին
+      </button>
+    );
+  }
+
+  return (
+    <span
+      aria-live="polite"
+      className="flex items-center gap-[var(--space-2)] text-[length:var(--text-xs)] text-text-muted"
+    >
+      {status === "saving" ? (
+        <>
+          {/* motion-safe: a permanently spinning icon is exactly what
+              prefers-reduced-motion is for. */}
+          <Loader2 size={13} strokeWidth={2} aria-hidden="true" className="motion-safe:animate-spin" />
+          Պահպանվում է...
+        </>
+      ) : (
+        <>
+          <Check size={13} strokeWidth={2.5} aria-hidden="true" className="text-correct" />
+          Պահպանված է
+        </>
+      )}
+    </span>
   );
 }

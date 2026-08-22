@@ -1,0 +1,204 @@
+/*
+  THE SUBJECT UNIVERSE — motion and staging.
+
+  Everything animated here is `transform`, `opacity` or `filter` on a small
+  element. The per-frame JS writes four custom properties per section and does
+  nothing else; the rest is CSS, so scrolling never enters React's render path.
+
+  Orbits are the one thing that loops. They are paused everywhere except the
+  subject the reader is actually looking at — nine simultaneous systems of
+  orbiting formulas would be roughly sixty compositor animations running to be
+  seen by nobody.
+*/
+
+.su-sky {
+  background: var(--color-night);
+  color-scheme: dark;
+}
+
+/* Section-level scroll choreography. --enter is 0 far away, 1 dead centre. */
+.su-section {
+  --enter: 1;
+  --drift: 0px;
+  --lift: 0px;
+  --grow: 1;
+}
+
+/*
+  The stage is authored at a fixed 640x680 so every orbit radius in the data
+  is a real pixel value. Fitting it to the viewport therefore has to happen in
+  two places, not one: the wrapper takes the *scaled* size as its layout box,
+  and the stage inside scales from its top-left corner to fill exactly that.
+
+  Scaling the wrapper alone was wrong and visibly so — `transform` does not
+  shrink a layout box, so on a 375px phone a 640px-wide stage still reserved
+  640px, overflowed both edges under the section's `overflow: hidden`, and
+  left ~300px of dead space below the artwork.
+*/
+.su-stage-wrap {
+  width: calc(640px * var(--fit, 1));
+  height: calc(680px * var(--fit, 1));
+  transform: translate3d(var(--drift), var(--lift), 0) scale(var(--grow));
+  opacity: var(--enter);
+  filter: blur(calc((1 - var(--enter)) * 5px));
+  will-change: transform, opacity;
+}
+
+.su-stage {
+  transform: scale(var(--fit, 1));
+  transform-origin: top left;
+}
+
+.su-copy {
+  /* Copy trails the stage slightly — the parallax that stops the pair reading
+     as one flat card sliding by. */
+  transform: translate3d(calc(var(--drift) * -0.45), calc(var(--lift) * 0.5), 0);
+  opacity: var(--enter);
+}
+
+@keyframes su-orbit {
+  from {
+    transform: rotate(var(--start, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--start, 0deg) + 360deg));
+  }
+}
+
+.su-orbit {
+  animation-name: su-orbit;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+}
+
+@keyframes su-spin {
+  to {
+    transform: rotate(-14deg) scaleY(0.36) rotate(360deg);
+  }
+}
+
+.su-spin {
+  animation: su-spin 20s linear infinite;
+  animation-play-state: paused;
+}
+
+@keyframes su-hand {
+  from {
+    transform: translate(-50%, -100%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -100%) rotate(360deg);
+  }
+}
+
+.su-hour,
+.su-minute {
+  transform: translate(-50%, -100%);
+  animation-name: su-hand;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+}
+
+/* A real clock, at real speed. It is a physics prop, not a spinner. */
+.su-hour {
+  animation-duration: 43200s;
+}
+
+.su-minute {
+  animation-duration: 3600s;
+}
+
+.su-section.is-active .su-orbit,
+.su-section.is-active .su-spin,
+.su-section.is-active .su-hour,
+.su-section.is-active .su-minute {
+  animation-play-state: running;
+}
+
+/* Hovering a system pushes the supporting cast back and brings the headline
+   items forward — the section answers the pointer without moving anything. */
+.su-item,
+.su-central,
+.su-field {
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.su-section:hover .su-central {
+  filter: brightness(1.18) saturate(1.1);
+}
+
+.su-section:hover .su-item:not(.su-item-big) {
+  opacity: 0.35 !important;
+  filter: blur(1.5px);
+}
+
+.su-section:hover .su-item-big {
+  filter: brightness(1.3);
+}
+
+.su-section:hover .su-field {
+  opacity: 1;
+}
+
+/* KaTeX ships its own colours; on this ground they have to be overridden. */
+.su-item .katex,
+.su-item .katex * {
+  color: #f2ead9 !important;
+}
+
+@keyframes su-twinkle {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.su-stars {
+  animation: su-twinkle 6s ease-in-out infinite;
+}
+
+@keyframes su-chevron {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(10px);
+    opacity: 1;
+  }
+}
+
+.su-chevron {
+  animation: su-chevron 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The global reset only zeroes durations, which freezes loops mid-cycle at
+     an arbitrary angle. Removing them outright puts every system at its
+     designed rest pose, which is the composition that was actually drawn. */
+  .su-orbit,
+  .su-spin,
+  .su-hour,
+  .su-minute,
+  .su-stars,
+  .su-chevron {
+    animation: none;
+  }
+
+  .su-stage-wrap {
+    filter: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  .su-copy {
+    transform: none;
+    opacity: 1;
+  }
+}

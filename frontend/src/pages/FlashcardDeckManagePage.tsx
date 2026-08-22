@@ -1,14 +1,31 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  Copy, FolderInput, GraduationCap, Layers, Library, MoreHorizontal, Pencil, Plus,
+  Search, SlidersHorizontal, SquarePen, Star, Trash2, Copy as CopyIcon,
+} from "lucide-react";
+import {
   deleteCard, deleteDeck, duplicateCard, duplicateDeck, getDeckCards, listMyDecks, moveCard,
-  updateDeck, type DeckCards, type DeckFormInput, type Flashcard, type FlashcardDeckSummary,
+  updateDeck, type DeckFormInput, type Flashcard, type FlashcardDeckSummary,
   type FlashcardDifficulty,
 } from "../api/flashcards";
-import { ConfirmModal } from "../components/ConfirmModal";
+import { MathText } from "../components/MathText";
 import { DeckFormModal } from "../components/flashcards/DeckFormModal";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Dropdown, type DropdownItem } from "../components/ui/Dropdown";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { fieldInputClass } from "../components/ui/Field";
+import { IconButton } from "../components/ui/IconButton";
+import { Modal } from "../components/ui/Modal";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { Skeleton } from "../components/ui/Skeleton";
+import { cn } from "../lib/cn";
 import { extractErrorMessage, useToast } from "../context/ToastContext";
-import { LinkButton } from "../components/ui/LinkButton";
+import { useAsyncResource } from "../hooks/useAsyncResource";
 
 type LearnedFilter = "all" | "learned" | "unlearned";
 
@@ -19,7 +36,14 @@ export function FlashcardDeckManagePage() {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
 
-  const [data, setData] = useState<DeckCards | null>(null);
+  // Was `getDeckCards(id).then(setData)` with the whole page gated on `!data`,
+  // so any failure left the skeleton pulsing forever with no error and no way
+  // back — the defect class this project has now fixed on every surface it
+  // has visited.
+  const resource = useAsyncResource(() => getDeckCards(Number(deckId)), [deckId]);
+  const data = resource.data;
+  const reload = resource.retry;
+
   const [search, setSearch] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<FlashcardDifficulty | "all">("all");
   const [tagFilter, setTagFilter] = useState<string | "all">("all");
@@ -32,13 +56,6 @@ export function FlashcardDeckManagePage() {
   const [moveCardTarget, setMoveCardTarget] = useState<Flashcard | null>(null);
   const [otherDecks, setOtherDecks] = useState<FlashcardDeckSummary[] | null>(null);
   const [busy, setBusy] = useState(false);
-
-  function load() {
-    if (!deckId) return;
-    getDeckCards(Number(deckId)).then(setData);
-  }
-
-  useEffect(load, [deckId]);
 
   const allTags = useMemo(() => {
     if (!data) return [];
@@ -60,18 +77,56 @@ export function FlashcardDeckManagePage() {
     });
   }, [data, search, difficultyFilter, tagFilter, favoriteOnly, learnedFilter]);
 
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setDifficultyFilter("all");
+    setTagFilter("all");
+    setFavoriteOnly(false);
+    setLearnedFilter("all");
+  }, []);
+
+  const filtersActive =
+    search.trim() !== "" || difficultyFilter !== "all" || tagFilter !== "all" ||
+    favoriteOnly || learnedFilter !== "all";
+
+  if (resource.isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <Skeleton className="mb-[var(--space-3)] h-4 w-32" />
+        <Skeleton className="mb-[var(--space-6)] h-9 w-2/3" />
+        <Skeleton className="mb-[var(--space-5)] h-11 w-full" />
+        <div className="flex flex-col gap-[var(--space-2)]">
+          {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[72px] w-full" />)}
+        </div>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
-      <div className="mx-auto max-w-4xl animate-pulse px-4 py-8">
-        <div className="mb-6 h-8 w-1/3 rounded bg-surface-muted" />
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="mb-3 h-16 rounded bg-surface-muted" />
-        ))}
+      <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+        <PageHeader title="Փաթեթը" back={{ to: "/flashcards", label: "Բառաքարտեր" }} />
+        <ErrorState
+          title="Փաթեթը չհաջողվեց բեռնել։"
+          hint="Կապը կարող է ընդհատված լինել։ Քարտերը տեղում են։"
+          onRetry={resource.retry}
+        />
       </div>
     );
   }
 
   const { deck } = data;
+  /*
+    Every write endpoint behind this screen is scoped `owner=request.user`, so
+    on a shared library deck rename, duplicate, delete, add-card, edit-card,
+    move-card and delete-card all answer 404. The page used to offer all seven
+    anyway: eleven controls that could only fail, four of them behind a
+    confirmation dialog that promised something irreversible. It is a card
+    browser for a library deck now — which is a real thing to want, since the
+    search, the filters and the per-card progress are all still the student's
+    own — and an editor only for a deck the student actually owns.
+  */
+  const canEdit = deck.is_owned;
 
   async function handleRename(input: DeckFormInput) {
     setBusy(true);
@@ -79,7 +134,7 @@ export function FlashcardDeckManagePage() {
       await updateDeck(deck.id, input);
       showSuccess("Փաթեթը թարմացվեց։");
       setShowRename(false);
-      load();
+      reload();
     } catch (err) {
       showError(extractErrorMessage(err));
     } finally {
@@ -118,7 +173,7 @@ export function FlashcardDeckManagePage() {
       await deleteCard(deleteCardTarget.id);
       showSuccess("Քարտը ջնջվեց։");
       setDeleteCardTarget(null);
-      load();
+      reload();
     } catch (err) {
       showError(extractErrorMessage(err));
     } finally {
@@ -131,7 +186,7 @@ export function FlashcardDeckManagePage() {
     try {
       await duplicateCard(card.id);
       showSuccess("Քարտը կրկնօրինակվեց։");
-      load();
+      reload();
     } catch (err) {
       showError(extractErrorMessage(err));
     } finally {
@@ -141,8 +196,14 @@ export function FlashcardDeckManagePage() {
 
   async function openMoveModal(card: Flashcard) {
     setMoveCardTarget(card);
-    const decks = await listMyDecks();
-    setOtherDecks(decks.filter((d) => d.id !== deck.id));
+    setOtherDecks(null);
+    try {
+      const decks = await listMyDecks();
+      setOtherDecks(decks.filter((d) => d.id !== deck.id));
+    } catch (err) {
+      showError(extractErrorMessage(err, "Փաթեթների ցանկը չհաջողվեց բեռնել։"));
+      setMoveCardTarget(null);
+    }
   }
 
   async function handleMoveCard(targetDeckId: number) {
@@ -153,7 +214,7 @@ export function FlashcardDeckManagePage() {
       showSuccess("Քարտը տեղափոխվեց։");
       setMoveCardTarget(null);
       setOtherDecks(null);
-      load();
+      reload();
     } catch (err) {
       showError(extractErrorMessage(err));
     } finally {
@@ -161,233 +222,383 @@ export function FlashcardDeckManagePage() {
     }
   }
 
+  /*
+    Deck-level actions.
+
+    They were four pills in a row — Սովորել, Վերանվանել, Կրկնօրինակել, Ջնջել —
+    which put "delete this deck and all its cards, irreversibly" one position
+    away from "study" and gave it the same weight as a rename. Studying is the
+    only one of the four a student does more than once, so it is the only one
+    that stays a button; the rest go behind a menu with the destructive item
+    below a rule, matching the study screen's own settings menu.
+  */
+  const deckMenuItems: DropdownItem[] = [
+    {
+      key: "rename",
+      label: "Խմբագրել վերնագիրը",
+      icon: <SquarePen size={15} strokeWidth={1.75} aria-hidden />,
+      onSelect: () => setShowRename(true),
+    },
+    {
+      key: "duplicate",
+      label: "Կրկնօրինակել փաթեթը",
+      icon: <CopyIcon size={15} strokeWidth={1.75} aria-hidden />,
+      onSelect: handleDuplicateDeck,
+    },
+    {
+      key: "delete",
+      divider: true,
+      label: "Ջնջել փաթեթը",
+      icon: <Trash2 size={15} strokeWidth={1.75} aria-hidden />,
+      tone: "danger",
+      onSelect: () => setShowDeleteDeck(true),
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <LinkButton to="/flashcards" className="mb-4">← Բառաքարտեր</LinkButton>
-
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-text">{deck.title}</h1>
-          {deck.description && <p className="mt-1 text-sm text-text-muted">{deck.description}</p>}
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(`/flashcards/${deck.id}`)}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-          >
-            Սովորել
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowRename(true)}
-            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:border-primary"
-          >
-            Վերանվանել
-          </button>
-          <button
-            type="button"
-            onClick={handleDuplicateDeck}
-            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:border-primary"
-          >
-            Կրկնօրինակել
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowDeleteDeck(true)}
-            className="rounded-md border border-incorrect px-3 py-2 text-sm font-medium text-incorrect transition-colors hover:bg-incorrect-bg"
-          >
-            Ջնջել
-          </button>
-        </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Փնտրել քարտերում..."
-          className="min-w-[200px] flex-1 rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
-        />
-        <Link
-          to={`/flashcards/create?deck=${deck.id}`}
-          className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-contrast transition-colors hover:bg-primary-hover"
-        >
-          + Ավելացնել քարտ
-        </Link>
-      </div>
-
-      <div className="mb-6 flex flex-wrap gap-2">
-        <select
-          value={difficultyFilter}
-          onChange={(e) => setDifficultyFilter(e.target.value as FlashcardDifficulty | "all")}
-          className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text"
-        >
-          <option value="all">Բոլոր դժվարությունները</option>
-          {(["easy", "medium", "hard"] as FlashcardDifficulty[]).map((d) => (
-            <option key={d} value={d}>{DIFFICULTY_LABELS[d]}</option>
-          ))}
-        </select>
-        {allTags.length > 0 && (
-          <select
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-            className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text"
-          >
-            <option value="all">Բոլոր պիտակները</option>
-            {allTags.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        )}
-        <select
-          value={learnedFilter}
-          onChange={(e) => setLearnedFilter(e.target.value as LearnedFilter)}
-          className="rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text"
-        >
-          <option value="all">Բոլորը</option>
-          <option value="learned">Սովորած</option>
-          <option value="unlearned">Չսովորած</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => setFavoriteOnly((f) => !f)}
-          className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-            favoriteOnly ? "border-primary bg-primary text-primary-contrast" : "border-border text-text hover:border-primary"
-          }`}
-        >
-          ⭐ Ընտրյալներ
-        </button>
-      </div>
-
-      {data.cards.length === 0 ? (
-        <div className="rounded-[var(--radius)] border border-border bg-surface p-8 text-center text-text-muted">
-          Այս փաթեթում քարտեր դեռ չկան։ Սեղմեք «+ Ավելացնել քարտ»՝ առաջինը ստեղծելու համար։
-        </div>
-      ) : filteredCards.length === 0 ? (
-        <div className="rounded-[var(--radius)] border border-border bg-surface p-8 text-center text-text-muted">
-          Ոչ մի քարտ չի համապատասխանում ընտրված զտիչներին։
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {filteredCards.map((card) => {
-            const progress = data.progress[card.id];
-            return (
-              <div
-                key={card.id}
-                className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface p-4 transition-colors hover:border-primary"
+    <div className="mx-auto max-w-4xl px-[var(--space-4)] py-[var(--space-8)]">
+      <PageHeader
+        back={{ to: "/flashcards", label: "Բառաքարտեր" }}
+        title={deck.title}
+        description={deck.description || undefined}
+        actions={
+          <div className="flex items-center gap-[var(--space-2)]">
+            {/* An empty deck cannot be studied, so it is not offered — the
+                empty state below carries the one action that helps. */}
+            {data.cards.length > 0 && (
+              <Button
+                onClick={() => navigate(`/flashcards/${deck.id}`)}
+                iconLeft={<GraduationCap size={16} strokeWidth={1.75} aria-hidden />}
               >
-                {card.front_image_url && (
-                  <img src={card.front_image_url} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
+                Սովորել
+              </Button>
+            )}
+            {canEdit && (
+              <Dropdown
+                items={deckMenuItems}
+                renderTrigger={(props) => (
+                  <IconButton
+                    {...props}
+                    variant="secondary"
+                    aria-label="Փաթեթի գործողություններ"
+                    icon={<MoreHorizontal size={18} strokeWidth={1.75} aria-hidden />}
+                  />
                 )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-text">{card.front_text}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-text-muted">
-                    <span className="rounded-full border border-border px-2 py-0.5">
-                      {DIFFICULTY_LABELS[card.difficulty]}
-                    </span>
-                    {progress?.status === "known" && (
-                      <span className="rounded-full border border-correct px-2 py-0.5 text-correct">Սովորած</span>
-                    )}
-                    {progress?.is_favorite && <span>⭐</span>}
-                    {card.tags.map((t) => (
-                      <span key={t} className="rounded-full bg-surface-muted px-2 py-0.5">{t}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  <Link
-                    to={`/flashcards/cards/${card.id}/edit`}
-                    className="rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:border-primary"
-                  >
-                    Խմբագրել
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleDuplicateCard(card)}
-                    className="rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:border-primary"
-                  >
-                    Կրկնօրինակել
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openMoveModal(card)}
-                    className="rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:border-primary"
-                  >
-                    Տեղափոխել
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteCardTarget(card)}
-                    className="rounded-md border border-incorrect px-2.5 py-1.5 text-xs font-medium text-incorrect transition-colors hover:bg-incorrect-bg"
-                  >
-                    Ջնջել
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {showRename && (
-        <DeckFormModal
-          title="Խմբագրել փաթեթը"
-          initial={{ title: deck.title, description: deck.description, subject: deck.subject }}
-          busy={busy}
-          onSave={handleRename}
-          onClose={() => setShowRename(false)}
-        />
-      )}
-
-      {showDeleteDeck && (
-        <ConfirmModal
-          message={`Ջնջե՞լ «${deck.title}» փաթեթը իր ${deck.card_count} քարտերով։ Այս գործողությունը հնարավոր չէ հետարկել։`}
-          confirmLabel="Ջնջել"
-          onConfirm={handleDeleteDeck}
-          onCancel={() => setShowDeleteDeck(false)}
-        />
-      )}
-
-      {deleteCardTarget && (
-        <ConfirmModal
-          message={`Ջնջե՞լ այս քարտը։`}
-          confirmLabel="Ջնջել"
-          onConfirm={handleDeleteCard}
-          onCancel={() => setDeleteCardTarget(null)}
-        />
-      )}
-
-      {moveCardTarget && otherDecks && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setMoveCardTarget(null)}
-        >
-          <div
-            className="relative w-full max-w-sm rounded-[var(--radius)] border border-border bg-surface p-8 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="mb-4 text-lg font-semibold text-text">Տեղափոխել ո՞ր փաթեթ</h2>
-            {otherDecks.length === 0 ? (
-              <p className="text-text-muted">Այլ փաթեթներ չկան։</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {otherDecks.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => handleMoveCard(d.id)}
-                    className="rounded-md border border-border px-4 py-2 text-left text-text transition-colors hover:border-primary disabled:opacity-60"
-                  >
-                    {d.title}
-                  </button>
-                ))}
-              </div>
+              />
             )}
           </div>
-        </div>
+        }
+      />
+
+      {!canEdit && (
+        <p className="mb-[var(--space-5)] flex items-start gap-[var(--space-2)] rounded-[var(--radius-md)] border border-border bg-surface-muted p-[var(--space-3)] text-[length:var(--text-sm)] text-text-muted">
+          <Library size={15} strokeWidth={1.75} aria-hidden className="mt-[3px] shrink-0" />
+          <span>
+            Սա Gitus-ի ընդհանուր գրադարանի փաթեթ է, ուստի քարտերը չեն
+            խմբագրվում։ Քո առաջընթացը այս քարտերի վրա քոնն է և պահպանվում է։
+          </span>
+        </p>
       )}
+
+      {/* Search and four filters over zero cards is furniture, not function. */}
+      {data.cards.length > 0 && (
+      <>
+      <div className="mb-[var(--space-4)] flex flex-wrap items-center gap-[var(--space-2)]">
+        <div className="relative min-w-[220px] flex-1">
+          {/* The magnifier was a 🔍 inside the placeholder text, which meant a
+              screen reader read it aloud as part of the prompt and it vanished
+              the moment the student typed. */}
+          <Search
+            size={16}
+            strokeWidth={1.75}
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-[var(--space-3)] -translate-y-1/2 text-text-muted"
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Փնտրել քարտերում"
+            placeholder="Փնտրել քարտերում..."
+            className={cn(fieldInputClass, "pl-9")}
+          />
+        </div>
+        {canEdit && (
+          <Link
+            to={`/flashcards/create?deck=${deck.id}`}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-[var(--space-2)] rounded-[var(--radius-md)]",
+              "bg-primary px-[var(--space-4)] py-[var(--space-2)] text-[length:var(--text-sm)] font-medium",
+              "text-primary-contrast transition-colors hover:bg-primary-hover",
+            )}
+          >
+            <Plus size={16} strokeWidth={2} aria-hidden />
+            Ավելացնել քարտ
+          </Link>
+        )}
+      </div>
+
+      <div className="mb-[var(--space-6)] flex flex-wrap items-center gap-[var(--space-2)]">
+        <SlidersHorizontal size={15} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
+        <Select
+          label="Դժվարություն"
+          value={difficultyFilter}
+          onChange={(v) => setDifficultyFilter(v as FlashcardDifficulty | "all")}
+          options={[
+            { value: "all", label: "Բոլոր դժվարությունները" },
+            ...(["easy", "medium", "hard"] as FlashcardDifficulty[]).map((d) => ({
+              value: d, label: DIFFICULTY_LABELS[d],
+            })),
+          ]}
+          className="w-auto min-w-[11rem]"
+        />
+        {allTags.length > 0 && (
+          <Select
+            label="Պիտակ"
+            value={tagFilter}
+            onChange={setTagFilter}
+            options={[{ value: "all", label: "Բոլոր պիտակները" }, ...allTags.map((t) => ({ value: t, label: t }))]}
+            className="w-auto min-w-[10rem]"
+          />
+        )}
+        <Select
+          label="Սովորած"
+          value={learnedFilter}
+          onChange={(v) => setLearnedFilter(v as LearnedFilter)}
+          options={[
+            { value: "all", label: "Բոլորը" },
+            { value: "learned", label: "Սովորած" },
+            { value: "unlearned", label: "Չսովորած" },
+          ]}
+          className="w-auto min-w-[9rem]"
+        />
+        <button
+          type="button"
+          aria-pressed={favoriteOnly}
+          onClick={() => setFavoriteOnly((f) => !f)}
+          className={cn(
+            "inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-md)] border",
+            "px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-sm)] font-medium",
+            "transition-colors duration-[var(--motion-fast)]",
+            favoriteOnly
+              ? "border-primary bg-primary text-primary-contrast"
+              : "border-border text-text hover:border-primary",
+          )}
+        >
+          <Star size={15} strokeWidth={1.75} aria-hidden fill={favoriteOnly ? "currentColor" : "none"} />
+          Ընտրյալներ
+        </button>
+      </div>
+      </>
+      )}
+
+      {data.cards.length === 0 ? (
+        <EmptyState
+          icon={<Layers size={24} strokeWidth={1.75} aria-hidden />}
+          title="Այս փաթեթում քարտեր դեռ չկան։"
+          hint={canEdit ? "Ավելացրու առաջին քարտը՝ փաթեթը սովորելու համար պատրաստ դարձնելու։" : undefined}
+          cta={canEdit
+            ? { label: "Ավելացնել քարտ", onClick: () => navigate(`/flashcards/create?deck=${deck.id}`) }
+            : undefined}
+        />
+      ) : filteredCards.length === 0 ? (
+        <EmptyState
+          icon={<Search size={24} strokeWidth={1.75} aria-hidden />}
+          title="Ոչ մի քարտ չի համապատասխանում ընտրված զտիչներին։"
+          hint={`Փաթեթում կա ${data.cards.length} քարտ։`}
+          cta={{ label: "Մաքրել զտիչները", onClick: clearFilters }}
+        />
+      ) : (
+        <>
+          <p className="mb-[var(--space-3)] text-[length:var(--text-sm)] text-text-muted">
+            {filtersActive
+              ? `${filteredCards.length} քարտ ${data.cards.length}-ից`
+              : `${data.cards.length} քարտ`}
+          </p>
+          <ul className="flex flex-col gap-[var(--space-2)]">
+            {filteredCards.map((card) => {
+              const progress = data.progress[card.id];
+              const cardMenuItems: DropdownItem[] = [
+                {
+                  key: "edit",
+                  label: "Խմբագրել",
+                  icon: <Pencil size={15} strokeWidth={1.75} aria-hidden />,
+                  onSelect: () => navigate(`/flashcards/cards/${card.id}/edit`),
+                },
+                {
+                  key: "duplicate",
+                  label: "Կրկնօրինակել",
+                  icon: <Copy size={15} strokeWidth={1.75} aria-hidden />,
+                  onSelect: () => handleDuplicateCard(card),
+                },
+                {
+                  key: "move",
+                  label: "Տեղափոխել այլ փաթեթ",
+                  icon: <FolderInput size={15} strokeWidth={1.75} aria-hidden />,
+                  onSelect: () => openMoveModal(card),
+                },
+                {
+                  key: "delete",
+                  divider: true,
+                  label: "Ջնջել",
+                  icon: <Trash2 size={15} strokeWidth={1.75} aria-hidden />,
+                  tone: "danger",
+                  onSelect: () => setDeleteCardTarget(card),
+                },
+              ];
+              return (
+                <li
+                  key={card.id}
+                  className={cn(
+                    "group relative flex items-center gap-[var(--space-3)] rounded-[var(--radius-lg)]",
+                    "border border-border bg-surface p-[var(--space-4)]",
+                    "transition-colors duration-[var(--motion-fast)] hover:border-primary",
+                    "focus-within:border-primary",
+                  )}
+                >
+                  {card.front_image_url && (
+                    <img
+                      src={card.front_image_url}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-12 w-12 shrink-0 rounded-[var(--radius-sm)] object-cover"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    {/* Rendered, not raw. This printed the card's source, so a
+                        student reviewing their own deck read
+                        `Ինչպե՞ս ես բացում $\sin 2\alpha$` — the one screen in
+                        the product that showed LaTeX instead of mathematics. */}
+                    {canEdit ? (
+                      <Link
+                        to={`/flashcards/cards/${card.id}/edit`}
+                        className="block truncate text-text before:absolute before:inset-0 before:content-['']"
+                      >
+                        <MathText text={card.front_text} />
+                      </Link>
+                    ) : (
+                      <p className="truncate text-text">
+                        <MathText text={card.front_text} />
+                      </p>
+                    )}
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <Badge>{DIFFICULTY_LABELS[card.difficulty]}</Badge>
+                      {progress?.status === "known" && <Badge tone="correct">Սովորած</Badge>}
+                      {progress?.is_favorite && (
+                        <span className="inline-flex items-center gap-1 text-[length:var(--text-xs)] text-text-muted">
+                          <Star size={12} strokeWidth={1.75} aria-hidden fill="currentColor" />
+                          Ընտրյալ
+                        </span>
+                      )}
+                      {card.tags.map((t) => (
+                        <span
+                          key={t}
+                          className="rounded-full bg-surface-muted px-2 py-0.5 text-[length:var(--text-xs)] text-text-muted"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Four equal buttons per row meant twenty-eight controls on
+                      a seven-card deck, with "Ջնջել" among them. The row is a
+                      link to its own editor now, and the rest are one menu —
+                      the pattern the todo and notes lists already use. */}
+                  {canEdit && (
+                    <div className="relative shrink-0">
+                      <Dropdown
+                        items={cardMenuItems}
+                        renderTrigger={(props) => (
+                          <IconButton
+                            {...props}
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Քարտի գործողություններ"
+                            icon={<MoreHorizontal size={16} strokeWidth={1.75} aria-hidden />}
+                          />
+                        )}
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+
+      <DeckFormModal
+        open={showRename}
+        onOpenChange={setShowRename}
+        title="Խմբագրել փաթեթը"
+        initial={{ title: deck.title, description: deck.description, subject: deck.subject }}
+        busy={busy}
+        onSave={handleRename}
+      />
+
+      <ConfirmDialog
+        open={showDeleteDeck}
+        onOpenChange={setShowDeleteDeck}
+        title={`Ջնջե՞լ «${deck.title}» փաթեթը`}
+        description={`Փաթեթը և իր ${deck.card_count} քարտերը կջնջվեն ընդմիշտ։ Այս գործողությունը հնարավոր չէ հետարկել։`}
+        confirmLabel="Ջնջել փաթեթը"
+        busy={busy}
+        onConfirm={handleDeleteDeck}
+      />
+
+      <ConfirmDialog
+        open={deleteCardTarget !== null}
+        onOpenChange={(open) => !open && setDeleteCardTarget(null)}
+        title="Ջնջե՞լ այս քարտը"
+        description={deleteCardTarget?.front_text}
+        confirmLabel="Ջնջել"
+        busy={busy}
+        onConfirm={handleDeleteCard}
+      />
+
+      {/* Was a hand-rolled `fixed inset-0` overlay with no focus trap, no
+          Escape and no dialog role. */}
+      <Modal
+        open={moveCardTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMoveCardTarget(null);
+            setOtherDecks(null);
+          }
+        }}
+        title="Տեղափոխել ո՞ր փաթեթ"
+      >
+        {otherDecks === null ? (
+          <div className="flex flex-col gap-[var(--space-2)]">
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-11 w-full" />)}
+          </div>
+        ) : otherDecks.length === 0 ? (
+          <p className="text-[length:var(--text-sm)] text-text-muted">
+            Այլ փաթեթներ չկան։ Ստեղծիր նոր փաթեթ՝ քարտը տեղափոխելու համար։
+          </p>
+        ) : (
+          <div className="flex max-h-[50vh] flex-col gap-[var(--space-2)] overflow-y-auto">
+            {otherDecks.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                disabled={busy}
+                onClick={() => handleMoveCard(d.id)}
+                className={cn(
+                  "flex items-center justify-between gap-[var(--space-3)] rounded-[var(--radius-md)]",
+                  "border border-border px-[var(--space-4)] py-[var(--space-2)] text-left text-text",
+                  "transition-colors hover:border-primary disabled:opacity-60",
+                )}
+              >
+                <span className="min-w-0 truncate">{d.title}</span>
+                <span className="shrink-0 text-[length:var(--text-xs)] text-text-muted">
+                  {d.card_count} քարտ
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

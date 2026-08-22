@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Ban, Info, Inbox, Swords } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Ban, Info, Inbox, PictureInPicture2, Swords } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import * as chatApi from "../api/chat";
@@ -10,6 +10,9 @@ import * as teachingApi from "../api/teaching";
 import type { FriendUser } from "../api/friends";
 import { ChallengeModal } from "../components/challenges/ChallengeModal";
 import { ConversationList } from "../components/chat/ConversationList";
+import { ErrorState } from "../components/ui/ErrorState";
+import { SearchField } from "../components/ui/SearchField";
+import { LoadingRegion, SkeletonRows } from "../components/ui/Skeleton";
 import { ConversationView } from "../components/chat/ConversationView";
 import { GlobalSearchPanel } from "../components/chat/GlobalSearchPanel";
 import { GroupInfoPanel } from "../components/chat/GroupInfoPanel";
@@ -24,6 +27,10 @@ export function ChatPage() {
   const { openFloatingChat } = useChatWidget();
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
+  const [listError, setListError] = useState<unknown>(null);
+  // Read inside `refresh`'s catch without making it a dependency of anything.
+  const conversationsRef = useRef<Conversation[] | null>(null);
+  conversationsRef.current = conversations;
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -50,11 +57,29 @@ export function ChatPage() {
     return () => clearInterval(interval);
   }, []);
 
+  /*
+    `conversations === null` is this page's *loading* state, and the fetch had
+    no `.catch`, so any failure left the sidebar reading "Բեռնվում է..." for
+    ever with no error and no way to retry — while a 15-second poller kept
+    failing silently behind it. Failure is tracked separately from absence
+    now, exactly as DailyProblemCard was corrected in session 1.
+
+    The rejection is swallowed rather than rethrown because five call sites
+    await this, including a `setInterval`; the last good list stays on screen
+    and the error is reported beside it.
+  */
   function refresh(): Promise<Conversation[]> {
-    return chatApi.listConversations(search || undefined).then((data) => {
-      setConversations(data);
-      return data;
-    });
+    return chatApi
+      .listConversations(search || undefined)
+      .then((data) => {
+        setConversations(data);
+        setListError(null);
+        return data;
+      })
+      .catch((err) => {
+        setListError(err ?? new Error("Չհաջողվեց բեռնել զրույցները։"));
+        return conversationsRef.current ?? [];
+      });
   }
 
   useEffect(() => {
@@ -88,6 +113,13 @@ export function ChatPage() {
     await chatApi.setConversationPrefs(id, { muted });
   }
 
+  async function handleLeave(id: number) {
+    if (!user) return;
+    await chatApi.removeParticipant(id, user.id);
+    setConversations((prev) => prev?.filter((c) => c.id !== id) ?? prev);
+    setSelectedId((prev) => (prev === id ? null : prev));
+  }
+
   async function handleStartChatFromSearch(userId: number) {
     await handleCreatePrivate(userId);
     setSearch("");
@@ -116,7 +148,7 @@ export function ChatPage() {
   async function handleBlock() {
     const other = selectedConversation?.other_participant;
     if (!other) return;
-    if (!window.confirm(`Արգելափակե՞լ ${other.username}-ին։ Կչեղարկվի ընկերությունը և այլևս չեք կարողանա նամակագրվել։`)) {
+    if (!window.confirm(`Արգելափակե՞լ ${other.username}-ին։ Կչեղարկվի ընկերությունը և այլևս չես կարողանա նամակագրվել։`)) {
       return;
     }
     setBlocking(true);
@@ -149,7 +181,7 @@ export function ChatPage() {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="flex-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
+          className="flex-1 rounded-[var(--radius)] bg-primary px-3 py-2 text-sm font-medium text-primary-contrast hover:bg-primary-hover"
         >
           + Նոր զրույց
         </button>
@@ -157,7 +189,7 @@ export function ChatPage() {
           type="button"
           onClick={() => setRequestsOpen(true)}
           title="Հաղորդագրության հարցումներ"
-          className="relative shrink-0 rounded-md border border-border px-3 py-2 text-text-muted hover:bg-surface-muted"
+          className="relative shrink-0 rounded-[var(--radius)] border border-border px-3 py-2 text-text-muted hover:bg-surface-muted"
         >
           <Inbox size={16} strokeWidth={1.75} />
           {requestCount > 0 && (
@@ -168,16 +200,30 @@ export function ChatPage() {
         </button>
       </div>
       <div className="px-3 pb-3">
-        <input
+        <SearchField
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Փնտրել զրույցներում..."
-          className="w-full rounded-md border border-border bg-surface-muted px-3 py-1.5 text-sm text-text"
+          onChange={setSearch}
+          label="Փնտրել զրույցներում"
+          placeholder="Փնտրել զրույցներում…"
+          className="bg-surface-muted text-[length:var(--text-sm)]"
         />
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3">
-        {conversations === null ? (
-          <p className="px-2 py-4 text-sm text-text-muted">Բեռնվում է...</p>
+        {conversations === null && listError !== null ? (
+          <ErrorState
+            size="sm"
+            className="m-2"
+            title="Չհաջողվեց բեռնել զրույցները։"
+            hint="Ստուգիր կապը և փորձիր կրկին։"
+            onRetry={() => {
+              setListError(null);
+              void refresh();
+            }}
+          />
+        ) : conversations === null ? (
+          <LoadingRegion label="Զրույցները բեռնվում են" className="px-2 py-2">
+            <SkeletonRows count={5} />
+          </LoadingRegion>
         ) : search.trim() ? (
           <GlobalSearchPanel
             query={search}
@@ -195,6 +241,7 @@ export function ChatPage() {
             }}
             onTogglePin={handleTogglePin}
             onToggleMute={handleToggleMute}
+            onLeave={handleLeave}
           />
         )}
       </div>
@@ -202,7 +249,7 @@ export function ChatPage() {
   );
 
   return (
-    <div className="flex h-screen bg-bg">
+    <div className="flex h-[calc(100dvh-var(--chrome-top)-var(--chrome-bottom))] bg-bg">
       <div className={`${sidebarOpen ? "block" : "hidden"} fixed inset-0 z-20 md:hidden`}>
         <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
         <div className="absolute inset-y-0 left-0 flex w-80 flex-col border-r border-border bg-surface">
@@ -219,7 +266,7 @@ export function ChatPage() {
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
-            className="rounded-md border border-border px-2 py-1 text-text md:hidden"
+            className="rounded-[var(--radius-md)] border border-border px-2 py-1 text-text md:hidden"
           >
             ☰
           </button>
@@ -269,9 +316,9 @@ export function ChatPage() {
               navigate("/");
             }}
             title="Բացել լողացող պատուհանում"
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm text-text-muted hover:border-primary hover:text-text"
+            className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] border border-border px-2.5 py-1 text-sm text-text-muted hover:border-primary hover:text-text"
           >
-            <span aria-hidden>⧉</span>
+            <PictureInPicture2 size={15} strokeWidth={1.75} aria-hidden />
             <span className="hidden sm:inline">Լողացող</span>
           </button>
         </header>
@@ -280,7 +327,7 @@ export function ChatPage() {
           <ConversationView key={selectedConversation.id} conversation={selectedConversation} />
         ) : (
           <div className="flex flex-1 items-center justify-center text-text-muted">
-            Ընտրեք զրույց կամ սկսեք նորը։
+            Ընտրիր զրույց կամ սկսիր նորը։
           </div>
         )}
       </main>

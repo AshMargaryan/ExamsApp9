@@ -155,3 +155,37 @@ class AssignmentCreateSerializer(serializers.ModelSerializer):
                     {other: "Այս դաշտը պետք է դատարկ լինի ընտրված տեսակի համար։"}
                 )
         return attrs
+
+
+class TrendBucketSerializer(serializers.Serializer):
+    """One time bucket of class activity. `accuracy` and `exam_avg_score` are
+    null (not zero) when nothing happened in the bucket, so the chart can show
+    a gap instead of implying the class scored nothing."""
+
+    date = serializers.CharField()
+    questions = serializers.IntegerField()
+    correct = serializers.IntegerField()
+    accuracy = serializers.FloatField(allow_null=True)
+    study_minutes = serializers.IntegerField()
+    active_students = serializers.IntegerField()
+    mistakes = serializers.IntegerField()
+    exam_avg_score = serializers.FloatField(allow_null=True)
+    exam_count = serializers.IntegerField()
+
+
+class ClassTrendsSerializer(serializers.Serializer):
+    range = serializers.CharField()
+    granularity = serializers.CharField()
+    buckets = TrendBucketSerializer(many=True)
+
+
+class AttentionSignalSerializer(serializers.Serializer):
+    kind = serializers.CharField()
+    label = serializers.CharField()
+    value = serializers.FloatField(allow_null=True)
+    detail = serializers.CharField()
+
+
+class StudentAttentionSerializer(serializers.Serializer):
+    student = MiniUserSerializer(read_only=True)
+    signals = AttentionSignalSerializer(many=True)

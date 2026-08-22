@@ -44,6 +44,14 @@ class ChallengeInvite(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["receiver", "status"]),
+            models.Index(fields=["sender", "status"]),
+            # Backs expire_stale_invites' filter(status=PENDING,
+            # expires_at__lt=now), run on every list/respond call — without
+            # this it's a growing scan as invite history accumulates.
+            models.Index(fields=["status", "expires_at"]),
+        ]
 
     def __str__(self):
         return f"{self.sender} -> {self.receiver} ({self.status})"

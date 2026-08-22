@@ -67,7 +67,7 @@ export function ShareToChatModal({
               type="button"
               onClick={() => handleShare(c.id)}
               disabled={sendingId !== null}
-              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-surface-muted disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors hover:bg-surface-muted disabled:opacity-60"
             >
               <ConversationAvatar conversation={c} size="h-10 w-10" />
               <span className="min-w-0 flex-1 truncate text-sm text-text">{conversationTitle(c)}</span>

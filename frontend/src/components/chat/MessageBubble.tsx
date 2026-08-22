@@ -7,18 +7,15 @@ import type { Attachment, Message } from "../../api/chat";
 import { useAuth } from "../../auth/AuthContext";
 import { useAuthenticatedImageUrl } from "../../hooks/useAuthenticatedImageUrl";
 import { isAiSender, messagePreviewText } from "../../lib/chatLabels";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
 import { downloadAuthenticatedFile, saveBlobUrl } from "../../lib/authenticatedFile";
 import { ContextCard } from "./ContextCard";
 import { EmojiPicker } from "./EmojiPicker";
 import { ImageLightbox } from "./ImageLightbox";
 import { ReportMessageModal } from "./ReportMessageModal";
 import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Բ`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ԿԲ`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} ՄԲ`;
-}
+import { formatBytes } from "../../lib/formatBytes";
 
 function senderDisplayName(sender: Message["sender"]): string {
   if (!sender) return "Ջնջված օգտատեր";
@@ -31,14 +28,14 @@ function ImageAttachment({ attachment }: { attachment: Attachment }) {
 
   if (error) {
     return (
-      <div className="flex h-40 w-64 max-w-full items-center justify-center rounded-md border border-border bg-surface-muted text-sm text-text-muted">
+      <div className="flex h-40 w-64 max-w-full items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface-muted text-sm text-text-muted">
         Նկարը հասանելի չէ
       </div>
     );
   }
 
   if (!src) {
-    return <div className="h-40 w-64 max-w-full animate-pulse rounded-md bg-surface-muted" />;
+    return <div className="h-40 w-64 max-w-full animate-pulse rounded-[var(--radius-md)] bg-surface-muted" />;
   }
 
   return (
@@ -46,12 +43,12 @@ function ImageAttachment({ attachment }: { attachment: Attachment }) {
       <button
         type="button"
         onClick={() => setLightboxOpen(true)}
-        className="block max-w-full overflow-hidden rounded-md"
+        className="block max-w-full overflow-hidden rounded-[var(--radius-md)]"
       >
         <img
           src={src}
           alt={attachment.original_filename}
-          className="max-h-80 w-full max-w-full rounded-md object-cover"
+          className="max-h-80 w-full max-w-full rounded-[var(--radius-md)] object-cover"
         />
       </button>
       {lightboxOpen && (
@@ -71,14 +68,14 @@ function FileAttachment({ attachment, own }: { attachment: Attachment; own: bool
     <button
       type="button"
       onClick={() => downloadAuthenticatedFile(attachment.download_url, attachment.original_filename)}
-      className={`flex min-w-[14rem] items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+      className={`flex min-w-[14rem] items-center gap-2 rounded-[var(--radius-md)] border px-3 py-2 text-left text-sm transition-colors ${
         own ? "border-primary-contrast/30 hover:bg-black/10" : "border-border hover:bg-surface-muted"
       }`}
     >
       <Paperclip size={18} strokeWidth={1.75} />
       <span className="min-w-0 flex-1 truncate">{attachment.original_filename}</span>
       <span className={own ? "shrink-0 text-primary-contrast/70" : "shrink-0 text-text-muted"}>
-        {formatSize(attachment.file_size)}
+        {formatBytes(attachment.file_size)}
       </span>
     </button>
   );
@@ -101,7 +98,7 @@ function ReplyQuote({
     <button
       type="button"
       onClick={onClick}
-      className={`block max-w-full truncate rounded-md border-l-4 px-2 py-1 text-left text-xs transition-colors ${
+      className={`block max-w-full truncate rounded-[var(--radius-md)] border-l-4 px-2 py-1 text-left text-xs transition-colors ${
         own
           ? "border-primary-contrast/50 bg-black/10 hover:bg-black/20"
           : "border-primary bg-black/5 hover:bg-black/10"
@@ -179,7 +176,7 @@ function MessageActionsMenu({
       </button>
       {open && (
         <div
-          className={`absolute top-full z-10 mt-1 w-44 overflow-hidden rounded-md border border-border bg-surface py-1 shadow-lg ${
+          className={`absolute top-full z-10 mt-1 w-44 overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 shadow-lg ${
             own ? "right-0" : "left-0"
           }`}
         >
@@ -376,13 +373,13 @@ function EditComposer({
 }) {
   const [text, setText] = useState(message.text);
   return (
-    <div className="flex w-72 max-w-full flex-col gap-2 rounded-2xl border border-primary bg-surface p-2.5">
+    <div className="flex w-72 max-w-full flex-col gap-2 rounded-[var(--radius-xl)] border border-primary bg-surface p-2.5">
       <textarea
         autoFocus
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={2}
-        className="resize-none rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text outline-none focus:border-primary"
+        className={cn(fieldInputClass, "resize-none px-[var(--space-2)] py-[var(--space-1)] text-[length:var(--text-sm)]")}
       />
       <div className="flex justify-end gap-2 text-xs">
         <button type="button" onClick={onCancel} className="px-2 py-1 text-text-muted hover:text-text">
@@ -391,7 +388,7 @@ function EditComposer({
         <button
           type="button"
           onClick={() => text.trim() && onSave(text.trim())}
-          className="rounded-md bg-primary px-2 py-1 font-medium text-primary-contrast hover:bg-primary-hover"
+          className="rounded-[var(--radius)] bg-primary px-2 py-1 font-medium text-primary-contrast hover:bg-primary-hover"
         >
           Պահպանել
         </button>
@@ -439,7 +436,7 @@ export function MessageBubble({
               {isAi && <Sparkles size={11} strokeWidth={1.75} />} {senderName}
             </span>
           )}
-          <p className="flex items-center gap-1.5 rounded-2xl border border-dashed border-border px-3.5 py-2.5 text-sm italic text-text-muted">
+          <p className="flex items-center gap-1.5 rounded-[var(--radius-xl)] border border-dashed border-border px-3.5 py-2.5 text-sm italic text-text-muted">
             <Ban size={14} strokeWidth={1.75} /> Հաղորդագրությունը ջնջվել է
           </p>
         </div>
@@ -450,7 +447,7 @@ export function MessageBubble({
   return (
     <div
       ref={registerRef}
-      className={`group flex items-center gap-1 rounded-md transition-colors ${own ? "justify-end" : "justify-start"} ${
+      className={`group flex items-center gap-1 rounded-[var(--radius-md)] transition-colors ${own ? "justify-end" : "justify-start"} ${
         highlighted ? "bg-primary/10" : ""
       }`}
     >
@@ -499,12 +496,12 @@ export function MessageBubble({
           />
         ) : (
           <div
-            className={`flex flex-col gap-2 rounded-2xl px-3.5 py-2.5 ${
+            className={`flex flex-col gap-2 rounded-[var(--radius-xl)] px-3.5 py-2.5 ${
               own
-                ? "rounded-br-sm bg-primary text-primary-contrast"
+                ? "rounded-br-[var(--radius-xs)] bg-primary text-primary-contrast"
                 : isAi
-                  ? "rounded-bl-sm border border-primary/30 bg-primary/5 text-text"
-                  : "rounded-bl-sm bg-surface-muted text-text"
+                  ? "rounded-bl-[var(--radius-xs)] border border-primary/30 bg-primary/5 text-text"
+                  : "rounded-bl-[var(--radius-xs)] bg-surface-muted text-text"
             }`}
           >
             {message.reply_to && (

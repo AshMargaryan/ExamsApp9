@@ -23,7 +23,11 @@ export const tokenStorage = {
   },
 };
 
-export const apiClient = axios.create({ baseURL: API_BASE_URL });
+// Without a timeout, a stalled backend/proxy/network leaves requests (and
+// their callers' loading states) hanging indefinitely. 20s comfortably
+// covers normal API calls; long-running work (AI assistant chat) uses SSE
+// via fetch() instead of this client, so it isn't affected.
+export const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 20000 });
 
 apiClient.interceptors.request.use((config) => {
   const token = tokenStorage.getAccess();
@@ -63,10 +67,43 @@ async function refreshAccessToken(): Promise<string> {
   return data.access;
 }
 
+/*
+  Endpoints where a 401 means "those credentials are wrong", not "your session
+  expired".
+
+  Without this list the interceptor treated the login endpoint's own 401 as an
+  expired session: a student typing the wrong password got a failed token
+  refresh, `tokenStorage.clear()`, and a full `window.location.href = "/login"`
+  navigation. The page reloaded, the error message the login page had just set
+  was destroyed along with the username they had typed, and they were returned
+  to an empty form with nothing said. In other words the wrong-password
+  message could never be seen, in a modal or anywhere else — which is a
+  functional defect, not a styling one.
+
+  Matching on the path rather than a per-call flag keeps every future caller of
+  these endpoints correct by default.
+*/
+const CREDENTIAL_ENDPOINTS = [
+  "/auth/login/",
+  "/auth/register/",
+  "/auth/refresh/",
+  "/auth/password-reset/",
+  "/auth/password-reset/confirm/",
+];
+
+function isCredentialRequest(url: string | undefined): boolean {
+  if (!url) return false;
+  return CREDENTIAL_ENDPOINTS.some((path) => url.includes(path));
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
+
+    if (isCredentialRequest(original?.url)) {
+      return Promise.reject(error);
+    }
 
     if (error.response?.status === 401 && original && !original._retried) {
       original._retried = true;
@@ -77,7 +114,9 @@ apiClient.interceptors.response.use(
         return apiClient(original);
       } catch {
         tokenStorage.clear();
-        window.location.href = "/login";
+        // Already on the login screen: reloading it would only throw away
+        // whatever the person had typed.
+        if (window.location.pathname !== "/login") window.location.href = "/login";
       }
     }
     return Promise.reject(error);

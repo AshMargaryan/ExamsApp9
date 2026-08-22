@@ -182,17 +182,17 @@ export function Calculator() {
   }, [display, stored, pendingOp, waitingForOperand]);
 
   const digitBtn =
-    "rounded-md bg-surface-muted py-3 text-lg font-medium text-text transition-colors hover:bg-border active:scale-95";
+    "rounded-[var(--radius-md)] bg-surface-muted py-3 text-lg font-medium text-text transition-colors hover:bg-border active:scale-95";
   const opBtnFor = (op: Exclude<PendingOp, null>) =>
-    `rounded-md py-3 text-lg font-medium transition-colors active:scale-95 ${
+    `rounded-[var(--radius-md)] py-3 text-lg font-medium transition-colors active:scale-95 ${
       pendingOp === op
         ? "bg-primary text-primary-contrast"
         : "bg-primary/10 text-primary hover:bg-primary/20"
     }`;
   const fnBtn =
-    "rounded-md border border-border py-2 text-sm font-medium text-text-muted transition-colors hover:border-primary hover:text-primary active:scale-95";
+    "rounded-[var(--radius-md)] border border-border py-2 text-sm font-medium text-text-muted transition-colors hover:border-primary hover:text-primary active:scale-95";
   const memBtn =
-    "rounded-md border border-border py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-primary hover:text-primary active:scale-95 disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-muted";
+    "rounded-[var(--radius-md)] border border-border py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-primary hover:text-primary active:scale-95 disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-muted";
 
   return (
     <div className="w-72 select-none">
@@ -226,7 +226,7 @@ export function Calculator() {
         </div>
       )}
 
-      <div className="mb-3 overflow-x-auto rounded-md border border-border bg-surface-muted px-3 py-3 text-right text-2xl font-semibold text-text [font-variant-numeric:tabular-nums]">
+      <div className="mb-3 overflow-x-auto rounded-[var(--radius)] border border-border bg-surface-muted px-3 py-3 text-right text-2xl font-semibold text-text [font-variant-numeric:tabular-nums]">
         {display}
       </div>
 
@@ -276,7 +276,7 @@ export function Calculator() {
         <button className={`${digitBtn} col-span-2`} onClick={() => inputDigit("0")}>0</button>
         <button className={digitBtn} onClick={inputDecimal}>.</button>
         <button
-          className="rounded-md bg-primary py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover active:scale-95"
+          className="rounded-[var(--radius-md)] bg-primary py-3 text-lg font-medium text-primary-contrast transition-colors hover:bg-primary-hover active:scale-95"
           onClick={equals}
         >
           =

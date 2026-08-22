@@ -1,3 +1,4 @@
+import { Flame, Star } from "lucide-react";
 import { Tooltip } from "./ui/Tooltip";
 
 interface StreakXpChipProps {
@@ -15,16 +16,19 @@ export function StreakXpChip({ streak, level, xpIntoLevel, xpForNextLevel }: Str
     <Tooltip label={`${xpIntoLevel} / ${xpForNextLevel} XP`}>
       <div className="flex items-center gap-1 rounded-full border border-border bg-surface-muted p-1 text-sm font-semibold text-text">
         <span className="flex items-center gap-1 px-1.5 py-1 sm:px-2" aria-label={`${streak} օր շարունակ`}>
-          <span aria-hidden="true">🔥</span>
+          <Flame size={14} strokeWidth={2} aria-hidden className="text-accent" />
           <span>{streak}</span>
         </span>
         <span className="hidden h-4 w-px bg-border sm:block" aria-hidden="true" />
         <span
-          className="hidden items-center gap-1 rounded-full px-2 py-1 text-white sm:flex"
-          style={{ background: "var(--gradient-hero)" }}
+          // `--gradient-hero` aliases the brand band, whose text token is
+          // `--color-on-brand` — `text-white` happened to match it, but only
+          // by coincidence, and only until someone changes the band.
+          className="hidden items-center gap-1 rounded-full px-2 py-1 text-on-brand sm:flex"
+          style={{ background: "var(--gradient-brand)" }}
           aria-label={`Level ${level}`}
         >
-          <span aria-hidden="true">⭐</span>
+          <Star size={13} strokeWidth={2} aria-hidden fill="currentColor" />
           <span>{level}</span>
         </span>
       </div>

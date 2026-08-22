@@ -1,4 +1,5 @@
 from django.db import IntegrityError, transaction
+from django.db.models import Count, F, Q
 
 from apps.friends.services import are_friends, is_blocked
 from apps.notifications.models import NotificationType
@@ -51,20 +52,26 @@ def _attach_unread_counts(conversations: list[Conversation], user) -> list[Conve
     preferences (see ConversationParticipant), so the serializer needs the
     *caller's* row specifically, not just any participant's.
     """
+    ids = [c.id for c in conversations]
     memberships = {
         m.conversation_id: m
-        for m in ConversationParticipant.objects.filter(
-            conversation_id__in=[c.id for c in conversations], user=user, active=True
-        )
+        for m in ConversationParticipant.objects.filter(conversation_id__in=ids, user=user, active=True)
     }
+    unread_counts = {}
+    if ids:
+        rows = (
+            Message.objects.filter(
+                conversation_id__in=ids, conversation__memberships__user=user, conversation__memberships__active=True,
+            )
+            .annotate(_read_threshold=F("conversation__memberships__last_read_message_id"))
+            .filter(Q(_read_threshold__isnull=True) | Q(id__gt=F("_read_threshold")))
+            .values("conversation_id")
+            .annotate(unread=Count("id"))
+        )
+        unread_counts = {row["conversation_id"]: row["unread"] for row in rows}
     for c in conversations:
-        membership = memberships.get(c.id)
-        c._my_membership = membership
-        last_read_id = membership.last_read_message_id if membership else None
-        qs = c.messages.all()
-        if last_read_id is not None:
-            qs = qs.filter(id__gt=last_read_id)
-        c._unread_count = qs.count()
+        c._my_membership = memberships.get(c.id)
+        c._unread_count = unread_counts.get(c.id, 0)
     return conversations
 
 
@@ -137,6 +144,12 @@ def get_or_create_private(user, other_user) -> tuple[Conversation, bool]:
     key = Conversation.build_private_key(user.id, other_user.id)
     existing = Conversation.objects.filter(private_key=key).first()
     if existing is not None:
+        # `user` may have left this conversation before (active=False) —
+        # starting it again should resume it, not leave them locked out of
+        # a conversation they're the one re-initiating.
+        ConversationParticipant.objects.filter(
+            conversation=existing, user=user, active=False
+        ).update(active=True)
         return existing, False
 
     initial_status = RequestStatus.ACCEPTED if are_friends(user, other_user) else RequestStatus.PENDING

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import type { EducationalContext } from "../api/assistant";
 
 export interface AssistantLaunchRequest {
@@ -23,19 +23,18 @@ const AssistantLaunchContext = createContext<AssistantLaunchValue | null>(null);
 export function AssistantLaunchProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<AssistantLaunchRequest | null>(null);
   const [assistantSuppressed, setAssistantSuppressed] = useState(false);
-  return (
-    <AssistantLaunchContext.Provider
-      value={{
-        request,
-        askAboutQuestion: setRequest,
-        clearRequest: () => setRequest(null),
-        assistantSuppressed,
-        setAssistantSuppressed,
-      }}
-    >
-      {children}
-    </AssistantLaunchContext.Provider>
+  const clearRequest = useCallback(() => setRequest(null), []);
+  const value = useMemo<AssistantLaunchValue>(
+    () => ({
+      request,
+      askAboutQuestion: setRequest,
+      clearRequest,
+      assistantSuppressed,
+      setAssistantSuppressed,
+    }),
+    [request, clearRequest, assistantSuppressed],
   );
+  return <AssistantLaunchContext.Provider value={value}>{children}</AssistantLaunchContext.Provider>;
 }
 
 export function useAssistantLaunch() {

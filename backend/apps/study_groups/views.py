@@ -92,7 +92,7 @@ class JoinGroupView(APIView):
         try:
             join_group(group, request.user)
         except AlreadyMemberError:
-            return Response({"detail": "Դուք արդեն այս խմբի անդամ եք։"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Արդեն այս խմբի անդամ ես։"}, status=status.HTTP_400_BAD_REQUEST)
         except GroupFullError:
             return Response({"detail": "Խումբն արդեն լրացված է։"}, status=status.HTTP_400_BAD_REQUEST)
         group.refresh_from_db()
@@ -111,11 +111,11 @@ class LeaveGroupView(APIView):
             leave_group(group, request.user)
         except LeaderCannotLeaveError:
             return Response(
-                {"detail": "Ղեկավարը չի կարող լքել խումբը։ Ջնջեք խումբը կամ փոխանցեք ղեկավարությունը։"},
+                {"detail": "Ղեկավարը չի կարող լքել խումբը։ Ջնջիր խումբը կամ փոխանցիր ղեկավարությունը։"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except NotAMemberError:
-            return Response({"detail": "Դուք այս խմբի անդամ չեք։"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Այս խմբի անդամ չես։"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

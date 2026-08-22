@@ -1,13 +1,30 @@
 import { Link } from "react-router-dom";
 import { Logo } from "../Logo";
 
+/* The footer carries one more than the nav: the knowledge map is worth
+   linking but is not somewhere a first-time reader arrives looking for. */
 const PRODUCT_LINKS = [
-  { href: "#product", label: "Ապրանք" },
-  { href: "#ai-tutor", label: "AI Tutor" },
-  { href: "#tests", label: "Թեստեր" },
+  { href: "#subjects", label: "Առարկաներ" },
+  { href: "#mistakes", label: "Սխալների վերլուծություն" },
   { href: "#study-plan", label: "Ուսումնական պլան" },
-  { href: "#rankings", label: "Դասակարգում" },
+  { href: "#progress", label: "Գիտելիքի քարտեզ" },
+  { href: "#ai-tutor", label: "AI Tutor" },
+  { href: "#faq", label: "Հարցեր" },
 ];
+
+/*
+  A footer link is 19px of text. On a phone that is well under the 44px this
+  product holds itself to, and `.tap-target` is the wrong tool here: these
+  rows sit 8px apart, so a 44px pseudo-target would overlap its neighbours and
+  a tap near the boundary would open the wrong page — worse than a small
+  target, not better.
+
+  So the row itself grows, and only where the input is a thumb. From `sm` up
+  the footer is a three-column desktop layout driven by a pointer, and 44px
+  rows there just read as loose.
+*/
+const FOOTER_LINK =
+  "inline-flex min-h-11 items-center text-sm text-text-muted transition-colors hover:text-text sm:min-h-0";
 
 export function LandingFooter() {
   return (
@@ -26,10 +43,10 @@ export function LandingFooter() {
 
           <div>
             <p className="mb-3 text-sm font-semibold text-text">Ապրանք</p>
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-0.5 sm:gap-2">
               {PRODUCT_LINKS.map((link) => (
                 <li key={link.href}>
-                  <a href={link.href} className="text-sm text-text-muted transition-colors hover:text-text">
+                  <a href={link.href} className={FOOTER_LINK}>
                     {link.label}
                   </a>
                 </li>
@@ -39,19 +56,19 @@ export function LandingFooter() {
 
           <div>
             <p className="mb-3 text-sm font-semibold text-text">Հաշիվ</p>
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-0.5 sm:gap-2">
               <li>
-                <Link to="/help" className="text-sm text-text-muted transition-colors hover:text-text">
+                <Link to="/help" className={FOOTER_LINK}>
                   Օգնության կենտրոն
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="text-sm text-text-muted transition-colors hover:text-text">
+                <Link to="/login" className={FOOTER_LINK}>
                   Մուտք
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="text-sm text-text-muted transition-colors hover:text-text">
+                <Link to="/register" className={FOOTER_LINK}>
                   Գրանցվել
                 </Link>
               </li>

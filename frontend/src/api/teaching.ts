@@ -87,13 +87,25 @@ export interface Assignment {
 export interface ProblemQuestionReview {
   id: number;
   text: string;
+  /** `single_choice` | `multi_statement` | `matching` | `free_response`, plus
+   *  practice's own `multiple_choice` / `true_false` / `short_answer`. */
   question_type: string;
-  choices: { id: number; text: string; is_correct: boolean }[];
-  statements: { id: number; label: string; text: string; is_true: boolean }[];
+  choices: { id: number; text: string; is_correct: boolean; order: number }[];
+  statements: {
+    id: number;
+    label: string;
+    text: string;
+    is_true: boolean;
+    /** `matching` only: the 1-based number of the correct right-hand item.
+     *  Null for every other question type. */
+    match_target: number | null;
+  }[];
   correct_answer_text: string | null;
   selected_choice_id: number | null;
   answer_text: string;
   selected_statement_ids: number[];
+  /** `matching` only: `{ statementId: choiceId }` as the student connected them. */
+  match_pairs: Record<string, number>;
   is_correct: boolean;
 }
 
@@ -239,6 +251,60 @@ export interface DashboardSummary {
   pending_review: Assignment[];
   weak_spots: WeakSpot[];
   activity_feed: ActivityEvent[];
+}
+
+export type TrendRange = "week" | "month" | "semester";
+
+/** One time bucket of class activity. `accuracy` and `exam_avg_score` are null
+ *  — not zero — when nothing happened in the bucket, so a chart can render a
+ *  genuine gap instead of implying the class scored nothing. */
+export interface TrendBucket {
+  date: string;
+  questions: number;
+  correct: number;
+  accuracy: number | null;
+  study_minutes: number;
+  active_students: number;
+  mistakes: number;
+  exam_avg_score: number | null;
+  exam_count: number;
+}
+
+export interface ClassTrends {
+  range: TrendRange;
+  granularity: "day" | "week";
+  buckets: TrendBucket[];
+}
+
+export type AttentionKind =
+  | "never_active"
+  | "inactive"
+  | "accuracy_drop"
+  | "repeated_mistakes"
+  | "weak_topic"
+  | "low_test_score"
+  | "overdue_assignment";
+
+export interface AttentionSignal {
+  kind: AttentionKind;
+  label: string;
+  value: number | null;
+  detail: string;
+}
+
+export interface StudentAttention {
+  student: FriendUser;
+  signals: AttentionSignal[];
+}
+
+export async function fetchClassTrends(range: TrendRange): Promise<ClassTrends> {
+  const { data } = await apiClient.get("/teaching/analytics/class-trends/", { params: { range } });
+  return data;
+}
+
+export async function fetchNeedsAttention(): Promise<StudentAttention[]> {
+  const { data } = await apiClient.get("/teaching/students/needs-attention/");
+  return data;
 }
 
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import * as teachingApi from "../../api/teaching";
 import type { Assignment } from "../../api/teaching";
 import { assignmentDisplayTitle, assignmentLink, assignmentTargetLabel } from "../../lib/assignmentLabels";
+import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { LinkButton } from "../ui/LinkButton";
 import { AssignmentProgressBar } from "./AssignmentProgressBar";
@@ -13,6 +14,15 @@ const STATUS_LABELS: Record<Assignment["status"], string> = {
   in_progress: "Ընթացքի մեջ",
   submitted: "Ուղարկված է՝ սպասում է հաստատման",
   completed: "Ավարտված",
+};
+
+// Mirrors ExamCard's StatusBadge tone mapping so "completed" reads as success
+// everywhere in the app, not just on exams.
+const STATUS_TONE: Record<Assignment["status"], "neutral" | "primary" | "correct"> = {
+  assigned: "neutral",
+  in_progress: "neutral",
+  submitted: "primary",
+  completed: "correct",
 };
 
 function navState(assignment: Assignment): Record<string, number | undefined> | undefined {
@@ -68,19 +78,9 @@ export function AssignmentCard({
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${
-              assignment.is_overdue
-                ? "bg-incorrect/10 text-incorrect"
-                : assignment.status === "completed"
-                  ? "bg-primary/10 text-primary"
-                  : assignment.status === "submitted"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-surface-muted text-text-muted"
-            }`}
-          >
+          <Badge tone={assignment.is_overdue ? "incorrect" : STATUS_TONE[assignment.status]}>
             {assignment.is_overdue ? "Ուշացած" : STATUS_LABELS[assignment.status]}
-          </span>
+          </Badge>
           <div className="flex gap-3">
             {canWorkOn && !wasRejected && (
               <LinkButton
@@ -132,7 +132,7 @@ export function AssignmentCard({
 
       {!compact && assignment.status === "submitted" && (
         <div className="mt-3 border-t border-border pt-3">
-          <p className="text-sm text-text-muted">Ձեր բացատրությունը՝</p>
+          <p className="text-sm text-text-muted">Քո բացատրությունը՝</p>
           <p className="text-sm text-text">{assignment.explanation}</p>
         </div>
       )}

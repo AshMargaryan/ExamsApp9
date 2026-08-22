@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     AchievementListView,
+    CoachPreferencesView,
     ActivityHeatmapView,
     HomeInsightView,
     LearnerContextView,
@@ -40,6 +41,7 @@ urlpatterns = [
     path("subjects/<int:pk>/", StudentSubjectDetailView.as_view(), name="profile_subject_detail"),
     path("study-availability/", StudyAvailabilityView.as_view(), name="profile_study_availability"),
     path("learning-preferences/", LearningPreferencesView.as_view(), name="profile_learning_preferences"),
+    path("coach-preferences/", CoachPreferencesView.as_view(), name="profile_coach_preferences"),
     path("learning-events/", LearningEventListView.as_view(), name="profile_learning_events"),
     path("learner-context/", LearnerContextView.as_view(), name="profile_learner_context"),
     path("showcase/", ShowcaseUpdateView.as_view(), name="profile_showcase"),

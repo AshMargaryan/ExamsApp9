@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import Attachment, AttachmentType, Conversation, ConversationType, Message, MessageReport
@@ -148,8 +149,11 @@ class ConversationParticipantsView(APIView):
 class ConversationParticipantDetailView(APIView):
     """
     DELETE /api/chat/conversations/<id>/participants/<user_id>/ — remove a
-    member. The owner can remove anyone; anyone can remove themselves
-    (leave the group).
+    member. In a group, the owner can remove anyone and anyone can remove
+    themselves (leave the group). In a private conversation there's no
+    owner/other-member to remove — only leaving it yourself is allowed,
+    which just drops it from your own conversation list (message history
+    stays intact and reappears if either side messages again).
     """
 
     permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
@@ -157,12 +161,13 @@ class ConversationParticipantDetailView(APIView):
     def delete(self, request, pk, user_id):
         conversation = get_object_or_404(Conversation, pk=pk)
         self.check_object_permissions(request, conversation)
-        if conversation.type != ConversationType.GROUP:
-            return Response(
-                {"detail": "Մասնակիցներ կարելի է հեռացնել միայն խմբերից։"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
         is_self = user_id == request.user.id
+        if conversation.type != ConversationType.GROUP and not is_self:
+            return Response(
+                {"detail": "Անձնական զրույցներից կարելի է հեռացնել միայն ինքդ քեզ։"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if not is_self and not group_service.is_owner(conversation, request.user):
             return Response(
                 {"detail": "Այս գործողությունը հասանելի է միայն խմբի սեփականատիրոջը։"},
@@ -347,10 +352,14 @@ class ConversationFilesView(APIView):
 
     permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
 
+    # A long-lived, active group chat accumulates attachments without bound —
+    # cap the response instead of serializing every file ever sent.
+    MAX_FILES = 500
+
     def get(self, request, pk):
         conversation = get_object_or_404(Conversation, pk=pk)
         self.check_object_permissions(request, conversation)
-        files = conversation.attachments.filter(message__isnull=False).order_by("-uploaded_at")
+        files = conversation.attachments.filter(message__isnull=False).order_by("-uploaded_at")[: self.MAX_FILES]
         return Response(AttachmentSerializer(files, many=True, context={"request": request}).data)
 
 
@@ -416,7 +425,7 @@ class MessageForwardView(APIView):
         target = get_object_or_404(Conversation, pk=request.data.get("conversation_id"))
         if not is_participant(target.id, request.user):
             return Response(
-                {"detail": "Դուք այս զրույցի մասնակից չեք։"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Այս զրույցի մասնակից չես։"}, status=status.HTTP_403_FORBIDDEN
             )
 
         forwarded = message_service.forward_message(message, target, request.user)
@@ -466,7 +475,7 @@ class AttachmentUploadView(APIView):
         conversation = d["conversation"]
         if not is_participant(conversation.id, request.user):
             return Response(
-                {"detail": "Դուք այս զրույցի մասնակից չեք։"}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "Այս զրույցի մասնակից չես։"}, status=status.HTTP_403_FORBIDDEN
             )
 
         uploaded_file = d["file"]
@@ -524,6 +533,9 @@ class AskAIView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated, IsConversationParticipant]
+    # Bills an OpenAI call per request — see DEFAULT_THROTTLE_RATES["ai-assistant"].
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai-assistant"
 
     def post(self, request, pk):
         conversation = get_object_or_404(Conversation, pk=pk)

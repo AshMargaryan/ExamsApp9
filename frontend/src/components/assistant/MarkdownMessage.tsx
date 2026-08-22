@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -8,6 +8,18 @@ import { API_ORIGIN } from "../../api/client";
 function resolveImageSrc(src?: string) {
   if (!src) return src;
   return src.startsWith("/") ? `${API_ORIGIN}${src}` : src;
+}
+
+// react-markdown's default urlTransform strips "data:" URIs entirely (a
+// blanket XSS guard). We author diagrams as inline data:image/svg+xml — safe
+// here because an <img src> never executes scripts embedded in an SVG (only
+// <object>/<iframe>/inline-<svg> would), unlike a raw href. Everything else
+// (links, non-image src) still goes through the default allowlist.
+function urlTransform(url: string, key: string, node: { tagName?: string }) {
+  if (key === "src" && node.tagName === "img" && /^data:image\/(svg\+xml|png|jpeg|gif|webp)[,;]/i.test(url)) {
+    return url;
+  }
+  return defaultUrlTransform(url);
 }
 
 function CodeBlock({ className, children }: { className?: string; children?: React.ReactNode }) {
@@ -56,6 +68,7 @@ export function MarkdownMessage({
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
+        urlTransform={urlTransform}
         components={{
           code: CodeBlock,
           a: ({ children, ...props }) => (
@@ -68,6 +81,8 @@ export function MarkdownMessage({
               {...props}
               src={resolveImageSrc(props.src)}
               alt={alt ?? ""}
+              loading="lazy"
+              decoding="async"
               className="float-right ml-5 mb-4 w-full max-w-[560px] rounded-[var(--radius)] border border-border shadow-sm md:w-[55%] lg:max-w-[680px]"
             />
           ),

@@ -156,7 +156,7 @@ export function MatchingQuestion({ leftItems, rightItems, value, onChange, revea
                     type="button"
                     onClick={() => clickLeft(s.id)}
                     disabled={revealed}
-                    className={`flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-lg transition-colors ${
+                    className={`flex w-full items-center justify-between gap-3 rounded-[var(--radius-md)] border px-3 py-2 text-left text-lg transition-colors ${
                       active ? "border-primary bg-primary text-primary-contrast" : "border-border"
                     } ${revealed ? "" : "hover:border-primary"}`}
                   >
@@ -184,7 +184,7 @@ export function MatchingQuestion({ leftItems, rightItems, value, onChange, revea
                     type="button"
                     onClick={() => clickRight(c.id)}
                     disabled={revealed || activeLeft === null}
-                    className={`flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-lg transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded-[var(--radius-md)] border px-3 py-2 text-left text-lg transition-colors ${
                       activeLeft !== null && !revealed ? "border-border hover:border-primary" : "border-border"
                     }`}
                   >

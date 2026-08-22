@@ -1,0 +1,49 @@
+{
+  "deck_id": "FC-ENG-GRAM-007",
+  "title": "Անգլերեն — Քերականություն 7",
+  "subject": "english",
+  "cards": [
+    {
+      "number": 1,
+      "topic": "",
+      "front": "\"___ I known about the traffic, I would have left earlier.\" — inverted conditional form of \"If I had known\":",
+      "back": "Had",
+      "hint": ""
+    },
+    {
+      "number": 2,
+      "topic": "",
+      "front": "After \"No sooner\" or \"Hardly\" at the start of a sentence, the usual tense is:",
+      "back": "Past Perfect, inverted",
+      "hint": ""
+    },
+    {
+      "number": 3,
+      "topic": "",
+      "front": "\"If you mix red and blue, you ___ purple.\" (general scientific fact) uses:",
+      "back": "get (Zero Conditional: Present + Present)",
+      "hint": ""
+    },
+    {
+      "number": 4,
+      "topic": "",
+      "front": "\"Unless\" means:",
+      "back": "if...not",
+      "hint": ""
+    },
+    {
+      "number": 5,
+      "topic": "",
+      "front": "\"Her hobbies include painting, hiking, and ___.\" (matching the -ing form of the other items) needs:",
+      "back": "reading",
+      "hint": ""
+    },
+    {
+      "number": 6,
+      "topic": "",
+      "front": "In lists and correlative pairs (\"either...or\", \"not only...but also\"), every item must:",
+      "back": "share the same grammatical form",
+      "hint": ""
+    }
+  ]
+}

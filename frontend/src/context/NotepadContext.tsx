@@ -265,28 +265,36 @@ export function NotepadProvider({ children }: { children: ReactNode }) {
     [notesVersion],
   );
 
-  const value: NotepadContextValue = {
-    notes,
-    activeNoteId,
-    activeStrokes,
-    textNotes,
-    openSignal,
-    requestOpenNotepad,
-    pendingEquation,
-    requestInsertEquation,
-    clearPendingEquation,
-    insertEquationIntoNote,
-    insertEquationIntoNewNote,
-    saveStrokes,
-    addTextNote,
-    updateTextNote,
-    removeTextNote,
-    clearTextNotes,
-    createNote,
-    switchNote,
-    renameNote,
-    deleteNote,
-  };
+  const value = useMemo<NotepadContextValue>(
+    () => ({
+      notes,
+      activeNoteId,
+      activeStrokes,
+      textNotes,
+      openSignal,
+      requestOpenNotepad,
+      pendingEquation,
+      requestInsertEquation,
+      clearPendingEquation,
+      insertEquationIntoNote,
+      insertEquationIntoNewNote,
+      saveStrokes,
+      addTextNote,
+      updateTextNote,
+      removeTextNote,
+      clearTextNotes,
+      createNote,
+      switchNote,
+      renameNote,
+      deleteNote,
+    }),
+    [
+      notes, activeNoteId, activeStrokes, textNotes, openSignal, requestOpenNotepad,
+      pendingEquation, requestInsertEquation, clearPendingEquation, insertEquationIntoNote,
+      insertEquationIntoNewNote, saveStrokes, addTextNote, updateTextNote, removeTextNote,
+      clearTextNotes, createNote, switchNote, renameNote, deleteNote,
+    ],
+  );
 
   return <NotepadCtx.Provider value={value}>{children}</NotepadCtx.Provider>;
 }

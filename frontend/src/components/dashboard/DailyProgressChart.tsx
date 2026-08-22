@@ -1,8 +1,8 @@
 import type { ActivityDay } from "../../api/profile";
+import { BarChart, type BarChartPoint } from "../ui/BarChart";
 
-const CHART_HEIGHT = 90;
-const BAR_MAX_HEIGHT = 70;
 const WEEKDAY_LABELS = ["Կրկ", "Երկ", "Երք", "Չրք", "Հնգ", "Ուրբ", "Շբթ"];
+const CHART_HEIGHT = 90;
 
 function lastNDays(n: number): string[] {
   const days: string[] = [];
@@ -15,7 +15,18 @@ function lastNDays(n: number): string[] {
   return days;
 }
 
-/** Last-7-days bar chart of questions solved, filling in zero days the heatmap omits. */
+/*
+  Last seven days of questions solved, filling in the zero days the heatmap
+  omits.
+
+  This was the second hand-rolled copy of the dashboard's weekly strip, and it
+  had none of the fixes the first one received: its bars were `bg-text` over
+  `bg-border` — a structural token used as a data colour, so the two halves
+  were nearly indistinguishable — and the only way to read a bar's numbers was
+  a `title` attribute, which a touch device never shows. It draws through
+  `ui/BarChart` now, so it inherits the primary-plus-tint fill, the spoken
+  summary and the visually-hidden per-day readout.
+*/
 export function DailyProgressChart({ days }: { days: ActivityDay[] }) {
   const byDate = new Map(days.map((d) => [d.date, d]));
   const points = lastNDays(7).map((date) => {
@@ -23,36 +34,35 @@ export function DailyProgressChart({ days }: { days: ActivityDay[] }) {
     const weekday = WEEKDAY_LABELS[new Date(`${date}T00:00:00`).getDay()];
     return { date, weekday, solved: day?.questions_solved ?? 0, correct: day?.correct_answers ?? 0 };
   });
-  const max = Math.max(1, ...points.map((p) => p.solved));
   const totalSolved = points.reduce((sum, p) => sum + p.solved, 0);
+  const totalCorrect = points.reduce((sum, p) => sum + p.correct, 0);
 
-  if (totalSolved === 0) {
-    return (
-      <div className="flex items-center justify-center text-sm text-text-muted" style={{ height: CHART_HEIGHT }}>
-        Այս շաբաթ դեռ առաջընթաց չկա։
-      </div>
-    );
-  }
+  const bars: BarChartPoint[] = points.map((p) => ({
+    id: p.date,
+    label: p.weekday,
+    value: p.solved,
+    highlight: p.correct,
+    readout: `${p.weekday}՝ ${p.solved} հարց, ${p.correct} ճիշտ`,
+  }));
 
   return (
-    <div className="flex items-end gap-3" style={{ height: CHART_HEIGHT }}>
-      {points.map((p) => {
-        const barHeight = Math.round((p.solved / max) * BAR_MAX_HEIGHT);
-        const correctHeight = p.solved > 0 ? Math.round((p.correct / p.solved) * barHeight) : 0;
-        return (
-          <div key={p.date} className="flex flex-1 flex-col items-center justify-end gap-2">
-            <div
-              title={`${p.weekday}՝ ${p.solved} հարց, ${p.correct} ճիշտ`}
-              className="flex w-full max-w-4 flex-col justify-end overflow-hidden rounded-t-md bg-surface-muted"
-              style={{ height: Math.max(barHeight, p.solved > 0 ? 4 : 0) }}
-            >
-              <div className="w-full bg-text" style={{ height: correctHeight }} />
-              <div className="w-full bg-border" style={{ height: Math.max(barHeight - correctHeight, 0) }} />
-            </div>
-            <span className="text-[11px] text-text-muted">{p.weekday}</span>
-          </div>
-        );
-      })}
-    </div>
+    <BarChart
+      points={bars}
+      height={CHART_HEIGHT}
+      /* Four pixels, not twelve. This strip lives in one cell of the stat
+         row: at `gap-3` its seven gaps ate 72 of the 82px the plot had, and
+         every bar rendered 1px wide — the chart had been drawing nothing
+         legible on this page. */
+      gapClassName="gap-1"
+      summary={`Վերջին 7 օրում լուծված է ${totalSolved} հարց, որից ${totalCorrect} ճիշտ։`}
+      empty={
+        <div
+          className="flex items-center justify-center text-[length:var(--text-sm)] text-text-muted"
+          style={{ height: CHART_HEIGHT }}
+        >
+          Այս շաբաթ դեռ առաջընթաց չկա։
+        </div>
+      }
+    />
   );
 }

@@ -1,0 +1,497 @@
+/*
+  ASSISTANT DESIGN TOKENS
+  ======================================================================
+  The single source of truth for every colour, radius, duration, spacing
+  and type value used by the redesigned AI assistant. After this file
+  exists, no assistant component may hardcode one of those values —
+  src/test/assistantDesignTokens.test.ts fails the build if it does.
+
+  WHY THIS IS A LAYER AND NOT A REWRITE OF theme.css
+  --------------------------------------------------
+  theme.css (609 lines) already ships a complete, deliberately-reasoned
+  system: semantic colour roles for light + dark + [data-theme], a
+  --space-1..10 ramp, seven radii with --radius aliased to lg across
+  ~300 existing call sites (theme.css:137-149), an Armenian-tuned type
+  scale with --leading-*, and four shadow steps.
+
+  The redesign brief's Appendix A specifies a *different* system: three
+  radii, a `4 8 12 16 24 32 48 64` space scale, three elevation levels.
+  Adopting it verbatim would repoint every rounded-*/spacing call site
+  in the entire application from inside an assistant redesign. That is
+  not a trade worth making, and the audit reached the same conclusion.
+
+  So: this file defines the values Appendix A actually cares about
+  (content typography, the two educational hues, motion, elevation
+  pairs) as `--asst-*` tokens, and *derives everything else* from
+  theme.css. Where Appendix A and the shipped system disagree, the
+  disagreement is recorded inline below and in docs/assistant-ux-spec.md.
+
+  All tokens are prefixed `--asst-` so they can never collide with, or be
+  mistaken for, an app-wide token.
+*/
+
+:root {
+  /*
+    TYPE
+    ------------------------------------------------------------------
+    Two sizes, not a scale. Chat has exactly two kinds of text: the
+    answer the student reads, and the chrome around it. Giving them one
+    size each is what stops a transcript from turning into a ramp.
+
+    UI 15px/1.5 and content 16.5px/1.68 are Appendix A's numbers and we
+    keep them. The leading split is the important part and it is
+    Armenian-specific: Noto Sans Armenian has a tall x-height with both
+    frequent descenders (ղ ը պ ց ջ դ) and full-height ascenders
+    (Հ Ա Մ Ք), so at Latin body leading (1.5) descenders collide with
+    the next line's ascenders. theme.css already reached 1.6 for the
+    same reason (theme.css:217-231); 1.68 for a long streamed answer is
+    the same judgement one step further, because assistant answers are
+    longer than any other body copy in the product.
+
+    16.5px is deliberately not on theme.css's --text-* scale. It sits
+    between --text-base (16) and --text-lg (18) and exists only here,
+    for the one surface where reading a 600-word Armenian explanation
+    on a phone is the whole job.
+  */
+  --asst-text-ui: 0.9375rem;      /* 15px  — chrome, labels, buttons, metadata rows */
+  --asst-leading-ui: 1.5;
+  --asst-text-content: 1.03125rem; /* 16.5px — the answer itself */
+  --asst-leading-content: 1.68;
+  --asst-text-meta: 0.8125rem;    /* 13px  — timestamps, block eyebrows, hint toggles */
+  --asst-leading-meta: 1.45;
+  --asst-text-mono: 0.875rem;     /* 14px */
+  --asst-leading-mono: 1.6;
+
+  /*
+    Three weights only. Anything a design needs a fourth weight to say,
+    it can say with size, colour, or space instead.
+  */
+  --asst-weight-regular: 400;
+  --asst-weight-medium: 500;
+  --asst-weight-strong: 600;
+
+  /*
+    Measure. Appendix A says 68ch; theme.css ships --measure-base at
+    72ch with the note that Armenian words average longer than English.
+    68ch is the tighter of the two and this is the surface where line
+    length matters most, so Appendix A wins here — but note it is
+    narrower than the app default on purpose, not by accident.
+  */
+  --asst-measure: 68ch;
+
+  /*
+    Mono face. HONEST LIMITATION: no widely-available monospace font has
+    Armenian coverage — not JetBrains Mono, not SF Mono, not Menlo, not
+    Cascadia. A student's Armenian comment inside a code block therefore
+    *cannot* render monospaced. The choice is between tofu boxes and a
+    proportional Armenian fallback, and the fallback is obviously right,
+    so "Noto Sans Armenian" is appended to the stack. Latin code stays
+    monospaced; Armenian inside it renders proportionally and legibly.
+    Verified in docs/assistant-ux-spec.md §Typography.
+  */
+  --asst-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", "Noto Sans Armenian", monospace;
+
+  /*
+    EDUCATIONAL BLOCK HUES — EXACTLY TWO
+    ------------------------------------------------------------------
+    quiet  -> concept, example, tip        (this is something to learn)
+    warn   -> mistake, and the drift step of a diagnosis (this is where
+                                            you go wrong)
+
+    There is no third. A pastel callout per semantic category is the
+    single fastest way for an education product to look like a generic
+    AI wrapper, and it destroys the one distinction that matters to a
+    student mid-problem: "am I being taught, or being warned?"
+
+    DEVIATION FROM APPENDIX A, recorded deliberately: Appendix A names
+    the first hue "accent-quiet", which in this codebase would mean
+    --color-accent (apricot #b0611a). Apricot and --color-warning
+    (amber #b47613) are ~12° apart on the wheel. Side by side in a
+    transcript they read as one colour, which collapses the two-hue
+    system into a one-hue system and makes the warn state invisible.
+    The quiet hue is therefore mapped onto the primary indigo family —
+    which is Haygit's study/ink colour and unmistakably not amber.
+    Two hues, as specified; different two hues than named, for a
+    contrast reason Appendix A could not have known about.
+  */
+  --asst-quiet-bg: var(--color-primary-bg);
+  --asst-quiet-line: var(--color-primary-line);
+  --asst-quiet-ink: var(--color-primary);
+
+  --asst-warn-bg: var(--color-warning-bg);
+  --asst-warn-line: color-mix(in srgb, var(--color-warning) 34%, transparent);
+  --asst-warn-ink: var(--color-warning);
+
+  /*
+    ELEVATION — BORDER + SHADOW PAIRS, NEVER SHADOW ALONE
+    ------------------------------------------------------------------
+    A shadow-only card is invisible in dark mode: a soft dark shadow on
+    a near-black ground has nothing to darken. Every level here ships a
+    border with its shadow so the shape survives both themes.
+
+    Three levels, matching Appendix A, mapped onto theme.css's four
+    shadow steps (flat/raised/overlay; theme.css's --shadow-xs is not
+    used by the assistant, so the "four vs three" conflict is resolved
+    by simply not using the fourth rather than by redefining anything).
+  */
+  --asst-elev-flat-border: 1px solid var(--color-border);
+  --asst-elev-flat-shadow: none;
+
+  --asst-elev-raised-border: 1px solid var(--color-border);
+  --asst-elev-raised-shadow: var(--shadow-sm);
+
+  --asst-elev-overlay-border: 1px solid var(--color-border);
+  --asst-elev-overlay-shadow: var(--shadow-md);
+
+  /*
+    RADII. Assistant surfaces use three of theme.css's seven, aliased so
+    a component says what a thing *is* rather than which step it picked.
+    This is how Appendix A's "three radii" intent is honoured without
+    deleting four tokens that ~300 call sites elsewhere depend on.
+  */
+  --asst-radius-inline: var(--radius-sm);  /* inline code, chips, hint toggles */
+  --asst-radius-block: var(--radius-lg);   /* callouts, code blocks, bubbles */
+  --asst-radius-panel: var(--radius-xl);   /* the composer, drawers, sheets */
+
+  /*
+    SPACING. Derived from theme.css's --space-* ramp, never from
+    Appendix A's parallel `4 8 12 16 24 32 48 64` scale — running two
+    spacing systems in one app is worse than either system.
+    Named by role so block padding cannot drift between components.
+  */
+  --asst-gap-inline: var(--space-2);   /* 8px  — icon↔label, chip internals */
+  --asst-gap-tight: var(--space-3);    /* 12px — inside a block */
+  --asst-gap-block: var(--space-4);    /* 16px — block padding, block↔block */
+  --asst-gap-section: var(--space-6);  /* 24px — message↔message */
+
+  /*
+    MOTION. Appendix A's three durations verbatim, with its easing.
+    Deliberately *not* folded into motion.css's --motion-* scale
+    (150/200/320/550/900): those are the app's, tuned for cards and
+    celebrations. Chat needs faster and quieter, and a token that means
+    "the assistant's panel opens" should not change because someone
+    retunes a level-up animation.
+  */
+  --asst-motion-micro: 120ms;   /* press, hover, checkbox */
+  --asst-motion-enter: 180ms;   /* a message or block arriving */
+  --asst-motion-panel: 240ms;   /* drawer, sheet, expanding hint */
+  --asst-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /*
+    FOCUS. theme.css already declares a global :focus-visible ring at
+    exactly Appendix A's 2px/2px (theme.css:587-592) and applies it to
+    every interactive element in both themes. Nothing to add — these
+    aliases exist so an assistant component that needs to draw its own
+    ring (e.g. a custom-focus wrapper around a non-focusable element)
+    matches the global one by construction rather than by copying px.
+  */
+  --asst-focus-width: var(--focus-ring-width);
+  --asst-focus-offset: var(--focus-ring-offset);
+  --asst-focus-color: var(--focus-ring-color);
+}
+
+/*
+  Reduced motion. index.css already zeroes CSS animation/transition
+  durations app-wide, but a component that reads --asst-motion-* into an
+  inline style or a JS timing bypasses that rule — so the tokens
+  themselves collapse too. Not 0ms: 0.01ms, so transitionend still
+  fires and any state machine waiting on it does not deadlock.
+*/
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --asst-motion-micro: 0.01ms;
+    --asst-motion-enter: 0.01ms;
+    --asst-motion-panel: 0.01ms;
+  }
+}
+
+/*
+  ==================================================================
+  PRIMITIVES
+  Classes, not utilities, for the handful of things that must look
+  identical everywhere and must not be re-derived per component.
+  ==================================================================
+*/
+
+/* The answer body. One class carries measure + size + leading so no
+   component has to remember all three. */
+.asst-content {
+  font-size: var(--asst-text-content);
+  line-height: var(--asst-leading-content);
+  /* min-width:0 is load-bearing: these render inside flex columns, and
+     without it a wide code block or table refuses to shrink and pushes
+     the whole transcript into a horizontal scroll on mobile. */
+  min-width: 0;
+}
+
+.asst-ui {
+  font-size: var(--asst-text-ui);
+  line-height: var(--asst-leading-ui);
+}
+
+.asst-meta {
+  font-size: var(--asst-text-meta);
+  line-height: var(--asst-leading-meta);
+  color: var(--color-text-muted);
+}
+
+/*
+  Educational block. One shape, two hues, set by --asst-block-* which
+  the two modifier classes below are the only things allowed to define.
+*/
+.asst-block {
+  display: flow-root; /* contains child margins without a padding hack */
+  margin: var(--asst-gap-block) 0;
+  padding: var(--asst-gap-block);
+  border: 1px solid var(--asst-block-line);
+  border-left-width: 3px;
+  border-radius: var(--asst-radius-block);
+  background: var(--asst-block-bg);
+}
+
+.asst-block--quiet {
+  --asst-block-bg: var(--asst-quiet-bg);
+  --asst-block-line: var(--asst-quiet-line);
+  --asst-block-ink: var(--asst-quiet-ink);
+}
+
+.asst-block--warn {
+  --asst-block-bg: var(--asst-warn-bg);
+  --asst-block-line: var(--asst-warn-line);
+  --asst-block-ink: var(--asst-warn-ink);
+}
+
+/* The block's eyebrow: what kind of block this is, plus its title.
+   Icon + text, never icon alone — the block type must survive both
+   colour-blindness and a greyscale screenshot. */
+.asst-block__label {
+  display: flex;
+  align-items: center;
+  gap: var(--asst-gap-inline);
+  margin-bottom: var(--asst-gap-tight);
+  color: var(--asst-block-ink);
+  font-size: var(--asst-text-meta);
+  font-weight: var(--asst-weight-strong);
+  letter-spacing: var(--tracking-normal);
+}
+
+.asst-block__body > :first-child { margin-top: 0; }
+.asst-block__body > :last-child { margin-bottom: 0; }
+
+/*
+  ==================================================================
+  THE SIGNATURE ELEMENT — mistake diagnosis
+  ------------------------------------------------------------------
+  Everything else in this file is deliberately quiet so that this can
+  be the one structure Haygit is remembered by.
+
+  Քո պատասխանը → որտեղ շեղվեց → ճիշտ ճանապարհը → նմանատիպ խնդիր,
+  as a real four-step rail with a connecting line, not as four
+  paragraphs of prose. No general-purpose AI chat renders this,
+  because no general-purpose AI chat knows what the student answered.
+
+  The backend already asks for exactly this pedagogy in the
+  `why_am_i_wrong` mode framing (backend/apps/ai_assistant/prompts.py)
+  — in prose, with no output contract. The `:::diagnosis` directive is
+  that contract.
+
+  Note it introduces NO third hue: step 2 (drift) borrows the warn ink
+  for its marker, everything else is neutral. The structure carries the
+  meaning; colour stays out of it.
+*/
+.asst-diagnosis {
+  margin: var(--asst-gap-block) 0;
+  padding: 0;
+  list-style: none;
+  border: var(--asst-elev-flat-border);
+  border-radius: var(--asst-radius-block);
+  background: var(--color-surface);
+}
+
+.asst-diagnosis__step {
+  position: relative;
+  padding: var(--asst-gap-block);
+  padding-left: calc(var(--asst-gap-block) * 2.5);
+}
+
+.asst-diagnosis__step + .asst-diagnosis__step {
+  border-top: 1px solid var(--color-border);
+}
+
+/* The rail: a dot per step, joined by a hairline. Drawn with
+   pseudo-elements so no extra DOM and nothing to keep in sync. */
+.asst-diagnosis__step::before {
+  content: "";
+  position: absolute;
+  left: var(--asst-gap-block);
+  top: calc(var(--asst-gap-block) + 0.42em);
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-text-muted);
+}
+
+.asst-diagnosis__step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--asst-gap-block) + var(--space-1) - 0.5px);
+  top: calc(var(--asst-gap-block) + 0.42em + var(--space-2));
+  bottom: calc(var(--asst-gap-block) * -1 + var(--asst-gap-block));
+  width: 1px;
+  background: var(--color-border);
+}
+
+/* Step 2 is the whole point of the layout — where the reasoning left
+   the road. It is the only marked step, and it is marked twice: with
+   the warn ink AND with a ring, so it survives greyscale. */
+.asst-diagnosis__step--drift::before {
+  background: var(--asst-warn-ink);
+  box-shadow: 0 0 0 3px var(--asst-warn-bg);
+}
+
+.asst-diagnosis__label {
+  display: block;
+  margin-bottom: var(--asst-gap-inline);
+  color: var(--color-text-muted);
+  font-size: var(--asst-text-meta);
+  font-weight: var(--asst-weight-strong);
+}
+
+.asst-diagnosis__step--drift .asst-diagnosis__label {
+  color: var(--asst-warn-ink);
+}
+
+.asst-diagnosis__body > :first-child { margin-top: 0; }
+.asst-diagnosis__body > :last-child { margin-bottom: 0; }
+
+/*
+  ==================================================================
+  CHECKPOINT — "your turn", with hints behind progressive disclosure
+  ==================================================================
+*/
+.asst-checkpoint {
+  margin: var(--asst-gap-block) 0;
+  padding: var(--asst-gap-block);
+  border: var(--asst-elev-flat-border);
+  border-radius: var(--asst-radius-block);
+  background: var(--color-surface-muted);
+}
+
+/* A checkpoint is a prompt to act, not a category of information, so its
+   label takes the body ink rather than one of the two block hues. */
+.asst-checkpoint .asst-block__label {
+  color: var(--color-text);
+}
+
+.asst-hint {
+  margin-top: var(--asst-gap-tight);
+  border-radius: var(--asst-radius-inline);
+}
+
+/* <summary> is the disclosure control. It must look and behave like a
+   button — including the global focus ring, which :where() in theme.css
+   already covers for summary elements. */
+.asst-hint__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--asst-gap-inline);
+  width: fit-content;
+  padding: var(--space-1) var(--asst-gap-inline);
+  border-radius: var(--asst-radius-inline);
+  color: var(--asst-quiet-ink);
+  font-size: var(--asst-text-meta);
+  font-weight: var(--asst-weight-medium);
+  cursor: pointer;
+  list-style: none;
+  transition: background-color var(--asst-motion-micro) var(--asst-ease);
+}
+
+.asst-hint__summary::-webkit-details-marker { display: none; }
+
+.asst-hint__summary:hover {
+  background: var(--asst-quiet-bg);
+}
+
+.asst-hint__body {
+  padding: var(--asst-gap-tight) var(--asst-gap-inline) 0;
+}
+
+.asst-hint__body > :first-child { margin-top: 0; }
+.asst-hint__body > :last-child { margin-bottom: 0; }
+
+/*
+  ==================================================================
+  CODE
+  The horizontal-scroll containment here is the reason mobile layouts
+  survive a wide code block: the <pre> scrolls, the page does not.
+  ==================================================================
+*/
+.asst-code {
+  position: relative;
+  margin: var(--asst-gap-tight) 0;
+  min-width: 0;
+  border: var(--asst-elev-flat-border);
+  border-radius: var(--asst-radius-block);
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+.asst-code__pre {
+  margin: 0;
+  padding: var(--asst-gap-tight);
+  /* The containment pair. Without min-width:0 a flex/grid parent sizes
+     to the widest line and overflow-x never engages. */
+  min-width: 0;
+  overflow-x: auto;
+  font-family: var(--asst-font-mono);
+  font-size: var(--asst-text-mono);
+  line-height: var(--asst-leading-mono);
+}
+
+.asst-code__copy {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  padding: var(--space-1) var(--asst-gap-inline);
+  border-radius: var(--asst-radius-inline);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  color: var(--color-text-muted);
+  font-size: var(--asst-text-meta);
+  transition: color var(--asst-motion-micro) var(--asst-ease);
+}
+
+.asst-code__copy:hover { color: var(--color-text); }
+
+.asst-code__lang {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--asst-gap-tight);
+  color: var(--color-text-muted);
+  font-family: var(--asst-font-mono);
+  font-size: var(--asst-text-meta);
+}
+
+.asst-inline-code {
+  padding: 0.1em 0.35em;
+  border-radius: var(--asst-radius-inline);
+  background: var(--color-surface-muted);
+  font-family: var(--asst-font-mono);
+  font-size: 0.9em;
+}
+
+/*
+  Images inside an assistant answer are BLOCK, not floated.
+  MarkdownMessage floats them right (MarkdownMessage.tsx:86) which is
+  correct for the lesson and help-article pages that also use it, and
+  wrong in a transcript, where a float pulls following text around an
+  image that is still arriving. Audit defect D10.
+*/
+.asst-figure {
+  display: block;
+  margin: var(--asst-gap-tight) 0;
+  max-width: 100%;
+  height: auto;
+  border: var(--asst-elev-flat-border);
+  border-radius: var(--asst-radius-block);
+}

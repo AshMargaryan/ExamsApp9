@@ -1,6 +1,6 @@
 import type { RankingEntry } from "../../api/rankings";
 import { Avatar } from "./Avatar";
-import { RankBadge } from "./RankBadge";
+import { RankBadge } from "../ui/RankBadge";
 
 export function RankingRow({ entry, isMe }: { entry: RankingEntry; isMe: boolean }) {
   return (
@@ -14,7 +14,7 @@ export function RankingRow({ entry, isMe }: { entry: RankingEntry; isMe: boolean
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-text">
           {entry.first_name || entry.username} {entry.last_name}
-          {isMe && <span className="ml-1 text-xs text-primary">(Դուք)</span>}
+          {isMe && <span className="ml-1 text-xs text-primary">(Դու)</span>}
         </p>
         <p className="truncate text-xs text-text-muted">
           {entry.school?.name ?? "—"} · Մակարդակ {entry.level}

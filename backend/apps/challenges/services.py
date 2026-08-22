@@ -26,13 +26,13 @@ CHALLENGE_WINNER_BONUS_XP = 20
 
 def create_challenge(sender, receiver, subject, topic=None) -> ChallengeInvite:
     if not are_friends(sender, receiver):
-        raise ValueError("Կարող եք մարտահրավեր նետել միայն ձեր ընկերներին։")
+        raise ValueError("Կարող ես մարտահրավեր նետել միայն քո ընկերներին։")
 
     existing = ChallengeInvite.objects.filter(
         sender=sender, receiver=receiver, status=ChallengeStatus.PENDING
     ).first()
     if existing:
-        raise ValueError("Այս օգտատիրոջը արդեն մարտահրավեր եք նետել։")
+        raise ValueError("Այս օգտատիրոջը արդեն մարտահրավեր ես նետել։")
 
     invite = ChallengeInvite.objects.create(
         sender=sender, receiver=receiver, subject=subject, topic=topic,

@@ -1,5 +1,29 @@
 import type { Editor } from "@tiptap/react";
+import {
+  Code2,
+  Highlighter,
+  Image as ImageIcon,
+  Link2,
+  List,
+  ListChecks,
+  ListOrdered,
+  Paperclip,
+  Quote,
+  Table as TableIcon,
+} from "lucide-react";
 import { cn } from "../../../lib/cn";
+
+/*
+  The toolbar mixed three visual languages: Armenian letters (Բ/Թ/Ը/Գ),
+  typographic symbols (•≡, 1.≡, ☑︎, ❝, ⊞) and four colour emoji
+  (🖍️ 🔗 🖼️ 📎). The emoji were the only coloured objects in an otherwise
+  monochrome strip and rendered at a different weight per platform.
+
+  The Armenian letters stay — for a student writing Armenian, Բ for թավ is
+  more legible than a Latin B, and they are text, not iconography. Everything
+  that was a symbol or an emoji is now a lucide icon at the same size and
+  stroke as the rest of the product.
+*/
 
 function ToolbarButton({
   onClick,
@@ -17,10 +41,13 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       aria-label={label}
+      aria-pressed={active}
       title={label}
       className={cn(
-        "inline-flex h-8 min-w-8 items-center justify-center rounded-md px-1.5 text-sm font-medium transition-colors",
-        active ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-surface-muted hover:text-text",
+        "inline-flex h-8 min-w-8 items-center justify-center rounded-[var(--radius-md)] px-1.5 text-sm font-medium transition-colors",
+        // aria-pressed, so the active mark is announced rather than being a
+        // colour a screen reader cannot see.
+        active ? "bg-primary-bg text-primary" : "text-text-muted hover:bg-surface-muted hover:text-text",
       )}
     >
       {children}
@@ -51,19 +78,19 @@ export function EditorToolbar({
       <ToolbarButton label="Շեղ" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}><i>Թ</i></ToolbarButton>
       <ToolbarButton label="Ընդգծված" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}><u>Ը</u></ToolbarButton>
       <ToolbarButton label="Գծված" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()}><s>Գ</s></ToolbarButton>
-      <ToolbarButton label="Նշված" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()}>🖍️</ToolbarButton>
+      <ToolbarButton label="Նշված" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()}><Highlighter size={15} strokeWidth={1.75} /></ToolbarButton>
       <Divider />
-      <ToolbarButton label="Ցուցակ" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>•≡</ToolbarButton>
-      <ToolbarButton label="Համարակալված ցուցակ" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1.≡</ToolbarButton>
-      <ToolbarButton label="Ստուգացուցակ" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}>☑︎</ToolbarButton>
+      <ToolbarButton label="Ցուցակ" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={15} strokeWidth={1.75} /></ToolbarButton>
+      <ToolbarButton label="Համարակալված ցուցակ" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={15} strokeWidth={1.75} /></ToolbarButton>
+      <ToolbarButton label="Ստուգացուցակ" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}><ListChecks size={15} strokeWidth={1.75} /></ToolbarButton>
       <Divider />
-      <ToolbarButton label="Մեջբերում" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()}>❝</ToolbarButton>
-      <ToolbarButton label="Կոդ" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>{"</>"}</ToolbarButton>
+      <ToolbarButton label="Մեջբերում" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()}><Quote size={15} strokeWidth={1.75} /></ToolbarButton>
+      <ToolbarButton label="Կոդ" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}><Code2 size={15} strokeWidth={1.75} /></ToolbarButton>
       <ToolbarButton
         label="Աղյուսակ"
         onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
       >
-        ⊞
+        <TableIcon size={15} strokeWidth={1.75} />
       </ToolbarButton>
       <ToolbarButton
         label="Հղում"
@@ -74,7 +101,7 @@ export function EditorToolbar({
           else if (editor.isActive("link")) editor.chain().focus().unsetLink().run();
         }}
       >
-        🔗
+        <Link2 size={15} strokeWidth={1.75} />
       </ToolbarButton>
       <ToolbarButton
         label="Հավասարում"
@@ -83,8 +110,8 @@ export function EditorToolbar({
         ∑
       </ToolbarButton>
       <Divider />
-      <ToolbarButton label="Նկար" onClick={onInsertImage}>🖼️</ToolbarButton>
-      <ToolbarButton label="Կցել ֆայլ" onClick={onInsertAttachment}>📎</ToolbarButton>
+      <ToolbarButton label="Նկար" onClick={onInsertImage}><ImageIcon size={15} strokeWidth={1.75} /></ToolbarButton>
+      <ToolbarButton label="Կցել ֆայլ" onClick={onInsertAttachment}><Paperclip size={15} strokeWidth={1.75} /></ToolbarButton>
     </div>
   );
 }

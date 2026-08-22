@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft, Maximize2, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import * as chatApi from "../../api/chat";
 import type { Conversation } from "../../api/chat";
+import { useAuth } from "../../auth/AuthContext";
 import { useChatWidget } from "../../context/ChatWidgetContext";
 import { useFloatingPanel } from "../../hooks/useFloatingPanel";
 import { conversationTitle } from "../../lib/chatLabels";
@@ -11,6 +13,7 @@ import { ConversationView } from "./ConversationView";
 
 export function FloatingChatWidget() {
   const location = useLocation();
+  const { user } = useAuth();
   const { open, selectedConversationId, selectConversation, closeFloatingChat } = useChatWidget();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
 
@@ -37,6 +40,13 @@ export function FloatingChatWidget() {
   async function handleToggleMute(id: number, muted: boolean) {
     setConversations((prev) => prev?.map((c) => (c.id === id ? { ...c, muted } : c)) ?? prev);
     await chatApi.setConversationPrefs(id, { muted });
+  }
+
+  async function handleLeave(id: number) {
+    if (!user) return;
+    await chatApi.removeParticipant(id, user.id);
+    setConversations((prev) => prev?.filter((c) => c.id !== id) ?? prev);
+    if (selectedConversationId === id) selectConversation(null);
   }
 
   // Avoid a redundant floating chat on top of the full chat page — same
@@ -69,22 +79,26 @@ export function FloatingChatWidget() {
               type="button"
               onClick={() => selectConversation(null)}
               aria-label="Ետ"
-              title="Ետ"
               className="text-text-muted hover:text-primary"
             >
-              ←
+              <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
             </button>
           )}
           <span className="truncate text-sm font-medium text-text select-none">
-            {selectedConversation ? conversationTitle(selectedConversation) : "💬 Հաղորդագրություններ"}
+            {selectedConversation ? conversationTitle(selectedConversation) : "Հաղորդագրություններ"}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-3 text-text-muted">
-          <Link to="/chat" title="Բացել ամբողջ էջում" className="hover:text-primary" onClick={closeFloatingChat}>
-            ⤢
+          <Link
+            to="/chat"
+            aria-label="Բացել ամբողջ էջում"
+            className="hover:text-primary"
+            onClick={closeFloatingChat}
+          >
+            <Maximize2 size={15} strokeWidth={1.75} aria-hidden />
           </Link>
-          <button type="button" onClick={closeFloatingChat} aria-label="Close" className="hover:text-primary">
-            ✕
+          <button type="button" onClick={closeFloatingChat} aria-label="Փակել" className="hover:text-primary">
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
       </div>
@@ -102,6 +116,7 @@ export function FloatingChatWidget() {
               onSelect={selectConversation}
               onTogglePin={handleTogglePin}
               onToggleMute={handleToggleMute}
+              onLeave={handleLeave}
             />
           </div>
         )}

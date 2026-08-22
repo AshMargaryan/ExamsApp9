@@ -1,3 +1,4 @@
+import { dedupe } from "../lib/inFlight";
 import { apiClient } from "./client";
 import type { AccountRole, School, University } from "./auth";
 import type { FriendUser } from "./friends";
@@ -89,9 +90,23 @@ export async function setExamDate(date: string): Promise<Profile> {
   return data;
 }
 
+/*
+  Deduped, as a proof of concept for the caching memo in docs/DESIGN.md §13.
+
+  `HeaderStrip` and `HomePage` both read this on the same mount, so "/" issued
+  two identical `GET /profile/me/` requests a millisecond apart. `dedupe` is an
+  in-flight join, not a cache: once the response lands the entry is dropped and
+  the next read goes to the network, so nothing here can serve a stale profile
+  after a student earns XP or sets an exam date.
+
+  Scoped to this one endpoint on purpose. Whether the app should hold read
+  results across navigations is a product decision, not a mechanical one.
+*/
 export async function fetchProfile(): Promise<Profile> {
-  const { data } = await apiClient.get("/profile/me/");
-  return data;
+  return dedupe("profile/me", async () => {
+    const { data } = await apiClient.get("/profile/me/");
+    return data as Profile;
+  });
 }
 
 export async function updateProfile(payload: UpdateProfilePayload): Promise<Profile> {
@@ -240,7 +255,10 @@ export type NextMission =
       estimated_minutes: number | null;
       potential_xp: number | null;
       reason: string;
-      cta: { type: "practice_subtopic"; subtopic_id: number; tier: string } | { type: "mock_exams" };
+      cta:
+        | { type: "practice_subtopic"; subtopic_id: number; tier: string }
+        | { type: "mistake_review"; subject_name: string; topic_label: string }
+        | { type: "mock_exams" };
     };
 
 export interface ProfileAnalytics {
@@ -587,5 +605,31 @@ export async function updateLearningPreferences(
   payload: Partial<LearningPreferences>,
 ): Promise<LearningPreferences> {
   const { data } = await apiClient.patch("/profile/learning-preferences/", payload);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Coach cadence — how hard, and how often, the coach may push a full exam
+// ---------------------------------------------------------------------------
+
+export interface CoachPreferences {
+  mock_exams_per_week: number;
+  /** ISO weekday ints, 0=Monday..6=Sunday. Empty = any day. */
+  preferred_test_days: number[];
+  preferred_test_time: string | null;
+  /** Set the first time the student saves deliberately; null = never chosen. */
+  configured_at: string | null;
+  updated_at: string;
+}
+
+export async function fetchCoachPreferences(): Promise<CoachPreferences> {
+  const { data } = await apiClient.get("/profile/coach-preferences/");
+  return data;
+}
+
+export async function updateCoachPreferences(
+  payload: Partial<CoachPreferences>,
+): Promise<CoachPreferences> {
+  const { data } = await apiClient.patch("/profile/coach-preferences/", payload);
   return data;
 }

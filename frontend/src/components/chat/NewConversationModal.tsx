@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { Globe, Lock } from "lucide-react";
+import { Check, Globe, Lock, X } from "lucide-react";
 import * as friendsApi from "../../api/friends";
 import type { FriendUser, SearchResultUser } from "../../api/friends";
 import type { GroupPrivacy } from "../../api/chat";
+import { cn } from "../../lib/cn";
+import { fieldInputClass } from "../ui/Field";
+import { SearchField } from "../ui/SearchField";
 
 function UserPickerRow({
   user, selected, onToggle,
@@ -15,7 +18,7 @@ function UserPickerRow({
     <button
       type="button"
       onClick={onToggle}
-      className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors ${
+      className={`flex w-full items-center gap-3 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors ${
         selected ? "bg-primary/10" : "hover:bg-surface-muted"
       }`}
     >
@@ -32,7 +35,7 @@ function UserPickerRow({
         </p>
         <p className="truncate text-xs text-text-muted">@{user.username}</p>
       </div>
-      {selected && <span className="shrink-0 text-primary">✓</span>}
+      {selected && <Check size={16} strokeWidth={2.5} aria-hidden className="shrink-0 text-primary" />}
     </button>
   );
 }
@@ -102,7 +105,7 @@ export function NewConversationModal({
     if (mode === "private") {
       const userId = [...selectedIds][0];
       if (!userId) {
-        setError("Ընտրեք օգտատեր։");
+        setError("Ընտրիր օգտատեր։");
         return;
       }
       setBusy(true);
@@ -121,7 +124,7 @@ export function NewConversationModal({
       return;
     }
     if (selectedIds.size === 0) {
-      setError("Ընտրեք առնվազն մեկ մասնակից։");
+      setError("Ընտրիր առնվազն մեկ մասնակից։");
       return;
     }
     setBusy(true);
@@ -147,8 +150,8 @@ export function NewConversationModal({
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-lg font-semibold text-text">Նոր զրույց</h2>
-          <button type="button" onClick={onClose} className="text-lg text-text-muted hover:text-text">
-            ✕
+          <button type="button" onClick={onClose} aria-label="Փակել" className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-text-muted hover:bg-surface-muted hover:text-text">
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
 
@@ -160,7 +163,7 @@ export function NewConversationModal({
               setSelectedIds(new Set());
               setSelectedUsers(new Map());
             }}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-colors ${
               mode === "private" ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
             }`}
           >
@@ -173,7 +176,7 @@ export function NewConversationModal({
               setSelectedIds(new Set());
               setSelectedUsers(new Map());
             }}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-colors ${
               mode === "group" ? "bg-primary text-primary-contrast" : "text-text-muted hover:bg-surface-muted"
             }`}
           >
@@ -188,35 +191,35 @@ export function NewConversationModal({
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 placeholder="Խմբի անունը"
-                className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+                className={cn(fieldInputClass, "mb-2")}
               />
               <textarea
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 placeholder="Նկարագրություն (ոչ պարտադիր)"
                 rows={2}
-                className="mb-2 w-full resize-none rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                className={cn(fieldInputClass, "mb-2 resize-none text-[length:var(--text-sm)]")}
               />
               <div className="mb-2 flex gap-2">
                 <input
                   value={groupSubject}
                   onChange={(e) => setGroupSubject(e.target.value)}
                   placeholder="Առարկա (օր. Մաթեմատիկա)"
-                  className="min-w-0 flex-1 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                  className={cn(fieldInputClass, "w-auto min-w-0 flex-1 text-[length:var(--text-sm)]")}
                 />
                 <input
                   value={groupGrade}
                   onChange={(e) => setGroupGrade(e.target.value.replace(/\D/g, ""))}
                   placeholder="Դասարան"
                   inputMode="numeric"
-                  className="w-24 shrink-0 rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                  className={cn(fieldInputClass, "w-24 shrink-0 text-[length:var(--text-sm)]")}
                 />
               </div>
               <div className="mb-3 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setGroupPrivacy("private")}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-1.5 text-xs font-medium transition-colors ${
                     groupPrivacy === "private" ? "border-primary text-primary" : "border-border text-text-muted"
                   }`}
                 >
@@ -225,7 +228,7 @@ export function NewConversationModal({
                 <button
                   type="button"
                   onClick={() => setGroupPrivacy("public")}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border px-3 py-1.5 text-xs font-medium transition-colors ${
                     groupPrivacy === "public" ? "border-primary text-primary" : "border-border text-text-muted"
                   }`}
                 >
@@ -243,25 +246,26 @@ export function NewConversationModal({
                   className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary"
                 >
                   {u.first_name || u.username}
-                  <button type="button" onClick={() => toggleUser(u)} className="hover:opacity-70">
-                    ✕
+                  <button type="button" onClick={() => toggleUser(u)} aria-label={`Հեռացնել ${u.first_name || u.username}-ին`} className="hover:opacity-70">
+                    <X size={12} strokeWidth={2.5} aria-hidden />
                   </button>
                 </span>
               ))}
             </div>
           )}
 
-          <input
+          <SearchField
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Փնտրել օգտատեր..."
-            className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
+            onChange={setQuery}
+            label="Փնտրել օգտատեր"
+            placeholder="Փնտրել օգտատեր…"
+            containerClassName="mb-3"
           />
 
           <div className="flex flex-col gap-1">
             {!query.trim() && students && students.length > 0 && (
               <>
-                <p className="px-2 pb-1 text-xs font-medium uppercase text-text-muted">Ձեր աշակերտները</p>
+                <p className="px-2 pb-1 text-xs font-medium text-text-muted">Ձեր աշակերտները</p>
                 {students.map((u) => (
                   <UserPickerRow key={u.id} user={u} selected={selectedIds.has(u.id)} onToggle={() => toggleUser(u)} />
                 ))}
@@ -284,7 +288,7 @@ export function NewConversationModal({
             type="button"
             onClick={handleSubmit}
             disabled={busy}
-            className="w-full rounded-md bg-primary py-2.5 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="w-full rounded-[var(--radius)] bg-primary py-2.5 font-medium text-primary-contrast transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {busy ? "..." : mode === "private" ? "Սկսել զրույցը" : "Ստեղծել խումբը"}
           </button>
